@@ -1,53 +1,29 @@
-"use client";
+/**
+ * Copyright 2026 Circle Internet Group, Inc.  All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { useTrading } from "@/providers/TradingProvider";
-import Header from "@/components/Header";
-import PolygonAssets from "@/components/PolygonAssets";
-import TradingSession from "@/components/TradingSession";
-import MarketTabs from "@/components/Trading/MarketTabs";
-import GeoBlockedBanner from "@/components/GeoBlockedBanner";
+import Hero from "@/components/hero";
 
-export default function Home() {
-  const {
-    tradingSession,
-    currentStep,
-    sessionError,
-    isTradingSessionComplete,
-    initializeTradingSession,
-    endTradingSession,
-    eoaAddress,
-    isGeoblocked,
-    isGeoblockLoading,
-    geoblockStatus,
-  } = useTrading();
-
+export default async function Index() {
   return (
-    <div className="p-6 min-h-screen flex flex-col gap-6 max-w-7xl mx-auto">
-      <Header onEndSession={endTradingSession} />
-
-      {/* Show geoblock banner if user is in blocked region */}
-      {isGeoblocked && !isGeoblockLoading && (
-        <GeoBlockedBanner geoblockStatus={geoblockStatus} />
-      )}
-
-      <PolygonAssets />
-
-      {/* Hide trading session initialization when geoblocked */}
-      {!isGeoblocked && (
-        <TradingSession
-          session={tradingSession}
-          currentStep={currentStep}
-          error={sessionError}
-          isComplete={isTradingSessionComplete}
-          initialize={initializeTradingSession}
-          endSession={endTradingSession}
-        />
-      )}
-
-      {/* Markets are viewable even when geoblocked, but trading buttons should be disabled */}
-      {(isTradingSessionComplete || isGeoblocked) && eoaAddress && (
-        <MarketTabs />
-      )}
-    </div>
+    <>
+      <Hero />
+      <main className="flex-1 flex flex-col gap-6 px-4">      
+      </main>
+    </>
   );
 }
