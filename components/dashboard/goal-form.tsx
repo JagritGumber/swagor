@@ -42,20 +42,14 @@ export function GoalForm() {
 
   return (
     <section className="border border-[var(--hairline-strong)] bg-black p-6">
-      <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+      <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
         Strategy
-      </div>
-      <h2 className="mt-3 text-2xl font-bold uppercase leading-tight text-foreground">
-        Tell Solon what to aim for.
       </h2>
-      <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-        Plain English. Risk appetite, return goal, holding period, anything off-limits. Solon parses this, the panel uses it as a north star, the critic checks every trade against it.
-      </p>
 
       {!isConnected ? (
-        <p className="mt-6 text-sm text-muted-foreground">Connect a wallet first.</p>
+        <p className="mt-4 text-sm text-muted-foreground">Connect a wallet first.</p>
       ) : (
-        <form onSubmit={submit} className="mt-6 space-y-4">
+        <form onSubmit={submit} className="mt-4 space-y-4">
           <textarea
             value={goalText}
             onChange={(e) => setGoalText(e.target.value)}

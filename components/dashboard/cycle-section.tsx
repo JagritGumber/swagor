@@ -55,21 +55,16 @@ export function CycleSection() {
 
   return (
     <section className="border border-[var(--hairline-strong)] bg-black p-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Cycles
-          </div>
-          <h2 className="mt-3 text-2xl font-bold uppercase leading-tight text-foreground">
-            Every deliberation, on the record.
-          </h2>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
+          Cycles
+        </h2>
         {isConnected && (
           <button
             type="button"
             onClick={runCycle}
             disabled={isRunning}
-            className="cta-glow inline-flex h-10 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="cta-glow inline-flex h-9 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isRunning ? "Starting..." : "Run cycle now"}
           </button>
@@ -79,13 +74,11 @@ export function CycleSection() {
       {error && <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">{error}</p>}
 
       {!isConnected ? (
-        <p className="mt-6 text-sm text-muted-foreground">Connect a wallet to run cycles.</p>
+        <p className="mt-4 text-sm text-muted-foreground">Connect a wallet to run cycles.</p>
       ) : cycles.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">
-          No cycles yet. Run one to see the panel debate.
-        </p>
+        <p className="mt-4 text-sm text-muted-foreground">No cycles yet.</p>
       ) : (
-        <div className="mt-6 divide-y divide-[var(--hairline)] border-y border-[var(--hairline-strong)]">
+        <div className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline-strong)]">
           <div className="grid grid-cols-[1fr_auto_auto] gap-4 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             <span>Cycle</span><span>Status</span><span>Started</span>
           </div>

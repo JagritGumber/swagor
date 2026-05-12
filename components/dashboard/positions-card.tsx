@@ -42,14 +42,9 @@ export function PositionsCard() {
   return (
     <section className="border border-[var(--hairline-strong)] bg-black p-6">
       <div className="flex items-center justify-between">
-        <div>
-          <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Positions
-          </div>
-          <h2 className="mt-3 text-2xl font-bold uppercase leading-tight text-foreground">
-            What you hold right now.
-          </h2>
-        </div>
+        <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
+          Positions
+        </h2>
         {isConnected && (
           <button
             type="button"
@@ -65,13 +60,13 @@ export function PositionsCard() {
       {error && <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">{error}</p>}
 
       {!isConnected ? (
-        <p className="mt-6 text-sm text-muted-foreground">Connect a wallet to read positions.</p>
+        <p className="mt-4 text-sm text-muted-foreground">Connect a wallet to read positions.</p>
       ) : positions.length === 0 && !loading ? (
-        <p className="mt-6 text-sm text-muted-foreground">
-          No positions found. Faucet some Arc Testnet USDC to your address to populate.
+        <p className="mt-4 text-sm text-muted-foreground">
+          No positions yet. Faucet Arc Testnet USDC to populate.
         </p>
       ) : (
-        <div className="mt-6 divide-y divide-[var(--hairline)] border-y border-[var(--hairline-strong)]">
+        <div className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline-strong)]">
           {positions.map((p, i) => (
             <div key={i} className="grid grid-cols-[1fr_auto] items-baseline gap-4 py-3 sm:grid-cols-[1fr_2fr_auto]">
               <div className="text-base text-foreground">{p.asset}</div>
@@ -85,9 +80,6 @@ export function PositionsCard() {
           ))}
         </div>
       )}
-      <p className="mt-6 max-w-xl font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70">
-        Testnet scope: Arc native USDC only. Mainnet Aave / Compound / Pendle reads layer on later.
-      </p>
     </section>
   );
 }
