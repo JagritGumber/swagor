@@ -1,5 +1,7 @@
 import { pgTable, uuid, text, numeric, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
 
+const DEFAULT_WATCHLIST = ["ETH", "BTC", "SOL"];
+
 /**
  * Per-user Solon instance. One row per signed-up user (user_id UNIQUE).
  * Stores the user's strategy preferences, kill switch, public profile toggle,
@@ -26,6 +28,10 @@ export const solonInstances = pgTable("solon_instances", {
   killSwitchActive: boolean("kill_switch_active").notNull().default(false),
   publicProfile: boolean("public_profile").notNull().default(false),
   username: text("username").unique(), // for /solon/{username} public page
+  // Watcher: when next watcher tick is due, and the symbols currently in scope.
+  // Set by the watcher agent itself; not a hardcoded interval.
+  nextWatcherAt: timestamp("next_watcher_at", { withTimezone: true }).defaultNow().notNull(),
+  currentlyWatching: jsonb("currently_watching").$type<string[]>().notNull().default(DEFAULT_WATCHLIST),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

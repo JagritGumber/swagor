@@ -1,24 +1,23 @@
-import { pgTable, uuid, text, numeric, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
 
 /**
- * Monitor tick — the cheap first stage of the two-stage cycle.
- * One light LLM call decides whether a trade signal is worth firing the
- * full pipeline. ~95% of ticks exit with hasSignal=false; only the rest
- * trigger downstream trade_proposals + reviewers + critic + executor.
+ * Watcher tick. One row per cheap-model decision about whether the market state
+ * warrants escalating to the full panel. The watcher is an agent, not a
+ * heuristic. It owns its own cadence: `nextCheckSeconds` is whatever the agent
+ * chose this tick (clamped [30, 600] by the service).
  *
- * Fired by cron-job.org every 15 min (active hours) / 60 min (off-hours)
- * per active user. The orchestrator endpoint reads userId from the cron
- * payload, gathers context, runs the monitor LLM, and inserts a row here.
+ * ~99% of ticks are `verdict: "hold"`. Only `escalate` triggers
+ * orchestrator.runCycle and lands a row in rebalance_cycles.
  */
 export const monitorTicks = pgTable("monitor_ticks", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull(),
-  hasSignal: boolean("has_signal").notNull(),
-  signalType: text("signal_type"), // 'momentum' | 'depeg_risk' | 'yield_window' | 'news_driven' | 'idle_park' | null
-  confidence: numeric("confidence"),
-  reasoning: text("reasoning"),
-  context: jsonb("context").notNull(),
-  observedAt: timestamp("observed_at", { withTimezone: true }).defaultNow().notNull(),
+  solonInstanceId: uuid("solon_instance_id").notNull(),
+  verdict: text("verdict").notNull(), // 'hold' | 'escalate'
+  rationale: text("rationale").notNull(),
+  nextCheckSeconds: integer("next_check_seconds").notNull(),
+  watching: jsonb("watching").$type<string[]>().notNull(),
+  context: jsonb("context").notNull(), // prices, news count, last-tick info snapshot
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type MonitorTick = typeof monitorTicks.$inferSelect;
