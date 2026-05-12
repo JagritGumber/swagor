@@ -33,6 +33,7 @@ export default async function CycleTracePage({
   const decision = cycleState.decision;
   const verdict = cycleState.verdict;
   const context = cycleState.context;
+  const arcAnchor = cycleState.arcAnchor;
 
   return (
     <div className="flex flex-col gap-6 p-8 max-w-4xl">
@@ -128,6 +129,30 @@ export default async function CycleTracePage({
               <p className="text-sm">{verdict.suggested_modification}</p>
             </div>
           )}
+        </section>
+      )}
+
+      {arcAnchor && (
+        <section className="rounded-lg border p-6 space-y-2">
+          <h2 className="text-lg font-semibold">Anchored on Arc</h2>
+          <div className="text-sm space-y-1">
+            <p>
+              <span className="text-muted-foreground">Contract:</span>{" "}
+              <code className="text-xs">{arcAnchor.contractAddress}</code>
+            </p>
+            <p>
+              <span className="text-muted-foreground">Circle tx id:</span>{" "}
+              <code className="text-xs">{arcAnchor.txId}</code>
+            </p>
+            <p>
+              <span className="text-muted-foreground">Cycle id (bytes32):</span>{" "}
+              <code className="text-xs">{arcAnchor.cycleIdBytes32}</code>
+            </p>
+            <p>
+              <span className="text-muted-foreground">Trace hash (sha256):</span>{" "}
+              <code className="text-xs break-all">{arcAnchor.swarmTraceHash}</code>
+            </p>
+          </div>
         </section>
       )}
 

@@ -9,6 +9,7 @@ import { getArcUsdcBalance } from "@/lib/protocols/arc-usdc";
 import { fetchPrices } from "@/lib/data-sources/coingecko";
 import { fetchYieldPools } from "@/lib/data-sources/defillama";
 import { searchNews } from "@/lib/data-sources/news";
+import { anchorCycle } from "@/lib/arc/anchor";
 
 /**
  * Runs the agent chain for a single cycle. Fire-and-forget from the API route:
@@ -59,8 +60,23 @@ export async function runCycle(cycleId: string): Promise<void> {
     const finalStatus: "approved" | "rejected" =
       verdict.verdict === "reject" ? "rejected" : "approved";
 
+    // Fire the Arc anchor non-blocking. If the contract isn't deployed
+    // yet this returns null and we log a warning, but the cycle still
+    // completes cleanly.
+    let arcAnchor = null;
+    try {
+      arcAnchor = await anchorCycle({
+        cycleId,
+        cycleState: { context, decision, verdict },
+        verdict: finalStatus,
+      });
+    } catch (err) {
+      console.error("[orchestrator] anchorCycle threw:", err);
+    }
+
     await updateCycleStatus(cycleId, finalStatus, {
-      cycleState: { context, decision, verdict },
+      cycleState: { context, decision, verdict, arcAnchor },
+      arcTxHash: arcAnchor?.txId,
       completedAt: new Date(),
     });
   } catch (err) {
