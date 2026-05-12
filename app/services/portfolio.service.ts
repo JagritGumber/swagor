@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/client";
-import { portfolios, rebalanceCycles } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { portfolios, rebalanceCycles, agentReasoning } from "@/lib/db/schema";
+import { eq, desc, asc } from "drizzle-orm";
 
 /**
  * Portfolio + cycle queries over Drizzle. A "portfolio" here is the binding
@@ -16,6 +16,14 @@ export async function getPortfolioById(portfolioId: string) {
 export async function getCycleById(cycleId: string) {
   const [c] = await db.select().from(rebalanceCycles).where(eq(rebalanceCycles.id, cycleId)).limit(1);
   return c;
+}
+
+export async function getAgentReasoningForCycle(cycleId: string) {
+  return db
+    .select()
+    .from(agentReasoning)
+    .where(eq(agentReasoning.cycleId, cycleId))
+    .orderBy(asc(agentReasoning.createdAt));
 }
 
 export async function findOrCreatePortfolioForWallet(

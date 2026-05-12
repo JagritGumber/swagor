@@ -2,6 +2,7 @@
 
 import { useAccount } from "wagmi";
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 
 type Cycle = {
   id: string;
@@ -90,9 +91,11 @@ export function CycleSection() {
           </thead>
           <tbody>
             {cycles.map((c) => (
-              <tr key={c.id} className="border-b border-muted/30">
+              <tr key={c.id} className="border-b border-muted/30 hover:bg-muted/20 transition-colors">
                 <td className="py-2">
-                  <code className="text-xs">{c.id.slice(0, 8)}</code>
+                  <Link href={`/dashboard/cycles/${c.id}`} className="hover:underline">
+                    <code className="text-xs">{c.id.slice(0, 8)}</code>
+                  </Link>
                 </td>
                 <td>
                   <span className="text-xs px-2 py-0.5 rounded bg-muted">
