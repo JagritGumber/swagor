@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { llm, MODELS, type ModelTier } from "@/lib/llm-client";
+import { MODELS, getClient, type ModelTier } from "@/lib/llm-client";
 import { db } from "@/lib/db/client";
 import { agentReasoning } from "@/lib/db/schema";
 
@@ -27,7 +27,7 @@ export async function callAgent<TOutput>(opts: AgentCallOpts<TOutput>): Promise<
   const tier = opts.tier ?? "LIGHT";
   const model = MODELS[tier];
 
-  const response = await llm.chat.completions.create({
+  const response = await getClient(tier).chat.completions.create({
     model,
     messages: [
       { role: "system", content: opts.systemPrompt },
@@ -44,7 +44,14 @@ export async function callAgent<TOutput>(opts: AgentCallOpts<TOutput>): Promise<
 
   let parsedJson: unknown;
   try {
-    parsedJson = JSON.parse(raw);
+    // Reasoning models (DeepSeek R1, QwQ, o1-style) emit <think>...</think>
+    // before the JSON. Some models also wrap in ```json fences. Strip both.
+    const cleaned = raw
+      .replace(/<think>[\s\S]*?<\/think>\s*/gi, "")
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```\s*$/i, "")
+      .trim();
+    parsedJson = JSON.parse(cleaned);
   } catch {
     throw new Error(
       `Agent ${opts.agentName} returned invalid JSON: ${raw.slice(0, 200)}`,

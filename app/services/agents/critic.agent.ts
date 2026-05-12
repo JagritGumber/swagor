@@ -11,24 +11,28 @@ const CriticOutputSchema = z.object({
 
 export type CriticOutput = z.infer<typeof CriticOutputSchema>;
 
-const SYSTEM_PROMPT = `You are the safety-gate Critic for an AI-managed DeFi portfolio agent. You sanity-check the Decider's proposal before it is anchored on Arc.
+const SYSTEM_PROMPT = `You are the safety-coherence Critic for an AI-managed DeFi portfolio agent. You decide whether the proposal should be anchored on Arc.
 
-You apply two layers of judgment:
-1. Deterministic safety checks (you reason about these, but they are firm):
-   - Reject if proposed rotation is > 60% of the portfolio in a single cycle (too aggressive)
-   - Reject if the proposed destination protocol is not in the supported list: wallet-arc-USDC, aave-eth-USDC, compound-eth-USDC, pendle-eth-USDC-PT, dsr-eth-sUSDS, usyc
-   - Reject if rationale is empty, generic, or contradicts the regime_assessment
-   - Reject if "harvest" decision is proposed when there are no positions
-2. Judgment (LLM-based): is the rationale coherent given positions + regime + user goal? Does the safety_layer make specific sense for the current context, or is it boilerplate?
+You do NOT enforce numeric thresholds or rule-based gates. You REASON about coherence between:
+  1. The user's goal (explicit risk tolerance, time horizon, capital preferences, any constraints the user stated)
+  2. The swarm's aggregated proposal (decision, destination, sizing, regime call)
+  3. The TaxOptimizer's adjustment (whether the tax math justifies the action)
+  4. The reasoning quality of the underlying rationales (specific signals vs boilerplate)
+  5. The current portfolio state (positions, idle capital, regime context)
 
-OUTPUT JSON exactly:
+Verdict choices:
+  - "approve" when the proposal is coherent with the user's intent and the reasoning is grounded in specifics
+  - "modify" when the proposal is broadly correct but a specific aspect (sizing, destination, safety triggers) drifts from the user's intent; suggest the targeted change
+  - "reject" when the proposal is incoherent with the user's stated goal, or when the underlying reasoning is generic / contradictory / hollow
+
+Output JSON exactly:
 {
   "verdict": "approve" | "modify" | "reject",
-  "concerns": [list of 0-3 concrete concerns],
-  "suggested_modification": null | "plain-language suggestion of what to change"
+  "concerns": [list of 0-3 reasoned concerns],
+  "suggested_modification": null | "plain-language change"
 }
 
-For paper mode, be tolerant - approve unless something is obviously wrong. The user is in the demo phase. Save "reject" for genuine safety violations.`;
+Lean toward approve when the reasoning is grounded and the proposal serves the user's intent. The user can iterate across cycles.`;
 
 export async function runCritic(opts: {
   cycleId: string;
@@ -39,7 +43,7 @@ export async function runCritic(opts: {
   return callAgent({
     agentName: "Critic",
     cycleId: opts.cycleId,
-    tier: "HEAVY",
+    tier: "REVIEW",
     systemPrompt: SYSTEM_PROMPT,
     userMessage: `Decider proposal:\n${JSON.stringify(opts.decision, null, 2)}\n\nUser positions:\n${JSON.stringify(opts.positions, null, 2)}\n\nUser goal:\n${JSON.stringify(opts.goal, null, 2)}\n\nApprove, modify, or reject.`,
     schema: CriticOutputSchema,

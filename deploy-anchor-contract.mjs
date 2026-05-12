@@ -1,13 +1,11 @@
 /**
  * One-time deployment script for the PortfolioDecisions anchor contract.
  *  1. Compiles contracts/yield_routing/PortfolioDecisions.sol via solc-js
- *  2. Deploys to Arc Testnet via Circle Smart Contract Platform SDK using
- *     the agent wallet (NEXT_PUBLIC_AGENT_WALLET_ID)
- *  3. Polls until COMPLETE, prints the deployed contract address
+ *  2. Deploys to Arc Testnet via Circle Smart Contract Platform SDK
+ *  3. Polls getContract() until contractAddress is populated
  *  4. Writes NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS to .env.local
  *
  * Run: node deploy-anchor-contract.mjs
- * Re-running deploys a fresh contract and overwrites the env var.
  */
 import { config } from "dotenv";
 import { readFileSync, writeFileSync } from "fs";
@@ -70,26 +68,37 @@ const deployResp = await sdk.deployContract({
   fee: { type: "level", config: { feeLevel: "MEDIUM" } },
 });
 
-const txId = deployResp.data?.id;
-if (!txId) {
-  console.error("Deploy returned no transaction id:", deployResp);
+const contractId = deployResp.data?.contractId;
+const transactionId = deployResp.data?.transactionId;
+if (!contractId || !transactionId) {
+  console.error("Deploy response missing contractId/transactionId. Full data:");
+  console.error(JSON.stringify(deployResp.data, null, 2));
   process.exit(1);
 }
-console.log(`Deploy queued. Circle tx id: ${txId}. Polling for confirmation...`);
+console.log(`Deploy queued. contractId=${contractId} txId=${transactionId}`);
+console.log("Polling getContract for confirmation (up to 5 min)...");
 
 let contractAddress = null;
-let state = null;
+let errReason = null;
 for (let i = 0; i < 60; i++) {
   await new Promise((r) => setTimeout(r, 5000));
-  const tx = await sdk.getTransaction({ id: txId });
-  state = tx.data?.transaction?.state;
-  contractAddress = tx.data?.transaction?.contractAddress;
-  console.log(`  [${i + 1}/60] state=${state}${contractAddress ? ` addr=${contractAddress}` : ""}`);
-  if (state === "COMPLETE" || state === "FAILED" || state === "CANCELLED") break;
+  const resp = await sdk.getContract({ id: contractId });
+  const c = resp.data?.contract;
+  contractAddress = c?.contractAddress ?? null;
+  errReason = c?.deploymentErrorReason ?? null;
+  console.log(
+    `  [${i + 1}/60] addr=${contractAddress ?? "(pending)"}${errReason ? ` err=${errReason}` : ""}`,
+  );
+  if (contractAddress) break;
+  if (errReason) {
+    console.error(`\nDeployment failed: ${errReason}`);
+    process.exit(1);
+  }
 }
 
-if (state !== "COMPLETE" || !contractAddress) {
-  console.error(`Deployment did not complete. Final state: ${state}`);
+if (!contractAddress) {
+  console.error("Polling timed out before contractAddress was set.");
+  console.error("Check Circle dashboard: https://console.circle.com/web3-services/contracts");
   process.exit(1);
 }
 

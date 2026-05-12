@@ -1,18 +1,17 @@
 import { EnvVarWarning } from "@/components/env-var-warning";
 import HeaderAuth from "@/components/header-auth";
 import { hasEnvVars } from "@/lib/utils/supabase/check-env-vars";
-import { Oxanium } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import Link from "next/link";
 import "./globals.css";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Web3Providers } from "./providers";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 
-const oxanium = Oxanium({
+const mono = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-mono",
 });
 
 const defaultUrl = process.env.NEXT_PUBLIC_VERCEL_URL
@@ -21,8 +20,9 @@ const defaultUrl = process.env.NEXT_PUBLIC_VERCEL_URL
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Swagora",
-  description: "AI swarm portfolio agent on Arc",
+  title: "Solon — Public AI Crypto Trader on Arc",
+  description:
+    "Deploy your own AI trader on Arc Testnet. Panel-reviewed, OHLCV-charted, anchored on-chain. Free, simulated, verifiable.",
 };
 
 export default async function RootLayout({
@@ -31,26 +31,33 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={oxanium.variable} suppressHydrationWarning>
-      <body className="bg-background text-foreground font-sans">
+    <html
+      lang="en"
+      className={mono.variable}
+      suppressHydrationWarning
+    >
+      <body className="bg-black text-foreground antialiased">
         <ThemeProvider
           attribute="class"
           forcedTheme="dark"
           disableTransitionOnChange
         >
           <Web3Providers>
-            <Toaster expand />
-            <div className="min-h-screen flex flex-col">
-              <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-sm border-b-foreground/10 h-16">
-                <div className="w-full max-w-7xl mx-auto flex justify-between items-center h-full px-5 text-sm">
-                  <div className="flex gap-5 items-center font-semibold">
-                    <Link
-                      href={"/"}
-                      className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-amber-600 font-bold text-lg hover:opacity-80 transition-opacity"
-                    >
-                      Swagora
-                    </Link>
-                  </div>
+            <Toaster expand theme="dark" />
+            <div className="flex min-h-screen flex-col bg-black">
+              <nav className="fixed inset-x-0 top-0 z-50 h-16 border-b border-[var(--hairline-strong)] bg-black/85 backdrop-blur-md">
+                <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-5 text-sm">
+                  <Link
+                    href="/"
+                    className="flex items-center gap-2 font-bold uppercase tracking-[0.25em] hover:opacity-80"
+                  >
+                    <span
+                      aria-hidden
+                      className="inline-block h-2 w-2 animate-pulse-dot rounded-full bg-[var(--neon-green)]"
+                    />
+                    <span className="text-[var(--neon-cyan)]">SOL</span>
+                    <span>ON</span>
+                  </Link>
                   <div className="flex items-center gap-3">
                     <WalletConnectButton />
                     {!hasEnvVars ? <EnvVarWarning /> : <HeaderAuth />}
@@ -58,7 +65,7 @@ export default async function RootLayout({
                 </div>
               </nav>
 
-              <main className="flex-1 flex flex-col items-center pt-24 px-4">
+              <main className="flex flex-1 flex-col items-center pt-24 px-4">
                 <div className="w-full max-w-7xl">{children}</div>
               </main>
             </div>

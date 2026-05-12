@@ -27,6 +27,17 @@ if (!CIRCLE_ENTITY_SECRET?.trim()) {
 }
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  webpack: (config) => {
+    // Silence optional React-Native-only deps pulled in by MetaMask SDK +
+    // WalletConnect logger. The web bundle never executes these paths.
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      "@react-native-async-storage/async-storage": false,
+      "pino-pretty": false,
+    };
+    return config;
+  },
+};
 
 module.exports = nextConfig;

@@ -25,23 +25,33 @@ const TARGET_PROJECTS = new Set<string>([
 
 const TARGET_CHAINS = new Set<string>(["Ethereum", "Arbitrum", "Base"]);
 
+// In-memory cache. DefiLlama /pools returns ~18MB which Next.js fetch cache
+// refuses (2MB ceiling). Re-fetching every cycle wastes 18MB over the wire.
+// Module-level cache survives across requests in long-lived Node processes.
+let cached: { at: number; pools: DefiLlamaPool[] } | null = null;
+const TTL_MS = 5 * 60 * 1000;
+
 /**
- * Fetch yield pools from DefiLlama, filtered to our target protocols + chains
- * and USDC-shaped assets. Cached for 5 minutes (Next.js revalidate).
+ * Fetch yield pools from DefiLlama, filtered to our target protocols + chains.
+ * Symbol filtering is applied per-call so the cache stays symbol-agnostic.
  */
 export async function fetchYieldPools(opts?: {
   symbol?: string;
 }): Promise<DefiLlamaPool[]> {
-  const res = await fetch(`${BASE_URL}/pools`, { next: { revalidate: 300 } });
+  const symbol = (opts?.symbol ?? "USDC").toUpperCase();
+  if (cached && Date.now() - cached.at < TTL_MS) {
+    return cached.pools.filter((p) =>
+      p.symbol.toUpperCase().includes(symbol),
+    );
+  }
+  const res = await fetch(`${BASE_URL}/pools`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`DefiLlama /pools failed: ${res.status}`);
   }
   const { data } = (await res.json()) as { data: DefiLlamaPool[] };
-  const symbol = (opts?.symbol ?? "USDC").toUpperCase();
-  return data.filter(
-    (p) =>
-      TARGET_PROJECTS.has(p.project) &&
-      TARGET_CHAINS.has(p.chain) &&
-      p.symbol.toUpperCase().includes(symbol)
+  const filtered = data.filter(
+    (p) => TARGET_PROJECTS.has(p.project) && TARGET_CHAINS.has(p.chain),
   );
+  cached = { at: Date.now(), pools: filtered };
+  return filtered.filter((p) => p.symbol.toUpperCase().includes(symbol));
 }

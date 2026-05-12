@@ -3,8 +3,10 @@ import {
   getPortfolioById,
   updateCycleStatus,
 } from "@/app/services/portfolio.service";
-import { runDecider } from "@/app/services/agents/decider.agent";
 import { runCritic } from "@/app/services/agents/critic.agent";
+import { runTaxOptimizer } from "@/app/services/agents/tax-optimizer.agent";
+import { runSwarm } from "@/app/services/swarm/swarm-runner.service";
+import { aggregate } from "@/app/services/swarm/aggregator.service";
 import { getArcUsdcBalance } from "@/lib/protocols/arc-usdc";
 import { fetchPrices } from "@/lib/data-sources/coingecko";
 import { fetchYieldPools } from "@/lib/data-sources/defillama";
@@ -49,10 +51,30 @@ export async function runCycle(cycleId: string): Promise<void> {
       },
     };
 
-    const decision = await runDecider({ cycleId, context });
+    // Swarm: 25 persona-bearing agents run in parallel
+    const swarmDecisions = await runSwarm({ cycleId, context, size: 25 });
+    if (swarmDecisions.length === 0) {
+      throw new Error("Swarm produced no usable decisions");
+    }
+    const aggregated = await aggregate({ cycleId, decisions: swarmDecisions });
+
+    // TaxOptimizer (cross-model) reviews through Indian VDA tax lens
+    const taxOpt = await runTaxOptimizer({ cycleId, aggregated, positions });
+    const taxAdjusted =
+      taxOpt.approved_decision === aggregated.decision
+        ? aggregated
+        : {
+            ...aggregated,
+            decision: (taxOpt.approved_decision === "postpone"
+              ? "stay"
+              : taxOpt.approved_decision) as typeof aggregated.decision,
+            rationale: `${aggregated.rationale} | Tax-adjusted: ${taxOpt.rationale}`,
+          };
+
+    // Critic (cross-model) reviews the tax-adjusted decision
     const verdict = await runCritic({
       cycleId,
-      decision,
+      decision: taxAdjusted as object as Parameters<typeof runCritic>[0]["decision"],
       positions,
       goal: portfolio.goalParsed,
     });
@@ -67,7 +89,7 @@ export async function runCycle(cycleId: string): Promise<void> {
     try {
       arcAnchor = await anchorCycle({
         cycleId,
-        cycleState: { context, decision, verdict },
+        cycleState: { context, swarm: swarmDecisions, aggregated, taxOptimizer: taxOpt, taxAdjusted, verdict },
         verdict: finalStatus,
       });
     } catch (err) {
@@ -75,7 +97,7 @@ export async function runCycle(cycleId: string): Promise<void> {
     }
 
     await updateCycleStatus(cycleId, finalStatus, {
-      cycleState: { context, decision, verdict, arcAnchor },
+      cycleState: { context, swarm: swarmDecisions, aggregated, taxOptimizer: taxOpt, taxAdjusted, verdict, arcAnchor },
       arcTxHash: arcAnchor?.txId,
       completedAt: new Date(),
     });
