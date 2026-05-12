@@ -1,7 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 import { redirect } from "next/navigation";
 import { ensureSolonInstance } from "@/app/services/solon-instance.service";
-import { BalanceSparkline } from "@/components/dashboard/balance-sparkline";
 import { ConnectedWalletCard } from "@/components/dashboard/connected-wallet-card";
 import { CycleSection } from "@/components/dashboard/cycle-section";
 import { GoalForm } from "@/components/dashboard/goal-form";
@@ -21,12 +20,11 @@ export default async function DashboardPage() {
   const addr = instance.circleWalletAddress;
 
   return (
-    <div className="mx-auto max-w-6xl px-2 pb-24 space-y-6">
+    <div className="pb-24 space-y-6">
       <div className="grid gap-px border border-[var(--hairline)] bg-[var(--hairline-strong)] sm:grid-cols-2">
         <SolonWalletCard instance={instance} />
         <ConnectedWalletCard />
       </div>
-      <BalanceSparkline instance={instance} />
       <GoalForm walletAddress={addr} />
       <PositionsCard walletAddress={addr} />
       <CycleSection walletAddress={addr} />

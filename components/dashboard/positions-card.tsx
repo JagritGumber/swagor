@@ -37,7 +37,7 @@ export function PositionsCard({ walletAddress }: { walletAddress: string }) {
   }, [fetchPositions]);
 
   return (
-    <section className="border border-[var(--hairline-strong)] bg-black p-6">
+    <section className="border border-[var(--hairline)] bg-black p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
           Positions
@@ -59,7 +59,7 @@ export function PositionsCard({ walletAddress }: { walletAddress: string }) {
           No positions yet. Faucet Arc Testnet USDC to your Solon wallet to populate.
         </p>
       ) : (
-        <div className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline-strong)]">
+        <div className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline)]">
           {positions.map((p, i) => (
             <div key={i} className="grid grid-cols-[1fr_auto] items-baseline gap-4 py-3 sm:grid-cols-[1fr_2fr_auto]">
               <div className="text-base text-foreground">{p.asset}</div>

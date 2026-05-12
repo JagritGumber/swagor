@@ -36,7 +36,7 @@ export function GoalForm({ walletAddress }: { walletAddress: string }) {
   }
 
   return (
-    <section className="border border-[var(--hairline-strong)] bg-black p-6">
+    <section className="border border-[var(--hairline)] bg-black p-6">
       <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
         Strategy
       </h2>

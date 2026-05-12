@@ -10,7 +10,7 @@ export function KillSwitchCard() {
   const [active, setActive] = useState(false);
 
   return (
-    <section className="border border-[var(--hairline-strong)] bg-black p-6">
+    <section className="border border-[var(--hairline)] bg-black p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
           Kill switch

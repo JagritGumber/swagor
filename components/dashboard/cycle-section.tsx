@@ -51,10 +51,10 @@ export function CycleSection({ walletAddress }: { walletAddress: string }) {
   }
 
   return (
-    <section className="border border-[var(--hairline-strong)] bg-black p-6">
+    <section className="border border-[var(--hairline)] bg-black p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-          Cycles
+          Activity
         </h2>
         <button
           type="button"
@@ -62,18 +62,18 @@ export function CycleSection({ walletAddress }: { walletAddress: string }) {
           disabled={isRunning}
           className="cta-glow inline-flex h-9 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isRunning ? "Starting..." : "Run cycle now"}
+          {isRunning ? "Running..." : "Run now"}
         </button>
       </div>
 
       {error && <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">{error}</p>}
 
       {cycles.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">No cycles yet.</p>
+        <p className="mt-4 text-sm text-muted-foreground">Nothing yet. Solon will surface activity here when it acts.</p>
       ) : (
-        <div className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline-strong)]">
+        <div className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline)]">
           <div className="grid grid-cols-[1fr_auto_auto] gap-4 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            <span>Cycle</span><span>Status</span><span>Started</span>
+            <span>Run</span><span>Status</span><span>When</span>
           </div>
           {cycles.map((c) => (
             <Link

@@ -43,7 +43,7 @@ export default async function RootLayout({
             <Toaster expand theme="dark" />
             <div className="flex min-h-screen flex-col bg-black">
               <nav className="fixed inset-x-0 top-0 z-50 h-16 border-b border-[var(--hairline-strong)] bg-black/85 backdrop-blur-md">
-                <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6 text-sm">
+                <div className="mx-auto flex h-full max-w-screen-2xl items-center justify-between px-6 text-sm">
                   <div className="flex items-center gap-3">
                     <Link
                       href="/"
@@ -71,7 +71,7 @@ export default async function RootLayout({
               </nav>
 
               <main className="flex flex-1 flex-col items-center pt-24 px-4">
-                <div className="w-full max-w-7xl">{children}</div>
+                <div className="w-full max-w-screen-2xl">{children}</div>
               </main>
             </div>
           </Web3Providers>
