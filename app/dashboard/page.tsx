@@ -21,8 +21,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-2 pb-24 space-y-6">
-      <SolonWalletCard instance={instance} />
-      <ConnectedWalletCard />
+      <div className="grid gap-px border border-[var(--hairline-strong)] bg-[var(--hairline-strong)] sm:grid-cols-2">
+        <SolonWalletCard instance={instance} />
+        <ConnectedWalletCard />
+      </div>
       <GoalForm walletAddress={addr} />
       <PositionsCard walletAddress={addr} />
       <CycleSection walletAddress={addr} />
