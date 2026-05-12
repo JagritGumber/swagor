@@ -17,30 +17,30 @@ type Reviewer = {
 const REVIEWERS: Reviewer[] = [
   {
     id: "hermes",
-    name: "HERMES",
-    role: "Macro · Market Regime",
-    concern: "“Is this trade fighting the regime?”",
-    trackRecord: "73% correct dissents",
+    name: "Hermes",
+    role: "Macro · Regime",
+    concern: "Watches the macro tape. Asks: are we trading with the regime or against it?",
+    trackRecord: "73% correct dissents · last 30d",
     symbol: "☿",
-    accentVar: "--neon-amber",
+    accentVar: "--neon-cyan",
   },
   {
     id: "athena",
-    name: "ATHENA",
-    role: "Protocol Depth · Liquidity",
-    concern: "“Is the venue safe and deep enough?”",
-    trackRecord: "67% correct dissents",
+    name: "Athena",
+    role: "Protocol · Liquidity",
+    concern: "Watches protocols and pool depth. Asks: can the venue absorb this trade without slipping?",
+    trackRecord: "67% correct dissents · last 30d",
     symbol: "Ψ",
     accentVar: "--neon-cyan",
   },
   {
     id: "cassandra",
-    name: "CASSANDRA",
-    role: "Risk · Tail Events",
-    concern: "“What's the worst case if we're wrong?”",
-    trackRecord: "81% correct dissents",
+    name: "Cassandra",
+    role: "Risk · Tail",
+    concern: "Watches what nobody wants to. Asks: what breaks if we are wrong about everything?",
+    trackRecord: "81% correct dissents · last 30d",
     symbol: "Ω",
-    accentVar: "--neon-red",
+    accentVar: "--neon-cyan",
   },
 ];
 
@@ -48,21 +48,20 @@ export function ReviewerTrinity() {
   return (
     <section className="border-b border-[var(--hairline-strong)] bg-black">
       <div className="mx-auto max-w-6xl px-6 py-20">
-        <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <header className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="text-xs uppercase tracking-[0.3em] text-[var(--neon-cyan)]">
+            <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--neon-cyan)] sm:text-xs">
               // The Trade Review Council
             </div>
-            <h2 className="mt-3 text-3xl font-bold uppercase tracking-tight md:text-5xl">
-              Three specialists. <br className="hidden sm:block" />
-              One adversarial round.
+            <h2 className="mt-3 text-3xl font-bold uppercase leading-[1.05] tracking-tight text-balance sm:text-4xl md:text-5xl">
+              Three agents debate. <br className="hidden sm:block" />
+              One round is adversarial.
             </h2>
           </div>
           <p className="max-w-md text-sm text-muted-foreground">
-            Every Solon proposal is debated by three specialist reviewers,
-            each on a different beat. Round two forces each to attack the
-            strongest dissent before re-voting. Track records below are
-            display-only — they don&apos;t override the panel.
+            Every Solon proposal hits the council. Round two forces each
+            reviewer to attack the strongest dissent before re-voting.
+            Track records are display-only — they never override the panel.
           </p>
         </header>
 

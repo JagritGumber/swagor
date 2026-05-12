@@ -87,8 +87,8 @@
   --color-neon-red: var(--neon-red);
   --color-neon-amber: var(--neon-amber);
 
-  --font-sans: var(--font-mono), ui-monospace, "JetBrains Mono", Consolas, monospace;
-  --font-mono: var(--font-mono), ui-monospace, "JetBrains Mono", Consolas, monospace;
+  --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-mono-family), ui-monospace, "JetBrains Mono", Consolas, monospace;
 
   /* Animation utilities — Tailwind v4 picks these up as `animate-*` */
   --animate-marquee: marquee 40s linear infinite;
@@ -113,11 +113,32 @@
   body {
     background: #000;
     color: hsl(var(--foreground));
-    font-family: var(--font-mono), ui-monospace, "JetBrains Mono", Consolas, monospace;
-    font-feature-settings: "ss01" on, "cv11" on;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    overflow-x: clip; /* prevent landing's -mx-4 from causing horizontal scroll */
+  }
+  /* Mono for code, data, labels via explicit class */
+  .font-mono { font-family: var(--font-mono); font-feature-settings: "ss01" on, "cv11" on; }
+  /* Native <details> brutalist styling for FAQ */
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+  details[open] > summary > .faq-marker { transform: rotate(45deg); }
+  /* Focus rings for keyboard nav */
+  a:focus-visible, button:focus-visible, summary:focus-visible, [role="tab"]:focus-visible {
+    outline: 2px solid var(--neon-cyan);
+    outline-offset: 2px;
   }
   ::selection { background: var(--neon-cyan); color: #000; }
+}
+
+/* Accessibility: kill all animations if the user prefers reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* CRT scanline overlay — apply via .scanlines class */

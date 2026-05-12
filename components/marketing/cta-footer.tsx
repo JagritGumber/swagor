@@ -8,17 +8,16 @@ export function CtaFooter() {
   return (
     <>
       <section className="relative isolate overflow-hidden border-b border-[var(--hairline-strong)] bg-black">
-        <div className="mx-auto max-w-6xl px-6 py-24 text-center">
-          <div className="text-xs uppercase tracking-[0.3em] text-[var(--neon-cyan)]">
+        <div className="mx-auto max-w-6xl px-6 py-20 text-center sm:py-24">
+          <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--neon-cyan)] sm:text-xs">
             // Ready when you are
           </div>
-          <h2 className="mt-4 text-4xl font-bold uppercase tracking-tight md:text-7xl">
+          <h2 className="mt-4 text-[clamp(32px,7vw,84px)] font-bold uppercase leading-[0.95] tracking-tight text-balance">
             Deploy your <span className="text-[var(--neon-cyan)]">Solon</span>.
           </h2>
-          <p className="mx-auto mt-6 max-w-xl text-sm text-muted-foreground md:text-base">
-            One click. Circle Dev Wallet auto-provisioned on Arc Testnet.
-            Faucet-funded. Strategy in plain English. Your AI trader running
-            within ninety seconds.
+          <p className="mx-auto mt-6 max-w-xl text-sm text-muted-foreground sm:text-base">
+            Sign in. Get a Circle wallet on Arc. Write your strategy in plain
+            English. <span className="text-foreground">Your AI is cycling within ninety seconds.</span>
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link

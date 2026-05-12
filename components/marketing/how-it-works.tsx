@@ -11,12 +11,12 @@ type Stage = {
 };
 
 const STAGES: Stage[] = [
-  { num: "01", label: "Monitor tick", detail: "1 light LLM call · every 15min" },
-  { num: "02", label: "Signal fires", detail: "Has_signal=true · trigger trade cycle", accent: "var(--neon-cyan)" },
-  { num: "03", label: "Solon proposes", detail: "Heavy-tier LLM · trade + reasoning" },
-  { num: "04", label: "Council debates", detail: "3 reviewers · adversarial round 2" },
-  { num: "05", label: "Critic audits", detail: "Cross-model · DeepSeek R1", accent: "var(--neon-amber)" },
-  { num: "06", label: "Execute · anchor", detail: "Simulate · TradeAnchored event on Arc", accent: "var(--neon-green)" },
+  { num: "01", label: "Monitor tick", detail: "One light LLM call. Every 15 min. Logs no_signal 95% of the time." },
+  { num: "02", label: "Signal fires", detail: "Real signal detected. Full trade pipeline boots." },
+  { num: "03", label: "Solon proposes", detail: "Heavy-tier LLM drafts trade, venue, size, safety triggers." },
+  { num: "04", label: "Council debates", detail: "Hermes, Athena, Cassandra. Round two attacks the dissent." },
+  { num: "05", label: "Critic audits", detail: "DeepSeek R1 cross-model gate. Different lineage, different blind spots." },
+  { num: "06", label: "Execute · anchor", detail: "Simulated on Uniswap pool spot. TradeAnchored event on Arc." },
 ];
 
 export function HowItWorks() {
@@ -24,21 +24,21 @@ export function HowItWorks() {
     <section className="border-b border-[var(--hairline-strong)] bg-black">
       <div className="mx-auto max-w-6xl px-6 py-20">
         <header className="mb-12">
-          <div className="text-xs uppercase tracking-[0.3em] text-[var(--neon-cyan)]">
+          <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--neon-cyan)] sm:text-xs">
             // Two-stage cycle architecture
           </div>
-          <h2 className="mt-3 text-3xl font-bold uppercase tracking-tight md:text-5xl">
+          <h2 className="mt-3 text-3xl font-bold uppercase leading-[1.05] tracking-tight text-balance sm:text-4xl md:text-5xl">
             How one trade gets made.
           </h2>
           <p className="mt-4 max-w-2xl text-sm text-muted-foreground">
-            Every 15 minutes, a cheap monitor tick decides whether a real
-            signal exists. 95% of ticks exit immediately. The full review
-            pipeline only fires when there&apos;s actually a trade to debate.
-            Cuts LLM cost ~25× vs naïve every-tick designs.
+            A cheap monitor tick runs every 15 minutes asking one question.
+            95% of the time the answer is no, and the tick exits. Only when
+            something real lands does the full debate pipeline boot.
+            <span className="text-foreground"> ~25× cheaper</span> than calling the whole council on every tick.
           </p>
         </header>
 
-        <ol className="grid gap-px bg-[var(--hairline)] md:grid-cols-2 lg:grid-cols-3">
+        <ol className="grid gap-px bg-[var(--hairline)] sm:grid-cols-2 lg:grid-cols-3">
           {STAGES.map((s, i) => (
             <li
               key={s.num}

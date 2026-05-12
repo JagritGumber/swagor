@@ -1,7 +1,7 @@
 import { EnvVarWarning } from "@/components/env-var-warning";
 import HeaderAuth from "@/components/header-auth";
 import { hasEnvVars } from "@/lib/utils/supabase/check-env-vars";
-import { JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import Link from "next/link";
@@ -9,10 +9,8 @@ import "./globals.css";
 import { Web3Providers } from "./providers";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 
-const mono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-});
+const sans = Inter({ subsets: ["latin"], variable: "--font-sans-family" });
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-family" });
 
 const defaultUrl = process.env.NEXT_PUBLIC_VERCEL_URL
   ? process.env.NEXT_PUBLIC_VERCEL_URL
@@ -33,7 +31,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={mono.variable}
+      className={`${sans.variable} ${mono.variable}`}
       suppressHydrationWarning
     >
       <body className="bg-black text-foreground antialiased">
@@ -49,7 +47,8 @@ export default async function RootLayout({
                 <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-5 text-sm">
                   <Link
                     href="/"
-                    className="flex items-center gap-2 font-bold uppercase tracking-[0.25em] hover:opacity-80"
+                    className="font-mono flex items-center gap-2 font-bold uppercase tracking-[0.15em] hover:opacity-80"
+                    aria-label="Solon home"
                   >
                     <span
                       aria-hidden
