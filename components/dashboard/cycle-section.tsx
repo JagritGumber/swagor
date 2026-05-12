@@ -1,6 +1,5 @@
 "use client";
 
-import { useAccount } from "wagmi";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -12,34 +11,32 @@ type Cycle = {
   completedAt: string | null;
 };
 
-export function CycleSection() {
-  const { address, isConnected } = useAccount();
+export function CycleSection({ walletAddress }: { walletAddress: string }) {
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchCycles = useCallback(async () => {
-    if (!address) return;
-    const res = await fetch(`/api/cycles?walletAddress=${address}`);
+    const res = await fetch(`/api/cycles?walletAddress=${walletAddress}`);
     if (res.ok) {
       const data = await res.json();
       setCycles(data.cycles ?? []);
     }
-  }, [address]);
+  }, [walletAddress]);
 
   useEffect(() => {
-    if (isConnected) fetchCycles();
-  }, [isConnected, fetchCycles]);
+    fetchCycles();
+  }, [fetchCycles]);
 
   async function runCycle() {
-    if (!address || isRunning) return;
+    if (isRunning) return;
     setIsRunning(true);
     setError(null);
     try {
       const res = await fetch("/api/cycles/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: address }),
+        body: JSON.stringify({ walletAddress }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -59,23 +56,19 @@ export function CycleSection() {
         <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
           Cycles
         </h2>
-        {isConnected && (
-          <button
-            type="button"
-            onClick={runCycle}
-            disabled={isRunning}
-            className="cta-glow inline-flex h-9 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isRunning ? "Starting..." : "Run cycle now"}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={runCycle}
+          disabled={isRunning}
+          className="cta-glow inline-flex h-9 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isRunning ? "Starting..." : "Run cycle now"}
+        </button>
       </div>
 
       {error && <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">{error}</p>}
 
-      {!isConnected ? (
-        <p className="mt-4 text-sm text-muted-foreground">Connect a wallet to run cycles.</p>
-      ) : cycles.length === 0 ? (
+      {cycles.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">No cycles yet.</p>
       ) : (
         <div className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline-strong)]">

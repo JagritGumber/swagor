@@ -1,6 +1,5 @@
 "use client";
 
-import { useAccount } from "wagmi";
 import { useCallback, useEffect, useState } from "react";
 
 type Position = {
@@ -10,18 +9,16 @@ type Position = {
   amount: string;
 };
 
-export function PositionsCard() {
-  const { address, isConnected } = useAccount();
+export function PositionsCard({ walletAddress }: { walletAddress: string }) {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPositions = useCallback(async () => {
-    if (!address) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/positions?walletAddress=${address}`);
+      const res = await fetch(`/api/positions?walletAddress=${walletAddress}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? `HTTP ${res.status}`);
@@ -33,11 +30,11 @@ export function PositionsCard() {
     } finally {
       setLoading(false);
     }
-  }, [address]);
+  }, [walletAddress]);
 
   useEffect(() => {
-    if (isConnected) fetchPositions();
-  }, [isConnected, fetchPositions]);
+    fetchPositions();
+  }, [fetchPositions]);
 
   return (
     <section className="border border-[var(--hairline-strong)] bg-black p-6">
@@ -45,25 +42,21 @@ export function PositionsCard() {
         <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
           Positions
         </h2>
-        {isConnected && (
-          <button
-            type="button"
-            onClick={fetchPositions}
-            disabled={loading}
-            className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground hover:text-[var(--neon-cyan)] disabled:opacity-50"
-          >
-            {loading ? "Loading..." : "Refresh"}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={fetchPositions}
+          disabled={loading}
+          className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground hover:text-[var(--neon-cyan)] disabled:opacity-50"
+        >
+          {loading ? "Loading..." : "Refresh"}
+        </button>
       </div>
 
       {error && <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">{error}</p>}
 
-      {!isConnected ? (
-        <p className="mt-4 text-sm text-muted-foreground">Connect a wallet to read positions.</p>
-      ) : positions.length === 0 && !loading ? (
+      {positions.length === 0 && !loading ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          No positions yet. Faucet Arc Testnet USDC to populate.
+          No positions yet. Faucet Arc Testnet USDC to your Solon wallet to populate.
         </p>
       ) : (
         <div className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline-strong)]">
