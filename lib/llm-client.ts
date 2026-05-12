@@ -1,33 +1,36 @@
 import OpenAI from "openai";
 
-const apiKey = process.env.GROQ_API_KEY;
+/**
+ * Provider-pluggable LLM client. Uses any OpenAI-compatible endpoint:
+ * GLM (default — prepaid, no surprise billing), Cerebras, Groq, Together,
+ * Fireworks, etc. Swap providers by changing env vars in .env.local; no
+ * code change required.
+ *
+ * Env vars:
+ *   LLM_API_KEY        (required) — provider's API key
+ *   LLM_BASE_URL       (optional) — defaults to GLM: https://open.bigmodel.cn/api/paas/v4/
+ *   LLM_MODEL_HEAVY    (optional) — defaults to glm-4-plus
+ *   LLM_MODEL_LIGHT    (optional) — defaults to glm-4-flash
+ *
+ * MODELS.HEAVY is used by reasoning-heavy agents (Graph Builder, TaxOptimizer,
+ * Critic, Aggregator). MODELS.LIGHT is used by swarm members (30-50 per cycle).
+ */
 
+const apiKey = process.env.LLM_API_KEY;
 if (!apiKey) {
-  throw new Error("GROQ_API_KEY environment variable is not set");
+  throw new Error("LLM_API_KEY environment variable is not set");
 }
 
-/**
- * Groq client using the OpenAI SDK with a baseURL swap.
- * Groq is OpenAI-compatible, so the same SDK shapes (chat.completions, structured
- * outputs, function calling) all work. Fallback (drop-in): swap baseURL to
- * Together.ai or Fireworks AI.
- */
 export const llm = new OpenAI({
   apiKey,
-  baseURL: "https://api.groq.com/openai/v1",
+  baseURL: process.env.LLM_BASE_URL ?? "https://open.bigmodel.cn/api/paas/v4/",
   maxRetries: 3,
   timeout: 60_000,
 });
 
-/**
- * Model tiers used across the system.
- * HEAVY  = Llama 3.3 70B Versatile — Graph Builder, TaxOptimizer, Critic,
- *          and the few personas that need deeper reasoning.
- * LIGHT  = Llama 3.1 8B Instant — most swarm members (fast + cheap).
- */
 export const MODELS = {
-  HEAVY: "llama-3.3-70b-versatile",
-  LIGHT: "llama-3.1-8b-instant",
+  HEAVY: process.env.LLM_MODEL_HEAVY ?? "glm-4-plus",
+  LIGHT: process.env.LLM_MODEL_LIGHT ?? "glm-4-flash",
 } as const;
 
 export type ModelTier = keyof typeof MODELS;
