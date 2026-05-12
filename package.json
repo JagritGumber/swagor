@@ -4,7 +4,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "generate-wallet": "node generate-wallet.mjs"
+    "generate-wallet": "node generate-wallet.mjs",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@circle-fin/developer-controlled-wallets": "^4.6.0",
@@ -26,11 +29,13 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
+    "drizzle-orm": "^0.45.2",
     "geist": "^1.2.1",
     "lucide-react": "^0.436.0",
     "next": "latest",
     "next-themes": "^0.3.0",
     "openai": "^6.22.0",
+    "postgres": "^3.4.9",
     "prettier": "^3.3.3",
     "react": "18.2.0",
     "react-confetti": "^6.1.0",
@@ -46,6 +51,7 @@
     "@types/react-dom": "18.2.18",
     "@types/uuid": "^10.0.0",
     "dotenv": "^16.4.7",
+    "drizzle-kit": "^0.31.10",
     "supabase": "^2.2.1",
     "tailwind-merge": "^2.5.2",
     "tailwindcss": "^4.0.0",
