@@ -30,24 +30,14 @@ const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
-  const companyName = formData.get("company-name")?.toString().trim();
-  const fullName = formData.get("full-name")?.toString().trim();
   const supabase = createClient();
   const origin = headers().get("origin");
-
-  if (fullName && (fullName.length < 3 || fullName.length > 255)) {
-    return { error: "Full name must be between 3 and 255 characters" };
-  }
-
-  if (companyName && (companyName.length < 3 || companyName.length > 255)) {
-    return { error: "Company name must be between 3 and 255 characters" };
-  }
 
   if (!email || !password) {
     return { error: "Email and password are required" };
   }
 
-  const { error, data: authData } = await supabase.auth.signUp({
+  const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -60,74 +50,11 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-up", error.message);
   }
 
-  try {
-    const createdWalletSetResponse = await fetch(`${baseUrl}/api/wallet-set`, {
-      method: "PUT",
-      body: JSON.stringify({
-        entityName: email,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const createdWalletSet = await createdWalletSetResponse.json();
-
-    const createdWalletResponse = await fetch(`${baseUrl}/api/wallet`, {
-      method: "POST",
-      body: JSON.stringify({
-        walletSetId: createdWalletSet.id,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const createdWallet = await createdWalletResponse.json();
-
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .update({
-        email,
-        full_name: fullName,
-        company_name: companyName
-      })
-      .eq("auth_user_id", authData.user?.id)
-      .select()
-      .single();
-
-    if (profileError) {
-      console.error("Error while attempting to create user:", profileError);
-      return { error: "Could not create user" };
-    }
-
-    const { error: walletError } = await supabase
-      .schema("public")
-      .from("wallets")
-      .insert({
-        profile_id: profileData.id,
-        circle_wallet_id: createdWallet.id,
-        wallet_type: createdWallet.custodyType,
-        wallet_set_id: createdWalletSet.id,
-        wallet_address: createdWallet.address,
-        account_type: createdWallet.accountType,
-        blockchain: createdWallet.blockchain,
-        currency: "USDC",
-      })
-      .select();
-
-    if (walletError) {
-      console.error(
-        "Error while attempting to create user's wallet:",
-        walletError,
-      );
-      return { error: "Could not create wallet" };
-    }
-  } catch (error: any) {
-    console.error(error.message);
-    return { error: error.message };
-  }
-
+  // Per-user Circle wallets (arc-escrow pattern) intentionally removed.
+  // Our design uses one shared agent wallet (NEXT_PUBLIC_AGENT_WALLET_ID)
+  // that runs autonomous portfolio decisions. Users don't need wallets
+  // for paper mode; real-money mode (week 2 stretch) will use a different
+  // onboarding flow.
   return redirect("/dashboard");
 };
 
