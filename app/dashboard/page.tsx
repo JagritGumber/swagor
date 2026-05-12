@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 import { redirect } from "next/navigation";
 import { ensureSolonInstance } from "@/app/services/solon-instance.service";
+import { ConnectedWalletCard } from "@/components/dashboard/connected-wallet-card";
 import { CycleSection } from "@/components/dashboard/cycle-section";
 import { GoalForm } from "@/components/dashboard/goal-form";
 import { KillSwitchCard } from "@/components/dashboard/kill-switch-card";
@@ -21,6 +22,7 @@ export default async function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl px-2 pb-24 space-y-6">
       <SolonWalletCard instance={instance} />
+      <ConnectedWalletCard />
       <GoalForm walletAddress={addr} />
       <PositionsCard walletAddress={addr} />
       <CycleSection walletAddress={addr} />
