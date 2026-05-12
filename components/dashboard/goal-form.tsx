@@ -5,14 +5,6 @@ import { useState } from "react";
 
 type ParseResult = {
   feasible: boolean;
-  parsed: {
-    target_apy_pct: number | null;
-    max_drawdown_pct: number | null;
-    time_horizon_days: number | null;
-    risk_tolerance: "low" | "medium" | "high" | "unspecified";
-    constraints: string[];
-    strategy_preference: string | null;
-  } | null;
   feedback: string;
 };
 
@@ -39,7 +31,8 @@ export function GoalForm() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? `HTTP ${res.status}`);
       }
-      setResult(await res.json());
+      const data = await res.json();
+      setResult({ feasible: !!data.feasible, feedback: data.feedback ?? "" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to parse goal");
     } finally {
@@ -47,56 +40,50 @@ export function GoalForm() {
     }
   }
 
-  if (!isConnected) {
-    return (
-      <div className="rounded-lg border p-6">
-        <h2 className="text-lg font-semibold mb-2">Your goal</h2>
-        <p className="text-sm text-muted-foreground">Connect a wallet first.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-lg border p-6 space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Your goal</h2>
-        <p className="text-sm text-muted-foreground">
-          Describe in plain English what you want the agent to optimize for.
-          Example: &quot;10% APY with low drawdown, hold positions at least 90 days.&quot;
-        </p>
+    <section className="border border-[var(--hairline-strong)] bg-black p-6">
+      <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        Strategy
       </div>
-      <form onSubmit={submit} className="space-y-3">
-        <textarea
-          value={goalText}
-          onChange={(e) => setGoalText(e.target.value)}
-          rows={3}
-          placeholder="e.g. 8% APY with low risk, OK to lock for 3 months"
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/50"
-        />
-        <button
-          type="submit"
-          disabled={submitting || goalText.length < 5}
-          className="px-4 py-2 bg-foreground text-background rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
-        >
-          {submitting ? "Parsing..." : "Set goal"}
-        </button>
-      </form>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      <h2 className="mt-3 text-2xl font-bold uppercase leading-tight text-foreground">
+        Tell Solon what to aim for.
+      </h2>
+      <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+        Plain English. Risk appetite, return goal, holding period, anything off-limits. Solon parses this, the panel uses it as a north star, the critic checks every trade against it.
+      </p>
+
+      {!isConnected ? (
+        <p className="mt-6 text-sm text-muted-foreground">Connect a wallet first.</p>
+      ) : (
+        <form onSubmit={submit} className="mt-6 space-y-4">
+          <textarea
+            value={goalText}
+            onChange={(e) => setGoalText(e.target.value)}
+            rows={4}
+            placeholder="e.g. moderate risk, 8 to 15 percent conviction trades, never leverage, exit anything red after 72 hours"
+            className="w-full border border-[var(--hairline-strong)] bg-[#080808] px-3 py-3 font-mono text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-[var(--neon-cyan)] focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={submitting || goalText.length < 5}
+            className="cta-glow inline-flex h-10 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {submitting ? "Parsing..." : "Set strategy"}
+          </button>
+        </form>
+      )}
+
+      {error && <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">{error}</p>}
       {result && (
         <div
-          className={`rounded-md p-3 text-sm ${result.feasible ? "bg-green-500/10 border border-green-500/30" : "bg-yellow-500/10 border border-yellow-500/30"}`}
+          className={`mt-6 border p-4 ${result.feasible ? "border-[var(--neon-green)]/40 bg-[var(--neon-green)]/5" : "border-[var(--neon-amber,#ffae00)]/40 bg-[var(--neon-amber,#ffae00)]/5"}`}
         >
-          <p className="font-medium mb-1">
-            {result.feasible ? "Goal accepted" : "Goal needs adjustment"}
-          </p>
-          <p className="text-muted-foreground">{result.feedback}</p>
-          {result.parsed && (
-            <pre className="mt-2 text-xs bg-background/50 p-2 rounded overflow-x-auto">
-              {JSON.stringify(result.parsed, null, 2)}
-            </pre>
-          )}
+          <div className={`font-mono text-xs font-bold uppercase tracking-[0.18em] ${result.feasible ? "text-[var(--neon-green)]" : "text-[var(--neon-amber,#ffae00)]"}`}>
+            {result.feasible ? "Strategy accepted" : "Needs adjustment"}
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">{result.feedback}</p>
         </div>
       )}
-    </div>
+    </section>
   );
 }

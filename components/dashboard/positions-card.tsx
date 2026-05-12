@@ -8,8 +8,6 @@ type Position = {
   chain: string;
   asset: string;
   amount: string;
-  amountWei: string;
-  decimals: number;
 };
 
 export function PositionsCard() {
@@ -41,65 +39,55 @@ export function PositionsCard() {
     if (isConnected) fetchPositions();
   }, [isConnected, fetchPositions]);
 
-  if (!isConnected) {
-    return (
-      <div className="rounded-lg border p-6">
-        <h2 className="text-lg font-semibold mb-2">Your positions</h2>
-        <p className="text-sm text-muted-foreground">
-          Connect a wallet first.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-lg border p-6 space-y-3">
+    <section className="border border-[var(--hairline-strong)] bg-black p-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Your positions</h2>
-        <button
-          onClick={fetchPositions}
-          disabled={loading}
-          className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
-        >
-          {loading ? "Loading..." : "Refresh"}
-        </button>
+        <div>
+          <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Positions
+          </div>
+          <h2 className="mt-3 text-2xl font-bold uppercase leading-tight text-foreground">
+            What you hold right now.
+          </h2>
+        </div>
+        {isConnected && (
+          <button
+            type="button"
+            onClick={fetchPositions}
+            disabled={loading}
+            className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground hover:text-[var(--neon-cyan)] disabled:opacity-50"
+          >
+            {loading ? "Loading..." : "Refresh"}
+          </button>
+        )}
       </div>
-      {error && <p className="text-sm text-red-500">{error}</p>}
-      {positions.length === 0 && !loading ? (
-        <p className="text-sm text-muted-foreground">
-          No positions found. Faucet some Arc Testnet USDC to your address
-          to populate.
+
+      {error && <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">{error}</p>}
+
+      {!isConnected ? (
+        <p className="mt-6 text-sm text-muted-foreground">Connect a wallet to read positions.</p>
+      ) : positions.length === 0 && !loading ? (
+        <p className="mt-6 text-sm text-muted-foreground">
+          No positions found. Faucet some Arc Testnet USDC to your address to populate.
         </p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-muted-foreground border-b">
-              <th className="py-2 font-medium">Asset</th>
-              <th className="font-medium">Where</th>
-              <th className="font-medium text-right">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {positions.map((p, i) => (
-              <tr key={i} className="border-b border-muted/30">
-                <td className="py-2">{p.asset}</td>
-                <td className="text-xs text-muted-foreground">
-                  {p.protocol === "wallet"
-                    ? `${p.chain} wallet`
-                    : `${p.protocol} on ${p.chain}`}
-                </td>
-                <td className="text-right font-mono text-xs">
-                  {Number(p.amount).toFixed(4)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mt-6 divide-y divide-[var(--hairline)] border-y border-[var(--hairline-strong)]">
+          {positions.map((p, i) => (
+            <div key={i} className="grid grid-cols-[1fr_auto] items-baseline gap-4 py-3 sm:grid-cols-[1fr_2fr_auto]">
+              <div className="text-base text-foreground">{p.asset}</div>
+              <div className="hidden font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground sm:block">
+                {p.protocol === "wallet" ? `${p.chain} wallet` : `${p.protocol} on ${p.chain}`}
+              </div>
+              <div className="text-right font-mono text-base tabular-nums text-foreground">
+                {Number(p.amount).toFixed(4)}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
-      <p className="text-xs text-muted-foreground pt-1">
-        Hackathon scope: Arc Testnet native USDC only. Mainnet
-        Aave/Compound/Pendle reads layer on later.
+      <p className="mt-6 max-w-xl font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70">
+        Testnet scope: Arc native USDC only. Mainnet Aave / Compound / Pendle reads layer on later.
       </p>
-    </div>
+    </section>
   );
 }

@@ -3,6 +3,7 @@
 import { useAccount } from "wagmi";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 type Cycle = {
   id: string;
@@ -52,64 +53,60 @@ export function CycleSection() {
     }
   }
 
-  if (!isConnected) {
-    return (
-      <div className="rounded-lg border p-6">
-        <h2 className="text-lg font-semibold mb-2">Cycles</h2>
-        <p className="text-sm text-muted-foreground">
-          Connect a wallet first to run cycles.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-lg border p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Cycles</h2>
-        <button
-          onClick={runCycle}
-          disabled={isRunning}
-          className="px-4 py-2 bg-foreground text-background rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
-        >
-          {isRunning ? "Starting..." : "Run cycle"}
-        </button>
+    <section className="border border-[var(--hairline-strong)] bg-black p-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Cycles
+          </div>
+          <h2 className="mt-3 text-2xl font-bold uppercase leading-tight text-foreground">
+            Every deliberation, on the record.
+          </h2>
+        </div>
+        {isConnected && (
+          <button
+            type="button"
+            onClick={runCycle}
+            disabled={isRunning}
+            className="cta-glow inline-flex h-10 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isRunning ? "Starting..." : "Run cycle now"}
+          </button>
+        )}
       </div>
-      {error && <p className="text-sm text-red-500">{error}</p>}
-      {cycles.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No cycles yet. Click &quot;Run cycle&quot; to start one.
+
+      {error && <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">{error}</p>}
+
+      {!isConnected ? (
+        <p className="mt-6 text-sm text-muted-foreground">Connect a wallet to run cycles.</p>
+      ) : cycles.length === 0 ? (
+        <p className="mt-6 text-sm text-muted-foreground">
+          No cycles yet. Run one to see the panel debate.
         </p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-muted-foreground border-b">
-              <th className="py-2 font-medium">Cycle</th>
-              <th className="font-medium">Status</th>
-              <th className="font-medium">Started</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cycles.map((c) => (
-              <tr key={c.id} className="border-b border-muted/30 hover:bg-muted/20 transition-colors">
-                <td className="py-2">
-                  <Link href={`/dashboard/cycles/${c.id}`} className="hover:underline">
-                    <code className="text-xs">{c.id.slice(0, 8)}</code>
-                  </Link>
-                </td>
-                <td>
-                  <span className="text-xs px-2 py-0.5 rounded bg-muted">
-                    {c.status}
-                  </span>
-                </td>
-                <td className="text-xs text-muted-foreground">
-                  {new Date(c.startedAt).toLocaleString()}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mt-6 divide-y divide-[var(--hairline)] border-y border-[var(--hairline-strong)]">
+          <div className="grid grid-cols-[1fr_auto_auto] gap-4 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            <span>Cycle</span><span>Status</span><span>Started</span>
+          </div>
+          {cycles.map((c) => (
+            <Link
+              key={c.id}
+              href={`/dashboard/cycles/${c.id}`}
+              className="grid grid-cols-[1fr_auto_auto] items-center gap-4 py-3 transition-colors hover:bg-[#080808]"
+            >
+              <div className="inline-flex items-center gap-2 font-mono text-sm text-[var(--neon-cyan)]">
+                {c.id.slice(0, 8)}
+                <ArrowRight aria-hidden className="h-3 w-3 opacity-60" />
+              </div>
+              <span className="font-mono text-xs uppercase tracking-[0.14em] text-foreground">{c.status}</span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {new Date(c.startedAt).toLocaleString()}
+              </span>
+            </Link>
+          ))}
+        </div>
       )}
-    </div>
+    </section>
   );
 }
