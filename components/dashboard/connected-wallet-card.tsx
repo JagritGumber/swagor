@@ -13,21 +13,21 @@ export function ConnectedWalletCard() {
   const { address, isConnected, chain } = useAccount();
 
   return (
-    <section className="p-6">
-      <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-        Your wallet
-      </h2>
-      {isConnected && address ? (
-        <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2">
-          <code className="font-mono text-base text-[var(--neon-cyan)]" title={address}>
-            {truncate(address)}
-          </code>
-          <span className="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
-            {chain?.name ?? "Unknown"}
-          </span>
-        </div>
-      ) : (
-        <div className="mt-4">
+    <section className="border border-[var(--hairline-strong)] bg-black p-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
+          Your wallet
+        </h2>
+        {isConnected && address ? (
+          <div className="flex items-center gap-3">
+            <code className="font-mono text-base text-[var(--neon-cyan)]" title={address}>
+              {truncate(address)}
+            </code>
+            <span className="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              {chain?.name ?? "Unknown"}
+            </span>
+          </div>
+        ) : (
           <ConnectKitButton.Custom>
             {({ show }) => (
               <button
@@ -39,8 +39,8 @@ export function ConnectedWalletCard() {
               </button>
             )}
           </ConnectKitButton.Custom>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }

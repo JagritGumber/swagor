@@ -15,14 +15,12 @@ export default async function DashboardPage() {
   if (!user) redirect("/sign-in");
 
   return (
-    <div className="mx-auto max-w-6xl px-2 pb-24">
-      <div className="grid gap-px bg-[var(--hairline-strong)] sm:grid-cols-2">
-        <div className="bg-black"><ConnectedWalletCard /></div>
-        <div className="bg-black"><KillSwitchCard /></div>
-      </div>
-      <div className="mt-6"><GoalForm /></div>
-      <div className="mt-6"><PositionsCard /></div>
-      <div className="mt-6"><CycleSection /></div>
+    <div className="mx-auto max-w-6xl px-2 pb-24 space-y-6">
+      <ConnectedWalletCard />
+      <GoalForm />
+      <PositionsCard />
+      <CycleSection />
+      <KillSwitchCard />
     </div>
   );
 }
