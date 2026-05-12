@@ -1,188 +1,151 @@
 /**
- * Live Trade Card — the visual centerpiece of the landing.
- *
- * Mock OHLCV-style price line with entry + exit markers, PnL breakdown,
- * panel verdict mini-summary, and the on-chain anchor link. Replaces the
- * boring stats counter strip with a single concrete artifact that shows
- * "this is what every trade looks like on your dashboard."
- *
- * Below the card, a compressed traction strip preserves the credibility
- * signals (trades anchored, cycles run, active users).
- *
- * Palette discipline: cyan for line + brand, white for chrome, green for
- * positive PnL only. No amber. No red except loss-signaling (none here).
+ * Sample Cycle. Aspirational framing with SEC-style disclosure.
+ * Header tightened so the card lands in the same viewport. Disclosure
+ * moved below the card and styled like body description.
  */
 
-import { ArrowUpRight, Check } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import { LEGAL_DISCLOSURE_SHORT, SAMPLE_CYCLE } from "@/lib/marketing-data";
+import { SectionEyebrow } from "./section-eyebrow";
 
-const CHART_POINTS = [
+const CHART = [
   98, 100, 99, 102, 105, 103, 108, 110, 115, 118,
   117, 122, 125, 127, 130, 132, 130, 134, 138, 141,
   144, 142, 148, 151, 155, 158, 156, 160, 162, 165,
 ];
-const ENTRY_IDX = 8;   // entered at 115
-const EXIT_IDX = 25;   // exited at 158
-
+const ENTRY_IDX = 8;
+const EXIT_IDX = 25;
 const W = 1000;
-const H = 280;
+const H = 300;
 
-function chartScales() {
-  const min = Math.min(...CHART_POINTS);
-  const max = Math.max(...CHART_POINTS);
+function scales() {
+  const min = Math.min(...CHART);
+  const max = Math.max(...CHART);
   const range = max - min || 1;
-  const step = W / (CHART_POINTS.length - 1);
-  const yAt = (i: number) => H - ((CHART_POINTS[i] - min) / range) * (H * 0.85) - H * 0.08;
+  const step = W / (CHART.length - 1);
+  const yAt = (i: number) => H - ((CHART[i] - min) / range) * (H * 0.78) - H * 0.12;
   const xAt = (i: number) => i * step;
-  return { yAt, xAt };
+  return { xAt, yAt };
 }
 
-const TRACTION = [
-  { label: "Trades anchored", value: "247" },
-  { label: "Cycles run", value: "1,284" },
-  { label: "Active users", value: "32" },
-];
-
 export function LiveTradeCard() {
-  const { xAt, yAt } = chartScales();
-  const pathD = CHART_POINTS.map((_, i) => `${i === 0 ? "M" : "L"} ${xAt(i).toFixed(1)} ${yAt(i).toFixed(1)}`).join(" ");
-  const areaD = `${pathD} L ${xAt(CHART_POINTS.length - 1).toFixed(1)} ${H} L 0 ${H} Z`;
+  const { xAt, yAt } = scales();
+  const pathD = CHART.map((_, i) => `${i === 0 ? "M" : "L"} ${xAt(i).toFixed(1)} ${yAt(i).toFixed(1)}`).join(" ");
+  const areaD = `${pathD} L ${xAt(CHART.length - 1).toFixed(1)} ${H} L 0 ${H} Z`;
 
   return (
     <section
-      aria-labelledby="trade-card-heading"
+      aria-labelledby="sample-cycle-heading"
       className="border-b border-[var(--hairline-strong)] bg-black"
     >
       <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
-        <header className="mb-10 max-w-2xl">
-          <div className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
-            // last trade · cycle 0x4f7c…a812
-          </div>
+        <header className="mb-10 max-w-3xl">
+          <SectionEyebrow>Sample cycle</SectionEyebrow>
           <h2
-            id="trade-card-heading"
-            className="mt-3 text-3xl font-bold leading-[1.1] tracking-tight text-balance sm:text-4xl md:text-5xl"
+            id="sample-cycle-heading"
+            className="mt-4 text-[40px] font-bold uppercase leading-[1.05] tracking-tight text-balance text-foreground"
           >
-            This is what every trade looks like.
+            What we <span className="text-[var(--neon-cyan)]">aim for</span> when a trade goes through.
           </h2>
-          <p className="mt-4 text-base leading-relaxed text-foreground/75">
-            Asset, venue, entry and exit, PnL, the panel's verdict, and the on-chain anchor. One card per cycle. Every field verifiable.
+          <p className="mt-6 text-base leading-relaxed text-muted-foreground">
+            One deliberation, taken apart. The signal, the call, the dissent, the recording on Arc. Numbers shown are illustrative. The structure is the point.
           </p>
         </header>
 
-        <article className="border border-[var(--hairline-strong)] bg-black">
-          {/* Top strip */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline-strong)] bg-[#080808] px-5 py-4">
-            <div className="flex items-baseline gap-3">
-              <span className="font-mono text-lg font-bold text-foreground">USDe / USDC</span>
-              <span className="font-mono text-xs text-foreground/65">aave-v3-eth</span>
+        <article className="overflow-hidden border border-[var(--hairline-strong)] bg-black">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--hairline-strong)] bg-[#080808] px-6 py-5">
+            <div>
+              <div className="text-[28px] font-bold uppercase leading-none text-foreground">
+                {SAMPLE_CYCLE.pair}
+              </div>
+              <div className="mt-2 font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                {SAMPLE_CYCLE.venue}
+              </div>
             </div>
-            <div className="flex items-center gap-4 font-mono text-xs">
-              <span className="inline-flex items-center gap-1.5 text-[var(--neon-cyan)]">
-                <Check className="h-3.5 w-3.5" aria-hidden />
-                <span>panel approved 2-1</span>
+            <div className="flex flex-col items-end gap-1">
+              <span className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-[var(--neon-green)]">
+                Panel approved · 2 to 1
               </span>
-              <span aria-hidden className="text-foreground/35">·</span>
-              <span className="text-foreground/65">3h 14m duration</span>
+              <span className="font-mono text-sm uppercase tracking-[0.16em] text-muted-foreground">
+                {SAMPLE_CYCLE.duration}
+              </span>
             </div>
           </div>
 
-          {/* Chart */}
-          <div className="relative bg-[radial-gradient(ellipse_at_top,rgba(0,212,255,0.05),transparent_60%)]">
+          <div className="relative bg-[radial-gradient(ellipse_at_top,rgba(0,212,255,0.06),transparent_55%)]">
             <svg
               viewBox={`0 0 ${W} ${H}`}
               preserveAspectRatio="none"
-              className="block h-[260px] w-full sm:h-[300px]"
+              className="block h-[280px] w-full sm:h-[340px]"
               role="img"
-              aria-label="Trade price chart from $98 entry-zone climbing to $168 with entry marker at 115 and exit marker at 158"
+              aria-label="Hypothetical price line for the sample USDe / USDC trade, climbing from $98 area to $168 with entry marked at $115 and exit at $158."
             >
-              {/* horizontal grid */}
-              {[0.25, 0.5, 0.75].map((p) => (
-                <line key={p} x1="0" y1={H * p} x2={W} y2={H * p} stroke="rgba(255,255,255,0.04)" />
-              ))}
-              {/* area under curve */}
-              <path d={areaD} fill="url(#grad-cyan)" opacity="0.35" />
               <defs>
-                <linearGradient id="grad-cyan" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--neon-cyan)" stopOpacity="0.5" />
+                <linearGradient id="grad-accent" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--neon-cyan)" stopOpacity="0.30" />
                   <stop offset="100%" stopColor="var(--neon-cyan)" stopOpacity="0" />
                 </linearGradient>
               </defs>
-              {/* price line */}
-              <path d={pathD} stroke="var(--neon-cyan)" strokeWidth="2" fill="none" />
-              {/* entry */}
-              <line x1={xAt(ENTRY_IDX)} y1="0" x2={xAt(ENTRY_IDX)} y2={H} stroke="var(--neon-green)" strokeDasharray="4 4" opacity="0.5" />
-              <circle cx={xAt(ENTRY_IDX)} cy={yAt(ENTRY_IDX)} r="7" fill="var(--neon-green)" />
-              <circle cx={xAt(ENTRY_IDX)} cy={yAt(ENTRY_IDX)} r="3.5" fill="#000" />
-              <text x={xAt(ENTRY_IDX) + 12} y={yAt(ENTRY_IDX) - 10} fontSize="11" fill="var(--neon-green)" fontFamily="ui-monospace, monospace" letterSpacing="0.5">
-                entry · $115.00
-              </text>
-              {/* exit */}
-              <line x1={xAt(EXIT_IDX)} y1="0" x2={xAt(EXIT_IDX)} y2={H} stroke="#ffffff" strokeDasharray="4 4" opacity="0.4" />
-              <circle cx={xAt(EXIT_IDX)} cy={yAt(EXIT_IDX)} r="7" fill="#ffffff" />
-              <circle cx={xAt(EXIT_IDX)} cy={yAt(EXIT_IDX)} r="3.5" fill="#000" />
-              <text x={xAt(EXIT_IDX) - 80} y={yAt(EXIT_IDX) - 12} fontSize="11" fill="#ffffff" fontFamily="ui-monospace, monospace" letterSpacing="0.5">
-                exit · $158.21
-              </text>
+              {[0.25, 0.5, 0.75].map((p) => (
+                <line key={p} x1="0" y1={H * p} x2={W} y2={H * p} stroke="rgba(255,255,255,0.04)" />
+              ))}
+              <path d={areaD} fill="url(#grad-accent)" className="chart-mark" />
+              <path d={pathD} stroke="var(--neon-cyan)" strokeWidth="2" fill="none" className="chart-line" />
+              <g className="chart-mark">
+                <line x1={xAt(ENTRY_IDX)} y1="0" x2={xAt(ENTRY_IDX)} y2={H} stroke="var(--neon-green)" strokeDasharray="4 5" opacity="0.5" />
+                <circle cx={xAt(ENTRY_IDX)} cy={yAt(ENTRY_IDX)} r="7" fill="var(--neon-green)" />
+                <circle cx={xAt(ENTRY_IDX)} cy={yAt(ENTRY_IDX)} r="3" fill="#000" />
+                <text x={xAt(ENTRY_IDX) + 12} y={yAt(ENTRY_IDX) - 12} fontSize="12" fill="var(--neon-green)" fontFamily="ui-monospace, monospace" letterSpacing="0.5">
+                  in · ${CHART[ENTRY_IDX]}
+                </text>
+                <line x1={xAt(EXIT_IDX)} y1="0" x2={xAt(EXIT_IDX)} y2={H} stroke="#ffffff" strokeDasharray="4 5" opacity="0.45" />
+                <circle cx={xAt(EXIT_IDX)} cy={yAt(EXIT_IDX)} r="7" fill="#ffffff" />
+                <circle cx={xAt(EXIT_IDX)} cy={yAt(EXIT_IDX)} r="3" fill="#000" />
+                <text x={xAt(EXIT_IDX) - 70} y={yAt(EXIT_IDX) - 14} fontSize="12" fill="#ffffff" fontFamily="ui-monospace, monospace" letterSpacing="0.5">
+                  out · ${CHART[EXIT_IDX]}
+                </text>
+              </g>
             </svg>
           </div>
 
-          {/* Bottom strip */}
           <div className="grid grid-cols-2 gap-px border-t border-[var(--hairline-strong)] bg-[var(--hairline)] sm:grid-cols-4">
-            <Cell label="PnL" mono value="+$43.21" valueClass="text-[var(--neon-green)]" />
-            <Cell label="PnL %" mono value="+37.4%" valueClass="text-[var(--neon-green)]" />
-            <Cell label="Size" mono value="$115.00" />
-            <div className="bg-black px-5 py-4">
-              <div className="font-mono text-xs uppercase tracking-[0.12em] text-foreground/70">Anchored</div>
-              <a
-                href="https://testnet.arcscan.app"
-                target="_blank"
-                rel="noreferrer"
-                className="mt-1 inline-flex items-center gap-1.5 font-mono text-base text-[var(--neon-cyan)] underline-offset-4 hover:underline"
-              >
-                <span>0x09da…0818</span>
-                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-              </a>
-            </div>
+            <Stat label="P/L" value={SAMPLE_CYCLE.pnlUsd} tone="up" />
+            <Stat label="P/L %" value={SAMPLE_CYCLE.pnlPctPlain} tone="up" />
+            <Stat label="Position" value={`$${CHART[ENTRY_IDX]}.00`} />
+            <a
+              href="https://testnet.arcscan.app"
+              target="_blank"
+              rel="noreferrer"
+              className="group bg-black px-6 py-5 transition hover:bg-[#080808]"
+            >
+              <div className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                Recorded on Arc
+              </div>
+              <div className="mt-2 inline-flex items-center gap-1.5 font-mono text-xl text-[var(--neon-cyan)] underline-offset-4 group-hover:underline">
+                {SAMPLE_CYCLE.arcTx}
+                <ArrowUpRight className="h-4 w-4" aria-hidden />
+              </div>
+            </a>
           </div>
         </article>
 
-        {/* compressed traction strip */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--hairline)] pt-6 text-sm">
-          <span className="text-foreground/70">
-            All-time, all users
-          </span>
-          <ul className="flex flex-wrap gap-x-8 gap-y-3">
-            {TRACTION.map((t) => (
-              <li key={t.label} className="flex items-baseline gap-2">
-                <span className="font-mono text-2xl font-bold text-foreground tabular-nums">{t.value}</span>
-                <span className="text-foreground/70">{t.label.toLowerCase()}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Disclosure sits below the card, styled like body description (not as a mono code label). */}
+        <p className="mt-6 max-w-3xl text-base leading-relaxed text-muted-foreground">
+          {LEGAL_DISCLOSURE_SHORT}
+        </p>
       </div>
     </section>
   );
 }
 
-function Cell({
-  label,
-  value,
-  mono,
-  valueClass,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  valueClass?: string;
-}) {
+function Stat({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" }) {
+  const toneClass = tone === "up" ? "text-[var(--neon-green)]" : tone === "down" ? "text-[var(--neon-red)]" : "text-foreground";
   return (
-    <div className="bg-black px-5 py-4">
-      <div className="font-mono text-xs uppercase tracking-[0.12em] text-foreground/70">
+    <div className="bg-black px-6 py-5">
+      <div className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
         {label}
       </div>
-      <div
-        className={`mt-1 text-xl font-bold tabular-nums ${mono ? "font-mono" : ""} ${valueClass ?? "text-foreground"}`}
-      >
+      <div className={`mt-2 text-[28px] font-bold tabular-nums ${toneClass}`}>
         {value}
       </div>
     </div>

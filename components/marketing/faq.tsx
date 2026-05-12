@@ -1,33 +1,30 @@
 /**
- * Brutalist FAQ. Native <details> for accessibility + zero JS.
- * Plus sign rotates 45° on open (via .faq-marker class wired in globals.css).
+ * FAQ. Controlled single-open accordion (only one expanded at a time).
+ * Grid layout aligns the answer's left edge with the question column.
+ * Lucide Plus icon rotates 45deg on open via existing .faq-marker CSS.
  */
 
-type QA = {
-  q: string;
-  a: React.ReactNode;
-};
+"use client";
+
+import { useState, type ReactNode } from "react";
+import { Plus } from "lucide-react";
+
+type QA = { q: string; a: ReactNode };
 
 const QAS: QA[] = [
   {
     q: "Is this real money?",
     a: (
       <>
-        Not during the hackathon. Solon runs in simulation mode on Arc Testnet
-        with faucet USDC. Trades simulate against live mainnet Uniswap pool
-        prices, so the PnL is honest — but no real capital is at risk. A
-        live-mode toggle lands post-hackathon.
+        Not yet. Solon runs on Arc Testnet with simulated capital. Trades simulate against real mainnet pool prices, so the numbers stay honest. No actual capital is at risk. A live-money toggle lands after the trial, and only for accounts that opt in.
       </>
     ),
   },
   {
-    q: "What happens to my Solon if it loses money?",
+    q: "What happens when it loses?",
     a: (
       <>
-        Nothing. It keeps cycling. Bad outcomes feed the memory service —
-        the panel's reviewer track records update, and the next cycle's
-        prompt includes the lesson. Solon is allowed to be wrong because
-        every wrong move is also a training signal you can audit on Arc.
+        Nothing dramatic. The deliberation gets recorded the same way, the losing reasoning goes on Arc, and the analysts whose call was wrong have their track record updated. The next cycle reads the lesson before it starts. Solon is allowed to be wrong. That is where the most useful signal lives.
       </>
     ),
   },
@@ -35,10 +32,7 @@ const QAS: QA[] = [
     q: "Can I stop it at any time?",
     a: (
       <>
-        Yes. Every Solon instance has a kill switch on the dashboard. Flip it
-        and your cycles stop firing. Funds stay in your Circle Dev Wallet
-        (which only you can fully export). You can resume later or never
-        come back.
+        Yes. There is a kill switch on your dashboard. Flip it and your Solon stops cycling. The wallet is yours. Only you can fully export it. You can come back later or never.
       </>
     ),
   },
@@ -46,67 +40,73 @@ const QAS: QA[] = [
     q: "How is this different from a copy-trading bot?",
     a: (
       <>
-        Copy bots mirror a leader without reasoning. Solon <em>generates</em>{" "}
-        its own reasoning per trade, has it debated by three specialists, and
-        gates execution behind a cross-model audit. The reasoning trace is the
-        product — you're not blindly following anyone.
+        A copy-trading bot mirrors a leader without reading. Solon writes its own memo, has three specialists debate it, and gates execution behind a separate AI audit. You are reading the argument, not following anyone blindly.
       </>
     ),
   },
   {
-    q: "Where do my prompts and reasoning go?",
+    q: "Where does my reasoning go?",
     a: (
       <>
-        Trade reasoning + panel verdicts get anchored on Arc Testnet as
-        TradeAnchored events. The full trace lives in Supabase. Everything is
-        viewable on your dashboard and (if you opt in) at{" "}
-        <code className="text-[var(--neon-cyan)]">/solon/&lt;username&gt;</code>
-        . LLM provider terms apply for in-flight prompts (Zhipu / DeepInfra).
+        Every trade&apos;s reasoning and the panel&apos;s dissent get recorded on Arc Testnet as on-chain events. The full deliberation lives in your dashboard. If you opt in, your Solon also has a public page anyone can read.
       </>
     ),
   },
   {
-    q: "What does it actually cost?",
+    q: "What does it cost?",
     a: (
       <>
-        $0 for you during the hackathon. Wallet creation is free on Circle's
-        sandbox. Faucet drops are free. The LLM bill runs on Jagrit's account
-        and totals ~$10-20 across the entire hackathon at expected scale.
-        Premium tiers come after hackathon.
+        Free during the trial. Wallets, simulated capital, every deliberation, all free. A paid tier comes later for users who want more frequent cycles or premium analysts. You will not be charged anything you did not explicitly sign up for.
       </>
     ),
   },
 ];
 
 export function Faq() {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
   return (
-    <section className="border-b border-[var(--hairline-strong)] bg-black">
-      <div className="mx-auto max-w-4xl px-6 py-20">
+    <section
+      aria-labelledby="faq-heading"
+      className="border-b border-[var(--hairline-strong)] bg-black"
+    >
+      <div className="mx-auto max-w-4xl px-6 py-14 sm:py-20">
         <header className="mb-10">
-          <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--neon-cyan)] sm:text-xs">
-            // FAQ
-          </div>
-          <h2 className="mt-3 text-3xl font-bold uppercase leading-[1.05] tracking-tight text-balance sm:text-4xl md:text-5xl">
-            Things you should ask.
+          <h2
+            id="faq-heading"
+            className="text-[40px] font-bold uppercase leading-[1.05] tracking-tight text-balance text-foreground"
+          >
+            Things you <span className="text-[var(--neon-cyan)]">should ask</span> before deploying.
           </h2>
         </header>
 
         <div className="divide-y divide-[var(--hairline-strong)] border-y border-[var(--hairline-strong)]">
           {QAS.map((item, i) => (
-            <details key={i} className="group">
-              <summary className="flex cursor-pointer items-start gap-4 px-2 py-5 transition-colors hover:bg-[#080808]">
-                <span className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-[var(--neon-cyan)]">
+            <details key={i} open={openIdx === i} className="group">
+              <summary
+                onClick={(e) => {
+                  e.preventDefault();
+                  setOpenIdx(openIdx === i ? null : i);
+                }}
+                className="grid cursor-pointer grid-cols-[44px_1fr_28px] items-center gap-4 py-6 transition-colors hover:bg-[#080808] sm:grid-cols-[60px_1fr_28px] sm:gap-8"
+              >
+                <span className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <span className="flex-1 text-base font-bold uppercase leading-tight tracking-tight sm:text-lg">
+                <span className="text-xl font-bold uppercase leading-tight text-foreground sm:text-2xl">
                   {item.q}
                 </span>
-                <span className="faq-marker mt-1 inline-block text-base font-light text-muted-foreground transition-transform duration-300">
-                  +
-                </span>
+                <Plus
+                  aria-hidden
+                  className="faq-marker h-5 w-5 justify-self-end text-muted-foreground transition-transform"
+                />
               </summary>
-              <div className="px-2 pb-6 pl-12 pr-8 text-sm leading-relaxed text-foreground/75">
-                {item.a}
+              <div className="grid grid-cols-[44px_1fr_28px] gap-4 pb-6 sm:grid-cols-[60px_1fr_28px] sm:gap-8">
+                <div aria-hidden />
+                <div className="text-base leading-relaxed text-muted-foreground">
+                  {item.a}
+                </div>
+                <div aria-hidden />
               </div>
             </details>
           ))}

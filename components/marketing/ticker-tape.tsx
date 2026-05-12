@@ -1,44 +1,38 @@
 /**
- * Brutalist trader ticker tape. Infinite-scroll marquee using CSS keyframes
- * only — content is duplicated inside the track so translateX(-50%) loops
- * seamlessly. Edges fade via .mask-fade-x.
- *
- * Color: terminal green for positive, neon red for negative, muted text for
- * structure. JetBrains Mono via inherited body font.
+ * Editorial ticker tape. Slow infinite scroll. Calm, mostly muted, with
+ * accents on the headers only.
  */
 
-type Tick = { label: string; tone: "up" | "down" | "info" };
-
-const TICKS: Tick[] = [
-  { label: "SOL +14.2% USDe/USDC", tone: "up" },
-  { label: "SOL -3.1% ETH/USDC", tone: "down" },
-  { label: "SOL +8.4% sUSDS/USDC", tone: "up" },
-  { label: "ANCHORED 0x09da…0818", tone: "info" },
-  { label: "PANEL 3-0 APPROVE", tone: "up" },
-  { label: "SOL +2.7% USYC PARK", tone: "up" },
-  { label: "CASSANDRA DISSENTED", tone: "info" },
-  { label: "SOL -1.4% PT-eUSDe", tone: "down" },
-  { label: "CRITIC: R1 APPROVE", tone: "up" },
-  { label: "CYCLE #1284 SETTLED", tone: "info" },
-  { label: "SOL +6.1% sDAI", tone: "up" },
-  { label: "MONITOR: NO_SIGNAL ×32", tone: "info" },
+const ITEMS = [
+  { kind: "label", text: "Recent activity" },
+  { kind: "trade", text: "rotation · USDe / USDC · +37.4%" },
+  { kind: "verdict", text: "panel · approved with notes · 2-1" },
+  { kind: "anchor", text: "recorded · 0x09da...0818" },
+  { kind: "label", text: "Dissent preserved" },
+  { kind: "skeptic", text: "the skeptic · maintained reject" },
+  { kind: "trade", text: "hold · idle parked in USYC" },
+  { kind: "anchor", text: "recorded · 0x7d12...2a04" },
+  { kind: "label", text: "Earlier today" },
+  { kind: "trade", text: "exit · sUSDS / USDC · -1.2%" },
+  { kind: "verdict", text: "panel · approved · 3-0" },
 ];
 
-function toneClass(tone: Tick["tone"]) {
-  if (tone === "up") return "text-[var(--neon-green)]";
-  if (tone === "down") return "text-[var(--neon-red)]";
+function toneClass(kind: string) {
+  if (kind === "label") return "text-[var(--neon-cyan)]";
+  if (kind === "trade") return "text-foreground";
+  if (kind === "skeptic") return "text-[var(--neon-red)]";
   return "text-muted-foreground";
 }
 
 export function TickerTape() {
-  const track = [...TICKS, ...TICKS]; // duplicate for seamless loop
+  const row = [...ITEMS, ...ITEMS];
   return (
-    <div className="relative w-full overflow-hidden border-y border-[var(--hairline-strong)] bg-black/80 backdrop-blur-sm">
-      <div className="mask-fade-x flex w-max animate-marquee whitespace-nowrap py-2 text-xs uppercase tracking-wider">
-        {track.map((t, i) => (
+    <div className="relative w-full overflow-hidden border-y border-[var(--hairline)] bg-black/95">
+      <div className="mask-fade-x flex w-max animate-marquee whitespace-nowrap py-2.5 text-[12px] tracking-wide">
+        {row.map((t, i) => (
           <span key={i} className="mx-6 flex items-center gap-2">
-            <span className="text-muted-foreground">›</span>
-            <span className={toneClass(t.tone)}>{t.label}</span>
+            <span className="text-muted-foreground">·</span>
+            <span className={toneClass(t.kind)}>{t.text}</span>
           </span>
         ))}
       </div>

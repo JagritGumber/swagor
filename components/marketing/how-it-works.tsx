@@ -1,91 +1,92 @@
 /**
- * Two-stage cycle diagram, brutalist style. Six stages connected by hairline
- * arrows. The "active" stage indicator sweeps across via animation.
+ * How a deliberation works. Tighter stage titles + smaller vertical gaps.
  */
 
+import { Anchor, Bell, PenLine, Scan, ShieldCheck, Users } from "lucide-react";
+import type { ComponentType } from "react";
+
 type Stage = {
-  num: string;
-  label: string;
-  detail: string;
-  accent?: string;
+  title: string;
+  body: string;
+  Icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
 };
 
 const STAGES: Stage[] = [
-  { num: "01", label: "Monitor tick", detail: "One light LLM call. Every 15 min. Logs no_signal 95% of the time." },
-  { num: "02", label: "Signal fires", detail: "Real signal detected. Full trade pipeline boots." },
-  { num: "03", label: "Solon proposes", detail: "Heavy-tier LLM drafts trade, venue, size, safety triggers." },
-  { num: "04", label: "Council debates", detail: "Hermes, Athena, Cassandra. Round two attacks the dissent." },
-  { num: "05", label: "Critic audits", detail: "DeepSeek R1 cross-model gate. Different lineage, different blind spots." },
-  { num: "06", label: "Execute · anchor", detail: "Simulated on Uniswap pool spot. TradeAnchored event on Arc." },
+  {
+    title: "Solon scans",
+    body: "Every fifteen minutes Solon glances at the market. Prices, depth, news, recent lessons. One light call. Almost always it sees nothing worth doing, logs it, and goes back to waiting.",
+    Icon: Scan,
+  },
+  {
+    title: "Something shifts",
+    body: "Roughly five percent of the time, something does shift. A yield window. A regime hint. A piece of news that ties to a position. Only then does the full deliberation start.",
+    Icon: Bell,
+  },
+  {
+    title: "Solon proposes",
+    body: "Solon drafts a single trade. What to do, on which venue, at what size, with what to watch for as it plays out. Nothing executes yet.",
+    Icon: PenLine,
+  },
+  {
+    title: "Three analysts argue",
+    body: "The Economist reads the macro. The Analyst reads the venue. The Skeptic reads the worst case. Two rounds. The second is adversarial. Each must attack the loudest dissent before voting again.",
+    Icon: Users,
+  },
+  {
+    title: "A separate AI audits",
+    body: "A reviewer on a different model lineage reads the whole debate. Its job is to catch arguments that sound right but are not. It can approve, ask for a fix, or block.",
+    Icon: ShieldCheck,
+  },
+  {
+    title: "The call goes on Arc",
+    body: "If the audit clears it, the trade simulates against live pool prices. The reasoning, the dissent, and the outcome are recorded on Arc forever. You read all of it on your dashboard.",
+    Icon: Anchor,
+  },
 ];
 
 export function HowItWorks() {
   return (
-    <section className="border-b border-[var(--hairline-strong)] bg-black">
-      <div className="mx-auto max-w-6xl px-6 py-20">
-        <header className="mb-12">
-          <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--neon-cyan)] sm:text-xs">
-            // Two-stage cycle architecture
-          </div>
-          <h2 className="mt-3 text-3xl font-bold uppercase leading-[1.05] tracking-tight text-balance sm:text-4xl md:text-5xl">
-            How one trade gets made.
+    <section
+      aria-labelledby="howitworks-heading"
+      className="border-b border-[var(--hairline-strong)] bg-black"
+    >
+      <div className="mx-auto max-w-6xl px-6 py-14 sm:py-20">
+        <header className="mb-10 max-w-3xl">
+          <h2
+            id="howitworks-heading"
+            className="text-[40px] font-bold uppercase leading-[1.05] tracking-tight text-balance text-foreground"
+          >
+            From a quiet scan, <span className="text-[var(--neon-cyan)]">to a permanent record.</span>
           </h2>
-          <p className="mt-4 max-w-2xl text-sm text-muted-foreground">
-            A cheap monitor tick runs every 15 minutes asking one question.
-            95% of the time the answer is no, and the tick exits. Only when
-            something real lands does the full debate pipeline boot.
-            <span className="text-foreground"> ~25× cheaper</span> than calling the whole council on every tick.
+          <p className="mt-6 text-base leading-relaxed text-muted-foreground">
+            Most cycles do nothing. That is the point. The full panel only fires when there is something real to debate.
           </p>
         </header>
 
-        <ol className="grid gap-px bg-[var(--hairline)] sm:grid-cols-2 lg:grid-cols-3">
-          {STAGES.map((s, i) => (
-            <li
-              key={s.num}
-              className="group relative bg-black p-6 transition-colors duration-300 hover:bg-[#080808]"
-            >
-              <div className="flex items-baseline justify-between">
-                <span
-                  className="text-xs uppercase tracking-[0.25em]"
-                  style={{ color: s.accent ?? "var(--neon-cyan)" }}
-                >
-                  Stage {s.num}
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  {i < STAGES.length - 1 ? "→" : "●"}
-                </span>
-              </div>
-              <h3 className="mt-3 text-xl font-bold uppercase tracking-tight">
-                {s.label}
-              </h3>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {s.detail}
-              </p>
-              {/* underline accent grows on hover */}
-              <div
-                className="absolute bottom-0 left-0 h-px w-0 transition-all duration-500 group-hover:w-full"
-                style={{ background: s.accent ?? "var(--neon-cyan)" }}
-              />
-            </li>
-          ))}
+        <ol className="divide-y divide-[var(--hairline-strong)] border-y border-[var(--hairline-strong)]">
+          {STAGES.map((s, i) => {
+            const Icon = s.Icon;
+            return (
+              <li
+                key={s.title}
+                className="grid grid-cols-1 gap-4 py-5 sm:grid-cols-[56px_1.4fr_3fr] sm:items-center sm:gap-8 sm:py-6"
+                style={{ animation: `rise-in 0.7s cubic-bezier(0.16,1,0.3,1) ${i * 70}ms both` }}
+              >
+                <div className="flex items-center">
+                  <span className="flex h-10 w-10 items-center justify-center border border-[var(--hairline-strong)] bg-[#080808]">
+                    <Icon className="h-5 w-5 text-[var(--neon-cyan)]" aria-hidden />
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold uppercase leading-tight text-foreground">
+                  {s.title}
+                </h3>
+                <p className="text-base leading-relaxed text-muted-foreground">
+                  {s.body}
+                </p>
+              </li>
+            );
+          })}
         </ol>
-
-        {/* Cost callout */}
-        <div className="mt-10 flex flex-col gap-4 border border-[var(--hairline-strong)] bg-black p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-              // Cost per active user · per day
-            </div>
-            <div className="mt-2 text-2xl font-bold text-[var(--neon-green)] sm:text-3xl">
-              ≈ $0.05
-            </div>
-          </div>
-          <p className="max-w-md text-xs text-muted-foreground">
-            Monitor runs on free-tier OpenRouter Nemotron Nano 9B. Trade
-            cycles use GLM-4.7-FlashX + DeepSeek R1 for the cross-model
-            audit. Sustainable at hackathon scale and beyond.
-          </p>
-        </div>
       </div>
     </section>
   );

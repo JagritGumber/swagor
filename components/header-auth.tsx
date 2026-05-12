@@ -1,9 +1,14 @@
 import Link from "next/link";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { signOutAction } from "@/app/actions";
-import { hasEnvVars } from "@/lib/utils/supabase/check-env-vars";
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server-client";
+
+/**
+ * Single primary nav button. Server component reads Supabase auth so the
+ * correct label renders on first paint (no Sign In flash for signed-in users).
+ * Style mirrors the hero "Deploy your Solon" CTA so the primary-action signal
+ * stays consistent across the page.
+ */
+const BTN_CLASS =
+  "cta-glow inline-flex h-9 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)] focus:ring-offset-2 focus:ring-offset-black";
 
 export default async function AuthButton() {
   const supabase = createSupabaseServerComponentClient();
@@ -11,43 +16,13 @@ export default async function AuthButton() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!hasEnvVars) {
-    return (
-      <div className="flex gap-4 items-center">
-        <Badge variant="default" className="font-normal pointer-events-none">
-          Please update .env.local with Supabase URL + anon key
-        </Badge>
-        <div className="flex gap-2">
-          <Button asChild size="sm" variant="outline" disabled className="opacity-75 cursor-none pointer-events-none">
-            <Link href="/sign-in">Sign in</Link>
-          </Button>
-          <Button asChild size="sm" variant="default" disabled className="opacity-75 cursor-none pointer-events-none">
-            <Link href="/sign-up">Sign up</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return user ? (
-    <div className="flex items-center gap-3">
-      <span className="text-sm text-muted-foreground hidden sm:inline">
-        {user.email}
-      </span>
-      <form action={signOutAction}>
-        <Button type="submit" variant="outline" size="sm">
-          Sign out
-        </Button>
-      </form>
-    </div>
+    <Link href="/dashboard" className={BTN_CLASS}>
+      Dashboard
+    </Link>
   ) : (
-    <div className="flex gap-2">
-      <Button asChild size="sm" variant="outline">
-        <Link href="/sign-in">Sign in</Link>
-      </Button>
-      <Button asChild size="sm" variant="default">
-        <Link href="/sign-up">Sign up</Link>
-      </Button>
-    </div>
+    <Link href="/sign-in" className={BTN_CLASS}>
+      Sign In
+    </Link>
   );
 }
