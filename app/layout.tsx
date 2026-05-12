@@ -47,11 +47,10 @@ export default async function RootLayout({
                   <div className="flex items-center gap-3">
                     <Link
                       href="/"
-                      className="font-mono flex items-center gap-2 font-bold uppercase tracking-[0.15em] hover:opacity-80"
+                      className="text-2xl font-bold tracking-tight text-foreground hover:opacity-80"
                       aria-label="Solon home"
                     >
-                      <span className="text-[var(--neon-cyan)]">SOL</span>
-                      <span>ON</span>
+                      Solon
                     </Link>
                     {/* TESTNET LIVE badge moved from hero into nav so it lives with the brand */}
                     <span
