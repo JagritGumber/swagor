@@ -24,7 +24,7 @@ export const solonInstances = pgTable("solon_instances", {
   strategyText: text("strategy_text")
     .notNull()
     .default(
-      "Moderate risk. USDC stablecoin yield focus. Target 5-15% conviction trades. No leverage.",
+      "Moderate risk perp futures on Hyperliquid. Trade ETH and BTC. Cut losers fast, let winners run. No more than 3x leverage. Wait for clear setups, hold cash when uncertain.",
     ),
   strategyParsed: jsonb("strategy_parsed"),
   killSwitchActive: boolean("kill_switch_active").notNull().default(false),
