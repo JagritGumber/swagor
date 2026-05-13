@@ -30,13 +30,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
 
       <WatchingStatus initialWatching={instance.currentlyWatching ?? ["ETH", "BTC", "SOL"]} />
 
-      <GoalForm walletAddress={addr} />
+      <GoalForm walletAddress={addr} initialStrategy={instance.strategyText} />
       <PositionsCard walletAddress={addr} />
       <DecisionsSection walletAddress={addr} />
 
       {isDev && <WatchingStripDev />}
 
-      <KillSwitchCard />
+      <KillSwitchCard initialActive={instance.killSwitchActive} />
     </div>
   );
 }

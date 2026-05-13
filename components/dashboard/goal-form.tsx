@@ -4,8 +4,14 @@ import { useState } from "react";
 
 type ParseResult = { feasible: boolean; feedback: string };
 
-export function GoalForm({ walletAddress }: { walletAddress: string }) {
-  const [goalText, setGoalText] = useState("");
+export function GoalForm({
+  walletAddress,
+  initialStrategy,
+}: {
+  walletAddress: string;
+  initialStrategy: string;
+}) {
+  const [goalText, setGoalText] = useState(initialStrategy);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<ParseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +59,7 @@ export function GoalForm({ walletAddress }: { walletAddress: string }) {
           disabled={submitting || goalText.length < 5}
           className="cta-glow inline-flex h-10 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? "Parsing..." : "Set strategy"}
+          {submitting ? "Parsing..." : "Save strategy"}
         </button>
       </form>
       {error && <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">{error}</p>}

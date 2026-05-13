@@ -6,6 +6,9 @@ import {
   saveGoal,
 } from "@/app/services/portfolio.service";
 import { llm, MODELS } from "@/lib/llm-client";
+import { db } from "@/lib/db/client";
+import { solonInstances } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 const PARSER_SYSTEM_PROMPT = `You parse free-text portfolio goals for an AI-managed DeFi yield agent.
 
@@ -94,6 +97,12 @@ export async function POST(request: Request) {
   if (validated.feasible && validated.parsed) {
     const portfolio = await findOrCreatePortfolioForWallet(user.id, walletAddress, "paper");
     await saveGoal(portfolio.id, goalText, validated.parsed);
+    // Also persist on the Solon instance so the watcher reads the latest
+    // strategy text (the watcher keys off solon_instances, not portfolios).
+    await db
+      .update(solonInstances)
+      .set({ strategyText: goalText, strategyParsed: validated.parsed })
+      .where(eq(solonInstances.userId, user.id));
   }
 
   return NextResponse.json(validated);
