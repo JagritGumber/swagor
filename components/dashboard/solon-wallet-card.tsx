@@ -15,7 +15,7 @@ export function SolonWalletCard({ instance }: { instance: SolonInstance }) {
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
 
   return (
-    <section className="border border-[var(--hairline)] bg-black p-8">
+    <section className="border border-[var(--hairline-strong)] bg-black p-8">
       <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
         Solon
       </h2>
@@ -39,7 +39,7 @@ export function SolonWalletCard({ instance }: { instance: SolonInstance }) {
         </span>
       </div>
 
-      <div className="mt-6 h-px bg-[var(--hairline)]" />
+      <div className="mt-6 h-px bg-[var(--hairline-strong)]" />
 
       <WatchingFooter initialWatching={watching} />
     </section>
