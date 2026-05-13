@@ -12,6 +12,7 @@ import {
 import { searchNews } from "@/lib/data-sources/news";
 import { WATCHER_SCHEMA, WATCHER_SYSTEM_PROMPT, type WatcherOutput } from "./prompt";
 import { triggerCycleFromWatcher } from "./trigger";
+import { runFastTraderForInstance } from "@/app/services/fast-trader/fast-trader.service";
 
 /**
  * Run one watcher tick for a given Solon instance. Reads Hyperliquid mark
@@ -112,8 +113,8 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     triggerCycleFromWatcher(instance as SolonInstance, parsed.rationale)
       .catch((e) => console.error("[watcher] cycle trigger failed:", e));
   } else if (parsed.verdict === "execute") {
-    // Fast Trader service lands next commit. Log for now.
-    console.log(`[watcher] EXECUTE verdict on ${instance.id}: ${parsed.rationale} (fast-trader service pending)`);
+    runFastTraderForInstance(instance as SolonInstance, parsed.rationale)
+      .catch((e) => console.error("[watcher] fast-trader failed:", e));
   }
 
   return parsed;

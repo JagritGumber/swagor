@@ -27,7 +27,7 @@ export async function getWatcherTriggerForCycle(opts: {
     .where(
       and(
         eq(monitorTicks.solonInstanceId, instance.id),
-        eq(monitorTicks.verdict, "escalate"),
+        eq(monitorTicks.verdict, "deliberate"),
         lte(monitorTicks.createdAt, opts.cycleStartedAt),
       ),
     )
