@@ -39,6 +39,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# cloudflare workers + opennext
+.open-next/
+.wrangler/
+cloudflare-env.d.ts
+
 # project-specific
 references/
 .idea/

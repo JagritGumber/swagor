@@ -14,6 +14,7 @@
     "@circle-fin/smart-contract-platform": "^4.3.0",
     "@circle-fin/user-controlled-wallets": "^4.5.0",
     "@ethersproject/abi": "^5.7.0",
+    "@opennextjs/cloudflare": "^1.19.9",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-checkbox": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.2",
@@ -34,7 +35,7 @@
     "drizzle-orm": "^0.45.2",
     "geist": "^1.2.1",
     "lucide-react": "^0.436.0",
-    "next": "latest",
+    "next": "^14.2.15",
     "next-themes": "^0.3.0",
     "openai": "^6.22.0",
     "postgres": "^3.4.9",
@@ -60,6 +61,7 @@
     "supabase": "^2.2.1",
     "tailwind-merge": "^2.5.2",
     "tailwindcss": "^4.0.0",
-    "typescript": "5.3.3"
+    "typescript": "5.3.3",
+    "wrangler": "^4.90.1"
   }
 }
