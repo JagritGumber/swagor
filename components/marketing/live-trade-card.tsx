@@ -80,7 +80,7 @@ export function LiveTradeCard() {
               preserveAspectRatio="none"
               className="block h-[280px] w-full sm:h-[340px]"
               role="img"
-              aria-label="Hypothetical price line for the sample USDe / USDC trade, climbing from $98 area to $168 with entry marked at $115 and exit at $158."
+              aria-label="Hypothetical ETH-USD perp price line, ranging from $3098 to $3382 with entry marked at $3214 and exit at $3382."
             >
               <defs>
                 <linearGradient id="grad-accent" x1="0" y1="0" x2="0" y2="1">
