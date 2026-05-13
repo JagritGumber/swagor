@@ -16,7 +16,7 @@ export default function SignIn({ searchParams }: { searchParams: Message }) {
         Sign in
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Welcome back to your Solon.
+        Welcome back to your Selbo.
       </p>
 
       <form className="mt-6 space-y-5">
@@ -50,7 +50,7 @@ export default function SignIn({ searchParams }: { searchParams: Message }) {
       </form>
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
-        New to Solon?{" "}
+        New to Selbo?{" "}
         <Link href="/sign-up" className="font-medium text-[var(--neon-cyan)] underline-offset-4 hover:underline">
           Create an account
         </Link>

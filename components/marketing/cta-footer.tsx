@@ -1,6 +1,6 @@
 /**
  * Final CTA with corner brackets + footer with brand row and 2-col grid.
- * Solon wordmark has no dot prefix in footer. "Watch our flagship" copy.
+ * Selbo wordmark has no dot prefix in footer. "Watch our flagship" copy.
  * Stronger separator color so the brand row break is visible.
  */
 
@@ -15,7 +15,7 @@ export function CtaFooter() {
       <section className="relative isolate overflow-hidden border-b border-[var(--hairline-strong)] bg-black">
         <div className="mx-auto max-w-6xl px-6 py-16 text-center sm:py-20">
           <h2 className="text-[40px] font-bold uppercase leading-[0.95] tracking-tight text-balance text-foreground">
-            Deploy your <span className="text-[var(--neon-cyan)]">Solon</span>.
+            Deploy your <span className="text-[var(--neon-cyan)]">Selbo</span>.
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">
             Sign in. Get a Circle wallet on Arc. Write your strategy in plain English. <span className="text-foreground">Your AI is cycling within ninety seconds.</span>
@@ -25,7 +25,7 @@ export function CtaFooter() {
               href="/sign-up"
               className="cta-glow group inline-flex items-center gap-3 border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-8 py-5 text-sm font-bold uppercase tracking-[0.2em] text-black hover:bg-black hover:text-[var(--neon-cyan)]"
             >
-              <span>Deploy your Solon</span>
+              <span>Deploy your Selbo</span>
               <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
@@ -49,7 +49,7 @@ export function CtaFooter() {
           {/* Brand row */}
           <div className="border-b border-[var(--hairline-strong)] pb-6">
             <div className="text-2xl font-bold tracking-tight text-foreground">
-              Solon
+              Selbo
             </div>
             <p className="mt-2 max-w-2xl text-base text-muted-foreground">
               Public AI crypto trader. Built on Circle. Recorded on Arc.
@@ -96,7 +96,7 @@ export function CtaFooter() {
             </div>
           </div>
           <div className="mt-10 border-t border-[var(--hairline-strong)] pt-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
-            © 2026 Solon
+            © 2026 Selbo
           </div>
         </div>
       </footer>

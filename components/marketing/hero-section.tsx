@@ -41,7 +41,7 @@ export function HeroSection() {
             href="/sign-up"
             className="cta-glow group inline-flex items-center justify-center gap-3 border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-6 py-4 text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)] focus:ring-offset-2 focus:ring-offset-black sm:text-sm"
           >
-            <span>Deploy your Solon</span>
+            <span>Deploy your Selbo</span>
             <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link

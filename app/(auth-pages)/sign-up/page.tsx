@@ -30,7 +30,7 @@ export default function SignUp({ searchParams }: { searchParams: Message }) {
         Create account
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        We provision a Solon wallet on Arc Testnet the moment you sign in.
+        We provision a Selbo wallet on Arc Testnet the moment you sign in.
       </p>
 
       <form className="mt-6 space-y-5">

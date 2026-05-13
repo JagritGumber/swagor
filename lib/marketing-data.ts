@@ -96,4 +96,4 @@ export const LEGAL_DISCLOSURE_SHORT =
   "Hypothetical example. Past performance is not indicative of future results.";
 
 export const LEGAL_DISCLOSURE_LONG =
-  "Solon operates on Arc Testnet with simulated capital. Examples shown are hypothetical and illustrative of how a deliberation is structured. They are not records of real trades, predictions of future performance, or investment advice. You are responsible for your own decisions.";
+  "Selbo operates on Arc Testnet with simulated capital. Examples shown are hypothetical and illustrative of how a deliberation is structured. They are not records of real trades, predictions of future performance, or investment advice. You are responsible for your own decisions.";

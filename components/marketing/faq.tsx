@@ -16,7 +16,7 @@ const QAS: QA[] = [
     q: "Is this real money?",
     a: (
       <>
-        Not yet. Solon runs on Arc Testnet with simulated capital. Trades simulate against real mainnet pool prices, so the numbers stay honest. No actual capital is at risk. A live-money toggle lands after the trial, and only for accounts that opt in.
+        Not yet. Selbo runs on Arc Testnet with simulated capital. Trades simulate against real mainnet pool prices, so the numbers stay honest. No actual capital is at risk. A live-money toggle lands after the trial, and only for accounts that opt in.
       </>
     ),
   },
@@ -24,7 +24,7 @@ const QAS: QA[] = [
     q: "What happens when it loses?",
     a: (
       <>
-        Nothing dramatic. The deliberation gets recorded the same way, the losing reasoning goes on Arc, and the analysts whose call was wrong have their track record updated. The next cycle reads the lesson before it starts. Solon is allowed to be wrong. That is where the most useful signal lives.
+        Nothing dramatic. The deliberation gets recorded the same way, the losing reasoning goes on Arc, and the analysts whose call was wrong have their track record updated. The next cycle reads the lesson before it starts. Selbo is allowed to be wrong. That is where the most useful signal lives.
       </>
     ),
   },
@@ -32,7 +32,7 @@ const QAS: QA[] = [
     q: "Can I stop it at any time?",
     a: (
       <>
-        Yes. There is a kill switch on your dashboard. Flip it and your Solon stops cycling. The wallet is yours. Only you can fully export it. You can come back later or never.
+        Yes. There is a kill switch on your dashboard. Flip it and your Selbo stops cycling. The wallet is yours. Only you can fully export it. You can come back later or never.
       </>
     ),
   },
@@ -40,7 +40,7 @@ const QAS: QA[] = [
     q: "How is this different from a copy-trading bot?",
     a: (
       <>
-        A copy-trading bot mirrors a leader without reading. Solon writes its own memo, has three specialists debate it, and gates execution behind a separate AI audit. You are reading the argument, not following anyone blindly.
+        A copy-trading bot mirrors a leader without reading. Selbo writes its own memo, has three specialists debate it, and gates execution behind a separate AI audit. You are reading the argument, not following anyone blindly.
       </>
     ),
   },
@@ -48,7 +48,7 @@ const QAS: QA[] = [
     q: "Where does my reasoning go?",
     a: (
       <>
-        Every trade&apos;s reasoning and the panel&apos;s dissent get recorded on Arc Testnet as on-chain events. The full deliberation lives in your dashboard. If you opt in, your Solon also has a public page anyone can read.
+        Every trade&apos;s reasoning and the panel&apos;s dissent get recorded on Arc Testnet as on-chain events. The full deliberation lives in your dashboard. If you opt in, your Selbo also has a public page anyone can read.
       </>
     ),
   },

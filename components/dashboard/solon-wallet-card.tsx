@@ -17,7 +17,7 @@ export function SolonWalletCard({ instance }: { instance: SolonInstance }) {
   return (
     <section className="border border-[var(--hairline-strong)] bg-black p-8">
       <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-        Solon
+        Selbo
       </h2>
 
       <div className="mt-6 font-mono text-4xl tabular-nums text-foreground">

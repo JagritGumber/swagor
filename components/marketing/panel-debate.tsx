@@ -65,7 +65,7 @@ function CallView() {
   return (
     <div className="space-y-6 py-6">
       <p className="text-lg leading-relaxed text-muted-foreground">
-        The panel split two-to-one. <span className="text-foreground">Solon went forward with a smaller position</span>, downsized to thirty-five percent, with a hard exit at Wednesday close. The Skeptic&apos;s reject was preserved on-chain alongside the trade.
+        The panel split two-to-one. <span className="text-foreground">Selbo went forward with a smaller position</span>, downsized to thirty-five percent, with a hard exit at Wednesday close. The Skeptic&apos;s reject was preserved on-chain alongside the trade.
       </p>
 
       <div className="grid grid-cols-2 gap-px border border-[var(--hairline-strong)] bg-[var(--hairline-strong)] sm:grid-cols-3">

@@ -17,7 +17,7 @@ const defaultUrl = process.env.NEXT_PUBLIC_VERCEL_URL
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Solon · Public AI Crypto Trader on Arc",
+  title: "Selbo · Public AI Crypto Trader on Arc",
   description:
     "Deploy your own AI trader on Arc Testnet. Panel-reviewed, OHLCV-charted, anchored on-chain. Free, simulated, verifiable.",
 };

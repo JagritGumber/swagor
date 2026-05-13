@@ -16,7 +16,7 @@ export function TriggerSection({ tick }: { tick: MonitorTick | null }) {
         Trigger
       </div>
       <h2 className="mt-3 text-2xl font-bold uppercase leading-tight text-foreground">
-        Why Solon escalated
+        Why Selbo escalated
       </h2>
       <p className="mt-4 text-base text-foreground">
         {tick.rationale}

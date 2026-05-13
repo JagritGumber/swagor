@@ -13,8 +13,8 @@ type Stage = {
 
 const STAGES: Stage[] = [
   {
-    title: "Solon scans",
-    body: "Every fifteen minutes Solon glances at the market. Prices, depth, news, recent lessons. One light call. Almost always it sees nothing worth doing, logs it, and goes back to waiting.",
+    title: "Selbo scans",
+    body: "Every fifteen minutes Selbo glances at the market. Prices, depth, news, recent lessons. One light call. Almost always it sees nothing worth doing, logs it, and goes back to waiting.",
     Icon: Scan,
   },
   {
@@ -23,8 +23,8 @@ const STAGES: Stage[] = [
     Icon: Bell,
   },
   {
-    title: "Solon proposes",
-    body: "Solon drafts a single trade. What to do, on which venue, at what size, with what to watch for as it plays out. Nothing executes yet.",
+    title: "Selbo proposes",
+    body: "Selbo drafts a single trade. What to do, on which venue, at what size, with what to watch for as it plays out. Nothing executes yet.",
     Icon: PenLine,
   },
   {
