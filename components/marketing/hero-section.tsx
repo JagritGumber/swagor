@@ -15,19 +15,18 @@ export function HeroSection() {
 
       <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-24 md:py-32">
         <h1 className="mb-6 text-[clamp(34px,8vw,88px)] font-bold uppercase leading-[0.95] tracking-tight text-balance">
-          <span className="block">
-            <span className="inline-block animate-typing overflow-hidden whitespace-nowrap align-bottom">
-              Deploy your
-            </span>
+          <span
+            className="block"
+            style={{ animation: "rise-in 0.7s cubic-bezier(0.16,1,0.3,1) 0ms both" }}
+          >
+            Deploy your
           </span>
-          <span className="block">
-            <span
-              className="inline-block overflow-hidden whitespace-nowrap align-bottom"
-              style={{ animation: "typing 1.6s steps(11, end) 2.6s 1 normal both" }}
-            >
-              <span className="text-[var(--neon-cyan)]">AI</span>{" "}
-              <span>trader.</span>
-            </span>
+          <span
+            className="block"
+            style={{ animation: "rise-in 0.7s cubic-bezier(0.16,1,0.3,1) 220ms both" }}
+          >
+            <span className="text-[var(--neon-cyan)]">AI</span>{" "}
+            <span>trader.</span>
             <span className="ml-1 inline-block h-[0.9em] w-[0.4em] translate-y-[2px] animate-blink bg-[var(--neon-cyan)] align-bottom" />
           </span>
         </h1>
