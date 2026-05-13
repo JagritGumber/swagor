@@ -1,11 +1,11 @@
 /**
- * Hero. Full-screen with a three.js animated wave-field of cyan dots
- * behind the headline. Typewriter headline + caret + ticker.
+ * Hero. Right-side Paper Shaders Warp dithering, mask-faded into the page
+ * on the left. Typewriter headline + caret + ticker on top.
  */
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { DottedSurface } from "./dotted-surface";
+import { Dithering } from "@paper-design/shaders-react";
 import { TickerTape } from "./ticker-tape";
 
 export function HeroSection() {
@@ -13,20 +13,23 @@ export function HeroSection() {
     <section className="scanlines relative isolate w-full overflow-hidden border-b border-[var(--hairline-strong)]">
       <TickerTape />
 
-      <DottedSurface className="pointer-events-none absolute inset-0 z-0" />
-
-      {/* Soft radial vignette over the wave field so headline reads cleanly. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 50% at 35% 50%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 50%, transparent 100%)",
-        }}
-      />
+        className="pointer-events-none absolute inset-y-0 right-0 z-0 w-1/2 [mask-image:linear-gradient(to_right,transparent,black_35%)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_35%)]"
+      >
+        <Dithering
+          colorBack="#000000"
+          colorFront="#00d4ff"
+          shape="warp"
+          type="4x4"
+          size={2}
+          speed={0.6}
+          scale={0.8}
+          style={{ width: "100%", height: "100%" }}
+        />
+      </div>
 
       <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-24 md:py-32">
-        {/* Headline. Typewriter with caret. */}
         <h1 className="mb-6 text-[clamp(34px,8vw,88px)] font-bold uppercase leading-[0.95] tracking-tight text-balance">
           <span className="block">
             <span className="inline-block animate-typing overflow-hidden whitespace-nowrap align-bottom">
@@ -40,14 +43,12 @@ export function HeroSection() {
           </span>
         </h1>
 
-        {/* Subtitle */}
         <p className="max-w-2xl text-balance text-base text-muted-foreground sm:text-lg">
           Three specialist AI agents debate every trade. A cross-model auditor
           reviews the debate. <span className="text-foreground">Every decision and every dissent</span> gets anchored on Arc.
           You can read all of it.
         </p>
 
-        {/* CTAs */}
         <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link
             href="/sign-up"
