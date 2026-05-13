@@ -12,15 +12,20 @@ import { relations } from "drizzle-orm";
 import { trades } from "./trades";
 
 /**
- * Per-trade learning record. Created after a trade settles.
- * - outcome: 'win' | 'loss' | 'breakeven'
- * - reviewerAccuracy: { hermes: { verdict, justification }, athena: ..., cassandra: ... }
- *   where verdict is 'correct' | 'wrong' | 'unclear' (LIGHT LLM-tagged)
- * - lessons: short plain-English patterns extracted by LLM for future cycles
+ * Per-trade learning record. Inserted when a trade closes. The orchestrator
+ * and watcher read recent lessons for the same user as context for future
+ * cycles -- this is the in-context learning loop the landing page promises.
+ *
+ *  - outcome: 'win' | 'loss' | 'breakeven'
+ *  - pnlPct: realized return as percent (null when entry price was missing)
+ *  - lessons: 1-3 plain-English patterns extracted by a LIGHT LLM
+ *
+ * userId is text because Better Auth issues nanoid-format IDs that don't
+ * fit uuid columns.
  */
 export const memoryEntries = pgTable("memory_entries", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull(),
+  userId: text("user_id").notNull(),
   tradeId: uuid("trade_id").references(() => trades.id, { onDelete: "cascade" }).unique(),
   outcome: text("outcome").notNull(),
   pnlPct: numeric("pnl_pct"),
@@ -31,14 +36,14 @@ export const memoryEntries = pgTable("memory_entries", {
 
 /**
  * Per-user, per-reviewer cumulative track record. DISPLAY-ONLY on the user's
- * dashboard + opt-in public /solon/{username} page. Does NOT influence the
- * synthesis writer or critic — that would re-introduce hardcoded weighting.
+ * dashboard + opt-in public /selbo/{username} page. Does NOT influence the
+ * synthesis writer or critic -- that would re-introduce hardcoded weighting.
  */
 export const reviewerTrackRecords = pgTable(
   "reviewer_track_records",
   {
-    userId: uuid("user_id").notNull(),
-    reviewerId: text("reviewer_id").notNull(), // 'hermes' | 'athena' | 'cassandra'
+    userId: text("user_id").notNull(),
+    reviewerId: text("reviewer_id").notNull(),
     tradesEvaluated: integer("trades_evaluated").notNull().default(0),
     correctCalls: integer("correct_calls").notNull().default(0),
     lastUpdated: timestamp("last_updated", { withTimezone: true }).defaultNow().notNull(),

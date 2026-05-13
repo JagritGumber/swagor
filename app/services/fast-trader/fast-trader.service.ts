@@ -7,6 +7,7 @@ import { traderLlm, MODELS } from "@/lib/llm-client";
 import { fetchAllMids, fetchMetaAndCtxs, fetchClearinghouse } from "@/lib/data-sources/hyperliquid";
 import type { SolonInstance } from "@/lib/db/schema/solon-instances";
 import { FAST_TRADER_SCHEMA, FAST_TRADER_SYSTEM_PROMPT, type FastTraderDecision } from "./prompt";
+import { recordTradeMemory } from "@/app/services/memory.service";
 
 /**
  * Compute paper-mode PnL for a closed position at the given exit price.
@@ -113,8 +114,9 @@ export async function runFastTraderForInstance(
       console.log(`[fast-trader] CLOSE ${assetUpper} skipped: no mark price available`);
     } else {
       const pnl = computePnl(target, markPx);
+      const closedAt = new Date();
       await db.update(trades).set({
-        status: "closed", closedAt: new Date(),
+        status: "closed", closedAt,
         exitPrice: markPx.toString(),
         pnlUsd: pnl !== null ? pnl.toString() : null,
       }).where(eq(trades.id, target.id));
@@ -125,6 +127,14 @@ export async function runFastTraderForInstance(
           simulatedBalanceUsd: sql`${solonInstances.simulatedBalanceUsd} + ${pnl.toString()}`,
         }).where(eq(solonInstances.id, instance.id));
       }
+      // Fire-and-forget memory write so future cycles inherit the lesson.
+      void recordTradeMemory({
+        ...target,
+        status: "closed",
+        closedAt,
+        exitPrice: markPx.toString(),
+        pnlUsd: pnl !== null ? pnl.toString() : null,
+      });
       console.log(`[fast-trader] CLOSE ${assetUpper} @ ${markPx}; pnl=${pnl}`);
     }
   } else {
