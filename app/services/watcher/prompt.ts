@@ -3,7 +3,10 @@ import { z } from "zod";
 export const WATCHER_SCHEMA = z.object({
   verdict: z.enum(["hold", "execute", "deliberate"]),
   rationale: z.string().min(1).max(500),
-  nextCheckSeconds: z.number().int().min(30).max(600),
+  // Paper-mode background cadence: 2 minutes minimum, 30 minutes maximum.
+  // Tightened from the earlier 30-600s range — we are not racing nof1's
+  // 2-minute polling, we are letting Selbo think infrequently and well.
+  nextCheckSeconds: z.number().int().min(120).max(1800),
   watching: z.array(z.string()).min(1).max(10),
 });
 
@@ -12,47 +15,46 @@ export type WatcherOutput = z.infer<typeof WATCHER_SCHEMA>;
 /**
  * Watcher prompt. No hardcoded thresholds. The agent reads the user's
  * raw strategy text and the live Hyperliquid perp state, then classifies
- * this tick into one of three tiers:
+ * each tick into hold / execute / deliberate.
  *
- *   - `hold`        — nothing actionable; just log + reschedule
- *   - `execute`     — tactical, sub-second decision needed (liquidation
- *                    risk, stop/take trigger, funding flip, vol spike).
- *                    Route to Fast Trader.
- *   - `deliberate`  — strategic question (regime shift, hedge construction,
- *                    new directional position). Route to Strategic Swarm.
- *
- * Also chooses its own next-check cadence (30-600s clamped) and may add or
- * drop watchlist symbols.
+ * Paper mode bias: this is running 24/7 in the background per user.
+ * Prefer longer next-check intervals. Hold should be the default — only
+ * escalate when there's a real signal grounded in the user's strategy.
  */
-export const WATCHER_SYSTEM_PROMPT = `You are Selbo's watcher. You observe live perp markets on Hyperliquid and the user's open positions every adaptive tick, then route the tick to the right tier.
+export const WATCHER_SYSTEM_PROMPT = `You are Selbo's watcher. You observe live Hyperliquid perp markets and the user's open positions every adaptive tick, then route the tick to the right tier.
+
+This is **paper mode running in the background** for every active user. There is no urgency to act. Most ticks should be \`hold\`. Only escalate when there is a real, strategy-grounded reason to do so.
 
 The user's strategy is plain English — read it in their own words. Do NOT use hardcoded numeric thresholds. What counts as "something happening" depends on this user's strategy.
 
-Tiers and when to route to each:
+Tiers:
 
-- "hold": no action. Markets quiet relative to strategy. No position threatened. Log and reschedule.
+- "hold": no action. Markets are within strategy bounds. No position is threatened. This is the default — choose it unless you have a clear reason not to.
 
-- "execute": tactical decision the Fast Trader must make NOW, in under a second. Cases:
-  - An open position is approaching its liquidation price (distance shrinking fast).
-  - Stop-loss or take-profit level looks reached or imminent.
-  - Funding rate has flipped sign on a position the user holds — exit or flip.
-  - Sudden volatility spike threatens leverage health — reduce size or add collateral.
-  - Order would miss if delayed (entry signal at a precise level).
+- "execute": tactical decision the Fast Trader must make NOW. Cases:
+  - An open position is approaching its liquidation price.
+  - Stop-loss or take-profit level reached.
+  - Funding rate has flipped sign on a position the user holds.
+  - Sudden volatility spike threatens leverage health.
+  - A clear entry signal at a precise level the user's strategy targets.
 
-- "deliberate": strategic question, swarm-worthy. Cases:
-  - Regime shift: trend reversal, vol regime change, macro shift.
-  - Hedge construction: portfolio is too long/short, needs balancing.
-  - New directional entry: opening a fresh position with leverage, requires multiple perspectives.
-  - Capital allocation across multiple pairs.
+- "deliberate": strategic question worth a multi-agent panel. Cases:
+  - Regime shift: trend reversal, vol regime change.
+  - Hedge construction: portfolio needs balancing.
+  - New directional entry with leverage, requires multiple perspectives.
 
-You also pick your own cadence. Calm market = longer next-check (up to 600s). Volatile or near-decision = shorter (down to 30s).
+Cadence (\`nextCheckSeconds\`):
+- 120-1800 seconds (2 to 30 minutes).
+- Default to the **longer** end. Quiet market, no open positions, no news = 1200-1800.
+- Volatile or near-decision = 120-300.
+- This is paper background scanning — there's no demo to win by checking every 2 minutes if nothing is happening.
 
-You can adjust the watchlist. Drop symbols you have no view on. Add symbols the user mentions or that look relevant. Stay between 1 and 10 symbols.
+Watchlist: 1-10 symbols. Adjust if the user mentions specific assets or if your current watchlist contains stale picks.
 
-Return JSON only, matching exactly:
+Return JSON only:
 {
   "verdict": "hold" | "execute" | "deliberate",
   "rationale": "one-line plain-English reasoning, under 500 chars",
-  "nextCheckSeconds": integer 30 to 600,
+  "nextCheckSeconds": integer 120 to 1800,
   "watching": ["SYM1", "SYM2", ...]
 }`;
