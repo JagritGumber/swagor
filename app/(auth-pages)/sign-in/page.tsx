@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { signInAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
-import { GoogleLoginButton } from "@/components/google-login-button";
 import { SubmitButton } from "@/components/submit-button";
 
 const INPUT =
@@ -49,15 +48,7 @@ export default function SignIn({ searchParams }: { searchParams: Message }) {
         </SubmitButton>
       </form>
 
-      <div className="my-6 flex items-center gap-3">
-        <span className="h-px flex-1 bg-[var(--hairline-strong)]" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">or</span>
-        <span className="h-px flex-1 bg-[var(--hairline-strong)]" />
-      </div>
-
-      <GoogleLoginButton nextUrl="/dashboard" />
-
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+      <p className="mt-8 text-center text-sm text-muted-foreground">
         New to Solon?{" "}
         <Link href="/sign-up" className="font-medium text-[var(--neon-cyan)] underline-offset-4 hover:underline">
           Create an account
