@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 /**
  * Auth pages shell. Full-bleed dotted-cyan radial background mirrors the
- * landing hero. Brand + home link live in the nav (NavBrand swaps on auth
- * paths), so the page itself is just card + footer.
+ * landing hero. Home back link sits below the nav at the same x as the
+ * Solon wordmark (max-w-6xl rail), so it reads as the next step in the
+ * same reading flow.
  */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -23,7 +25,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         }}
       />
 
-      <main className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-md flex-col items-center justify-center gap-8 px-6 py-12">
+      <div className="relative z-10 mx-auto mt-4 w-full max-w-6xl px-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground hover:text-[var(--neon-cyan)]"
+        >
+          <ArrowLeft aria-hidden className="h-3.5 w-3.5" />
+          Home
+        </Link>
+      </div>
+
+      <main className="relative z-10 mx-auto flex min-h-[calc(100vh-9rem)] w-full max-w-md flex-col items-center justify-center gap-8 px-6 py-12">
         {children}
 
         <p className="text-center text-xs text-muted-foreground/70">
