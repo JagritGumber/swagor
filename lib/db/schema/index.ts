@@ -10,3 +10,6 @@ export * from "./trade-proposals";
 export * from "./trades";
 export * from "./memory";
 export * from "./tweet-drafts";
+
+// Better Auth — replaces Supabase auth.users dependency
+export * from "./auth";

@@ -36,6 +36,11 @@ export default defineConfig({
     "memory_entries",
     "reviewer_track_records",
     "tweet_drafts",
+    // Better Auth
+    "user",
+    "session",
+    "account",
+    "verification",
   ],
   verbose: true,
   strict: true,
