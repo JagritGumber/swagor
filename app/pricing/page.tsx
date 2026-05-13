@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 /**
  * Public pricing page. Reads the tier matrix from lib/tiers.ts so the
  * source of truth stays single. Checkout button is a client component
- * that POSTs to /api/stripe/checkout and redirects to Stripe.
+ * that POSTs to /api/polar/checkout and redirects to Polar's hosted page.
  */
 export default async function PricingPage() {
   const supabase = createSupabaseServerClient();

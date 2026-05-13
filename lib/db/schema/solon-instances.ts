@@ -33,12 +33,13 @@ export const solonInstances = pgTable("solon_instances", {
   nextWatcherAt: timestamp("next_watcher_at", { withTimezone: true }).defaultNow().notNull(),
   currentlyWatching: jsonb("currently_watching").$type<string[]>().notNull().default(DEFAULT_WATCHLIST),
   // Subscription tier — gates watcher cadence floor, panel deliberations,
-  // public profile, max Solon count. Matrix in lib/tiers.ts. Stripe customer
-  // + subscription IDs persisted so the webhook can map events back to
-  // the right instance without a user_id lookup.
+  // public profile, max Solon count. Matrix in lib/tiers.ts. Billing
+  // customer + subscription IDs persisted so the webhook can map events
+  // back to the right instance without a user_id lookup. Provider-neutral
+  // column names because the billing vendor (currently Polar) may change.
   subscriptionTier: text("subscription_tier").notNull().default("free"),
-  stripeCustomerId: text("stripe_customer_id").unique(),
-  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  billingCustomerId: text("billing_customer_id").unique(),
+  billingSubscriptionId: text("billing_subscription_id").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
