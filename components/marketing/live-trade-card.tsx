@@ -8,10 +8,12 @@ import { ArrowUpRight } from "lucide-react";
 import { LEGAL_DISCLOSURE_SHORT, SAMPLE_CYCLE } from "@/lib/marketing-data";
 import { SectionEyebrow } from "./section-eyebrow";
 
+// Illustrative ETH-perp mark trajectory over a ~14h hold. Entry at idx 8
+// (~$3214) and exit at idx 25 (~$3382) match the SAMPLE_CYCLE numbers.
 const CHART = [
-  98, 100, 99, 102, 105, 103, 108, 110, 115, 118,
-  117, 122, 125, 127, 130, 132, 130, 134, 138, 141,
-  144, 142, 148, 151, 155, 158, 156, 160, 162, 165,
+  3098, 3105, 3092, 3138, 3162, 3148, 3184, 3196, 3214, 3232,
+  3220, 3252, 3268, 3274, 3290, 3308, 3294, 3322, 3340, 3354,
+  3346, 3360, 3372, 3368, 3378, 3382, 3370, 3358, 3346, 3338,
 ];
 const ENTRY_IDX = 8;
 const EXIT_IDX = 25;
