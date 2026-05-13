@@ -35,14 +35,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "goalText required (min 5 chars)" }, { status: 400 });
   }
 
-  const portfolio = await findOrCreatePortfolioForWallet(user.id, walletAddress, "paper");
-  await Promise.all([
-    saveGoal(portfolio.id, goalText, null),
-    db
-      .update(solonInstances)
-      .set({ strategyText: goalText })
-      .where(eq(solonInstances.userId, user.id)),
-  ]);
-
-  return NextResponse.json({ ok: true });
+  try {
+    const portfolio = await findOrCreatePortfolioForWallet(user.id, walletAddress, "paper");
+    await Promise.all([
+      saveGoal(portfolio.id, goalText, null),
+      db
+        .update(solonInstances)
+        .set({ strategyText: goalText })
+        .where(eq(solonInstances.userId, user.id)),
+    ]);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("[/api/goals] save failed:", e);
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Internal error" },
+      { status: 500 },
+    );
+  }
 }
