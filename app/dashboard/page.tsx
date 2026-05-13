@@ -3,7 +3,9 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ensureSolonInstance } from "@/app/services/solon-instance.service";
 import { listOpenPositions } from "@/app/services/positions.service";
+import { listClosedTrades } from "@/app/services/trades.service";
 import { DecisionsSection } from "@/components/dashboard/decisions-section";
+import { TradeHistory } from "@/components/dashboard/trade-history";
 import { GoalForm } from "@/components/dashboard/goal-form";
 import { KillSwitchCard } from "@/components/dashboard/kill-switch-card";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
@@ -28,7 +30,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   // Dev strip auto-shows locally; in prod requires ?dev=1 / true / yes.
   const isDev = process.env.NODE_ENV !== "production" || DEV_TRUTHY.has(devParam);
 
-  const positions = await listOpenPositions(user.id);
+  const [positions, closedTrades] = await Promise.all([
+    listOpenPositions(user.id),
+    listClosedTrades(user.id, 20),
+  ]);
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
 
   return (
@@ -38,6 +43,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
       {isDev && <WatcherDevControls />}
       <MarketChartCard watching={watching} />
       <PositionsTable positions={positions} />
+      <TradeHistory trades={closedTrades} />
       <GoalForm walletAddress={addr} initialStrategy={instance.strategyText} />
       <DecisionsSection walletAddress={addr} />
       <ProfileSettings initialUsername={instance.username ?? null} initialPublic={instance.publicProfile} />
