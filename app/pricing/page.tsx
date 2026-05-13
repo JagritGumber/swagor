@@ -1,17 +1,17 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { TIERS } from "@/lib/tiers";
 import { CheckoutButton } from "@/components/pricing/checkout-button";
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { auth } from "@/lib/auth";
 
 /**
  * Public pricing page. Reads the tier matrix from lib/tiers.ts so the
- * source of truth stays single. Checkout button is a client component
- * that POSTs to /api/polar/checkout and redirects to Polar's hosted page.
+ * source of truth stays single. Checkout button uses Better Auth's
+ * `authClient.checkout({ slug })` which redirects to Polar's hosted page.
  */
 export default async function PricingPage() {
-  const supabase = createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const signedIn = !!user;
+  const session = await auth.api.getSession({ headers: await headers() });
+  const signedIn = !!session;
 
   return (
     <div className="mx-auto max-w-6xl px-6 pb-24 pt-12">

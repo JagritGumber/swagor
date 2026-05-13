@@ -2,20 +2,19 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { monitorTicks, solonInstances } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { auth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
  * Returns the last N watcher ticks for the calling user's Solon instance.
- * Used by the dashboard's dev-mode watching strip. Auth-checked: a user can
- * only see their own ticks.
+ * Auth-checked: a user can only see their own ticks.
  */
 export async function GET(request: Request) {
-  const supabase = createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = session.user;
 
   const { searchParams } = new URL(request.url);
   const limit = Math.min(Number(searchParams.get("limit") ?? "10"), 50);

@@ -1,4 +1,5 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ensureSolonInstance } from "@/app/services/solon-instance.service";
 import { listOpenPositions } from "@/app/services/positions.service";
@@ -15,9 +16,9 @@ type SearchParams = Promise<{ dev?: string }>;
 const DEV_TRUTHY = new Set(["1", "true", "yes", "on"]);
 
 export default async function DashboardPage({ searchParams }: { searchParams: SearchParams }) {
-  const supabase = createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/sign-in");
+  const user = session.user;
 
   const instance = await ensureSolonInstance(user.id);
   const addr = instance.circleWalletAddress;

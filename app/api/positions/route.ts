@@ -1,18 +1,14 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { auth } from "@/lib/auth";
 import { getArcUsdcBalance } from "@/lib/protocols/arc-usdc";
 
 /**
  * GET /api/positions?walletAddress=0x...
- * Returns the user's current on-chain positions. For now: just Arc Testnet
- * native USDC balance. Expands later to per-protocol reads.
+ * Returns the user's current on-chain positions.
  */
 export async function GET(request: Request) {
-  const supabase = createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const walletAddress = searchParams.get("walletAddress")?.toLowerCase() as

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/client";
 import { solonInstances } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -9,14 +10,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Dev-only: bypass the watcher entirely and create a cycle directly. Tests
- * the orchestrator -> swarm -> tax -> critic -> Arc anchor path without
- * depending on the watcher's LLM mood.
+ * Dev-only: bypass the watcher entirely and create a cycle directly.
  */
 export async function POST() {
-  const supabase = createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = session.user;
 
   const [instance] = await db
     .select().from(solonInstances).where(eq(solonInstances.userId, user.id)).limit(1);

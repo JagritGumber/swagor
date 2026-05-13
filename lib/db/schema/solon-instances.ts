@@ -13,7 +13,9 @@ const DEFAULT_WATCHLIST = ["ETH", "BTC", "SOL"];
  */
 export const solonInstances = pgTable("solon_instances", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull().unique(), // FK to auth.users; Supabase enforces
+  // Text type because Better Auth issues nanoid-format user IDs.
+  // FK is application-level (Better Auth user.id) rather than DB-enforced.
+  userId: text("user_id").notNull().unique(),
   circleWalletId: text("circle_wallet_id").notNull().unique(),
   circleWalletAddress: text("circle_wallet_address").notNull(),
   simulatedBalanceUsd: numeric("simulated_balance_usd", { precision: 20, scale: 6 })

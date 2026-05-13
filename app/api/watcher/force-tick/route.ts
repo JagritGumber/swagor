@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/client";
 import { solonInstances } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -10,13 +11,12 @@ export const dynamic = "force-dynamic";
 
 /**
  * Dev-only: run a watcher tick for the authed user's Solon instance
- * regardless of next_watcher_at. Used by the ?dev=1 dashboard strip's
- * "Force tick" button to drive the pipeline without waiting on cadence.
+ * regardless of next_watcher_at.
  */
 export async function POST() {
-  const supabase = createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = session.user;
 
   const [instance] = await db
     .select().from(solonInstances).where(eq(solonInstances.userId, user.id)).limit(1);

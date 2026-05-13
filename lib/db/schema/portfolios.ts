@@ -3,7 +3,8 @@ import { relations } from "drizzle-orm";
 
 export const portfolios = pgTable("portfolios", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id"), // references auth.users(id); FK declared in DB only (Supabase auth schema)
+  // Text type because Better Auth issues nanoid-format user IDs.
+  userId: text("user_id"),
   walletAddress: text("wallet_address"), // EVM address of the user's connected wallet (Arc-compatible)
   mode: text("mode").notNull(), // 'paper' | 'live'
   baseCurrency: text("base_currency").default("USDC"),

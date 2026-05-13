@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { auth } from "@/lib/auth";
 import {
   findOrCreatePortfolioForWallet,
   saveGoal,
@@ -11,15 +11,12 @@ import { eq } from "drizzle-orm";
 /**
  * POST /api/goals
  * Saves the user's strategy text on both the portfolio (legacy) and the
- * Solon instance (what the watcher reads). No LLM parsing — agents read
- * the raw text in their own prompts. Returns instantly.
+ * Solon instance (what the watcher reads). No LLM parsing.
  */
 export async function POST(request: Request) {
-  const supabase = createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = session.user;
 
   const body = (await request.json().catch(() => ({}))) as {
     walletAddress?: string;

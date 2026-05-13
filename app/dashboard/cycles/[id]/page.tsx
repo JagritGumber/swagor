@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { ArrowLeft } from "lucide-react";
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { auth } from "@/lib/auth";
 import { getCycleById, getPortfolioById } from "@/app/services/portfolio.service";
 import { getWatcherTriggerForCycle } from "@/app/services/cycle-trace.service";
 import { TriggerSection } from "@/components/dashboard/cycle/trigger-section";
@@ -14,9 +15,9 @@ type Params = Promise<{ id: string }>;
 
 export default async function CycleTracePage({ params }: { params: Params }) {
   const { id } = await params;
-  const supabase = createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/sign-in");
+  const user = session.user;
 
   const cycle = await getCycleById(id);
   if (!cycle) notFound();

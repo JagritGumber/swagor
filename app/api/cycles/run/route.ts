@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { auth } from "@/lib/auth";
 import {
   findOrCreatePortfolioForWallet,
   createCycle,
@@ -10,18 +10,12 @@ import { runCycle } from "@/app/services/orchestrator.service";
  * POST /api/cycles/run
  * Body: { walletAddress: string }
  * Creates a rebalance cycle in 'running' status tied to the user's portfolio
- * (looked up or created for their connected wallet). Does NOT yet run agents
- * synchronously; that hook is wired in once the agent chain is built.
+ * and fires the orchestrator fire-and-forget.
  */
 export async function POST(request: Request) {
-  const supabase = createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = session.user;
 
   const body = (await request.json().catch(() => ({}))) as {
     walletAddress?: string;

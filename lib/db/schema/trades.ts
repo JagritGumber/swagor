@@ -19,7 +19,8 @@ import { tradeProposals } from "./trade-proposals";
  */
 export const trades = pgTable("trades", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull(),
+  // Text type because Better Auth issues nanoid-format user IDs.
+  userId: text("user_id").notNull(),
   proposalId: uuid("proposal_id").references(() => tradeProposals.id, {
     onDelete: "set null",
   }),

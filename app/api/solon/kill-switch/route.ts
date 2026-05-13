@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/client";
 import { solonInstances } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -9,13 +9,11 @@ export const dynamic = "force-dynamic";
 
 /**
  * Toggle (or set) the kill switch on the authed user's Solon instance.
- * The watcher cron loop reads solon_instances.kill_switch_active and skips
- * any instance where it is true.
  */
 export async function POST(request: Request) {
-  const supabase = createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = session.user;
 
   const body = (await request.json().catch(() => ({}))) as { active?: boolean };
 
