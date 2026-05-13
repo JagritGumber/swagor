@@ -36,7 +36,7 @@ export function LiveTradeCard() {
   return (
     <section
       aria-labelledby="sample-cycle-heading"
-      className="border-b border-[var(--hairline-strong)] bg-black"
+      className="cv-auto border-b border-[var(--hairline-strong)] bg-black"
     >
       <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
         <header className="mb-10 max-w-3xl">
@@ -72,7 +72,7 @@ export function LiveTradeCard() {
             </div>
           </div>
 
-          <div className="relative bg-[radial-gradient(ellipse_at_top,rgba(0,212,255,0.06),transparent_55%)]">
+          <div className="relative">
             <svg
               viewBox={`0 0 ${W} ${H}`}
               preserveAspectRatio="none"

@@ -68,7 +68,7 @@ export function Faq() {
   return (
     <section
       aria-labelledby="faq-heading"
-      className="border-b border-[var(--hairline-strong)] bg-black"
+      className="cv-auto border-b border-[var(--hairline-strong)] bg-black"
     >
       <div className="mx-auto max-w-4xl px-6 py-14 sm:py-20">
         <header className="mb-10">

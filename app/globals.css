@@ -226,6 +226,15 @@
   to { background-position: 26px 26px; }
 }
 
+/* Tells the browser it can skip rendering a section when offscreen.
+   Cuts paint/composite cost during scroll on long marketing pages.
+   contain-intrinsic-size keeps the scrollbar honest until the section
+   actually paints. Do NOT apply to the hero (always above the fold). */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}
+
 /* SVG line draws itself on first paint. */
 .chart-line {
   stroke-dasharray: 2400;

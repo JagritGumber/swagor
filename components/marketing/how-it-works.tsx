@@ -47,7 +47,7 @@ export function HowItWorks() {
   return (
     <section
       aria-labelledby="howitworks-heading"
-      className="border-b border-[var(--hairline-strong)] bg-black"
+      className="cv-auto border-b border-[var(--hairline-strong)] bg-black"
     >
       <div className="mx-auto max-w-6xl px-6 py-14 sm:py-20">
         <header className="mb-10 max-w-3xl">
