@@ -21,8 +21,13 @@ export function HeroSection() {
             </span>
           </span>
           <span className="block">
-            <span className="text-[var(--neon-cyan)]">AI</span>{" "}
-            <span>trader.</span>
+            <span
+              className="inline-block overflow-hidden whitespace-nowrap align-bottom"
+              style={{ animation: "typing 1.6s steps(11, end) 2.6s 1 normal both" }}
+            >
+              <span className="text-[var(--neon-cyan)]">AI</span>{" "}
+              <span>trader.</span>
+            </span>
             <span className="ml-1 inline-block h-[0.9em] w-[0.4em] translate-y-[2px] animate-blink bg-[var(--neon-cyan)] align-bottom" />
           </span>
         </h1>
