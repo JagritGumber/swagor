@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signUpAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
+import { PasswordInput } from "@/components/password-input";
 import { SubmitButton } from "@/components/submit-button";
 
 const INPUT =
@@ -40,7 +41,7 @@ export default function SignUp({ searchParams }: { searchParams: Message }) {
 
         <div className="space-y-2">
           <label htmlFor="password" className={LABEL}>Password</label>
-          <input id="password" name="password" type="password" minLength={6} required className={INPUT} />
+          <PasswordInput id="password" name="password" minLength={6} required className={INPUT} />
         </div>
 
         <FormMessage message={searchParams} />

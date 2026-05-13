@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signInAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
+import { PasswordInput } from "@/components/password-input";
 import { SubmitButton } from "@/components/submit-button";
 
 const INPUT =
@@ -34,7 +35,7 @@ export default function SignIn({ searchParams }: { searchParams: Message }) {
               Forgot?
             </Link>
           </div>
-          <input id="password" name="password" type="password" required className={INPUT} />
+          <PasswordInput id="password" name="password" required className={INPUT} />
         </div>
 
         <FormMessage message={searchParams} />
