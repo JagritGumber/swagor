@@ -11,6 +11,7 @@ import { PositionsTable } from "@/components/dashboard/positions-table";
 import { SolonWalletCard } from "@/components/dashboard/solon-wallet-card";
 import { WatchingStrip } from "@/components/dashboard/watching-strip";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
+import { ProfileSettings } from "@/components/dashboard/profile-settings";
 
 type SearchParams = Promise<{ dev?: string }>;
 
@@ -39,6 +40,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
       <PositionsTable positions={positions} />
       <GoalForm walletAddress={addr} initialStrategy={instance.strategyText} />
       <DecisionsSection walletAddress={addr} />
+      <ProfileSettings initialUsername={instance.username ?? null} initialPublic={instance.publicProfile} />
       <KillSwitchCard initialActive={instance.killSwitchActive} />
     </div>
   );

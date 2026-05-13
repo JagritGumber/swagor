@@ -22,14 +22,19 @@ const MIN_DELAY_MS = 8_000;
 const MAX_DELAY_MS = 30 * 60_000;
 
 /**
- * Cadence-aware watcher poll. Refetches `/api/watcher/recent` aligned to
- * the latest tick's `nextCheckSeconds` (plus 3s skew). Pauses when the tab
- * is hidden, resumes on visibilitychange.
+ * Cadence-aware watcher poll. Refetches the given endpoint aligned to the
+ * latest tick's `nextCheckSeconds` (plus 3s skew). Pauses when the tab is
+ * hidden, resumes on visibilitychange. The endpoint defaults to the
+ * authenticated dashboard route; pass an absolute path like
+ * `/api/selbo/${username}/recent` to drive the public flagship view.
  *
- * One subscriber per dashboard is enough — pass the result down rather than
+ * One subscriber per page is enough -- pass the result down rather than
  * mounting the hook in multiple components.
  */
-export function useWatcherPoll(limit = 10): WatcherRecent | null {
+export function useWatcherPoll(
+  options: { url?: string; limit?: number } = {},
+): WatcherRecent | null {
+  const { url = "/api/watcher/recent", limit = 10 } = options;
   const [data, setData] = useState<WatcherRecent | null>(null);
 
   useEffect(() => {
@@ -52,7 +57,8 @@ export function useWatcherPoll(limit = 10): WatcherRecent | null {
       inFlight?.abort();
       inFlight = new AbortController();
       try {
-        const res = await fetch(`/api/watcher/recent?limit=${limit}`, {
+        const qs = url.includes("?") ? `&limit=${limit}` : `?limit=${limit}`;
+        const res = await fetch(`${url}${qs}`, {
           cache: "no-store",
           signal: inFlight.signal,
         });
@@ -87,7 +93,7 @@ export function useWatcherPoll(limit = 10): WatcherRecent | null {
       if (timer) clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [limit]);
+  }, [url, limit]);
 
   return data;
 }
