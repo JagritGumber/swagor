@@ -6,6 +6,8 @@ import { and, eq } from "drizzle-orm";
 import { listOpenPositions } from "@/app/services/positions.service";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
+import { PublicWatchingStrip } from "@/components/public/public-watching-strip";
+import { PublicDecisions } from "@/components/public/public-decisions";
 
 type Params = Promise<{ username: string }>;
 
@@ -80,9 +82,13 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
         </div>
       </header>
 
+      <PublicWatchingStrip username={username} />
+
       <MarketChartCard watching={watching} />
 
       <PositionsTable positions={positions} />
+
+      <PublicDecisions username={username} />
     </div>
   );
 }

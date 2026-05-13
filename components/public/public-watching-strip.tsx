@@ -24,12 +24,12 @@ function countdownString(target: Date): string {
 }
 
 /**
- * Live feed of Selbo's recent ticks. Shows verdict + rationale per row, the
- * current watchlist, and a live countdown to the next check. Cadence-aware
- * polling via useWatcherPoll.
+ * Public live feed of a flagship Selbo's recent ticks. Same shape as the
+ * dashboard WatchingStrip but driven off /api/selbo/[username]/recent, so
+ * anyone with the page URL can watch Selbo think in real time.
  */
-export function WatchingStrip() {
-  const data = useWatcherPoll({ limit: 10 });
+export function PublicWatchingStrip({ username }: { username: string }) {
+  const data = useWatcherPoll({ url: `/api/selbo/${encodeURIComponent(username)}/recent`, limit: 10 });
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
