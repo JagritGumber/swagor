@@ -28,14 +28,31 @@ export function WatchingStripDev() {
   const [busy, setBusy] = useState<"tick" | "escalate" | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
 
-  const pull = useCallback(async () => {
+  const pull = useCallback(async (signal: AbortSignal) => {
     try {
-      const res = await fetch("/api/watcher/recent?limit=10", { cache: "no-store" });
+      const res = await fetch("/api/watcher/recent?limit=10", { cache: "no-store", signal });
       if (res.ok) setData(await res.json());
-    } catch { /* swallow */ }
+    } catch { /* swallow (abort or network) */ }
   }, []);
 
-  useEffect(() => { pull(); const id = setInterval(pull, 5_000); return () => clearInterval(id); }, [pull]);
+  useEffect(() => {
+    let inFlight: AbortController | null = null;
+    let cancelled = false;
+    const tick = () => {
+      if (cancelled) return;
+      // If a previous fetch is still in flight, abort it before firing the next.
+      inFlight?.abort();
+      inFlight = new AbortController();
+      pull(inFlight.signal);
+    };
+    tick();
+    const id = setInterval(tick, 15_000);
+    return () => {
+      cancelled = true;
+      inFlight?.abort();
+      clearInterval(id);
+    };
+  }, [pull]);
 
   async function hit(path: string, key: "tick" | "escalate") {
     if (busy) return;

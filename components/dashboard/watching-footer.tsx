@@ -18,21 +18,33 @@ export function WatchingFooter({ initialWatching }: { initialWatching: string[] 
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
+    let inFlight: AbortController | null = null;
     let cancelled = false;
     async function pull() {
+      if (cancelled) return;
+      inFlight?.abort();
+      inFlight = new AbortController();
       try {
-        const res = await fetch("/api/watcher/recent?limit=1", { cache: "no-store" });
+        const res = await fetch("/api/watcher/recent?limit=1", {
+          cache: "no-store",
+          signal: inFlight.signal,
+        });
         if (!res.ok) return;
         const data: RecentResponse = await res.json();
         if (cancelled) return;
         if (data.currentlyWatching) setWatching(data.currentlyWatching);
         if (data.ticks[0]) setLastCheckAt(data.ticks[0].createdAt);
-      } catch { /* swallow */ }
+      } catch { /* swallow (abort or network) */ }
     }
     pull();
     const poll = setInterval(pull, 30_000);
     const re = setInterval(() => setTick((n) => n + 1), 1_000);
-    return () => { cancelled = true; clearInterval(poll); clearInterval(re); };
+    return () => {
+      cancelled = true;
+      inFlight?.abort();
+      clearInterval(poll);
+      clearInterval(re);
+    };
   }, []);
 
   const agoLabel = lastCheckAt ? agoString(new Date(lastCheckAt)) : "no checks yet";
