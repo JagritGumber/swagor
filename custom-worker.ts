@@ -1,3 +1,4 @@
+/// <reference types="@cloudflare/workers-types" />
 // Generated at build time by `opennextjs-cloudflare build`. Not committed.
 // @ts-expect-error - .open-next/worker.js exists only after the build runs.
 import { default as handler } from "./.open-next/worker.js";

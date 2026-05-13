@@ -21,6 +21,9 @@ if (!CIRCLE_ENTITY_SECRET?.trim()) {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // OpenNext Cloudflare reads .next/standalone/.next/BUILD_ID during bundle.
+  // Next 15 requires this opt-in; Next 16 sets it automatically.
+  output: "standalone",
   // Empty Turbopack config acknowledges the default-on Turbopack runtime in
   // Next 16+. Turbopack resolves the optional MetaMask / WalletConnect deps
   // gracefully on its own; if a future wallet import errors at runtime, add

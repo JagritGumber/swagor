@@ -70,3 +70,14 @@ export const MODELS = {
 } as const;
 
 export type ModelTier = keyof typeof MODELS;
+
+export function getClient(tier: ModelTier): OpenAI {
+  switch (tier) {
+    case "REVIEW": return reviewLlm;
+    case "WATCHER": return watcherLlm;
+    case "TRADER": return traderLlm;
+    case "HEAVY":
+    case "LIGHT":
+    default: return llm;
+  }
+}
