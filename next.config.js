@@ -21,9 +21,13 @@ if (!CIRCLE_ENTITY_SECRET?.trim()) {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Empty Turbopack config acknowledges the default-on Turbopack runtime in
+  // Next 16+. Turbopack resolves the optional MetaMask / WalletConnect deps
+  // gracefully on its own; if a future wallet import errors at runtime, add
+  // resolveAlias entries here. The webpack block below is preserved for
+  // `next dev --webpack` / `next build --webpack` fallback path.
+  turbopack: {},
   webpack: (config) => {
-    // Silence optional React-Native-only deps pulled in by MetaMask SDK +
-    // WalletConnect logger. The web bundle never executes these paths.
     config.resolve.fallback = {
       ...config.resolve.fallback,
       "@react-native-async-storage/async-storage": false,
