@@ -4,9 +4,9 @@ import { useState } from "react";
 
 /**
  * Username + public-profile editor. Drives the /selbo/{username} page.
- * Username is gated to [a-z0-9_-]{2,32} server-side; client validation is
- * a hint, the API is the truth. Toggling public exposes ticks, decisions,
- * positions, and the wallet -- the user is reminded of this in copy.
+ * Shows the current values up front so the user always knows what their
+ * existing handle is before changing it. Username regex [a-z0-9_-]{2,32}
+ * is enforced server-side.
  */
 export function ProfileSettings({
   initialUsername,
@@ -45,20 +45,18 @@ export function ProfileSettings({
     }
   }
 
-  const url = username ? `/selbo/${username}` : null;
-
   return (
     <section className="border border-[var(--hairline-strong)] bg-black p-6">
-      <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-        Public profile
-      </h2>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Pick a username and toggle public to publish Selbo at{" "}
-        <span className="font-mono text-foreground">/selbo/&lt;username&gt;</span>. Visitors see your
-        equity, watchlist, recent ticks, recent decisions. They cannot change anything.
-      </p>
+      <div className="grid grid-cols-2 gap-px border-y border-[var(--hairline-strong)] bg-[var(--hairline)]">
+        <CurrentField label="Username" value={initialUsername ? `@${initialUsername}` : "not set"} />
+        <CurrentField
+          label="Visibility"
+          value={initialPublic ? "public" : "private"}
+          tone={initialPublic ? "cyan" : "muted"}
+        />
+      </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_auto]">
+      <div className="mt-6 space-y-4">
         <label className="block">
           <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
             Username
@@ -70,7 +68,8 @@ export function ProfileSettings({
             className="mt-1 w-full border border-[var(--hairline-strong)] bg-black px-3 py-2 font-mono text-sm text-foreground focus:border-[var(--neon-cyan)] focus:outline-none"
           />
         </label>
-        <label className="flex items-center gap-3 self-end">
+
+        <label className="flex items-center gap-3">
           <input
             type="checkbox"
             checked={isPublic}
@@ -92,16 +91,6 @@ export function ProfileSettings({
         >
           {busy ? "Saving..." : "Save"}
         </button>
-        {url && (
-          <a
-            href={url}
-            target="_blank"
-            rel="noreferrer"
-            className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--neon-cyan)] underline-offset-4 hover:underline"
-          >
-            view public page
-          </a>
-        )}
         {savedAt && !error && (
           <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)]">
             saved
@@ -114,5 +103,30 @@ export function ProfileSettings({
         )}
       </div>
     </section>
+  );
+}
+
+function CurrentField({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "cyan" | "muted";
+}) {
+  const valueClass =
+    tone === "cyan"
+      ? "text-[var(--neon-cyan)]"
+      : tone === "muted"
+        ? "text-muted-foreground"
+        : "text-foreground";
+  return (
+    <div className="bg-black px-4 py-3">
+      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </div>
+      <div className={`mt-1 font-mono text-base ${valueClass}`}>{value}</div>
+    </div>
   );
 }
