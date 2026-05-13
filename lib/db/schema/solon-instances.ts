@@ -27,11 +27,18 @@ export const solonInstances = pgTable("solon_instances", {
   strategyParsed: jsonb("strategy_parsed"),
   killSwitchActive: boolean("kill_switch_active").notNull().default(false),
   publicProfile: boolean("public_profile").notNull().default(false),
-  username: text("username").unique(), // for /solon/{username} public page
+  username: text("username").unique(), // for /selbo/{username} public page
   // Watcher: when next watcher tick is due, and the symbols currently in scope.
   // Set by the watcher agent itself; not a hardcoded interval.
   nextWatcherAt: timestamp("next_watcher_at", { withTimezone: true }).defaultNow().notNull(),
   currentlyWatching: jsonb("currently_watching").$type<string[]>().notNull().default(DEFAULT_WATCHLIST),
+  // Subscription tier — gates watcher cadence floor, panel deliberations,
+  // public profile, max Solon count. Matrix in lib/tiers.ts. Stripe customer
+  // + subscription IDs persisted so the webhook can map events back to
+  // the right instance without a user_id lookup.
+  subscriptionTier: text("subscription_tier").notNull().default("free"),
+  stripeCustomerId: text("stripe_customer_id").unique(),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

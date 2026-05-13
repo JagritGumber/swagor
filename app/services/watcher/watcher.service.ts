@@ -13,6 +13,7 @@ import { searchNews } from "@/lib/data-sources/news";
 import { WATCHER_SCHEMA, WATCHER_SYSTEM_PROMPT, type WatcherOutput } from "./prompt";
 import { triggerCycleFromWatcher } from "./trigger";
 import { runFastTraderForInstance } from "@/app/services/fast-trader/fast-trader.service";
+import { tierSpec, type Tier } from "@/lib/tiers";
 
 /**
  * Run one watcher tick for a given Solon instance. Reads Hyperliquid mark
@@ -95,23 +96,35 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
   if (!raw) throw new Error("watcher returned empty response");
   const parsed = WATCHER_SCHEMA.parse(JSON.parse(raw));
 
+  // Apply per-tier cadence floor: free users tick less often than basic+.
+  const spec = tierSpec(instance.subscriptionTier as Tier);
+  const clampedNext = Math.min(
+    Math.max(parsed.nextCheckSeconds, spec.watcherMinCadenceSeconds),
+    spec.watcherMaxCadenceSeconds,
+  );
+
   await db.insert(monitorTicks).values({
     solonInstanceId: instance.id,
     verdict: parsed.verdict,
     rationale: parsed.rationale,
-    nextCheckSeconds: parsed.nextCheckSeconds,
+    nextCheckSeconds: clampedNext,
     watching: parsed.watching,
-    context: { perps, positionCount: positions.length, newsCount: (newsRes.results ?? []).length },
+    context: { perps, positionCount: positions.length, newsCount: (newsRes.results ?? []).length, tier: spec.id },
   });
 
   await db.update(solonInstances).set({
-    nextWatcherAt: new Date(Date.now() + parsed.nextCheckSeconds * 1000),
+    nextWatcherAt: new Date(Date.now() + clampedNext * 1000),
     currentlyWatching: parsed.watching,
   }).where(eq(solonInstances.id, instance.id));
 
-  if (parsed.verdict === "deliberate") {
+  if (parsed.verdict === "deliberate" && spec.panelDeliberations) {
     triggerCycleFromWatcher(instance as SolonInstance, parsed.rationale)
       .catch((e) => console.error("[watcher] cycle trigger failed:", e));
+  } else if (parsed.verdict === "deliberate") {
+    // Free tier: route deliberate to the cheap Fast Trader instead of the
+    // expensive swarm. Better than dropping the signal entirely.
+    runFastTraderForInstance(instance as SolonInstance, `[free-tier downgrade] ${parsed.rationale}`)
+      .catch((e) => console.error("[watcher] fast-trader (downgrade) failed:", e));
   } else if (parsed.verdict === "execute") {
     runFastTraderForInstance(instance as SolonInstance, parsed.rationale)
       .catch((e) => console.error("[watcher] fast-trader failed:", e));
