@@ -1,61 +1,61 @@
 import OpenAI from "openai";
 
 /**
- * Provider-pluggable LLM client with two tiers:
- *  - main `llm` (LIGHT + HEAVY): swarm members + heavy reasoning
- *  - `reviewLlm` (REVIEW): cross-lineage audit layer (TaxOptimizer + Critic)
+ * Three LLM tiers, each fully explicit in env. No string defaults, no
+ * fallback chains; missing required env throws at module-load.
  *
- * Cross-model REVIEW: same-family self-review has correlated blind spots
- * (a GLM Critic reviewing GLM swarm output is mostly theater). Configure
- * LLM_REVIEW_* to a different model family (e.g. DeepSeek R1 via DeepInfra)
- * to get genuine independent verification.
+ *   Main (swarm + heavy):
+ *     LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_HEAVY, LLM_MODEL_LIGHT
  *
- * Env vars:
- *   LLM_API_KEY        (required)
- *   LLM_BASE_URL       (default GLM: https://open.bigmodel.cn/api/paas/v4/)
- *   LLM_MODEL_HEAVY    (default glm-4-plus)
- *   LLM_MODEL_LIGHT    (default glm-4-flash)
- *   LLM_REVIEW_API_KEY (optional — falls back to LLM_API_KEY)
- *   LLM_REVIEW_BASE_URL(optional — falls back to LLM_BASE_URL)
- *   LLM_REVIEW_MODEL   (optional — falls back to LLM_MODEL_HEAVY)
+ *   Review (critic + tax-optimizer, optionally cross-vendor):
+ *     LLM_REVIEW_MODEL                     (required)
+ *     LLM_REVIEW_API_KEY + LLM_REVIEW_BASE_URL  (optional pair; if both set,
+ *                                                a separate client is built;
+ *                                                else `reviewLlm === llm`)
+ *
+ *   Watcher (cheap-tier ticker, optionally cross-vendor for high RPM):
+ *     LLM_WATCHER_MODEL                    (required)
+ *     LLM_WATCHER_API_KEY + LLM_WATCHER_BASE_URL  (optional pair; same rules)
  */
 
-const apiKey = process.env.LLM_API_KEY;
-if (!apiKey) {
-  throw new Error("LLM_API_KEY environment variable is not set");
+function requireEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing required env: ${name}`);
+  return v;
+}
+
+function optionalPair(keyName: string, urlName: string): { apiKey: string; baseURL: string } | null {
+  const apiKey = process.env[keyName];
+  const baseURL = process.env[urlName];
+  if (!apiKey && !baseURL) return null;
+  if (!apiKey || !baseURL) {
+    throw new Error(`${keyName} and ${urlName} must be set together (or neither)`);
+  }
+  return { apiKey, baseURL };
 }
 
 export const llm = new OpenAI({
-  apiKey,
-  baseURL: process.env.LLM_BASE_URL ?? "https://open.bigmodel.cn/api/paas/v4/",
+  apiKey: requireEnv("LLM_API_KEY"),
+  baseURL: requireEnv("LLM_BASE_URL"),
   maxRetries: 3,
   timeout: 60_000,
 });
 
-const reviewApiKey = process.env.LLM_REVIEW_API_KEY;
-const reviewBaseUrl = process.env.LLM_REVIEW_BASE_URL;
+const reviewPair = optionalPair("LLM_REVIEW_API_KEY", "LLM_REVIEW_BASE_URL");
+export const reviewLlm = reviewPair
+  ? new OpenAI({ ...reviewPair, maxRetries: 3, timeout: 120_000 })
+  : llm;
 
-export const reviewLlm =
-  reviewApiKey && reviewBaseUrl
-    ? new OpenAI({
-        apiKey: reviewApiKey,
-        baseURL: reviewBaseUrl,
-        maxRetries: 3,
-        timeout: 120_000,
-      })
-    : llm;
+const watcherPair = optionalPair("LLM_WATCHER_API_KEY", "LLM_WATCHER_BASE_URL");
+export const watcherLlm = watcherPair
+  ? new OpenAI({ ...watcherPair, maxRetries: 2, timeout: 30_000 })
+  : llm;
 
 export const MODELS = {
-  HEAVY: process.env.LLM_MODEL_HEAVY ?? "glm-4-plus",
-  LIGHT: process.env.LLM_MODEL_LIGHT ?? "glm-4-flash",
-  REVIEW:
-    process.env.LLM_REVIEW_MODEL ??
-    process.env.LLM_MODEL_HEAVY ??
-    "glm-4-plus",
+  HEAVY: requireEnv("LLM_MODEL_HEAVY"),
+  LIGHT: requireEnv("LLM_MODEL_LIGHT"),
+  REVIEW: requireEnv("LLM_REVIEW_MODEL"),
+  WATCHER: requireEnv("LLM_WATCHER_MODEL"),
 } as const;
 
 export type ModelTier = keyof typeof MODELS;
-
-export function getClient(tier: ModelTier): OpenAI {
-  return tier === "REVIEW" ? reviewLlm : llm;
-}

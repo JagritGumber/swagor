@@ -3,7 +3,7 @@ import "server-only";
 import { db } from "@/lib/db/client";
 import { monitorTicks, solonInstances, type SolonInstance } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { llm, MODELS } from "@/lib/llm-client";
+import { watcherLlm, MODELS } from "@/lib/llm-client";
 import { fetchPrices } from "@/lib/data-sources/coingecko";
 import { searchNews } from "@/lib/data-sources/news";
 import { WATCHER_SCHEMA, WATCHER_SYSTEM_PROMPT, type WatcherOutput } from "./prompt";
@@ -55,8 +55,8 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     minutesSinceLastTick: lastTick ? Math.floor((Date.now() - new Date(lastTick.createdAt).getTime()) / 60_000) : null,
   });
 
-  const completion = await llm.chat.completions.create({
-    model: MODELS.LIGHT,
+  const completion = await watcherLlm.chat.completions.create({
+    model: MODELS.WATCHER,
     messages: [
       { role: "system", content: WATCHER_SYSTEM_PROMPT },
       { role: "user", content: userPayload },

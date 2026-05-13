@@ -52,7 +52,9 @@ export async function runCycle(cycleId: string): Promise<void> {
     };
 
     // Swarm: 25 persona-bearing agents run in parallel
-    const swarmDecisions = await runSwarm({ cycleId, context, size: 25 });
+    // Swarm size capped to 10 to stay under per-key GLM concurrency limits.
+    // Bumping past 10 reliably hits 1302 rate limit errors on the paid tier.
+    const swarmDecisions = await runSwarm({ cycleId, context, size: 10 });
     if (swarmDecisions.length === 0) {
       throw new Error("Swarm produced no usable decisions");
     }
