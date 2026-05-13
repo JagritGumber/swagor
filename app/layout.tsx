@@ -1,7 +1,5 @@
-import { EnvVarWarning } from "@/components/env-var-warning";
 import HeaderAuth from "@/components/header-auth";
 import { NavBrand } from "@/components/nav-brand";
-import { hasEnvVars } from "@/lib/utils/supabase/check-env-vars";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
@@ -51,7 +49,7 @@ export default async function RootLayout({
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    {!hasEnvVars ? <EnvVarWarning /> : <HeaderAuth />}
+                    <HeaderAuth />
                   </div>
                 </div>
               </nav>

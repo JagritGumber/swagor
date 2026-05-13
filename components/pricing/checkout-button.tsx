@@ -2,7 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
 
+/**
+ * Subscription checkout button. Calls Better Auth's Polar plugin, which
+ * issues a Polar Checkout URL keyed by the product slug we registered in
+ * lib/auth.ts (`basic` or `pro`). Redirects there. Polar handles payment +
+ * webhooks back to /api/auth/polar/webhooks; tier flips in the DB
+ * automatically.
+ */
 export function CheckoutButton({
   tier, signedIn,
 }: {
@@ -20,14 +28,10 @@ export function CheckoutButton({
     }
     setLoading(true); setErr(null);
     try {
-      const res = await fetch("/api/polar/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
-      if (body.url) window.location.href = body.url;
+      // The Polar plugin's checkout call redirects via authClient hooks;
+      // it either navigates or returns a URL.
+      const result = await authClient.checkout({ slug: tier });
+      if (result?.error) throw new Error(result.error.message ?? "Checkout failed");
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Checkout failed");
     } finally {

@@ -1,17 +1,10 @@
-import { createSupabaseServerComponentClient } from "@/lib/supabase/server-client";
 import { AuthNavLink } from "./auth-nav-link";
 
 /**
- * Server component reads Supabase auth so first paint is correct (no Sign In
- * flash for signed-in users). Hands off to AuthNavLink which uses
- * usePathname() to swap between Dashboard and Sign Out when already inside
- * the app.
+ * Server wrapper kept for backward compat with app/layout.tsx. The actual
+ * auth check + render is now client-side via authClient.useSession() in
+ * AuthNavLink, which keeps the cookie reads off the SSR critical path.
  */
-export default async function AuthButton() {
-  const supabase = createSupabaseServerComponentClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  return <AuthNavLink loggedIn={!!user} />;
+export default function AuthButton() {
+  return <AuthNavLink />;
 }

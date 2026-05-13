@@ -1,15 +1,37 @@
+"use client";
+
 import Link from "next/link";
-import { signInAction } from "@/app/actions";
-import { FormMessage, Message } from "@/components/form-message";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
 import { PasswordInput } from "@/components/password-input";
-import { SubmitButton } from "@/components/submit-button";
 
 const INPUT =
   "w-full border border-[var(--hairline-strong)] bg-[#080808] px-3 py-3 font-mono text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-[var(--neon-cyan)] focus:outline-none";
 const LABEL =
   "block font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground";
 
-export default function SignIn({ searchParams }: { searchParams: Message }) {
+export default function SignIn() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true); setError(null);
+    const { error: err } = await authClient.signIn.email({ email, password });
+    if (err) {
+      setError(err.message ?? "Sign-in failed");
+      setSubmitting(false);
+      return;
+    }
+    router.push("/dashboard");
+    router.refresh();
+  }
+
   return (
     <section className="w-full border border-[var(--hairline-strong)] bg-black p-8">
       <h1 className="text-2xl font-bold uppercase leading-tight text-foreground">
@@ -19,10 +41,14 @@ export default function SignIn({ searchParams }: { searchParams: Message }) {
         Welcome back to your Selbo.
       </p>
 
-      <form className="mt-6 space-y-5">
+      <form onSubmit={onSubmit} className="mt-6 space-y-5">
         <div className="space-y-2">
           <label htmlFor="email" className={LABEL}>Email</label>
-          <input id="email" name="email" type="email" placeholder="you@example.com" required className={INPUT} />
+          <input
+            id="email" name="email" type="email" placeholder="you@example.com"
+            required value={email} onChange={(e) => setEmail(e.target.value)}
+            className={INPUT}
+          />
         </div>
 
         <div className="space-y-2">
@@ -35,18 +61,22 @@ export default function SignIn({ searchParams }: { searchParams: Message }) {
               Forgot?
             </Link>
           </div>
-          <PasswordInput id="password" name="password" required className={INPUT} />
+          <PasswordInput
+            id="password" name="password" required
+            value={password} onChange={(e) => setPassword(e.target.value)}
+            className={INPUT}
+          />
         </div>
 
-        <FormMessage message={searchParams} />
+        {error && <p className="font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">{error}</p>}
 
-        <SubmitButton
-          formAction={signInAction}
-          pendingText="Signing in..."
+        <button
+          type="submit"
+          disabled={submitting}
           className="cta-glow inline-flex h-11 w-full items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:opacity-50"
         >
-          Sign in
-        </SubmitButton>
+          {submitting ? "Signing in..." : "Sign in"}
+        </button>
       </form>
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
