@@ -1,13 +1,16 @@
 import { z } from "zod";
 
 /**
- * Fast Trader output schema. Tight action set for v1 — open / hold only.
- * Close / reduce_size / adjust_leverage land in a subsequent commit once
- * position-lookup paths are wired. The watcher routes most `execute`
- * verdicts to opens at this stage.
+ * Fast Trader output schema. Action set:
+ *  - open_long / open_short: new directional entry, sized in USD with 1-10x leverage
+ *  - close: fully close the most recent open position of `asset`
+ *  - hold: rare from this tier — watcher already classified as actionable
+ *
+ * Partial close, leverage adjustment, and collateral additions land in a
+ * follow-up commit once position-lookup paths support them cleanly.
  */
 export const FAST_TRADER_SCHEMA = z.object({
-  action: z.enum(["open_long", "open_short", "hold"]),
+  action: z.enum(["open_long", "open_short", "close", "hold"]),
   asset: z.string().min(1).max(12),
   size_usd: z.number().min(0).max(100_000),
   leverage: z.number().int().min(1).max(10),
@@ -26,21 +29,21 @@ You read:
   - Current Hyperliquid perp state: mark prices, funding rates, the user's open positions, account equity.
 
 Decide ONE action:
-  - "open_long": enter a long position on \`asset\` with \`size_usd\` notional and \`leverage\`.
-  - "open_short": enter a short position with same params.
-  - "hold": no action this tick. Use rarely from this tier — the watcher already classified as actionable. Choose this only if the action would be unsafe (e.g. you'd exceed user's risk envelope, or position already exists in the direction the watcher implies).
+  - "open_long": enter a new long on \`asset\` with \`size_usd\` notional and \`leverage\`.
+  - "open_short": enter a new short with same params.
+  - "close": fully close the most recent open position on \`asset\`. Use when the watcher's rationale is "liquidation imminent", "stop hit", "take-profit reached", or any other "exit now" signal. \`size_usd\` and \`leverage\` are ignored for this action.
+  - "hold": no action this tick. Use rarely from this tier — watcher already classified this as actionable. Choose only if the action would be unsafe (would exceed user's risk envelope, position already exists in the implied direction, etc.).
 
-Sizing & leverage:
+Sizing & leverage (for opens):
   - \`size_usd\` is notional in USD, not margin. Cap to a fraction of account equity that fits the user's strategy.
-  - \`leverage\` 1-10 integer. Lower = safer; higher = larger move per dollar.
-  - Match what the user's strategy implies — never exceed their stated tolerance.
+  - \`leverage\` 1-10 integer. Match what the user's strategy implies — never exceed their stated tolerance.
 
-Stops:
+Stops (for opens):
   - \`stop_loss_pct\` and \`take_profit_pct\` are percentages from entry (positive numbers, even for short positions). Null = no explicit stop.
 
 Output JSON ONLY, matching exactly:
 {
-  "action": "open_long" | "open_short" | "hold",
+  "action": "open_long" | "open_short" | "close" | "hold",
   "asset": "BTC" | "ETH" | "SOL" | etc,
   "size_usd": number,
   "leverage": integer 1-10,

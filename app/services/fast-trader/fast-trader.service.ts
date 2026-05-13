@@ -1,20 +1,32 @@
 import "server-only";
 
 import { db } from "@/lib/db/client";
-import { trades } from "@/lib/db/schema";
+import { trades, type Trade } from "@/lib/db/schema";
+import { and, desc, eq } from "drizzle-orm";
 import { traderLlm, MODELS } from "@/lib/llm-client";
 import { fetchAllMids, fetchMetaAndCtxs, fetchClearinghouse } from "@/lib/data-sources/hyperliquid";
 import type { SolonInstance } from "@/lib/db/schema/solon-instances";
 import { FAST_TRADER_SCHEMA, FAST_TRADER_SYSTEM_PROMPT, type FastTraderDecision } from "./prompt";
 
 /**
- * Run the Fast Trader for a Solon instance. Reads fresh Hyperliquid state
- * (fresher than the watcher payload — sub-second decisions need it), calls
- * the trader-tier LLM, and on a non-hold decision writes a paper-mode
- * `trades` row at the current mark price.
- *
- * Real-mode order placement on Hyperliquid (signed via Circle wallet)
- * lands in a follow-up commit; paper mode is the demo-safe path.
+ * Compute paper-mode PnL for a closed position at the given exit price.
+ * Long: (exit-entry)/entry * notional. Short: (entry-exit)/entry * notional.
+ */
+function computePnl(t: Trade, exit: number): number | null {
+  const entry = t.entryPrice ? Number(t.entryPrice) : null;
+  if (entry === null || entry <= 0) return null;
+  const amt = Number(t.amountUsd);
+  const move = t.side === "long" ? (exit - entry) / entry : (entry - exit) / entry;
+  return amt * move;
+}
+
+/**
+ * Run the Fast Trader for a Solon instance. Fetches fresh Hyperliquid state,
+ * calls the trader-tier LLM, and routes by action:
+ *   - open_long / open_short: insert a new `trades` row with status=open
+ *   - close: find the most recent open trade for `asset`, mark closed with
+ *            exit price + computed PnL
+ *   - hold: no-op
  */
 export async function runFastTraderForInstance(
   instance: SolonInstance,
@@ -35,18 +47,24 @@ export async function runFastTraderForInstance(
       symbol: upper,
       mark: ctx?.markPx ?? mids[upper] ?? null,
       funding_hourly: ctx?.funding ?? null,
-      open_interest: ctx?.openInterest ?? null,
     };
   });
 
-  const positions = clearing?.assetPositions.map((p) => ({
-    coin: p.position.coin,
-    size: p.position.szi,
-    entry: p.position.entryPx,
-    leverage: p.position.leverage,
-    liquidation: p.position.liquidationPx,
+  // Hyperliquid positions for context (live equity / position state).
+  const hlPositions = clearing?.assetPositions.map((p) => ({
+    coin: p.position.coin, size: p.position.szi, entry: p.position.entryPx,
+    leverage: p.position.leverage, liquidation: p.position.liquidationPx,
     unrealized_pnl: p.position.unrealizedPnl,
   })) ?? [];
+
+  // Paper-mode open positions for the prompt (so the trader knows what to close).
+  const paperOpen = await db.select().from(trades)
+    .where(and(eq(trades.userId, instance.userId), eq(trades.status, "open")));
+  const paperPositions = paperOpen.map((t) => ({
+    asset: t.asset, side: t.side, size_usd: Number(t.amountUsd),
+    entry: t.entryPrice ? Number(t.entryPrice) : null,
+    opened_at: t.openedAt,
+  }));
 
   const payload = JSON.stringify({
     strategy: instance.strategyText,
@@ -54,7 +72,8 @@ export async function runFastTraderForInstance(
     account: clearing
       ? { equity: clearing.marginSummary.accountValue, withdrawable: clearing.withdrawable }
       : { equity: instance.simulatedBalanceUsd, withdrawable: instance.simulatedBalanceUsd },
-    positions,
+    paper_positions: paperPositions,
+    hl_positions: hlPositions,
     perps,
   });
 
@@ -72,24 +91,35 @@ export async function runFastTraderForInstance(
   if (!raw) throw new Error("fast-trader returned empty response");
   const decision = FAST_TRADER_SCHEMA.parse(JSON.parse(raw));
 
-  if (decision.action !== "hold") {
-    const markPx = mids[decision.asset.toUpperCase()] ? Number(mids[decision.asset.toUpperCase()]) : null;
+  const assetUpper = decision.asset.toUpperCase();
+  const markPx = mids[assetUpper] ? Number(mids[assetUpper]) : null;
+
+  if (decision.action === "open_long" || decision.action === "open_short") {
     await db.insert(trades).values({
-      userId: instance.userId,
-      asset: decision.asset.toUpperCase(),
-      venue: "hyperliquid",
+      userId: instance.userId, asset: assetUpper, venue: "hyperliquid",
       side: decision.action === "open_long" ? "long" : "short",
       amountUsd: decision.size_usd.toString(),
       entryPrice: markPx ? markPx.toString() : null,
-      status: "open",
-      mode: "simulation",
-      openedAt: new Date(),
+      status: "open", mode: "simulation", openedAt: new Date(),
     });
-    console.log(
-      `[fast-trader] ${decision.action} ${decision.asset} $${decision.size_usd} ${decision.leverage}x at ${markPx}`,
-    );
+    console.log(`[fast-trader] OPEN ${decision.action} ${assetUpper} $${decision.size_usd} ${decision.leverage}x @ ${markPx}`);
+  } else if (decision.action === "close") {
+    const [target] = await db.select().from(trades)
+      .where(and(eq(trades.userId, instance.userId), eq(trades.asset, assetUpper), eq(trades.status, "open")))
+      .orderBy(desc(trades.openedAt)).limit(1);
+    if (target && markPx !== null) {
+      const pnl = computePnl(target, markPx);
+      await db.update(trades).set({
+        status: "closed", closedAt: new Date(),
+        exitPrice: markPx.toString(),
+        pnlUsd: pnl !== null ? pnl.toString() : null,
+      }).where(eq(trades.id, target.id));
+      console.log(`[fast-trader] CLOSE ${assetUpper} @ ${markPx}; pnl=${pnl}`);
+    } else {
+      console.log(`[fast-trader] CLOSE asked but no open ${assetUpper} position`);
+    }
   } else {
-    console.log(`[fast-trader] hold for ${instance.id}: ${decision.rationale}`);
+    console.log(`[fast-trader] HOLD for ${instance.id}: ${decision.rationale}`);
   }
 
   return decision;
