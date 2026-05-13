@@ -4,10 +4,11 @@ import { db } from "@/lib/db/client";
 import { solonInstances } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { listOpenPositions } from "@/app/services/positions.service";
-import { listClosedTrades } from "@/app/services/trades.service";
+import { listClosedTrades, getLifetimeStats } from "@/app/services/trades.service";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
 import { TradeHistory } from "@/components/dashboard/trade-history";
+import { LifetimeStats } from "@/components/dashboard/lifetime-stats";
 import { PublicWatchingStrip } from "@/components/public/public-watching-strip";
 import { PublicDecisions } from "@/components/public/public-decisions";
 
@@ -34,9 +35,10 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
 
   if (!instance) notFound();
 
-  const [positions, closedTrades] = await Promise.all([
+  const [positions, closedTrades, lifetime] = await Promise.all([
     listOpenPositions(instance.userId),
     listClosedTrades(instance.userId, 20),
+    getLifetimeStats(instance.userId),
   ]);
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
   const balance = Number(instance.simulatedBalanceUsd);
@@ -86,6 +88,8 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
           </div>
         </div>
       </header>
+
+      <LifetimeStats stats={lifetime} />
 
       <PublicWatchingStrip username={username} />
 

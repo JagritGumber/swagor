@@ -3,9 +3,10 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ensureSolonInstance } from "@/app/services/solon-instance.service";
 import { listOpenPositions } from "@/app/services/positions.service";
-import { listClosedTrades } from "@/app/services/trades.service";
+import { listClosedTrades, getLifetimeStats } from "@/app/services/trades.service";
 import { DecisionsSection } from "@/components/dashboard/decisions-section";
 import { TradeHistory } from "@/components/dashboard/trade-history";
+import { LifetimeStats } from "@/components/dashboard/lifetime-stats";
 import { GoalForm } from "@/components/dashboard/goal-form";
 import { KillSwitchCard } from "@/components/dashboard/kill-switch-card";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
@@ -30,15 +31,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   // Dev strip auto-shows locally; in prod requires ?dev=1 / true / yes.
   const isDev = process.env.NODE_ENV !== "production" || DEV_TRUTHY.has(devParam);
 
-  const [positions, closedTrades] = await Promise.all([
+  const [positions, closedTrades, lifetime] = await Promise.all([
     listOpenPositions(user.id),
     listClosedTrades(user.id, 20),
+    getLifetimeStats(user.id),
   ]);
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24">
       <SolonWalletCard instance={instance} />
+      <LifetimeStats stats={lifetime} />
       <WatchingStrip />
       {isDev && <WatcherDevControls />}
       <MarketChartCard watching={watching} />
