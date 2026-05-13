@@ -8,6 +8,7 @@ import { fetchAllMids, fetchMetaAndCtxs, fetchClearinghouse } from "@/lib/data-s
 import type { SolonInstance } from "@/lib/db/schema/solon-instances";
 import { FAST_TRADER_SCHEMA, FAST_TRADER_SYSTEM_PROMPT, type FastTraderDecision } from "./prompt";
 import { recordTradeMemory } from "@/app/services/memory.service";
+import { anchorClosedTrade } from "@/lib/arc/anchor";
 
 /**
  * Compute paper-mode PnL for a closed position at the given exit price.
@@ -128,13 +129,35 @@ export async function runFastTraderForInstance(
         }).where(eq(solonInstances.id, instance.id));
       }
       // Fire-and-forget memory write so future cycles inherit the lesson.
-      void recordTradeMemory({
+      const closedTrade = {
         ...target,
         status: "closed",
         closedAt,
         exitPrice: markPx.toString(),
         pnlUsd: pnl !== null ? pnl.toString() : null,
-      });
+      };
+      void recordTradeMemory(closedTrade);
+      // Fire-and-forget Arc anchor: one tx per closed trade. Failures are
+      // logged but never block the trade settle path.
+      void anchorClosedTrade({
+        tradeId: target.id,
+        asset: target.asset,
+        side: target.side,
+        amountUsd: target.amountUsd.toString(),
+        entryPrice: target.entryPrice ? target.entryPrice.toString() : null,
+        exitPrice: markPx.toString(),
+        pnlUsd: pnl !== null ? pnl.toString() : null,
+        reasoning: {
+          watcher_rationale: watcherRationale,
+          trader_rationale: decision.rationale,
+        },
+      })
+        .then((res) => {
+          if (res?.txId) {
+            void db.update(trades).set({ arcAnchorTx: res.txId }).where(eq(trades.id, target.id));
+          }
+        })
+        .catch((err) => console.error("[fast-trader] anchorClosedTrade failed:", err));
       console.log(`[fast-trader] CLOSE ${assetUpper} @ ${markPx}; pnl=${pnl}`);
     }
   } else {

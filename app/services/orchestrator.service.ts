@@ -13,7 +13,6 @@ import {
   fetchClearinghouse,
 } from "@/lib/data-sources/hyperliquid";
 import { searchNews } from "@/lib/data-sources/news";
-import { anchorCycle } from "@/lib/arc/anchor";
 import { db } from "@/lib/db/client";
 import { solonInstances, trades, monitorTicks } from "@/lib/db/schema";
 import { and, desc, eq } from "drizzle-orm";
@@ -161,20 +160,20 @@ export async function runCycle(cycleId: string): Promise<void> {
     const finalStatus: "approved" | "rejected" =
       verdict.verdict === "reject" ? "rejected" : "approved";
 
-    let arcAnchor = null;
-    try {
-      arcAnchor = await anchorCycle({
-        cycleId,
-        cycleState: { context, swarm: swarmDecisions, aggregated, taxOptimizer: taxOpt, taxAdjusted, verdict },
-        verdict: finalStatus,
-      });
-    } catch (err) {
-      console.error("[orchestrator] anchorCycle threw:", err);
-    }
-
+    // Cycles are no longer anchored on chain. Anchoring lives in the
+    // trade close path (lib/arc/anchor.ts#anchorClosedTrade) so the only
+    // on-chain spend is the realized outcome of an actual trade, not
+    // every deliberation. The full reasoning still lives in cycleState.
     await updateCycleStatus(cycleId, finalStatus, {
-      cycleState: { context, swarm: swarmDecisions, aggregated, taxOptimizer: taxOpt, taxAdjusted, verdict, arcAnchor },
-      arcTxHash: arcAnchor?.txId,
+      cycleState: {
+        context,
+        swarm: swarmDecisions,
+        aggregated,
+        taxOptimizer: taxOpt,
+        taxAdjusted,
+        verdict,
+        anchoredOnChain: false,
+      },
       completedAt: new Date(),
     });
   } catch (err) {
