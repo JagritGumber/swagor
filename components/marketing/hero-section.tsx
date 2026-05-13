@@ -1,11 +1,11 @@
 /**
- * Hero. No eyebrow. No floating TESTNET indicator (moved to nav).
- * Dotted-cyan radial-mask background for visual texture on the right.
- * Typewriter headline + caret + ticker.
+ * Hero. Full-screen with a three.js animated wave-field of cyan dots
+ * behind the headline. Typewriter headline + caret + ticker.
  */
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { DottedSurface } from "./dotted-surface";
 import { TickerTape } from "./ticker-tape";
 
 export function HeroSection() {
@@ -13,23 +13,19 @@ export function HeroSection() {
     <section className="scanlines relative isolate w-full overflow-hidden border-b border-[var(--hairline-strong)]">
       <TickerTape />
 
-      {/* Dotted surface background, radial-mask-faded to center. Pure CSS. */}
+      <DottedSurface className="pointer-events-none absolute inset-0 z-0" />
+
+      {/* Soft radial vignette over the wave field so headline reads cleanly. */}
       <div
         aria-hidden
-        className="dot-drift pointer-events-none absolute inset-0 z-0"
+        className="pointer-events-none absolute inset-0 z-0"
         style={{
-          backgroundImage:
-            "radial-gradient(circle, rgba(0, 212, 255, 0.22) 1px, transparent 1.5px)",
-          backgroundSize: "26px 26px",
-          maskImage:
-            "radial-gradient(ellipse 70% 60% at 75% 50%, black 0%, transparent 75%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 70% 60% at 75% 50%, black 0%, transparent 75%)",
-          opacity: 0.55,
+          background:
+            "radial-gradient(ellipse 60% 50% at 35% 50%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 50%, transparent 100%)",
         }}
       />
 
-      <div className="relative z-10 mx-auto flex min-h-[80vh] max-w-6xl flex-col justify-center px-6 py-24 md:py-32">
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-24 md:py-32">
         {/* Headline. Typewriter with caret. */}
         <h1 className="mb-6 text-[clamp(34px,8vw,88px)] font-bold uppercase leading-[0.95] tracking-tight text-balance">
           <span className="block">
