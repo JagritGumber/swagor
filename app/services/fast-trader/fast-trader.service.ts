@@ -1,34 +1,22 @@
 import "server-only";
 
 import { db } from "@/lib/db/client";
-import { trades, solonInstances, type Trade } from "@/lib/db/schema";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { trades } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 import { traderLlm, MODELS } from "@/lib/llm-client";
 import { fetchAllMids, fetchMetaAndCtxs, fetchClearinghouse } from "@/lib/data-sources/hyperliquid";
 import type { SolonInstance } from "@/lib/db/schema/solon-instances";
 import { FAST_TRADER_SCHEMA, FAST_TRADER_SYSTEM_PROMPT, type FastTraderDecision } from "./prompt";
-import { recordTradeMemory } from "@/app/services/memory.service";
-import { anchorClosedTrade } from "@/lib/arc/anchor";
-
-/**
- * Compute paper-mode PnL for a closed position at the given exit price.
- * Long: (exit-entry)/entry * notional. Short: (entry-exit)/entry * notional.
- */
-function computePnl(t: Trade, exit: number): number | null {
-  const entry = t.entryPrice ? Number(t.entryPrice) : null;
-  if (entry === null || entry <= 0) return null;
-  const amt = Number(t.amountUsd);
-  const move = t.side === "long" ? (exit - entry) / entry : (entry - exit) / entry;
-  return amt * move;
-}
+import {
+  openPaperTrade,
+  closePaperTrade,
+} from "@/app/services/trades/paper-trade.service";
 
 /**
  * Run the Fast Trader for a Solon instance. Fetches fresh Hyperliquid state,
- * calls the trader-tier LLM, and routes by action:
- *   - open_long / open_short: insert a new `trades` row with status=open
- *   - close: find the most recent open trade for `asset`, mark closed with
- *            exit price + computed PnL
- *   - hold: no-op
+ * calls the trader-tier LLM, and routes by action through the shared
+ * paper-trade helpers so the open/close logic stays consistent with the
+ * orchestrator's panel-execution path.
  */
 export async function runFastTraderForInstance(
   instance: SolonInstance,
@@ -52,14 +40,12 @@ export async function runFastTraderForInstance(
     };
   });
 
-  // Hyperliquid positions for context (live equity / position state).
   const hlPositions = clearing?.assetPositions.map((p) => ({
     coin: p.position.coin, size: p.position.szi, entry: p.position.entryPx,
     leverage: p.position.leverage, liquidation: p.position.liquidationPx,
     unrealized_pnl: p.position.unrealizedPnl,
   })) ?? [];
 
-  // Paper-mode open positions for the prompt (so the trader knows what to close).
   const paperOpen = await db.select().from(trades)
     .where(and(eq(trades.userId, instance.userId), eq(trades.status, "open")));
   const paperPositions = paperOpen.map((t) => ({
@@ -95,71 +81,27 @@ export async function runFastTraderForInstance(
 
   const assetUpper = decision.asset.toUpperCase();
   const markPx = mids[assetUpper] ? Number(mids[assetUpper]) : null;
+  const rationale = `${watcherRationale} | trader: ${decision.rationale}`;
 
   if (decision.action === "open_long" || decision.action === "open_short") {
-    await db.insert(trades).values({
-      userId: instance.userId, asset: assetUpper, venue: "hyperliquid",
+    await openPaperTrade({
+      userId: instance.userId,
+      asset: assetUpper,
       side: decision.action === "open_long" ? "long" : "short",
-      amountUsd: decision.size_usd.toString(),
-      entryPrice: markPx ? markPx.toString() : null,
-      status: "open", mode: "simulation", openedAt: new Date(),
+      sizeUsd: decision.size_usd,
+      entryPriceUsd: markPx,
+      source: "fast-trader",
+      rationale,
     });
-    console.log(`[fast-trader] OPEN ${decision.action} ${assetUpper} $${decision.size_usd} ${decision.leverage}x @ ${markPx}`);
   } else if (decision.action === "close") {
-    const [target] = await db.select().from(trades)
-      .where(and(eq(trades.userId, instance.userId), eq(trades.asset, assetUpper), eq(trades.status, "open")))
-      .orderBy(desc(trades.openedAt)).limit(1);
-    if (!target) {
-      console.log(`[fast-trader] CLOSE ${assetUpper} skipped: no matching open trade`);
-    } else if (markPx === null) {
-      console.log(`[fast-trader] CLOSE ${assetUpper} skipped: no mark price available`);
-    } else {
-      const pnl = computePnl(target, markPx);
-      const closedAt = new Date();
-      await db.update(trades).set({
-        status: "closed", closedAt,
-        exitPrice: markPx.toString(),
-        pnlUsd: pnl !== null ? pnl.toString() : null,
-      }).where(eq(trades.id, target.id));
-      // Roll the realized PnL into the user's simulated equity so the
-      // dashboard balance actually moves with closed trades.
-      if (pnl !== null) {
-        await db.update(solonInstances).set({
-          simulatedBalanceUsd: sql`${solonInstances.simulatedBalanceUsd} + ${pnl.toString()}`,
-        }).where(eq(solonInstances.id, instance.id));
-      }
-      // Fire-and-forget memory write so future cycles inherit the lesson.
-      const closedTrade = {
-        ...target,
-        status: "closed",
-        closedAt,
-        exitPrice: markPx.toString(),
-        pnlUsd: pnl !== null ? pnl.toString() : null,
-      };
-      void recordTradeMemory(closedTrade);
-      // Fire-and-forget Arc anchor: one tx per closed trade. Failures are
-      // logged but never block the trade settle path.
-      void anchorClosedTrade({
-        tradeId: target.id,
-        asset: target.asset,
-        side: target.side,
-        amountUsd: target.amountUsd.toString(),
-        entryPrice: target.entryPrice ? target.entryPrice.toString() : null,
-        exitPrice: markPx.toString(),
-        pnlUsd: pnl !== null ? pnl.toString() : null,
-        reasoning: {
-          watcher_rationale: watcherRationale,
-          trader_rationale: decision.rationale,
-        },
-      })
-        .then((res) => {
-          if (res?.txId) {
-            void db.update(trades).set({ arcAnchorTx: res.txId }).where(eq(trades.id, target.id));
-          }
-        })
-        .catch((err) => console.error("[fast-trader] anchorClosedTrade failed:", err));
-      console.log(`[fast-trader] CLOSE ${assetUpper} @ ${markPx}; pnl=${pnl}`);
-    }
+    await closePaperTrade({
+      userId: instance.userId,
+      solonInstanceId: instance.id,
+      asset: assetUpper,
+      markPriceUsd: markPx,
+      source: "fast-trader",
+      rationale,
+    });
   } else {
     console.log(`[fast-trader] HOLD for ${instance.id}: ${decision.rationale}`);
   }

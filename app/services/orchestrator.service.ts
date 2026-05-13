@@ -6,7 +6,7 @@ import {
 import { runCritic } from "@/app/services/agents/critic.agent";
 import { runTaxOptimizer } from "@/app/services/agents/tax-optimizer.agent";
 import { runSwarm } from "@/app/services/swarm/swarm-runner.service";
-import { aggregate } from "@/app/services/swarm/aggregator.service";
+import { aggregate, type AggregatorAction } from "@/app/services/swarm/aggregator.service";
 import {
   fetchAllMids,
   fetchMetaAndCtxs,
@@ -17,16 +17,21 @@ import { db } from "@/lib/db/client";
 import { solonInstances, trades, monitorTicks } from "@/lib/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { getRecentLessons } from "@/app/services/memory.service";
+import {
+  openPaperTrade,
+  closePaperTrade,
+} from "@/app/services/trades/paper-trade.service";
 
 /**
- * Runs the agent chain for a single cycle. Fire-and-forget from the API route:
- * the cycle row is created immediately in 'running' status, then this function
- * does the work in the background, updating the row to 'approved' / 'rejected'
- * / 'failed' when done.
+ * Runs the deliberation chain for a single cycle: swarm -> aggregator ->
+ * tax-optimizer -> critic -> trade execution. The cycle row is created
+ * upstream in 'running' status; this function updates it to approved /
+ * rejected / failed when done.
  *
- * Context fetched is perp-specific (Hyperliquid mids/funding, user paper
- * positions, watcher rationale) so the swarm reasons about what Selbo
- * actually trades, not yield-routing artifacts.
+ * On a critic-approved actionable verdict (open_long / open_short / close)
+ * the panel-execution path opens or closes a paper trade through the same
+ * helpers Fast Trader uses, so panel-driven trades show up in trade
+ * history with on-chain anchors just like fast-trader-driven ones.
  */
 export async function runCycle(cycleId: string): Promise<void> {
   try {
@@ -125,34 +130,33 @@ export async function runCycle(cycleId: string): Promise<void> {
       recent_lessons: recentLessons,
     };
 
-    // Swarm size capped to 10 to stay under per-key GLM concurrency limits.
-    // Bumping past 10 reliably hits 1302 rate limit errors on the paid tier.
     const swarmDecisions = await runSwarm({ cycleId, context, size: 10 });
     if (swarmDecisions.length === 0) {
       throw new Error("Swarm produced no usable decisions");
     }
     const aggregated = await aggregate({ cycleId, decisions: swarmDecisions });
 
-    // TaxOptimizer (cross-model) reviews through Indian VDA tax lens.
     const taxOpt = await runTaxOptimizer({
       cycleId,
       aggregated,
       positions: paperPositions,
     });
+    // Reconcile tax-optimizer's action with the aggregator. "postpone" maps
+    // to "stay" so the orchestrator's downstream branch logic stays simple.
+    const taxAdjustedAction: AggregatorAction =
+      taxOpt.approved_action === "postpone" ? "stay" : taxOpt.approved_action;
     const taxAdjusted =
-      taxOpt.approved_decision === aggregated.decision
+      taxAdjustedAction === aggregated.action
         ? aggregated
         : {
             ...aggregated,
-            decision: (taxOpt.approved_decision === "postpone"
-              ? "stay"
-              : taxOpt.approved_decision) as typeof aggregated.decision,
+            action: taxAdjustedAction,
             rationale: `${aggregated.rationale} | Tax-adjusted: ${taxOpt.rationale}`,
           };
 
     const verdict = await runCritic({
       cycleId,
-      decision: taxAdjusted as object as Parameters<typeof runCritic>[0]["decision"],
+      decision: taxAdjusted,
       positions: paperPositions,
       goal: instance.strategyText,
     });
@@ -160,10 +164,46 @@ export async function runCycle(cycleId: string): Promise<void> {
     const finalStatus: "approved" | "rejected" =
       verdict.verdict === "reject" ? "rejected" : "approved";
 
-    // Cycles are no longer anchored on chain. Anchoring lives in the
-    // trade close path (lib/arc/anchor.ts#anchorClosedTrade) so the only
-    // on-chain spend is the realized outcome of an actual trade, not
-    // every deliberation. The full reasoning still lives in cycleState.
+    // On approved actionable verdict, fire the corresponding paper-trade
+    // helper. Failures here are logged + propagated through cycleState so
+    // the trace page surfaces them, but they do not crash the cycle.
+    let executed: { tradeId?: string; pnlUsd?: number | null; error?: string } | null = null;
+    if (finalStatus === "approved" && taxAdjusted.action !== "stay") {
+      try {
+        if (taxAdjusted.action === "open_long" || taxAdjusted.action === "open_short") {
+          if (!taxAdjusted.if_open) throw new Error("aggregator returned open without if_open");
+          const asset = taxAdjusted.if_open.asset.toUpperCase();
+          const markPx = mids[asset] ? Number(mids[asset]) : null;
+          const opened = await openPaperTrade({
+            userId: instance.userId,
+            asset,
+            side: taxAdjusted.action === "open_long" ? "long" : "short",
+            sizeUsd: taxAdjusted.if_open.sizeUsd,
+            entryPriceUsd: markPx,
+            source: "panel",
+            rationale: taxAdjusted.rationale,
+          });
+          executed = { tradeId: opened.tradeId };
+        } else if (taxAdjusted.action === "close") {
+          if (!taxAdjusted.if_close) throw new Error("aggregator returned close without if_close");
+          const asset = taxAdjusted.if_close.asset.toUpperCase();
+          const markPx = mids[asset] ? Number(mids[asset]) : null;
+          const result = await closePaperTrade({
+            userId: instance.userId,
+            solonInstanceId: instance.id,
+            asset,
+            markPriceUsd: markPx,
+            source: "panel",
+            rationale: taxAdjusted.rationale,
+          });
+          executed = result ?? { error: "no matching open position to close" };
+        }
+      } catch (err) {
+        executed = { error: err instanceof Error ? err.message : String(err) };
+        console.error(`[orchestrator] panel-execution failed for cycle ${cycleId}:`, err);
+      }
+    }
+
     await updateCycleStatus(cycleId, finalStatus, {
       cycleState: {
         context,
@@ -172,6 +212,7 @@ export async function runCycle(cycleId: string): Promise<void> {
         taxOptimizer: taxOpt,
         taxAdjusted,
         verdict,
+        executed,
         anchoredOnChain: false,
       },
       completedAt: new Date(),

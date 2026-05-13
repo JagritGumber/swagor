@@ -5,20 +5,20 @@ import { swarmRounds } from "@/lib/db/schema";
 import { samplePersonas, type Persona } from "./persona-roster";
 
 const SwarmMemberOutputSchema = z.object({
-  decision: z.enum(["stay", "rotate", "harvest"]),
+  action: z.enum(["open_long", "open_short", "close", "stay"]),
   rationale: z.string(),
   regime_assessment: z.enum(["risk_on", "neutral", "risk_off"]),
-  if_rotate: z
+  if_open: z
     .object({
-      from: z.string(),
-      to: z.string(),
-      percent_of_portfolio: z.number().min(0).max(100),
+      asset: z.string(),
+      size_usd: z.number().positive(),
+      leverage: z.number().min(1).max(10),
     })
     .nullable(),
-  safety_layer: z.object({
+  if_close: z.object({ asset: z.string() }).nullable(),
+  safety: z.object({
     stop_loss_trigger: z.string(),
     take_profit_trigger: z.string(),
-    rebalance_trigger: z.string(),
   }),
   confidence: z.number().min(0).max(1).optional(),
 });
@@ -27,24 +27,32 @@ export type SwarmDecision = z.infer<typeof SwarmMemberOutputSchema> & {
   personaId: string;
 };
 
-const SWARM_BASE_PROMPT = `You are a single participant in a swarm of AI agents reviewing a DeFi portfolio. From your specific persona's perspective, decide ONE of:
-- "stay" — current allocation is fine, no action
-- "rotate" — move capital from one protocol to another
-- "harvest" — realize a tax-aware gain/loss
+const SWARM_BASE_PROMPT = `You are a single participant in a swarm of AI agents reviewing a paper-mode perp futures portfolio on Hyperliquid testnet. From your specific persona's perspective, decide ONE of:
+- "stay" -- current positioning is fine, no action this cycle
+- "open_long" -- open a new long perp position on an asset in the watchlist
+- "open_short" -- open a new short perp position on an asset in the watchlist
+- "close" -- exit an existing open paper position on the named asset
 
 Output JSON EXACTLY in this shape:
 {
-  "decision": "stay" | "rotate" | "harvest",
+  "action": "stay" | "open_long" | "open_short" | "close",
   "rationale": "1-3 sentence explanation framed by your persona",
   "regime_assessment": "risk_on" | "neutral" | "risk_off",
-  "if_rotate": null | { "from": string, "to": string, "percent_of_portfolio": number },
-  "safety_layer": { "stop_loss_trigger": string, "take_profit_trigger": string, "rebalance_trigger": string },
+  "if_open": null | { "asset": "ETH" | "BTC" | "SOL" | etc, "size_usd": number, "leverage": number 1-10 },
+  "if_close": null | { "asset": "ETH" | "BTC" | "SOL" | etc },
+  "safety": { "stop_loss_trigger": string, "take_profit_trigger": string },
   "confidence": number 0-1
 }
 
-Supported sources / destinations: wallet-arc-USDC, aave-eth-USDC, compound-eth-USDC, pendle-eth-USDC-PT, dsr-eth-sUSDS, usyc.
+Rules:
+- if_open is set ONLY when action is "open_long" or "open_short". Otherwise null.
+- if_close is set ONLY when action is "close". Otherwise null.
+- Asset must be a symbol from the watchlist in the user payload.
+- size_usd should be a sensible fraction of available equity given your persona's risk tolerance.
+- leverage cap is 10x; default to 1-3x unless your persona explicitly warrants more.
+- safety triggers are plain-English thresholds, e.g. "ETH below 3100" or "funding flips positive".
 
-This is YOUR vote in the swarm. Don't compromise to consensus; bring your persona's bias. The aggregator will reconcile across the swarm.`;
+This is YOUR vote. Don't compromise to consensus; bring your persona's bias. The aggregator reconciles across the swarm.`;
 
 async function runSwarmMember(opts: {
   cycleId: string;
@@ -53,7 +61,7 @@ async function runSwarmMember(opts: {
   roundNumber: number;
 }): Promise<SwarmDecision | null> {
   const systemPrompt = `${opts.persona.system_prompt}\n\n${SWARM_BASE_PROMPT}`;
-  const userMessage = `Portfolio state:\n${JSON.stringify(opts.context, null, 2)}\n\nFrom your persona's viewpoint, output your JSON decision.`;
+  const userMessage = `Portfolio + market state:\n${JSON.stringify(opts.context, null, 2)}\n\nFrom your persona's viewpoint, output your JSON decision.`;
 
   try {
     const response = await llm.chat.completions.create({
@@ -63,7 +71,7 @@ async function runSwarmMember(opts: {
         { role: "user", content: userMessage },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.6, // higher temp -> diversity across swarm
+      temperature: 0.6,
     });
 
     const raw = response.choices[0]?.message?.content;
@@ -89,9 +97,8 @@ async function runSwarmMember(opts: {
 }
 
 /**
- * Run a swarm of N agents (each a different persona) in parallel.
- * Failures of individual members are tolerated; returns only successful
- * decisions. Falls back gracefully if too many members fail.
+ * Run a swarm of N agents in parallel. Failures tolerated; only successful
+ * decisions are returned.
  */
 export async function runSwarm(opts: {
   cycleId: string;
