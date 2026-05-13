@@ -1,21 +1,26 @@
 import OpenAI from "openai";
 
 /**
- * Three LLM tiers, each fully explicit in env. No string defaults, no
+ * Four LLM tiers, each fully explicit in env. No string defaults, no
  * fallback chains; missing required env throws at module-load.
  *
  *   Main (swarm + heavy):
  *     LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_HEAVY, LLM_MODEL_LIGHT
  *
  *   Review (critic + tax-optimizer, optionally cross-vendor):
- *     LLM_REVIEW_MODEL                     (required)
+ *     LLM_REVIEW_MODEL                          (required)
  *     LLM_REVIEW_API_KEY + LLM_REVIEW_BASE_URL  (optional pair; if both set,
  *                                                a separate client is built;
  *                                                else `reviewLlm === llm`)
  *
- *   Watcher (cheap-tier ticker, optionally cross-vendor for high RPM):
- *     LLM_WATCHER_MODEL                    (required)
- *     LLM_WATCHER_API_KEY + LLM_WATCHER_BASE_URL  (optional pair; same rules)
+ *   Watcher (cheap-tier classifier, hold | execute | deliberate):
+ *     LLM_WATCHER_MODEL                            (required)
+ *     LLM_WATCHER_API_KEY + LLM_WATCHER_BASE_URL   (optional pair; same rules)
+ *
+ *   Trader (mid-tier tactical executor, sub-second decisions when watcher
+ *   says `execute`):
+ *     LLM_TRADER_MODEL                           (required)
+ *     LLM_TRADER_API_KEY + LLM_TRADER_BASE_URL   (optional pair; same rules)
  */
 
 function requireEnv(name: string): string {
@@ -51,11 +56,17 @@ export const watcherLlm = watcherPair
   ? new OpenAI({ ...watcherPair, maxRetries: 2, timeout: 30_000 })
   : llm;
 
+const traderPair = optionalPair("LLM_TRADER_API_KEY", "LLM_TRADER_BASE_URL");
+export const traderLlm = traderPair
+  ? new OpenAI({ ...traderPair, maxRetries: 2, timeout: 30_000 })
+  : llm;
+
 export const MODELS = {
   HEAVY: requireEnv("LLM_MODEL_HEAVY"),
   LIGHT: requireEnv("LLM_MODEL_LIGHT"),
   REVIEW: requireEnv("LLM_REVIEW_MODEL"),
   WATCHER: requireEnv("LLM_WATCHER_MODEL"),
+  TRADER: requireEnv("LLM_TRADER_MODEL"),
 } as const;
 
 export type ModelTier = keyof typeof MODELS;
