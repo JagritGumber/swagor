@@ -39,9 +39,20 @@ export async function GET(request: Request, { params }: { params: Params }) {
     .orderBy(desc(monitorTicks.createdAt))
     .limit(limit);
 
-  return NextResponse.json({
-    ticks,
-    nextWatcherAt: instance.nextWatcherAt,
-    currentlyWatching: instance.currentlyWatching,
-  });
+  // Public endpoint: let Cloudflare's CDN absorb repeat hits from link
+  // previews and accidental polling spam. s-maxage drives the CDN cache,
+  // max-age drives the browser cache. Both are short enough that fresh
+  // ticks land in the feed within seconds of when they should.
+  return NextResponse.json(
+    {
+      ticks,
+      nextWatcherAt: instance.nextWatcherAt,
+      currentlyWatching: instance.currentlyWatching,
+    },
+    {
+      headers: {
+        "Cache-Control": "public, max-age=15, s-maxage=30, stale-while-revalidate=60",
+      },
+    },
+  );
 }
