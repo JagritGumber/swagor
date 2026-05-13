@@ -100,7 +100,16 @@ export function WatchingStripDev() {
       )}
 
       {!data || data.ticks.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">No watcher activity yet.</p>
+        <div className="mt-4 space-y-2 border border-dashed border-[var(--hairline-strong)] bg-[#080808] p-4">
+          <p className="text-sm text-foreground">No watcher activity yet.</p>
+          <p className="text-xs text-muted-foreground">
+            Locally the watcher does not tick on its own. Click{" "}
+            <span className="font-mono uppercase tracking-[0.16em] text-[var(--neon-cyan)]">Force tick</span>{" "}
+            above to make Selbo think once. Click{" "}
+            <span className="font-mono uppercase tracking-[0.16em] text-[var(--neon-cyan)]">Force escalate</span>{" "}
+            to skip the watcher and trigger the full panel directly.
+          </p>
+        </div>
       ) : (
         <div className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline)]">
           {data.ticks.map((t) => (

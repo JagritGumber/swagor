@@ -25,10 +25,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24">
       <SolonWalletCard instance={instance} />
+      {isDev && <WatchingStripDev />}
       <GoalForm walletAddress={addr} initialStrategy={instance.strategyText} />
       <DecisionsSection walletAddress={addr} />
       <KillSwitchCard initialActive={instance.killSwitchActive} />
-      {isDev && <WatchingStripDev />}
     </div>
   );
 }

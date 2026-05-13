@@ -8,14 +8,18 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Cron heartbeat endpoint. Vercel cron hits this every 60 seconds.
+ * Cron heartbeat endpoint. Called by Cloudflare Cron Triggers (configured
+ * in wrangler.toml) every 60 seconds in production. Locally there's no
+ * automatic cron — fire ticks manually via /api/watcher/force-tick or
+ * the dev strip's Force tick button.
+ *
  * Body of work: find Solon instances whose `next_watcher_at <= now()` and
  * whose kill switch is off, run a watcher tick for each. The watcher
  * service writes back `next_watcher_at` per its agent-chosen delay, so
  * this endpoint stays state-free.
  *
- * Auth: shared secret in `Authorization: Bearer ${CRON_SECRET}` header.
- * Vercel cron sets this automatically when `CRON_SECRET` is in env.
+ * Auth: shared secret in `Authorization: Bearer ${CRON_SECRET}` header,
+ * set in production via `wrangler secret put CRON_SECRET`.
  */
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET;
