@@ -15,7 +15,7 @@ export function HeroSection() {
 
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 z-0 w-1/2 [mask-image:linear-gradient(to_right,transparent,black_35%)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_35%)]"
+        className="pointer-events-none absolute inset-y-0 right-0 z-0 w-2/3 [mask-image:radial-gradient(ellipse_at_100%_50%,black_0%,transparent_75%)] [-webkit-mask-image:radial-gradient(ellipse_at_100%_50%,black_0%,transparent_75%)]"
       >
         <Dithering
           colorBack="#000000"
