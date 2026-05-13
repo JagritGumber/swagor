@@ -82,3 +82,78 @@ export async function anchorCycle(opts: {
     graphSnapshotHash,
   };
 }
+
+export type TradeAnchorResult = {
+  txId: string;
+  contractAddress: string;
+  tradeIdBytes32: string;
+  reasoningHash: string;
+};
+
+export type ClosedTradeAnchorInput = {
+  tradeId: string;
+  asset: string;
+  side: string;
+  amountUsd: string;
+  entryPrice: string | null;
+  exitPrice: string | null;
+  pnlUsd: string | null;
+  reasoning: unknown;
+};
+
+/**
+ * Anchor a single closed paper trade on Arc. Reuses the existing
+ * PortfolioDecisions.anchorDecision ABI by mapping:
+ *   - cycleId param   -> tradeId (bytes32-padded)
+ *   - swarmTraceHash  -> sha256(reasoning blob)
+ *   - graphSnapshotHash -> zero bytes32 (unused for trade closes)
+ *   - ipfsCid (string) -> "trade:{asset}:{side}"
+ *   - verdict (string) -> "+X.XX%" or "-X.XX%" pnl summary
+ *
+ * One anchor per closed trade is the only on-chain spend Selbo makes -- all
+ * watcher ticks and cycle deliberations stay in DB. Returns null when the
+ * anchor contract or wallet env is unset (dev mode), so callers can fire
+ * this non-blocking from the trade settle path.
+ */
+export async function anchorClosedTrade(
+  trade: ClosedTradeAnchorInput,
+): Promise<TradeAnchorResult | null> {
+  const contractAddress = process.env.NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS;
+  const walletId = process.env.NEXT_PUBLIC_AGENT_WALLET_ID;
+
+  if (!contractAddress) {
+    console.warn(
+      "[anchor] NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS not set; skipping trade anchor.",
+    );
+    return null;
+  }
+  if (!walletId) {
+    console.warn("[anchor] NEXT_PUBLIC_AGENT_WALLET_ID not set; skipping trade anchor");
+    return null;
+  }
+
+  const tradeIdBytes32 = uuidToBytes32(trade.tradeId);
+  const reasoningHash = sha256Hex(trade.reasoning);
+  const zeroBytes32 = `0x${"0".repeat(64)}` as `0x${string}`;
+  const amount = Number(trade.amountUsd);
+  const pnlUsd = trade.pnlUsd ? Number(trade.pnlUsd) : null;
+  const pnlPct =
+    pnlUsd !== null && amount > 0 ? ((pnlUsd / amount) * 100).toFixed(2) : "n/a";
+  const verdict = pnlUsd === null ? "settled" : pnlUsd >= 0 ? `+${pnlPct}%` : `${pnlPct}%`;
+  const tag = `trade:${trade.asset}:${trade.side}`;
+
+  const resp = await getSdk().createContractExecutionTransaction({
+    walletId,
+    contractAddress,
+    abiFunctionSignature: "anchorDecision(bytes32,bytes32,bytes32,string,string)",
+    abiParameters: [tradeIdBytes32, zeroBytes32, reasoningHash, tag, verdict],
+    fee: { type: "level", config: { feeLevel: "MEDIUM" } },
+  });
+
+  return {
+    txId: resp.data?.id ?? "",
+    contractAddress,
+    tradeIdBytes32,
+    reasoningHash,
+  };
+}
