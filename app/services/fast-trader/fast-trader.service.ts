@@ -1,8 +1,8 @@
 import "server-only";
 
 import { db } from "@/lib/db/client";
-import { trades, type Trade } from "@/lib/db/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { trades, solonInstances, type Trade } from "@/lib/db/schema";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { traderLlm, MODELS } from "@/lib/llm-client";
 import { fetchAllMids, fetchMetaAndCtxs, fetchClearinghouse } from "@/lib/data-sources/hyperliquid";
 import type { SolonInstance } from "@/lib/db/schema/solon-instances";
@@ -107,16 +107,25 @@ export async function runFastTraderForInstance(
     const [target] = await db.select().from(trades)
       .where(and(eq(trades.userId, instance.userId), eq(trades.asset, assetUpper), eq(trades.status, "open")))
       .orderBy(desc(trades.openedAt)).limit(1);
-    if (target && markPx !== null) {
+    if (!target) {
+      console.log(`[fast-trader] CLOSE ${assetUpper} skipped: no matching open trade`);
+    } else if (markPx === null) {
+      console.log(`[fast-trader] CLOSE ${assetUpper} skipped: no mark price available`);
+    } else {
       const pnl = computePnl(target, markPx);
       await db.update(trades).set({
         status: "closed", closedAt: new Date(),
         exitPrice: markPx.toString(),
         pnlUsd: pnl !== null ? pnl.toString() : null,
       }).where(eq(trades.id, target.id));
+      // Roll the realized PnL into the user's simulated equity so the
+      // dashboard balance actually moves with closed trades.
+      if (pnl !== null) {
+        await db.update(solonInstances).set({
+          simulatedBalanceUsd: sql`${solonInstances.simulatedBalanceUsd} + ${pnl.toString()}`,
+        }).where(eq(solonInstances.id, instance.id));
+      }
       console.log(`[fast-trader] CLOSE ${assetUpper} @ ${markPx}; pnl=${pnl}`);
-    } else {
-      console.log(`[fast-trader] CLOSE asked but no open ${assetUpper} position`);
     }
   } else {
     console.log(`[fast-trader] HOLD for ${instance.id}: ${decision.rationale}`);

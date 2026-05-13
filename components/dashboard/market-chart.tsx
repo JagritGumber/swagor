@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createChart, CandlestickSeries, type IChartApi, type CandlestickData, type Time, type SeriesMarker } from "lightweight-charts";
+import { createChart, CandlestickSeries, createSeriesMarkers, type IChartApi, type CandlestickData, type Time, type SeriesMarker } from "lightweight-charts";
 
 export type ChartCandle = { t: number; o: string; h: string; l: string; c: string };
 export type TradeMarker = {
@@ -59,7 +59,8 @@ export function MarketChart({
       shape: m.side === "long" ? "arrowUp" : "arrowDown",
       text: m.text,
     }));
-    series.setMarkers(seriesMarkers);
+    // v5 API: markers are a series-attached plugin, not a series method.
+    createSeriesMarkers(series, seriesMarkers);
 
     chart.timeScale().fitContent();
     chartRef.current = chart;
