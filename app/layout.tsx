@@ -44,24 +44,27 @@ export default async function RootLayout({
             <div className="flex min-h-screen flex-col bg-black">
               <nav className="fixed inset-x-0 top-0 z-50 h-16 border-b border-[var(--hairline-strong)] bg-black/85 backdrop-blur-md">
                 <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6 text-sm">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-baseline gap-4">
                     <Link
                       href="/"
-                      className="text-2xl font-bold tracking-tight text-foreground hover:opacity-80"
+                      className="group relative text-2xl font-bold tracking-tight text-foreground"
                       aria-label="Solon home"
                     >
                       Solon
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute -bottom-1 left-0 h-px w-full origin-left scale-x-0 bg-[var(--neon-cyan)] transition-transform duration-300 ease-out group-hover:scale-x-100"
+                      />
                     </Link>
-                    {/* TESTNET LIVE badge moved from hero into nav so it lives with the brand */}
                     <span
-                      aria-label="Testnet live"
-                      className="hidden items-center gap-1.5 border border-[var(--hairline-strong)] bg-black px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.2em] sm:inline-flex"
+                      aria-label="Testnet"
+                      className="hidden items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline-flex"
                     >
-                      <span className="relative inline-flex h-1.5 w-1.5">
-                        <span aria-hidden className="absolute inline-flex h-full w-full animate-pulse-dot rounded-full bg-[var(--neon-green)]" />
-                        <span aria-hidden className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--neon-green)]" />
+                      <span aria-hidden className="relative inline-flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full animate-pulse-dot rounded-full bg-[var(--neon-green)]" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--neon-green)]" />
                       </span>
-                      <span className="text-[var(--neon-green)]">testnet live</span>
+                      testnet
                     </span>
                   </div>
                   <div className="flex items-center gap-3">

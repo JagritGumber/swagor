@@ -27,7 +27,6 @@ export function HeroSection() {
           >
             <span className="text-[var(--neon-cyan)]">AI</span>{" "}
             <span>trader.</span>
-            <span className="ml-1 inline-block h-[0.9em] w-[0.4em] translate-y-[2px] animate-blink bg-[var(--neon-cyan)] align-bottom" />
           </span>
         </h1>
 
