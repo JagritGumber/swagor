@@ -4,27 +4,21 @@ import { db } from "@/lib/db/client";
 import { monitorTicks, solonInstances, type SolonInstance } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { watcherLlm, MODELS } from "@/lib/llm-client";
-import { fetchPrices } from "@/lib/data-sources/coingecko";
+import {
+  fetchAllMids,
+  fetchMetaAndCtxs,
+  fetchClearinghouse,
+} from "@/lib/data-sources/hyperliquid";
 import { searchNews } from "@/lib/data-sources/news";
 import { WATCHER_SCHEMA, WATCHER_SYSTEM_PROMPT, type WatcherOutput } from "./prompt";
 import { triggerCycleFromWatcher } from "./trigger";
 
-// CoinGecko id mapping for the watchlist symbols.
-const COIN_IDS: Record<string, string> = {
-  ETH: "ethereum", BTC: "bitcoin", SOL: "solana",
-  USDC: "usd-coin", USDT: "tether", DAI: "dai",
-  AVAX: "avalanche-2", MATIC: "matic-network", LINK: "chainlink",
-};
-
-function coinIdFor(sym: string): string {
-  return COIN_IDS[sym.toUpperCase()] ?? sym.toLowerCase();
-}
-
 /**
- * Run one watcher tick for a given Solon instance.
- * Gathers context, calls the cheap model, persists the verdict, advances
- * next_watcher_at by the agent-chosen delay, and on escalate fires the full
- * panel via the orchestrator (fire-and-forget).
+ * Run one watcher tick for a given Solon instance. Reads Hyperliquid mark
+ * prices, funding rates, and the user's open positions, plus recent news,
+ * then asks the watcher to classify the tick. Persists the verdict,
+ * advances next_watcher_at, and on `execute` or `deliberate` routes to the
+ * appropriate downstream tier.
  */
 export async function runWatcherForInstance(instanceId: string): Promise<WatcherOutput> {
   const [instance] = await db
@@ -33,20 +27,51 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
   if (instance.killSwitchActive) throw new Error("kill switch active, refusing to tick");
 
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
-  const ids = watching.map(coinIdFor);
 
-  const [prices, newsRes, lastTick] = await Promise.all([
-    fetchPrices(ids).catch(() => ({} as Awaited<ReturnType<typeof fetchPrices>>)),
-    searchNews(`${watching.join(" OR ")} OR crypto`).catch(() => ({ results: [] as Array<{ title: string; source: string; publishedAt: string }> })),
+  const [mids, meta, clearing, newsRes, lastTick] = await Promise.all([
+    fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
+    fetchMetaAndCtxs().catch(() => ({ universe: [], ctxs: [] })),
+    fetchClearinghouse(instance.circleWalletAddress).catch(() => null),
+    searchNews(`${watching.join(" OR ")} OR perp OR crypto`)
+      .catch(() => ({ results: [] as Array<{ title: string; source: string; publishedAt: string }> })),
     db.select().from(monitorTicks)
       .where(eq(monitorTicks.solonInstanceId, instance.id))
       .orderBy(desc(monitorTicks.createdAt)).limit(1).then((r) => r[0]),
   ]);
 
+  // Build a per-coin perp snapshot the agent can read directly.
+  const ctxByCoin = new Map(meta.universe.map((u, i) => [u.name.toUpperCase(), meta.ctxs[i]]));
+  const perps = watching.map((sym) => {
+    const upper = sym.toUpperCase();
+    const ctx = ctxByCoin.get(upper);
+    return {
+      symbol: upper,
+      mid: mids[upper] ?? null,
+      mark: ctx?.markPx ?? null,
+      funding_hourly: ctx?.funding ?? null,
+      open_interest: ctx?.openInterest ?? null,
+      prev_day_px: ctx?.prevDayPx ?? null,
+    };
+  });
+
+  const positions = clearing?.assetPositions.map((p) => ({
+    coin: p.position.coin,
+    size: p.position.szi,
+    entry: p.position.entryPx,
+    leverage: p.position.leverage,
+    liquidation: p.position.liquidationPx,
+    unrealized_pnl: p.position.unrealizedPnl,
+    margin_used: p.position.marginUsed,
+  })) ?? [];
+
   const userPayload = JSON.stringify({
     strategy: instance.strategyText,
     watching,
-    prices,
+    account: clearing
+      ? { equity: clearing.marginSummary.accountValue, withdrawable: clearing.withdrawable }
+      : null,
+    positions,
+    perps,
     news: (newsRes.results ?? []).slice(0, 6).map((n) => ({
       title: n.title, source: n.source,
       hoursAgo: n.publishedAt ? Math.floor((Date.now() - new Date(n.publishedAt).getTime()) / 3_600_000) : null,
@@ -75,7 +100,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     rationale: parsed.rationale,
     nextCheckSeconds: parsed.nextCheckSeconds,
     watching: parsed.watching,
-    context: { prices, newsCount: (newsRes.results ?? []).length, strategy: instance.strategyText },
+    context: { perps, positionCount: positions.length, newsCount: (newsRes.results ?? []).length },
   });
 
   await db.update(solonInstances).set({
@@ -83,10 +108,12 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     currentlyWatching: parsed.watching,
   }).where(eq(solonInstances.id, instance.id));
 
-  if (parsed.verdict === "escalate") {
-    // Fire-and-forget. The orchestrator self-anchors and updates cycle status.
+  if (parsed.verdict === "deliberate") {
     triggerCycleFromWatcher(instance as SolonInstance, parsed.rationale)
       .catch((e) => console.error("[watcher] cycle trigger failed:", e));
+  } else if (parsed.verdict === "execute") {
+    // Fast Trader service lands next commit. Log for now.
+    console.log(`[watcher] EXECUTE verdict on ${instance.id}: ${parsed.rationale} (fast-trader service pending)`);
   }
 
   return parsed;
