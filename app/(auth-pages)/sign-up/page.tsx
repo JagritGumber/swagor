@@ -1,111 +1,74 @@
-/**
- * Copyright 2026 Circle Internet Group, Inc.  All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
+import Link from "next/link";
 import { signUpAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
+import { GoogleLoginButton } from "@/components/google-login-button";
 import { SubmitButton } from "@/components/submit-button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
 
-export default function Signup({ searchParams }: { searchParams: Message }) {
+const INPUT =
+  "w-full border border-[var(--hairline-strong)] bg-[#080808] px-3 py-3 font-mono text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-[var(--neon-cyan)] focus:outline-none";
+const LABEL =
+  "block font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground";
+
+export default function SignUp({ searchParams }: { searchParams: Message }) {
   if ("message" in searchParams) {
     return (
-      <div className="flex items-center justify-center p-4">
+      <section className="w-full border border-[var(--hairline-strong)] bg-black p-8">
         <FormMessage message={searchParams} />
-      </div>
+        <Link
+          href="/sign-in"
+          className="mt-6 inline-block font-mono text-xs uppercase tracking-[0.18em] text-[var(--neon-cyan)] hover:underline"
+        >
+          back to sign in
+        </Link>
+      </section>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <form className="flex-1 flex flex-col min-w-64">
-        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-amber-600">
-          Create an account
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Already have an account?{" "}
-          <Link
-            className="text-blue-600 hover:text-blue-500 transition-colors font-medium"
-            href="/sign-in"
-          >
-            Sign in
-          </Link>
-        </p>
+    <section className="w-full border border-[var(--hairline-strong)] bg-black p-8">
+      <h1 className="text-2xl font-bold uppercase leading-tight text-foreground">
+        Create account
+      </h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        We provision a Solon wallet on Arc Testnet the moment you sign in.
+      </p>
 
-        <div className="flex flex-col gap-4 mt-8">
-          <div className="space-y-2">
-            <Label htmlFor="full-name">Full Name</Label>
-            <Input
-              id="full-name"
-              name="full-name"
-              placeholder="Please enter your full name"
-              minLength={3}
-              maxLength={255}
-              aria-label="Full Name"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              name="password"
-              placeholder="Create a password"
-              minLength={6}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="company-name">Company Name (optional)</Label>
-            <Input
-              id="company-name"
-              name="company-name"
-              placeholder="Enter your company name"
-              minLength={3}
-              maxLength={255}
-              aria-label="Company Name"
-            />
-          </div>
-
-          <FormMessage message={searchParams} />
-
-          <SubmitButton
-            className="w-full"
-            formAction={signUpAction}
-            pendingText="Creating account..."
-          >
-            Sign up
-          </SubmitButton>
+      <form className="mt-6 space-y-5">
+        <div className="space-y-2">
+          <label htmlFor="email" className={LABEL}>Email</label>
+          <input id="email" name="email" type="email" placeholder="you@example.com" required className={INPUT} />
         </div>
+
+        <div className="space-y-2">
+          <label htmlFor="password" className={LABEL}>Password</label>
+          <input id="password" name="password" type="password" minLength={6} required className={INPUT} />
+        </div>
+
+        <FormMessage message={searchParams} />
+
+        <SubmitButton
+          formAction={signUpAction}
+          pendingText="Creating account..."
+          className="cta-glow inline-flex h-11 w-full items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:opacity-50"
+        >
+          Sign up
+        </SubmitButton>
       </form>
-    </div>
+
+      <div className="my-6 flex items-center gap-3">
+        <span className="h-px flex-1 bg-[var(--hairline-strong)]" />
+        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">or</span>
+        <span className="h-px flex-1 bg-[var(--hairline-strong)]" />
+      </div>
+
+      <GoogleLoginButton nextUrl="/dashboard" />
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <Link href="/sign-in" className="font-medium text-[var(--neon-cyan)] underline-offset-4 hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </section>
   );
 }
