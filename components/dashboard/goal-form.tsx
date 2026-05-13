@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
-type ParseResult = { feasible: boolean; feedback: string };
+import { useEffect, useState } from "react";
 
 export function GoalForm({
   walletAddress,
@@ -13,15 +11,21 @@ export function GoalForm({
 }) {
   const [goalText, setGoalText] = useState(initialStrategy);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<ParseResult | null>(null);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!saved) return;
+    const id = setTimeout(() => setSaved(false), 2500);
+    return () => clearTimeout(id);
+  }, [saved]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (submitting) return;
     setSubmitting(true);
     setError(null);
-    setResult(null);
+    setSaved(false);
     try {
       const res = await fetch("/api/goals", {
         method: "POST",
@@ -32,10 +36,9 @@ export function GoalForm({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? `HTTP ${res.status}`);
       }
-      const data = await res.json();
-      setResult({ feasible: !!data.feasible, feedback: data.feedback ?? "" });
+      setSaved(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to parse goal");
+      setError(e instanceof Error ? e.message : "Failed to save strategy");
     } finally {
       setSubmitting(false);
     }
@@ -54,23 +57,26 @@ export function GoalForm({
           placeholder="e.g. moderate risk, 8 to 15 percent conviction trades, never leverage, exit anything red after 72 hours"
           className="w-full border border-[var(--hairline-strong)] bg-[#080808] px-3 py-3 font-mono text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-[var(--neon-cyan)] focus:outline-none"
         />
-        <button
-          type="submit"
-          disabled={submitting || goalText.length < 5}
-          className="cta-glow inline-flex h-10 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {submitting ? "Parsing..." : "Save strategy"}
-        </button>
-      </form>
-      {error && <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">{error}</p>}
-      {result && (
-        <div className={`mt-6 border p-4 ${result.feasible ? "border-[var(--neon-green)]/40 bg-[var(--neon-green)]/5" : "border-[var(--neon-amber,#ffae00)]/40 bg-[var(--neon-amber,#ffae00)]/5"}`}>
-          <div className={`font-mono text-xs font-bold uppercase tracking-[0.18em] ${result.feasible ? "text-[var(--neon-green)]" : "text-[var(--neon-amber,#ffae00)]"}`}>
-            {result.feasible ? "Strategy accepted" : "Needs adjustment"}
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">{result.feedback}</p>
+        <div className="flex items-center gap-4">
+          <button
+            type="submit"
+            disabled={submitting || goalText.length < 5 || goalText === initialStrategy}
+            className="cta-glow inline-flex h-10 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {submitting ? "Saving..." : "Save strategy"}
+          </button>
+          {saved && (
+            <span className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--neon-green)]">
+              Saved
+            </span>
+          )}
+          {error && (
+            <span className="font-mono text-xs uppercase tracking-[0.16em] text-[var(--neon-red)]">
+              {error}
+            </span>
+          )}
         </div>
-      )}
+      </form>
     </section>
   );
 }

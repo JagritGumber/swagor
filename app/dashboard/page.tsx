@@ -9,6 +9,8 @@ import { WatchingStripDev } from "@/components/dashboard/watching-strip-dev";
 
 type SearchParams = Promise<{ dev?: string }>;
 
+const DEV_TRUTHY = new Set(["1", "true", "yes", "on"]);
+
 export default async function DashboardPage({ searchParams }: { searchParams: SearchParams }) {
   const supabase = createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,7 +18,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
 
   const instance = await ensureSolonInstance(user.id);
   const addr = instance.circleWalletAddress;
-  const isDev = (await searchParams).dev === "1";
+  const devParam = (await searchParams).dev?.toLowerCase() ?? "";
+  // Dev strip auto-shows locally; in prod requires ?dev=1 / true / yes.
+  const isDev = process.env.NODE_ENV !== "production" || DEV_TRUTHY.has(devParam);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24">
