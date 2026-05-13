@@ -40,7 +40,7 @@ export function ReviewerTrinity() {
           {ANALYSTS.map((a, i) => (
             <article
               key={a.id}
-              className="group relative bg-black p-10 transition-all duration-500 hover:bg-[#0a0a0a] focus-within:bg-[#0a0a0a]"
+              className={`group relative bg-black p-10 transition-all duration-500 hover:bg-[#0a0a0a] focus-within:bg-[#0a0a0a] ${i === 0 ? "md:border-l md:border-[var(--hairline-strong)]" : ""}`}
               style={{ animation: `rise-in 0.7s cubic-bezier(0.16,1,0.3,1) ${i * 120}ms both` }}
             >
               {/* Visible bold Roman numeral, top-right corner */}

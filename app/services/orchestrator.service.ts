@@ -7,11 +7,16 @@ import { runCritic } from "@/app/services/agents/critic.agent";
 import { runTaxOptimizer } from "@/app/services/agents/tax-optimizer.agent";
 import { runSwarm } from "@/app/services/swarm/swarm-runner.service";
 import { aggregate } from "@/app/services/swarm/aggregator.service";
-import { getArcUsdcBalance } from "@/lib/protocols/arc-usdc";
-import { fetchPrices } from "@/lib/data-sources/coingecko";
-import { fetchYieldPools } from "@/lib/data-sources/defillama";
+import {
+  fetchAllMids,
+  fetchMetaAndCtxs,
+  fetchClearinghouse,
+} from "@/lib/data-sources/hyperliquid";
 import { searchNews } from "@/lib/data-sources/news";
 import { anchorCycle } from "@/lib/arc/anchor";
+import { db } from "@/lib/db/client";
+import { solonInstances, trades, monitorTicks } from "@/lib/db/schema";
+import { and, desc, eq } from "drizzle-orm";
 
 /**
  * Runs the agent chain for a single cycle. Fire-and-forget from the API route:
@@ -19,8 +24,9 @@ import { anchorCycle } from "@/lib/arc/anchor";
  * does the work in the background, updating the row to 'approved' / 'rejected'
  * / 'failed' when done.
  *
- * Chain (hackathon minimum): Decider -> Critic. Future: add Graph Builder,
- * RegimeAnalyzer, swarm, etc. as separate calls before Decider.
+ * Context fetched is perp-specific (Hyperliquid mids/funding, user paper
+ * positions, watcher rationale) so the swarm reasons about what Selbo
+ * actually trades, not yield-routing artifacts.
  */
 export async function runCycle(cycleId: string): Promise<void> {
   try {
@@ -33,25 +39,90 @@ export async function runCycle(cycleId: string): Promise<void> {
       throw new Error("Portfolio has no connected wallet");
     }
 
-    // Gather context in parallel; tolerate individual failures.
-    const [positions, prices, yields, news] = await Promise.all([
-      getArcUsdcBalance(portfolio.walletAddress as `0x${string}`),
-      fetchPrices(["bitcoin", "ethereum", "usd-coin"]).catch(() => null),
-      fetchYieldPools().catch(() => []),
-      searchNews("USDC depeg OR Aave OR Compound OR Pendle yield OR stablecoin").catch(() => ({ results: [] })),
+    const [instance] = await db
+      .select()
+      .from(solonInstances)
+      .where(eq(solonInstances.circleWalletAddress, portfolio.walletAddress))
+      .limit(1);
+    if (!instance) {
+      throw new Error(
+        `No solon instance found for wallet ${portfolio.walletAddress}`,
+      );
+    }
+
+    const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
+
+    const [mids, meta, clearing, paperOpen, lastTick, newsRes] = await Promise.all([
+      fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
+      fetchMetaAndCtxs().catch(() => ({ universe: [], ctxs: [] })),
+      fetchClearinghouse(instance.circleWalletAddress).catch(() => null),
+      db.select().from(trades).where(
+        and(eq(trades.userId, instance.userId), eq(trades.status, "open")),
+      ),
+      db.select().from(monitorTicks)
+        .where(eq(monitorTicks.solonInstanceId, instance.id))
+        .orderBy(desc(monitorTicks.createdAt))
+        .limit(1)
+        .then((r) => r[0]),
+      searchNews(
+        `${watching.join(" OR ")} OR perp futures OR funding rate OR crypto market`,
+      ).catch(() => ({ results: [] as Array<{ title: string; source: string; publishedAt: string }> })),
     ]);
 
+    const ctxByCoin = new Map(meta.universe.map((u, i) => [u.name.toUpperCase(), meta.ctxs[i]]));
+    const perps = watching.map((sym) => {
+      const upper = sym.toUpperCase();
+      const ctx = ctxByCoin.get(upper);
+      return {
+        symbol: upper,
+        mid: mids[upper] ?? null,
+        mark: ctx?.markPx ?? null,
+        funding_hourly: ctx?.funding ?? null,
+        open_interest: ctx?.openInterest ?? null,
+        prev_day_px: ctx?.prevDayPx ?? null,
+      };
+    });
+
+    const hlPositions = clearing?.assetPositions.map((p) => ({
+      coin: p.position.coin,
+      size: p.position.szi,
+      entry: p.position.entryPx,
+      leverage: p.position.leverage,
+      liquidation: p.position.liquidationPx,
+      unrealized_pnl: p.position.unrealizedPnl,
+      margin_used: p.position.marginUsed,
+    })) ?? [];
+
+    const paperPositions = paperOpen.map((t) => ({
+      asset: t.asset,
+      side: t.side,
+      size_usd: Number(t.amountUsd),
+      entry: t.entryPrice ? Number(t.entryPrice) : null,
+      opened_at: t.openedAt,
+    }));
+
     const context = {
-      positions,
-      goal: portfolio.goalParsed ?? null,
-      market: {
-        prices,
-        top_yields: yields.slice(0, 8),
-        recent_news: news.results?.slice(0, 6) ?? [],
-      },
+      strategy: instance.strategyText,
+      watcher_rationale: lastTick?.rationale ?? null,
+      watching,
+      account: clearing
+        ? {
+            equity: clearing.marginSummary.accountValue,
+            withdrawable: clearing.withdrawable,
+          }
+        : { equity: Number(instance.simulatedBalanceUsd), withdrawable: Number(instance.simulatedBalanceUsd) },
+      paper_positions: paperPositions,
+      hl_positions: hlPositions,
+      perps,
+      recent_news: (newsRes.results ?? []).slice(0, 6).map((n) => ({
+        title: n.title,
+        source: n.source,
+        hoursAgo: n.publishedAt
+          ? Math.floor((Date.now() - new Date(n.publishedAt).getTime()) / 3_600_000)
+          : null,
+      })),
     };
 
-    // Swarm: 25 persona-bearing agents run in parallel
     // Swarm size capped to 10 to stay under per-key GLM concurrency limits.
     // Bumping past 10 reliably hits 1302 rate limit errors on the paid tier.
     const swarmDecisions = await runSwarm({ cycleId, context, size: 10 });
@@ -60,8 +131,12 @@ export async function runCycle(cycleId: string): Promise<void> {
     }
     const aggregated = await aggregate({ cycleId, decisions: swarmDecisions });
 
-    // TaxOptimizer (cross-model) reviews through Indian VDA tax lens
-    const taxOpt = await runTaxOptimizer({ cycleId, aggregated, positions });
+    // TaxOptimizer (cross-model) reviews through Indian VDA tax lens.
+    const taxOpt = await runTaxOptimizer({
+      cycleId,
+      aggregated,
+      positions: paperPositions,
+    });
     const taxAdjusted =
       taxOpt.approved_decision === aggregated.decision
         ? aggregated
@@ -73,20 +148,16 @@ export async function runCycle(cycleId: string): Promise<void> {
             rationale: `${aggregated.rationale} | Tax-adjusted: ${taxOpt.rationale}`,
           };
 
-    // Critic (cross-model) reviews the tax-adjusted decision
     const verdict = await runCritic({
       cycleId,
       decision: taxAdjusted as object as Parameters<typeof runCritic>[0]["decision"],
-      positions,
-      goal: portfolio.goalParsed,
+      positions: paperPositions,
+      goal: instance.strategyText,
     });
 
     const finalStatus: "approved" | "rejected" =
       verdict.verdict === "reject" ? "rejected" : "approved";
 
-    // Fire the Arc anchor non-blocking. If the contract isn't deployed
-    // yet this returns null and we log a warning, but the cycle still
-    // completes cleanly.
     let arcAnchor = null;
     try {
       arcAnchor = await anchorCycle({

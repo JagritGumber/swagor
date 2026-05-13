@@ -8,12 +8,18 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 // ArrowUpRight remains for the genuinely-external Arc Testnet explorer link.
 import { LEGAL_DISCLOSURE_LONG } from "@/lib/marketing-data";
+import { SectionShader } from "./shaders/section-shader";
 
 export function CtaFooter() {
   return (
     <>
       <section className="relative isolate overflow-hidden border-b border-[var(--hairline-strong)] bg-black">
-        <div className="mx-auto max-w-6xl px-6 py-16 text-center sm:py-20">
+        <SectionShader variant="dot-orbit-shine" opacity={0.55} scrim={0.5} />
+        <div className="relative z-10 mx-auto max-w-6xl px-6 py-16 text-center sm:py-20">
+          <span aria-hidden className="pointer-events-none absolute left-6 top-6 h-6 w-6 border-l border-t border-[var(--neon-cyan)]" />
+          <span aria-hidden className="pointer-events-none absolute right-6 top-6 h-6 w-6 border-r border-t border-[var(--neon-cyan)]" />
+          <span aria-hidden className="pointer-events-none absolute bottom-6 left-6 h-6 w-6 border-b border-l border-[var(--neon-cyan)]" />
+          <span aria-hidden className="pointer-events-none absolute bottom-6 right-6 h-6 w-6 border-b border-r border-[var(--neon-cyan)]" />
           <h2 className="text-[40px] font-bold uppercase leading-[0.95] tracking-tight text-balance text-foreground">
             Deploy your <span className="text-[var(--neon-cyan)]">Selbo</span>.
           </h2>
@@ -38,10 +44,6 @@ export function CtaFooter() {
           </div>
         </div>
 
-        <span aria-hidden className="pointer-events-none absolute left-4 top-4 h-6 w-6 border-l border-t border-[var(--neon-cyan)]" />
-        <span aria-hidden className="pointer-events-none absolute right-4 top-4 h-6 w-6 border-r border-t border-[var(--neon-cyan)]" />
-        <span aria-hidden className="pointer-events-none absolute bottom-4 left-4 h-6 w-6 border-b border-l border-[var(--neon-cyan)]" />
-        <span aria-hidden className="pointer-events-none absolute bottom-4 right-4 h-6 w-6 border-b border-r border-[var(--neon-cyan)]" />
       </section>
 
       <footer className="bg-black py-10 sm:py-12">

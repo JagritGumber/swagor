@@ -2,24 +2,23 @@
  * How a deliberation works. Tighter stage titles + smaller vertical gaps.
  */
 
-import { Anchor, Bell, PenLine, Scan, ShieldCheck, Users } from "lucide-react";
-import type { ComponentType } from "react";
+import { Anchor, Bell, PenLine, Scan, ShieldCheck, Users, type LucideIcon } from "lucide-react";
 
 type Stage = {
   title: string;
   body: string;
-  Icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  Icon: LucideIcon;
 };
 
 const STAGES: Stage[] = [
   {
     title: "Selbo scans",
-    body: "Every fifteen minutes Selbo glances at the market. Prices, depth, news, recent lessons. One light call. Almost always it sees nothing worth doing, logs it, and goes back to waiting.",
+    body: "Selbo glances at the perp markets on an adaptive cadence it picks for itself, anywhere from a couple of minutes to half an hour. Mark prices, funding, open positions, recent news. One light call. Almost always it sees nothing worth doing, logs it, and goes back to waiting.",
     Icon: Scan,
   },
   {
     title: "Something shifts",
-    body: "Roughly five percent of the time, something does shift. A yield window. A regime hint. A piece of news that ties to a position. Only then does the full deliberation start.",
+    body: "Most of the time nothing happens. When it does, a tactical signal at a strategy-relevant level, a funding flip, a position near its liquidation, or a regime shift, Selbo routes the tick to the right tier instead of waking the whole panel for noise.",
     Icon: Bell,
   },
   {
@@ -39,7 +38,7 @@ const STAGES: Stage[] = [
   },
   {
     title: "The call goes on Arc",
-    body: "If the audit clears it, the trade simulates against live pool prices. The reasoning, the dissent, and the outcome are recorded on Arc forever. You read all of it on your dashboard.",
+    body: "If the audit clears it, the trade simulates against live Hyperliquid mark prices. The reasoning, the dissent, and the outcome are recorded on Arc forever. You read all of it on your dashboard.",
     Icon: Anchor,
   },
 ];

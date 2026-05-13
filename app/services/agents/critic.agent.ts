@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { callAgent } from "./shared";
+import { callAgent, type PerpPaperPosition } from "./shared";
 import type { DeciderOutput } from "./decider.agent";
-import type { PositionSnapshot } from "@/lib/protocols/arc-usdc";
 
 const CriticOutputSchema = z.object({
   verdict: z.enum(["approve", "modify", "reject"]),
@@ -37,8 +36,8 @@ Lean toward approve when the reasoning is grounded and the proposal serves the u
 export async function runCritic(opts: {
   cycleId: string;
   decision: DeciderOutput;
-  positions: PositionSnapshot;
-  goal: unknown;
+  positions: PerpPaperPosition[];
+  goal: string;
 }): Promise<CriticOutput> {
   return callAgent({
     agentName: "Critic",

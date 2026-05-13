@@ -16,7 +16,7 @@ const QAS: QA[] = [
     q: "Is this real money?",
     a: (
       <>
-        Not yet. Selbo runs on Arc Testnet with simulated capital. Trades simulate against real mainnet pool prices, so the numbers stay honest. No actual capital is at risk. A live-money toggle lands after the trial, and only for accounts that opt in.
+        Not yet. Selbo runs on Hyperliquid testnet with simulated capital, quoting against real mainnet mark prices and funding so the numbers stay honest. No actual capital is at risk. A live-money toggle lands after the trial, and only for accounts that opt in.
       </>
     ),
   },
@@ -32,7 +32,7 @@ const QAS: QA[] = [
     q: "Can I stop it at any time?",
     a: (
       <>
-        Yes. There is a kill switch on your dashboard. Flip it and your Selbo stops cycling. The wallet is yours. Only you can fully export it. You can come back later or never.
+        Yes. There is a kill switch on your dashboard. Flip it and your Selbo stops cycling. The wallet stays attached to your account on the testnet and stops trading the moment you flip the switch. You can come back later or never.
       </>
     ),
   },

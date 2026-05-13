@@ -1,8 +1,7 @@
 import { z } from "zod";
-import { callAgent } from "./shared";
+import { callAgent, type PerpPaperPosition } from "./shared";
 import { INDIAN_VDA_TAX, INDIAN_VDA_TAX_PROMPT_BRIEF } from "@/lib/india-tax";
 import type { AggregatorOutput } from "@/app/services/swarm/aggregator.service";
-import type { PositionSnapshot } from "@/lib/protocols/arc-usdc";
 
 const TaxOptimizerOutputSchema = z.object({
   approved_decision: z.enum(["stay", "rotate", "harvest", "postpone"]),
@@ -59,7 +58,7 @@ Output JSON EXACTLY:
 export async function runTaxOptimizer(opts: {
   cycleId: string;
   aggregated: AggregatorOutput;
-  positions: PositionSnapshot;
+  positions: PerpPaperPosition[];
 }): Promise<TaxOptimizerOutput> {
   return callAgent({
     agentName: "TaxOptimizer",

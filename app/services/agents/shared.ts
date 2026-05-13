@@ -3,6 +3,19 @@ import { MODELS, getClient, type ModelTier } from "@/lib/llm-client";
 import { db } from "@/lib/db/client";
 import { agentReasoning } from "@/lib/db/schema";
 
+/**
+ * One row in the `trades` table flattened for prompt consumption. The agents
+ * read this via JSON.stringify, but the type stays explicit so callers can't
+ * accidentally pass yield-routing-era PositionSnapshot or raw DB rows.
+ */
+export type PerpPaperPosition = {
+  asset: string;
+  side: string;
+  size_usd: number;
+  entry: number | null;
+  opened_at: Date | null;
+};
+
 export type AgentCallOpts<TOutput> = {
   agentName: string;
   cycleId: string;
