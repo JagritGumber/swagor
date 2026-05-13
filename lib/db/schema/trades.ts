@@ -39,7 +39,11 @@ export const trades = pgTable("trades", {
   mode: text("mode").notNull().default("simulation"), // 'simulation' | 'live'
   simulatedTxHash: text("simulated_tx_hash"),
   failureReason: text("failure_reason"),
+  // Circle's internal transaction id, returned synchronously when the
+  // anchor SDK call is queued. We poll Circle for state=COMPLETE and
+  // backfill `arcOnchainTxHash` once the tx is mined on Arc.
   arcAnchorTx: text("arc_anchor_tx"),
+  arcOnchainTxHash: text("arc_onchain_tx_hash"),
   openedAt: timestamp("opened_at", { withTimezone: true }),
   closedAt: timestamp("closed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

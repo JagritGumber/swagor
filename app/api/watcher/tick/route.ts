@@ -3,6 +3,7 @@ import { db } from "@/lib/db/client";
 import { solonInstances } from "@/lib/db/schema";
 import { and, eq, lte } from "drizzle-orm";
 import { runWatcherForInstance } from "@/app/services/watcher/watcher.service";
+import { pollPendingAnchors } from "@/lib/arc/anchor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,7 +52,22 @@ export async function POST(request: Request) {
       : { error: r.reason instanceof Error ? r.reason.message : String(r.reason) }),
   }));
 
-  return NextResponse.json({ ranAt: now.toISOString(), count: due.length, results: summary });
+  // Piggyback the anchor-status poll on the same cron heartbeat so we don't
+  // double Worker invocations. Cheap query: only scans trades with a pending
+  // Circle tx id and no resolved on-chain hash.
+  let anchorPoll: { scanned: number; resolved: number; failed: number } | null = null;
+  try {
+    anchorPoll = await pollPendingAnchors();
+  } catch (err) {
+    console.error("[tick] pollPendingAnchors threw:", err);
+  }
+
+  return NextResponse.json({
+    ranAt: now.toISOString(),
+    count: due.length,
+    results: summary,
+    anchorPoll,
+  });
 }
 
 // GET alias so manual `curl` works without -X POST during dev.

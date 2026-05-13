@@ -1,5 +1,8 @@
 import { createHash } from "node:crypto";
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
+import { db } from "@/lib/db/client";
+import { trades } from "@/lib/db/schema";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 
 let sdk: ReturnType<typeof initiateDeveloperControlledWalletsClient> | null = null;
 
@@ -156,4 +159,51 @@ export async function anchorClosedTrade(
     tradeIdBytes32,
     reasoningHash,
   };
+}
+
+const TERMINAL_FAIL_STATES = new Set(["FAILED", "CANCELLED", "DENIED"]);
+
+/**
+ * Poll Circle for trades that have a Circle transaction id but no resolved
+ * on-chain hash yet. Updates `arcOnchainTxHash` once the tx reaches
+ * `COMPLETE`. Failed/cancelled/denied txs are stamped with a sentinel so
+ * we stop polling them.
+ *
+ * Called from the watcher tick handler each cron heartbeat. Cheap: only
+ * reads rows where the Circle id is set AND the on-chain hash is null,
+ * which is the small window of "anchor-fired but not yet mined" trades.
+ */
+export async function pollPendingAnchors(): Promise<{
+  scanned: number;
+  resolved: number;
+  failed: number;
+}> {
+  const pending = await db
+    .select({ id: trades.id, arcAnchorTx: trades.arcAnchorTx })
+    .from(trades)
+    .where(and(isNotNull(trades.arcAnchorTx), isNull(trades.arcOnchainTxHash)));
+
+  let resolved = 0;
+  let failed = 0;
+
+  for (const row of pending) {
+    if (!row.arcAnchorTx) continue;
+    try {
+      const resp = await getSdk().getTransaction(row.arcAnchorTx);
+      const body = resp.data as { data?: { transaction?: { state?: string; txHash?: string } } } | undefined;
+      const tx = body?.data?.transaction;
+      const state = tx?.state;
+      if (state === "COMPLETE" && tx?.txHash) {
+        await db.update(trades).set({ arcOnchainTxHash: tx.txHash }).where(eq(trades.id, row.id));
+        resolved++;
+      } else if (state && TERMINAL_FAIL_STATES.has(state)) {
+        await db.update(trades).set({ arcOnchainTxHash: `failed:${state}` }).where(eq(trades.id, row.id));
+        failed++;
+      }
+    } catch (err) {
+      console.error(`[anchor-poll] getTransaction(${row.arcAnchorTx}) failed:`, err);
+    }
+  }
+
+  return { scanned: pending.length, resolved, failed };
 }
