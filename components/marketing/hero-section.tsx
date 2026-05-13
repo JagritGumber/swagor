@@ -45,7 +45,7 @@ export function HeroSection() {
             <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
-            href="/solon/jagrit"
+            href="/selbo/jagrit"
             className="group inline-flex items-center justify-center gap-2 border border-[var(--hairline-strong)] bg-transparent px-6 py-4 text-xs font-bold uppercase tracking-[0.18em] text-foreground transition hover:border-foreground sm:text-sm"
           >
             <span>Watch our flagship</span>

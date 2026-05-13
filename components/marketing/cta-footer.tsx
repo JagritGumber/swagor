@@ -29,7 +29,7 @@ export function CtaFooter() {
               <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
-              href="/solon/jagrit"
+              href="/selbo/jagrit"
               className="group inline-flex items-center gap-2 border border-[var(--hairline-strong)] px-8 py-5 text-sm font-bold uppercase tracking-[0.2em] text-foreground transition hover:border-foreground"
             >
               <span>Watch our flagship</span>
@@ -72,7 +72,7 @@ export function CtaFooter() {
               </div>
               <ul className="mt-3 space-y-2">
                 <li>
-                  <Link href="/solon/jagrit" className="text-muted-foreground hover:text-foreground">
+                  <Link href="/selbo/jagrit" className="text-muted-foreground hover:text-foreground">
                     Watch our flagship
                   </Link>
                 </li>
