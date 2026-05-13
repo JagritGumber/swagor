@@ -66,7 +66,7 @@ export default async function OpengraphImage() {
           }}
         >
           Three specialist AI agents debate every trade. A cross-model auditor reviews
-          the debate. Every decision and every dissent gets anchored on Arc.
+          the debate. Every trade and the dissent behind it lands on Arc.
         </div>
 
         <div

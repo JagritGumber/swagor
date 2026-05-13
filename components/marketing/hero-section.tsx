@@ -32,7 +32,7 @@ export function HeroSection() {
 
             <p className="max-w-2xl text-balance text-base text-muted-foreground sm:text-lg">
               Three specialist AI agents debate every trade. A cross-model auditor
-              reviews the debate. <span className="text-foreground">Every decision and every dissent</span> gets anchored on Arc.
+              reviews the debate. <span className="text-foreground">Every trade and the dissent behind it</span> lands on Arc.
               You can read all of it.
             </p>
 
