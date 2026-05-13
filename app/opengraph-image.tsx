@@ -1,5 +1,8 @@
 import { ImageResponse } from "next/og";
 
+// Cache the rendered OG card for 24h so link previews don't re-run
+// Satori on every Discord/Slack/Twitter fetch.
+export const revalidate = 86400;
 export const alt = "Selbo. Public AI Crypto Trader on Arc.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

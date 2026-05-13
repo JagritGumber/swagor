@@ -24,7 +24,18 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET;
-  if (secret) {
+  // In production CRON_SECRET MUST be set, otherwise anyone hitting the
+  // URL can trigger watcher ticks for every due instance and burn LLM
+  // tokens. Local dev keeps the no-auth path so the dev strip works
+  // without piping a header.
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        { error: "CRON_SECRET not configured" },
+        { status: 503 },
+      );
+    }
+  } else {
     const auth = request.headers.get("authorization") ?? "";
     if (auth !== `Bearer ${secret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

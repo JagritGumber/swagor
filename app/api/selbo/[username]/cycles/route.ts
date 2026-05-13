@@ -33,7 +33,12 @@ export async function GET(request: Request, { params }: { params: Params }) {
     .where(eq(portfolios.walletAddress, instance.circleWalletAddress))
     .limit(1);
 
-  if (!portfolio) return NextResponse.json({ cycles: [] });
+  if (!portfolio) {
+    return NextResponse.json(
+      { cycles: [] },
+      { headers: { "Cache-Control": "public, max-age=30, s-maxage=60" } },
+    );
+  }
 
   const cycles = await db
     .select({
@@ -47,5 +52,14 @@ export async function GET(request: Request, { params }: { params: Params }) {
     .orderBy(desc(rebalanceCycles.startedAt))
     .limit(limit);
 
-  return NextResponse.json({ cycles });
+  // Cycles only land on rare `deliberate` escalations, so the CDN can
+  // hold this list a little longer than the watcher feed.
+  return NextResponse.json(
+    { cycles },
+    {
+      headers: {
+        "Cache-Control": "public, max-age=30, s-maxage=60, stale-while-revalidate=120",
+      },
+    },
+  );
 }
