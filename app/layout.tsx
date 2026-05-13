@@ -1,10 +1,10 @@
 import { EnvVarWarning } from "@/components/env-var-warning";
 import HeaderAuth from "@/components/header-auth";
+import { NavBrand } from "@/components/nav-brand";
 import { hasEnvVars } from "@/lib/utils/supabase/check-env-vars";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
-import Link from "next/link";
 import "./globals.css";
 import { Web3Providers } from "./providers";
 
@@ -45,25 +45,8 @@ export default async function RootLayout({
               <nav className="fixed inset-x-0 top-0 z-50 h-16 border-b border-[var(--hairline-strong)] bg-black/85 backdrop-blur-md">
                 <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6 text-sm">
                   <div className="flex items-baseline gap-4">
-                    <Link
-                      href="/"
-                      className="group relative text-2xl font-bold tracking-tight text-foreground"
-                      aria-label="Solon home"
-                    >
-                      Solon
-                      <span
-                        aria-hidden
-                        className="pointer-events-none absolute -bottom-1 left-0 h-px w-full origin-left scale-x-0 bg-[var(--neon-cyan)] transition-transform duration-300 ease-out group-hover:scale-x-100"
-                      />
-                    </Link>
-                    <span
-                      aria-label="Testnet"
-                      className="hidden items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline-flex"
-                    >
-                      <span aria-hidden className="relative inline-flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full animate-pulse-dot rounded-full bg-[var(--neon-green)]" />
-                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--neon-green)]" />
-                      </span>
+                    <NavBrand />
+                    <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
                       testnet
                     </span>
                   </div>
