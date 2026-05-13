@@ -22,7 +22,7 @@ export function KillSwitchCard({ initialActive }: { initialActive: boolean }) {
         body: JSON.stringify({ active: next }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as { active?: boolean };
       setActive(!!data.active);
     } catch {
       setActive(!next); // rollback on error

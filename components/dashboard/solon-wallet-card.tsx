@@ -1,18 +1,16 @@
 import type { SolonInstance } from "@/lib/db/schema/solon-instances";
 import { ArrowUpRight } from "lucide-react";
-import { WatchingFooter } from "./watching-footer";
 
 const truncate = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 const ARCSCAN = "https://testnet.arcscan.app/address/";
 
 /**
- * Solon at-a-glance. Server-rendered with the latest instance state.
- * Embeds a small client footer that polls /api/watcher/recent so the
- * "last check" line stays fresh without a full page reload.
+ * Selbo at-a-glance. Server-rendered with the latest instance state. The
+ * live watcher feed lives in <WatchingStrip /> immediately below this card,
+ * so this card stays static (no client polling).
  */
 export function SolonWalletCard({ instance }: { instance: SolonInstance }) {
   const balance = Number(instance.simulatedBalanceUsd);
-  const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
 
   return (
     <section className="border border-[var(--hairline-strong)] bg-black p-8">
@@ -38,10 +36,6 @@ export function SolonWalletCard({ instance }: { instance: SolonInstance }) {
           Arc Testnet
         </span>
       </div>
-
-      <div className="mt-6 h-px bg-[var(--hairline-strong)]" />
-
-      <WatchingFooter initialWatching={watching} />
     </section>
   );
 }

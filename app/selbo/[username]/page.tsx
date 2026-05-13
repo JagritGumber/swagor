@@ -32,7 +32,6 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
 
   const positions = await listOpenPositions(instance.userId);
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
-  const focusAsset = watching[0] ?? "ETH";
   const balance = Number(instance.simulatedBalanceUsd);
 
   return (
@@ -81,7 +80,7 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
         </div>
       </header>
 
-      <MarketChartCard asset={focusAsset} userId={instance.userId} />
+      <MarketChartCard watching={watching} />
 
       <PositionsTable positions={positions} />
     </div>

@@ -1,0 +1,93 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+export type WatcherTick = {
+  id: string;
+  verdict: "hold" | "execute" | "deliberate" | "escalate";
+  rationale: string;
+  nextCheckSeconds: number;
+  watching: string[];
+  createdAt: string;
+};
+
+export type WatcherRecent = {
+  ticks: WatcherTick[];
+  nextWatcherAt: string | null;
+  currentlyWatching: string[] | null;
+};
+
+const HIDDEN_SLEEP_MS = 60_000;
+const MIN_DELAY_MS = 8_000;
+const MAX_DELAY_MS = 30 * 60_000;
+
+/**
+ * Cadence-aware watcher poll. Refetches `/api/watcher/recent` aligned to
+ * the latest tick's `nextCheckSeconds` (plus 3s skew). Pauses when the tab
+ * is hidden, resumes on visibilitychange.
+ *
+ * One subscriber per dashboard is enough — pass the result down rather than
+ * mounting the hook in multiple components.
+ */
+export function useWatcherPoll(limit = 10): WatcherRecent | null {
+  const [data, setData] = useState<WatcherRecent | null>(null);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let inFlight: AbortController | null = null;
+    let cancelled = false;
+
+    function schedule(ms: number) {
+      if (cancelled) return;
+      const clamped = Math.max(MIN_DELAY_MS, Math.min(ms, MAX_DELAY_MS));
+      timer = setTimeout(pull, clamped);
+    }
+
+    async function pull() {
+      if (cancelled) return;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        schedule(HIDDEN_SLEEP_MS);
+        return;
+      }
+      inFlight?.abort();
+      inFlight = new AbortController();
+      try {
+        const res = await fetch(`/api/watcher/recent?limit=${limit}`, {
+          cache: "no-store",
+          signal: inFlight.signal,
+        });
+        if (!res.ok || cancelled) {
+          schedule(MAX_DELAY_MS / 30);
+          return;
+        }
+        const payload = (await res.json()) as WatcherRecent;
+        setData(payload);
+        const last = payload.ticks[0];
+        const nextAt = last
+          ? new Date(last.createdAt).getTime() + last.nextCheckSeconds * 1000 + 3000
+          : Date.now() + 60_000;
+        schedule(nextAt - Date.now());
+      } catch (err) {
+        if ((err as { name?: string })?.name === "AbortError") return;
+        if (!cancelled) schedule(MAX_DELAY_MS / 30);
+      }
+    }
+
+    function onVisible() {
+      if (document.visibilityState !== "visible") return;
+      if (timer) clearTimeout(timer);
+      pull();
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    pull();
+
+    return () => {
+      cancelled = true;
+      inFlight?.abort();
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [limit]);
+
+  return data;
+}

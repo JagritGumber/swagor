@@ -1,27 +1,28 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createChart, CandlestickSeries, createSeriesMarkers, type IChartApi, type CandlestickData, type Time, type SeriesMarker } from "lightweight-charts";
+import {
+  createChart, CandlestickSeries, LineSeries, AreaSeries, createSeriesMarkers,
+  type IChartApi, type CandlestickData, type LineData, type Time, type SeriesMarker,
+} from "lightweight-charts";
+import type { ChartType } from "./market-chart-controls";
 
 export type ChartCandle = { t: number; o: string; h: string; l: string; c: string };
 export type TradeMarker = {
-  time: number; // unix seconds
-  side: "long" | "short";
-  isExit: boolean;
-  text?: string;
+  time: number; side: "long" | "short"; isExit: boolean; text?: string;
 };
 
-/**
- * Brutalist-themed candle chart with trade entry/exit markers. Cyan up
- * candles, red down candles. Markers: green up-arrow under long entries,
- * red down-arrow above short entries, hollow above for exits.
- */
+const CYAN = "#00d4ff";
+const RED = "#ff3366";
+const HAIRLINE = "rgba(255,255,255,0.18)";
+const GRID = "rgba(255,255,255,0.04)";
+
 export function MarketChart({
-  asset, candles, markers,
+  candles, markers, chartType,
 }: {
-  asset: string;
   candles: ChartCandle[];
   markers: TradeMarker[];
+  chartType: ChartType;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -31,35 +32,50 @@ export function MarketChart({
     if (!container) return;
 
     const chart = createChart(container, {
-      width: container.clientWidth,
-      height: 320,
+      width: container.clientWidth, height: 320,
       layout: { background: { color: "#000000" }, textColor: "#737373", fontFamily: "ui-monospace, monospace" },
-      grid: { vertLines: { color: "rgba(255,255,255,0.04)" }, horzLines: { color: "rgba(255,255,255,0.04)" } },
-      timeScale: { borderColor: "rgba(255,255,255,0.18)", timeVisible: true, secondsVisible: false },
-      rightPriceScale: { borderColor: "rgba(255,255,255,0.18)" },
-      crosshair: { vertLine: { color: "#00d4ff", labelBackgroundColor: "#00d4ff" }, horzLine: { color: "#00d4ff", labelBackgroundColor: "#00d4ff" } },
+      grid: { vertLines: { color: GRID }, horzLines: { color: GRID } },
+      timeScale: { borderColor: HAIRLINE, timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: HAIRLINE },
+      crosshair: {
+        vertLine: { color: CYAN, labelBackgroundColor: CYAN },
+        horzLine: { color: CYAN, labelBackgroundColor: CYAN },
+      },
     });
 
-    const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#00d4ff", downColor: "#ff3366",
-      borderUpColor: "#00d4ff", borderDownColor: "#ff3366",
-      wickUpColor: "#00d4ff", wickDownColor: "#ff3366",
-    });
+    const series = chartType === "candles"
+      ? chart.addSeries(CandlestickSeries, {
+          upColor: CYAN, downColor: RED,
+          borderUpColor: CYAN, borderDownColor: RED,
+          wickUpColor: CYAN, wickDownColor: RED,
+        })
+      : chartType === "line"
+      ? chart.addSeries(LineSeries, { color: CYAN, lineWidth: 2 })
+      : chart.addSeries(AreaSeries, {
+          lineColor: CYAN, lineWidth: 2,
+          topColor: "rgba(0,212,255,0.35)", bottomColor: "rgba(0,212,255,0)",
+        });
 
-    const data: CandlestickData[] = candles.map((c) => ({
-      time: Math.floor(c.t / 1000) as Time,
-      open: Number(c.o), high: Number(c.h), low: Number(c.l), close: Number(c.c),
-    }));
-    series.setData(data);
+    if (chartType === "candles") {
+      const data: CandlestickData[] = candles.map((c) => ({
+        time: Math.floor(c.t / 1000) as Time,
+        open: Number(c.o), high: Number(c.h), low: Number(c.l), close: Number(c.c),
+      }));
+      series.setData(data);
+    } else {
+      const data: LineData[] = candles.map((c) => ({
+        time: Math.floor(c.t / 1000) as Time, value: Number(c.c),
+      }));
+      series.setData(data);
+    }
 
     const seriesMarkers: SeriesMarker<Time>[] = markers.map((m) => ({
       time: m.time as Time,
       position: m.side === "long" ? "belowBar" : "aboveBar",
-      color: m.isExit ? "#737373" : (m.side === "long" ? "#00ff7f" : "#ff3366"),
+      color: m.isExit ? "#737373" : (m.side === "long" ? "#00ff7f" : RED),
       shape: m.side === "long" ? "arrowUp" : "arrowDown",
       text: m.text,
     }));
-    // v5 API: markers are a series-attached plugin, not a series method.
     createSeriesMarkers(series, seriesMarkers);
 
     chart.timeScale().fitContent();
@@ -67,22 +83,12 @@ export function MarketChart({
 
     const onResize = () => chart.applyOptions({ width: container.clientWidth });
     window.addEventListener("resize", onResize);
-
     return () => {
       window.removeEventListener("resize", onResize);
       chart.remove();
       chartRef.current = null;
     };
-  }, [candles, markers]);
+  }, [candles, markers, chartType]);
 
-  return (
-    <div>
-      <div className="flex items-baseline justify-between mb-3">
-        <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          {asset} · 5m · last 24h
-        </div>
-      </div>
-      <div ref={containerRef} className="w-full" />
-    </div>
-  );
+  return <div ref={containerRef} className="w-full" />;
 }

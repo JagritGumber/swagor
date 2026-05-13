@@ -33,7 +33,7 @@ export function GoalForm({
         body: JSON.stringify({ walletAddress, goalText }),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? `HTTP ${res.status}`);
       }
       setSaved(true);

@@ -1,11 +1,14 @@
 import "server-only";
 
+import type { Blockchain } from "@circle-fin/developer-controlled-wallets";
 import { circleDeveloperSdk } from "@/lib/utils/developer-controlled-wallets-client";
 import { db } from "@/lib/db/client";
 import { solonInstances, type SolonInstance } from "@/lib/db/schema/solon-instances";
 import { eq } from "drizzle-orm";
 
-const BLOCKCHAIN = "ARC-TESTNET";
+// Circle SDK enum hasn't shipped a literal for the Arc testnet yet; runtime
+// accepts the string, so we cast at the boundary.
+const BLOCKCHAIN = "ARC-TESTNET" as Blockchain;
 
 /**
  * Returns the user's Solon instance, provisioning a Circle Developer-Controlled
@@ -35,6 +38,7 @@ export async function ensureSolonInstance(userId: string): Promise<SolonInstance
     accountType: "SCA",
     blockchains: [BLOCKCHAIN],
     walletSetId,
+    count: 1,
   });
   const wallet = created.data?.wallets?.[0];
   if (!wallet) throw new Error("Circle wallet creation returned no wallet");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -19,23 +19,48 @@ export function DecisionsSection({ walletAddress }: { walletAddress: string }) {
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [loaded, setLoaded] = useState(false);
 
-  const fetchCycles = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/cycles?walletAddress=${walletAddress}`, { cache: "no-store" });
-      if (res.ok) {
-        const data = await res.json();
-        setCycles(data.cycles ?? []);
-      }
-    } finally {
-      setLoaded(true);
-    }
-  }, [walletAddress]);
-
   useEffect(() => {
-    fetchCycles();
-    const id = setInterval(fetchCycles, 15_000);
-    return () => clearInterval(id);
-  }, [fetchCycles]);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let inFlight: AbortController | null = null;
+    let cancelled = false;
+    async function tick() {
+      if (cancelled) return;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        timer = setTimeout(tick, 120_000);
+        return;
+      }
+      inFlight?.abort();
+      inFlight = new AbortController();
+      try {
+        const res = await fetch(`/api/cycles?walletAddress=${walletAddress}`, {
+          cache: "no-store",
+          signal: inFlight.signal,
+        });
+        if (res.ok && !cancelled) {
+          const data = (await res.json()) as { cycles?: Cycle[] };
+          setCycles(data.cycles ?? []);
+        }
+      } catch (err) {
+        if ((err as { name?: string })?.name === "AbortError") return;
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
+      if (!cancelled) timer = setTimeout(tick, 60_000);
+    }
+    function onVisible() {
+      if (document.visibilityState !== "visible") return;
+      if (timer) clearTimeout(timer);
+      tick();
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    tick();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      inFlight?.abort();
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [walletAddress]);
 
   if (!loaded || cycles.length === 0) return null;
 
