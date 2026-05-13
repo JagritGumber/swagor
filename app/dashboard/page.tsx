@@ -5,6 +5,7 @@ import { listOpenPositions } from "@/app/services/positions.service";
 import { DecisionsSection } from "@/components/dashboard/decisions-section";
 import { GoalForm } from "@/components/dashboard/goal-form";
 import { KillSwitchCard } from "@/components/dashboard/kill-switch-card";
+import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
 import { SolonWalletCard } from "@/components/dashboard/solon-wallet-card";
 import { WatchingStripDev } from "@/components/dashboard/watching-strip-dev";
@@ -25,11 +26,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const isDev = process.env.NODE_ENV !== "production" || DEV_TRUTHY.has(devParam);
 
   const positions = await listOpenPositions(user.id);
+  const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
+  const focusAsset = watching[0] ?? "ETH";
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24">
       <SolonWalletCard instance={instance} />
       {isDev && <WatchingStripDev />}
+      <MarketChartCard asset={focusAsset} userId={user.id} />
       <PositionsTable positions={positions} />
       <GoalForm walletAddress={addr} initialStrategy={instance.strategyText} />
       <DecisionsSection walletAddress={addr} />
