@@ -43,6 +43,9 @@ export async function ensureSolonInstance(userId: string): Promise<SolonInstance
   const wallet = created.data?.wallets?.[0];
   if (!wallet) throw new Error("Circle wallet creation returned no wallet");
 
+  // Private-beta default: gate on if BETA_CODE is set, auto-grant otherwise.
+  const betaOpen = !process.env.BETA_CODE?.trim();
+
   try {
     const [row] = await db
       .insert(solonInstances)
@@ -50,6 +53,8 @@ export async function ensureSolonInstance(userId: string): Promise<SolonInstance
         userId,
         circleWalletId: wallet.id,
         circleWalletAddress: wallet.address.toLowerCase(),
+        betaAccessGranted: betaOpen,
+        betaGrantedAt: betaOpen ? new Date() : null,
       })
       .returning();
     return row;

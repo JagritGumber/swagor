@@ -43,12 +43,15 @@ export async function POST(request: Request) {
   }
 
   const now = new Date();
+  // Private-beta gate: skip ungranted instances entirely so no LLM spend
+  // happens on accounts that signed up without redeeming a code.
   const due = await db
     .select()
     .from(solonInstances)
     .where(and(
       lte(solonInstances.nextWatcherAt, now),
       eq(solonInstances.killSwitchActive, false),
+      eq(solonInstances.betaAccessGranted, true),
     ));
 
   const results = await Promise.allSettled(

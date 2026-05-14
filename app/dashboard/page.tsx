@@ -15,6 +15,7 @@ import { SolonWalletCard } from "@/components/dashboard/solon-wallet-card";
 import { WatchingStrip } from "@/components/dashboard/watching-strip";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { ProfileSettings } from "@/components/dashboard/profile-settings";
+import { BetaGate } from "@/components/dashboard/beta-gate";
 
 type SearchParams = Promise<{ dev?: string }>;
 
@@ -30,6 +31,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const devParam = (await searchParams).dev?.toLowerCase() ?? "";
   // Dev strip auto-shows locally; in prod requires ?dev=1 / true / yes.
   const isDev = process.env.NODE_ENV !== "production" || DEV_TRUTHY.has(devParam);
+
+  // Private-beta gate: until the user redeems a code, render only the
+  // gate component. No watcher feed, no market chart, no positions --
+  // and no client polling that would generate Worker invocations.
+  if (!instance.betaAccessGranted) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6 pb-24">
+        <BetaGate />
+      </div>
+    );
+  }
 
   const [positions, closedTrades, lifetime] = await Promise.all([
     listOpenPositions(user.id),
