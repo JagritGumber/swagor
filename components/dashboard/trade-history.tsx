@@ -47,7 +47,8 @@ export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
               <th className="py-2 text-right">%</th>
               <th className="py-2 text-right">Closed</th>
               <th className="py-2 text-right">Reason</th>
-              <th className="py-2 text-right">Arc</th>
+              <th className="py-2 text-right">Open</th>
+              <th className="py-2 text-right">Close</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--hairline)]">
@@ -88,20 +89,10 @@ export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
                     )}
                   </td>
                   <td className="py-3 text-right">
-                    {t.arcOnchainTxHash ? (
-                      <a
-                        href={`${ARC_TX}${t.arcOnchainTxHash}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-[var(--neon-cyan)] underline-offset-4 hover:underline"
-                        title={t.arcOnchainTxHash}
-                      >
-                        view
-                        <ArrowUpRight aria-hidden className="h-3 w-3 opacity-70" />
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">pending</span>
-                    )}
+                    <ArcChip hash={t.openOnchainTxHash} />
+                  </td>
+                  <td className="py-3 text-right">
+                    <ArcChip hash={t.arcOnchainTxHash} />
                   </td>
                 </tr>
               );
@@ -110,5 +101,23 @@ export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
         </table>
       </div>
     </section>
+  );
+}
+
+function ArcChip({ hash }: { hash: string | null }) {
+  if (!hash) {
+    return <span className="text-muted-foreground">pending</span>;
+  }
+  return (
+    <a
+      href={`${ARC_TX}${hash}`}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1 text-[var(--neon-cyan)] underline-offset-4 hover:underline"
+      title={hash}
+    >
+      view
+      <ArrowUpRight aria-hidden className="h-3 w-3 opacity-70" />
+    </a>
   );
 }

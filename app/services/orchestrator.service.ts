@@ -242,6 +242,12 @@ export async function runCycle(cycleId: string): Promise<void> {
             takeProfitPriceUsd,
             source: "panel",
             rationale: taxAdjusted.rationale,
+            agentContext: {
+              cycleId,
+              aggregated,
+              taxAdjusted,
+              swarmDecisionsCount: swarmDecisions.length,
+            } as import("@/lib/arc/anchor").AnchorJsonValue,
           });
           executed = { tradeId: opened.tradeId };
         } else if (taxAdjusted.action === "close") {

@@ -15,6 +15,7 @@ import { triggerCycleFromWatcher } from "./trigger";
 import { runFastTraderForInstance } from "@/app/services/fast-trader/fast-trader.service";
 import { tierSpec, type Tier } from "@/lib/tiers";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
+import { anchorWatcherDecision, type AnchorJsonValue } from "@/lib/arc/anchor";
 
 /**
  * Run one watcher tick for a given Selbo instance. Reads Hyperliquid mark
@@ -137,7 +138,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
           spec.watcherMaxCadenceSeconds,
         );
 
-  await db.insert(monitorTicks).values({
+  const [tickRow] = await db.insert(monitorTicks).values({
     selboInstanceId: instance.id,
     verdict: parsed.verdict,
     rationale: parsed.rationale,
@@ -150,13 +151,18 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       newsCount: (newsRes.results ?? []).length,
       tier: spec.id,
     },
-  });
+  }).returning({ id: monitorTicks.id });
 
   await db.update(selboInstances).set({
     nextWatcherAt: new Date(Date.now() + clampedNext * 1000),
     currentlyWatching: parsed.watching,
   }).where(eq(selboInstances.id, instance.id));
 
+  // Dispatch the trading action BEFORE anchoring -- the anchor is proof of
+  // a decision already made, not a gate on it. If Circle is slow, the
+  // Fast Trader / cycle trigger has already kicked off; the anchor await
+  // below just keeps the worker alive long enough for both to land via
+  // Cloudflare's scheduled() waitUntil envelope.
   if (parsed.verdict === "deliberate" && spec.panelDeliberations) {
     triggerCycleFromWatcher(instance as SelboInstance, parsed.rationale)
       .catch((e) => console.error("[watcher] cycle trigger failed:", e));
@@ -168,6 +174,44 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
   } else if (parsed.verdict === "execute" || parsed.verdict === "risk_emergency") {
     runFastTraderForInstance(instance as SelboInstance, parsed.rationale)
       .catch((e) => console.error("[watcher] fast-trader failed:", e));
+  }
+
+  // Arc anchor for execute / risk_emergency verdicts (M5). Runs LAST so
+  // Circle latency cannot delay the trading action. `hold` is not anchored
+  // (too noisy); `deliberate` is anchored downstream via the swarm cycle
+  // path in orchestrator. Awaited so arcAnchorTx is saved before this
+  // function returns -- on Cloudflare the cron handler's waitUntil keeps
+  // the worker alive while we wait, which also lets the fire-and-forget
+  // fast-trader / cycle dispatch above run to completion.
+  if (
+    tickRow &&
+    (parsed.verdict === "execute" || parsed.verdict === "risk_emergency")
+  ) {
+    const tickId = tickRow.id;
+    const contextDigest: AnchorJsonValue = {
+      strategy: instance.strategyText,
+      perps: perps as AnchorJsonValue,
+      risk: risk as AnchorJsonValue,
+      positions: positions as AnchorJsonValue,
+      watching: parsed.watching,
+      tier: spec.id,
+    };
+    try {
+      const res = await anchorWatcherDecision({
+        monitorTickId: tickId,
+        verdict: parsed.verdict,
+        rationale: parsed.rationale,
+        contextDigest,
+      });
+      if (res?.txId) {
+        await db
+          .update(monitorTicks)
+          .set({ arcAnchorTx: res.txId })
+          .where(eq(monitorTicks.id, tickId));
+      }
+    } catch (err) {
+      console.error("[watcher] anchorWatcherDecision failed:", err);
+    }
   }
 
   return parsed;

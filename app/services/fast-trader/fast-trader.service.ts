@@ -142,6 +142,10 @@ export async function runFastTraderForInstance(
       takeProfitPriceUsd,
       source: "fast-trader",
       rationale,
+      agentContext: {
+        payload: JSON.parse(payload),
+        decision,
+      } as import("@/lib/arc/anchor").AnchorJsonValue,
     });
   } else if (decision.action === "close") {
     await closePaperTrade({
