@@ -1,173 +1,91 @@
-# Workflow Escrow Refund Protocol
+# Selbo
 
-Automate escrow-backed freelance agreements with AI-powered work validation using USDC on Arc testnet. This sample application uses Next.js, Supabase, Circle Developer Controlled Wallets, and OpenAI to demonstrate an end-to-end escrow workflow — from contract creation and deposit, through AI-validated deliverable submission, to fund release or refund.
+Per-user AI perpetual futures trader. Sign up, get a Circle Developer Wallet on Arc Testnet, describe your strategy in plain English, and your Selbo runs continuously.
 
-<img width="830" height="467" alt="Escrow agreement dashboard" src="public/screenshot.png" />
+Built for the Agora Agents hackathon (Canteen x Circle x Arc, 2026-05-11 to 2026-05-25) as a submission against **RFB 01 (Perpetual Futures)**. Paper-mode only for the hackathon; live venue execution is post-submission.
 
-## Table of Contents
+## Status
 
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [How It Works](#how-it-works)
-- [Environment Variables](#environment-variables)
-- [User Accounts](#user-accounts)
+- **Stage:** hackathon build, paper-mode only.
+- **Venue:** Hyperliquid testnet for market data; no live order placement.
+- **Custody:** zero. Trades are simulated against Hyperliquid mark prices.
+- **Audit:** every closed trade is anchored to Arc Testnet via Circle SCP.
 
-## Prerequisites
+## Architecture
 
-- **Node.js v22+** — Install via [nvm](https://github.com/nvm-sh/nvm)
-- **Supabase CLI** — Install via `npm install -g supabase` or see [Supabase CLI docs](https://supabase.com/docs/guides/cli/getting-started)
-- **Docker Desktop** (only if using the local Supabase path) — [Install Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- **[ngrok](https://ngrok.com/)** — For local webhook testing
-- Circle Developer Controlled Wallets **[API key](https://console.circle.com/signin)** and **[Entity Secret](https://developers.circle.com/wallets/dev-controlled/register-entity-secret)**
-- **[OpenAI API key](https://platform.openai.com/api-keys)** — Used for AI-powered work validation
+Decision loops, ordered by latency:
 
-## Getting Started
+1. **Watcher** (cheap, frequent). Deterministic pre-filter runs first; only triggers a watcher LLM if the filter flags the user may care. Verdicts: `hold | execute | deliberate | risk_emergency`.
+2. **Risk Engine** (deterministic, no LLM). Gates every trade open and runs on every tick. Limits seeded from tier defaults. Returns `allow | deny | emergency_close`.
+3. **Fast Trader** (tactical, sub-second). LLM picks between allowed actions; risk engine clamps size and leverage before insert.
+4. **Strategic Swarm** (16 perp-native personas plus aggregator, tax/compliance, and critic). Triggered on watcher `deliberate` for paying tiers. Handles regime, watchlist, venue, funding-rate arb, portfolio posture.
+5. **Emergency Guard.** Bypasses all LLMs. Liquidation distance, stop-loss / take-profit cross, or daily-loss breach routes straight from pre-filter to Risk Engine emergency-close.
 
-1. Clone the repository and install dependencies:
+Strategy text stays raw end-to-end. No prompt-based parsing of user intent.
 
-   ```bash
-   git clone git@github.com:akelani-circle/workflow-escrow-refund-protocol.git
-   cd workflow-escrow-refund-protocol
-   npm install
-   ```
+## Tech stack
 
-2. Set up environment variables:
+- Next.js 15, React 18, TypeScript 5.3, Tailwind 4
+- Drizzle ORM + Supabase Postgres
+- Better Auth + Polar billing
+- Circle Developer-Controlled Wallets (auto-provisioned per user)
+- Circle Smart Contract Platform (`PortfolioDecisions` contract anchors `TradeAnchored` events on Arc Testnet)
+- viem 2 + wagmi 2 + ConnectKit (external-wallet view-only)
+- Hyperliquid testnet for market data
+- Cloudflare Workers via OpenNext
+- TradingView Lightweight Charts
+- LLM tier mapping configured via env; see `.env.example`
 
-   ```bash
-   cp .env.example .env.local
-   ```
+Typechecker: `tsgo` (`@typescript/native-preview`), a Go reimplementation of `tsc`.
 
-   Then edit `.env.local` and fill in all required values (see [Environment Variables](#environment-variables) section below). Leave `NEXT_PUBLIC_AGENT_WALLET_ID`, `NEXT_PUBLIC_AGENT_WALLET_ADDRESS`, and `CIRCLE_BLOCKCHAIN` blank — they will be auto-generated in the next step.
-
-3. Generate the agent wallet:
-
-   ```bash
-   npm run generate-wallet
-   ```
-
-   This creates a Circle developer-controlled wallet and writes the wallet ID, address, and blockchain values into your `.env.local`.
-
-4. Set up the database — Choose one of the two paths below:
-
-   <details>
-   <summary><strong>Path 1: Local Supabase (Docker)</strong></summary>
-
-   Requires Docker Desktop installed and running.
-
-   ```bash
-   npx supabase start
-   npx supabase migration up
-   ```
-
-   The output of `npx supabase start` will display the Supabase URL and API keys needed for your `.env.local`.
-
-   </details>
-
-   <details>
-   <summary><strong>Path 2: Remote Supabase (Cloud)</strong></summary>
-
-   Requires a [Supabase](https://supabase.com/) account and project.
-
-   ```bash
-   npx supabase link --project-ref <your-project-ref>
-   npx supabase db push
-   ```
-
-   Retrieve your project URL and API keys from the Supabase dashboard under **Settings → API**.
-
-   </details>
-
-5. Start the development server:
-
-   ```bash
-   npm run dev
-   ```
-
-   The app will be available at `http://localhost:3000`.
-
-6. Set up Circle Webhooks (for local development):
-
-   In a separate terminal, expose your local server:
-
-   ```bash
-   ngrok http 3000
-   ```
-
-   Copy the HTTPS URL from ngrok and configure a webhook in the Circle Console:
-   - Navigate to [Circle Console → Webhooks](https://console.circle.com/webhooks)
-   - Add a new webhook endpoint: `https://your-ngrok-url.ngrok.io/api/webhooks/circle`
-   - Keep ngrok running while developing to receive webhook events
-
-## How It Works
-
-- Built with [Next.js](https://nextjs.org/) and [Supabase](https://supabase.com/)
-- Uses [Circle Developer Controlled Wallets](https://developers.circle.com/wallets/dev-controlled) for USDC escrow transactions on Arc testnet
-- Smart contracts (EIP-712 Refund Protocol) deployed and managed via `@circle-fin/smart-contract-platform`
-- [OpenAI](https://platform.openai.com/) validates submitted work deliverables against agreement criteria using vision models
-- Webhook signature verification ensures secure transaction notifications
-- Agent wallet automatically initialized via the `generate-wallet` script
-- Real-time UI updates powered by Supabase Realtime subscriptions
-
-## Environment Variables
-
-Copy `.env.example` to `.env.local` and fill in the required values:
+## Getting started
 
 ```bash
-# Deployment URL
-VERCEL_URL=http://localhost:3000
-NEXT_PUBLIC_VERCEL_URL=http://localhost:3000
-
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-
-# USDC Smart Contract
-NEXT_PUBLIC_USDC_CONTRACT_ADDRESS=
-
-# Agent Wallet (auto-generated by npm run generate-wallet)
-NEXT_PUBLIC_AGENT_WALLET_ID=
-NEXT_PUBLIC_AGENT_WALLET_ADDRESS=
-
-# Circle
-CIRCLE_API_KEY=
-CIRCLE_ENTITY_SECRET=
-CIRCLE_BLOCKCHAIN=
-
-# OpenAI
-OPENAI_API_KEY=
+git clone <repo>
+cd agoratest
+bun install
+cp .env.example .dev.vars
+# edit .dev.vars with your Supabase, Circle, Polar, and LLM keys
+bun run db:push
+bun run dev
 ```
 
-| Variable | Scope | Purpose |
-| --- | --- | --- |
-| `VERCEL_URL` | Server-side | Base URL of the deployment (e.g., `http://localhost:3000`). |
-| `NEXT_PUBLIC_VERCEL_URL` | Public | Public-facing base URL for client-side usage. |
-| `NEXT_PUBLIC_SUPABASE_URL` | Public | Supabase project URL. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public | Supabase anonymous/public key. |
-| `NEXT_PUBLIC_USDC_CONTRACT_ADDRESS` | Public | USDC token contract address on the target blockchain. |
-| `NEXT_PUBLIC_AGENT_WALLET_ID` | Public | Circle wallet ID for the escrow agent. Auto-generated. |
-| `NEXT_PUBLIC_AGENT_WALLET_ADDRESS` | Public | Wallet address for the escrow agent. Auto-generated. |
-| `CIRCLE_API_KEY` | Server-side | Circle API key for wallet and contract operations. |
-| `CIRCLE_ENTITY_SECRET` | Server-side | Circle entity secret for signing transactions. |
-| `CIRCLE_BLOCKCHAIN` | Server-side | Blockchain network identifier (e.g., `ARC-TESTNET`). Auto-generated. |
-| `OPENAI_API_KEY` | Server-side | OpenAI API key for AI-powered work validation. |
+The app runs at `http://localhost:3000`. `drizzle-kit` will prompt to confirm any schema migrations during `db:push`.
 
-## User Accounts
+For Cloudflare preview and deploy:
 
-### Default Account
+```bash
+bun run preview   # local Workers preview
+bun run deploy    # ship to Cloudflare
+```
 
-On first visit, sign up with any email and password. The first user created can act as both a depositor (client) and a beneficiary (freelancer) across different agreements.
+Production secrets are uploaded via `wrangler secret bulk .dev.vars`, not per-key `wrangler secret put` calls.
 
-### Signup Rate Limits
+## Quality gates
 
-Supabase limits email signups to **2 per hour** by default (unless custom SMTP is configured). If you hit an "email rate limit exceeded" error during testing:
+```bash
+bun run typecheck   # tsgo --noEmit
+bun run check       # typecheck plus next build
+```
 
-- **Local Supabase (Docker):** Email verification is handled by the built-in [Inbucket](http://127.0.0.1:54324) mail server — check it to confirm signups. The rate limit can be adjusted in `supabase/config.toml` under `[auth.rate_limit]`.
-- **Remote Supabase (Cloud):** Use real email addresses (disposable emails may fail verification). If you hit the limit, you can manually add users via the Supabase dashboard under **Authentication → Users**.
+CI runs typecheck on every push and pull request via `.github/workflows/typecheck.yml`.
 
-## Security & Usage Model
+## Project layout
 
-This sample application:
-- Assumes testnet usage only
-- Handles secrets via environment variables
-- Verifies webhook signatures for security
-- Is not intended for production use without modification
+- `app/` Next.js app router (pages, API routes, server actions)
+- `app/services/` agent services (watcher, fast-trader, swarm, orchestrator, risk)
+- `lib/db/schema/` Drizzle schema modules
+- `lib/data-sources/` external market data clients (Hyperliquid, CoinGecko, news, DefiLlama)
+- `lib/personas/` swarm persona roster
+- `lib/arc/` Arc anchoring (Circle SCP integration)
+- `components/` React UI
+
+## Out of scope (hackathon)
+
+- Live venue execution. Paper-mode only.
+- Multi-venue support. Hyperliquid only for now; dYdX, GMX, Vertex are post-submission.
+- User-editable risk limits. Tier defaults only pre-submission.
+
+## Submission
+
+Submission date: 2026-05-25. Selbo is framed against **RFB 01 (Perpetual Futures)**.
