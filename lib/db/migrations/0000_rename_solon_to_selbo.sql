@@ -16,8 +16,9 @@
 
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'solon_instances') THEN
-    ALTER TABLE solon_instances RENAME TO selbo_instances;
+  IF to_regclass('public.solon_instances') IS NOT NULL
+     AND to_regclass('public.selbo_instances') IS NULL THEN
+    ALTER TABLE public.solon_instances RENAME TO selbo_instances;
   END IF;
 END $$;
 
@@ -30,7 +31,28 @@ BEGIN
     WHERE table_schema = 'public'
       AND table_name = 'monitor_ticks'
       AND column_name = 'solon_instance_id'
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'monitor_ticks'
+      AND column_name = 'selbo_instance_id'
   ) THEN
-    ALTER TABLE monitor_ticks RENAME COLUMN solon_instance_id TO selbo_instance_id;
+    ALTER TABLE public.monitor_ticks RENAME COLUMN solon_instance_id TO selbo_instance_id;
   END IF;
+END $$;
+
+--> statement-breakpoint
+
+DO $$
+BEGIN
+  ALTER INDEX IF EXISTS public.solon_instances_pkey RENAME TO selbo_instances_pkey;
+  ALTER INDEX IF EXISTS public.solon_instances_user_id_unique RENAME TO selbo_instances_user_id_unique;
+  ALTER INDEX IF EXISTS public.solon_instances_circle_wallet_id_unique RENAME TO selbo_instances_circle_wallet_id_unique;
+  ALTER INDEX IF EXISTS public.solon_instances_billing_customer_id_unique RENAME TO selbo_instances_billing_customer_id_unique;
+  ALTER INDEX IF EXISTS public.solon_instances_billing_subscription_id_unique RENAME TO selbo_instances_billing_subscription_id_unique;
+  ALTER INDEX IF EXISTS public.solon_instances_username_unique RENAME TO selbo_instances_username_unique;
+EXCEPTION
+  WHEN undefined_object THEN
+    NULL;
 END $$;
