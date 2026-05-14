@@ -153,11 +153,36 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     },
   }).returning({ id: monitorTicks.id });
 
-  // Awaited Arc anchor for execute / risk_emergency verdicts (M5).
-  // `hold` is not anchored (too noisy at ~144 ticks/day/user); `deliberate`
-  // is anchored downstream via the swarm cycle path in orchestrator.
-  // Awaited (not fire-and-forget) because Cloudflare cancels post-handler
-  // async work; this guarantees arcAnchorTx is saved when Circle accepts.
+  await db.update(selboInstances).set({
+    nextWatcherAt: new Date(Date.now() + clampedNext * 1000),
+    currentlyWatching: parsed.watching,
+  }).where(eq(selboInstances.id, instance.id));
+
+  // Dispatch the trading action BEFORE anchoring -- the anchor is proof of
+  // a decision already made, not a gate on it. If Circle is slow, the
+  // Fast Trader / cycle trigger has already kicked off; the anchor await
+  // below just keeps the worker alive long enough for both to land via
+  // Cloudflare's scheduled() waitUntil envelope.
+  if (parsed.verdict === "deliberate" && spec.panelDeliberations) {
+    triggerCycleFromWatcher(instance as SelboInstance, parsed.rationale)
+      .catch((e) => console.error("[watcher] cycle trigger failed:", e));
+  } else if (parsed.verdict === "deliberate") {
+    // Free tier: route deliberate to the cheap Fast Trader instead of the
+    // expensive swarm. Better than dropping the signal entirely.
+    runFastTraderForInstance(instance as SelboInstance, `[free-tier downgrade] ${parsed.rationale}`)
+      .catch((e) => console.error("[watcher] fast-trader (downgrade) failed:", e));
+  } else if (parsed.verdict === "execute" || parsed.verdict === "risk_emergency") {
+    runFastTraderForInstance(instance as SelboInstance, parsed.rationale)
+      .catch((e) => console.error("[watcher] fast-trader failed:", e));
+  }
+
+  // Arc anchor for execute / risk_emergency verdicts (M5). Runs LAST so
+  // Circle latency cannot delay the trading action. `hold` is not anchored
+  // (too noisy); `deliberate` is anchored downstream via the swarm cycle
+  // path in orchestrator. Awaited so arcAnchorTx is saved before this
+  // function returns -- on Cloudflare the cron handler's waitUntil keeps
+  // the worker alive while we wait, which also lets the fire-and-forget
+  // fast-trader / cycle dispatch above run to completion.
   if (
     tickRow &&
     (parsed.verdict === "execute" || parsed.verdict === "risk_emergency")
@@ -187,24 +212,6 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     } catch (err) {
       console.error("[watcher] anchorWatcherDecision failed:", err);
     }
-  }
-
-  await db.update(selboInstances).set({
-    nextWatcherAt: new Date(Date.now() + clampedNext * 1000),
-    currentlyWatching: parsed.watching,
-  }).where(eq(selboInstances.id, instance.id));
-
-  if (parsed.verdict === "deliberate" && spec.panelDeliberations) {
-    triggerCycleFromWatcher(instance as SelboInstance, parsed.rationale)
-      .catch((e) => console.error("[watcher] cycle trigger failed:", e));
-  } else if (parsed.verdict === "deliberate") {
-    // Free tier: route deliberate to the cheap Fast Trader instead of the
-    // expensive swarm. Better than dropping the signal entirely.
-    runFastTraderForInstance(instance as SelboInstance, `[free-tier downgrade] ${parsed.rationale}`)
-      .catch((e) => console.error("[watcher] fast-trader (downgrade) failed:", e));
-  } else if (parsed.verdict === "execute" || parsed.verdict === "risk_emergency") {
-    runFastTraderForInstance(instance as SelboInstance, parsed.rationale)
-      .catch((e) => console.error("[watcher] fast-trader failed:", e));
   }
 
   return parsed;
