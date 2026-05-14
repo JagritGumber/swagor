@@ -1,6 +1,6 @@
 /**
  * Subscription tier matrix. Single source of truth for tier-gated features.
- * Tier names match what's stored in solon_instances.subscription_tier.
+ * Tier names match what's stored in selbo_instances.subscription_tier.
  *
  * Pricing model: monthly recurring subscription + future performance-fee
  * layer (10-15% on profits, billed monthly, high-water-mark protected).
@@ -17,7 +17,7 @@ export type TierSpec = {
   perfFeePct: number;            // 0 = no perf fee
   watcherMinCadenceSeconds: number;  // floor the watcher can pick
   watcherMaxCadenceSeconds: number;  // ceiling the watcher can pick
-  maxSolons: number;             // how many Solon instances per user
+  maxSelbos: number;             // how many Selbo instances per user
   panelDeliberations: boolean;   // does swarm fire on deliberate verdicts
   publicProfile: boolean;        // can publish /selbo/{username}
   prioritySwarmQueue: boolean;   // future: jump the swarm work queue
@@ -32,7 +32,7 @@ export const TIERS: Record<Tier, TierSpec> = {
     perfFeePct: 0,
     watcherMinCadenceSeconds: 600,    // 10 min minimum (slow)
     watcherMaxCadenceSeconds: 3600,   // up to 1 hour
-    maxSolons: 1,
+    maxSelbos: 1,
     panelDeliberations: false,        // free tier skips the swarm, just fast-trader
     publicProfile: false,
     prioritySwarmQueue: false,
@@ -45,11 +45,11 @@ export const TIERS: Record<Tier, TierSpec> = {
     perfFeePct: 10,
     watcherMinCadenceSeconds: 120,    // 2 min minimum
     watcherMaxCadenceSeconds: 1800,   // up to 30 min
-    maxSolons: 1,
+    maxSelbos: 1,
     panelDeliberations: true,
     publicProfile: true,
     prioritySwarmQueue: false,
-    description: "Full paper trading, public profile, panel deliberation, one Solon instance.",
+    description: "Full paper trading, public profile, panel deliberation, one Selbo instance.",
   },
   pro: {
     id: "pro",
@@ -58,11 +58,11 @@ export const TIERS: Record<Tier, TierSpec> = {
     perfFeePct: 15,
     watcherMinCadenceSeconds: 60,     // 1 min minimum
     watcherMaxCadenceSeconds: 1800,
-    maxSolons: 3,
+    maxSelbos: 3,
     panelDeliberations: true,
     publicProfile: true,
     prioritySwarmQueue: true,
-    description: "Multiple Solons, priority queue, faster watcher, multi-venue when supported.",
+    description: "Multiple Selbos, priority queue, faster watcher, multi-venue when supported.",
   },
   capital: {
     id: "capital",
@@ -71,7 +71,7 @@ export const TIERS: Record<Tier, TierSpec> = {
     perfFeePct: 20,
     watcherMinCadenceSeconds: 30,
     watcherMaxCadenceSeconds: 1800,
-    maxSolons: 10,
+    maxSelbos: 10,
     panelDeliberations: true,
     publicProfile: true,
     prioritySwarmQueue: true,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
-import { monitorTicks, solonInstances } from "@/lib/db/schema";
+import { monitorTicks, selboInstances } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Returns the last N watcher ticks for the calling user's Solon instance.
+ * Returns the last N watcher ticks for the calling user's Selbo instance.
  * Auth-checked: a user can only see their own ticks.
  */
 export async function GET(request: Request) {
@@ -20,12 +20,12 @@ export async function GET(request: Request) {
   const limit = Math.min(Number(searchParams.get("limit") ?? "10"), 50);
 
   const [instance] = await db
-    .select().from(solonInstances).where(eq(solonInstances.userId, user.id)).limit(1);
+    .select().from(selboInstances).where(eq(selboInstances.userId, user.id)).limit(1);
   if (!instance) return NextResponse.json({ ticks: [], nextWatcherAt: null });
 
   const ticks = await db
     .select().from(monitorTicks)
-    .where(eq(monitorTicks.solonInstanceId, instance.id))
+    .where(eq(monitorTicks.selboInstanceId, instance.id))
     .orderBy(desc(monitorTicks.createdAt))
     .limit(limit);
 

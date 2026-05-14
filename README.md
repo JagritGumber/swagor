@@ -2,7 +2,7 @@
 
 Selbo is an autonomous perpetual futures risk manager. It monitors leveraged positions 24/7, protects users from liquidation, and uses AI agents to decide when to enter, exit, hedge, or migrate positions across perp venues.
 
-The product is built for RFB 01: Perpetual Futures Trading Agent. The first milestone is paper-mode autonomy with transparent risk logs, simulated PnL, Sharpe, drawdown, trade volume, and Arc-anchored decision records. Live execution comes after the risk engine and venue adapters are stable.
+Built for the Agora Agents hackathon (Canteen x Circle x Arc, 2026-05-11 to 2026-05-25) against **RFB 01: Perpetual Futures Trading Agent**. The hackathon milestone is paper-mode autonomy with transparent risk logs, simulated PnL, drawdown, trade volume, and Arc-anchored decision records. Live venue execution comes after the risk engine and venue adapters are stable.
 
 ## User Value
 
@@ -29,77 +29,61 @@ Market data
 
 The watcher is designed to stay cheap. It reads shared market context, user positions, recent news, and the deterministic risk snapshot. Critical risk can bypass the LLM and route directly to protection.
 
-## Services
+## Status
 
-- `app/services/risk-engine.service.ts`: deterministic perp risk snapshot, liquidation-distance checks, margin pressure, exposure, and emergency action classification.
-- `app/services/watcher`: low-cost routing layer. Outputs `hold`, `execute`, `deliberate`, or `risk_emergency`.
-- `app/services/fast-trader`: tactical short-term decision path for urgent watcher signals.
-- `app/services/swarm`: strategic multi-agent decision path for slower portfolio decisions.
-- `app/services/agents`: evaluator layer for critic and tax-aware review.
-- `app/services/trades/paper-trade.service.ts`: paper execution, safety-trigger enforcement, memory, and Arc anchor handoff.
+- Stage: hackathon build, paper-mode only.
+- Venue: Hyperliquid testnet for market data; no live order placement.
+- Custody: zero. Trades are simulated against Hyperliquid mark prices.
+- Audit: closed trades are anchored to Arc Testnet via Circle Smart Contract Platform.
 
-## RFB 01 Mapping
+## Tech Stack
 
-| RFB requirement | Current Selbo path |
-| --- | --- |
-| 24/7 monitoring | Cloudflare cron heartbeat calls the watcher every minute and each instance controls its own next watcher time. |
-| Split-second leverage decisions | Fast Trader path exists; deterministic emergency protection is being moved ahead of LLM calls. |
-| Liquidation protection | Risk Engine classifies liquidation distance and margin pressure; `risk_emergency` routes directly to Fast Trader. |
-| Dynamic stop-loss / take-profit | Agent-set safety levels are stored and enforced during cron heartbeats. |
-| Cross-platform execution | Not live yet. Add venue adapters before integrating Hyperliquid, dYdX, GMX, and Vertex execution. |
-| Funding-rate opportunities | Funding is read from Hyperliquid and passed into watcher, fast trader, and swarm context. |
-| Arc settlement / audit | Closed-trade reasoning is anchored on Arc. Settlement-intent and cross-venue state commitments are next. |
+- Next.js 15, React 18, TypeScript 5.3, Tailwind 4
+- Drizzle ORM + Supabase Postgres
+- Better Auth + Polar billing
+- Circle Developer-Controlled Wallets and Circle Smart Contract Platform
+- Hyperliquid testnet market data
+- Cloudflare Workers via OpenNext
+- LLM tier mapping configured via env; see `.env.example`
 
-## Near-Term Roadmap
-
-1. Stabilize build and CI: `typecheck`, `build`, and OpenNext deployment checks.
-2. Expand the risk engine: drawdown, volatility, concentration, funding drag, stale data, and max-loss budgets.
-3. Replace generic/yield personas with perp-native agents: liquidation-risk officer, funding arbitrageur, volatility regime analyst, execution/slippage analyst, cross-venue basis analyst, and adversarial critic.
-4. Add a typed `VenueAdapter` interface for market state, positions, orders, collateral, and funding.
-5. Keep live trading disabled until paper-mode metrics show stable behavior.
+Typechecker: `tsgo` (`@typescript/native-preview`), a Go reimplementation of `tsc`.
 
 ## Development
 
-Install dependencies:
-
 ```bash
 bun install
-```
-
-Run locally:
-
-```bash
+cp .env.example .dev.vars
+bun run db:push
 bun run dev
 ```
 
-Typecheck:
+The app runs at `http://localhost:3000`. Production secrets are uploaded via `wrangler secret bulk .dev.vars`.
+
+## Quality Gates
 
 ```bash
 bun run typecheck
-```
-
-Build:
-
-```bash
-bun run build
-```
-
-Combined check:
-
-```bash
 bun run check
 ```
 
-## Required Environment
+CI runs typecheck on every push and pull request via `.github/workflows/typecheck.yml`.
 
-See `.env.example` for the full set of variables. The important groups are:
+## Project Layout
 
-- Postgres/Supabase: `DATABASE_URL`, `DIRECT_URL`
-- Circle/Arc: `CIRCLE_API_KEY`, `CIRCLE_ENTITY_SECRET`, `NEXT_PUBLIC_AGENT_WALLET_ID`, `NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS`
-- LLM tiers: main, review, watcher, and trader model credentials
-- Better Auth: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`
-- Cron: `CRON_SECRET` in production
+- `app/services/risk-engine.service.ts`: deterministic perp risk snapshot and emergency action classification.
+- `app/services/watcher`: low-cost routing layer. Outputs `hold`, `execute`, `deliberate`, or `risk_emergency`.
+- `app/services/fast-trader`: tactical short-term decision path for urgent watcher signals.
+- `app/services/swarm`: strategic multi-agent decision path for slower portfolio decisions.
+- `app/services/trades/paper-trade.service.ts`: paper execution, safety-trigger enforcement, memory, and Arc anchor handoff.
+- `lib/db/schema/`: Drizzle schema modules.
+- `lib/arc/`: Arc anchoring integration.
 
-## Safety Position
+## M1 Schema Note
 
-Selbo is currently paper-mode first. The system should prove risk management, latency, drawdown control, and decision traceability before live funds are enabled.
+M1 includes a safe database rename migration from `solon_instances` to `selbo_instances` and `monitor_ticks.solon_instance_id` to `monitor_ticks.selbo_instance_id`. Do not use `db:push` against an existing database until that migration has been applied or generated into the target environment.
+
+## Out of Scope For Hackathon
+
+- Live venue execution.
+- Multi-venue support beyond Hyperliquid market data.
+- User-editable risk limits beyond tier defaults.

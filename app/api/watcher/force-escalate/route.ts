@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/client";
-import { portfolios, rebalanceCycles, solonInstances } from "@/lib/db/schema";
+import { portfolios, rebalanceCycles, selboInstances } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { triggerCycleFromWatcher } from "@/app/services/watcher/trigger";
 
@@ -22,8 +22,8 @@ export async function POST() {
   const user = session.user;
 
   const [instance] = await db
-    .select().from(solonInstances).where(eq(solonInstances.userId, user.id)).limit(1);
-  if (!instance) return NextResponse.json({ error: "No Solon instance" }, { status: 404 });
+    .select().from(selboInstances).where(eq(selboInstances.userId, user.id)).limit(1);
+  if (!instance) return NextResponse.json({ error: "No Selbo instance" }, { status: 404 });
 
   if (!instance.betaAccessGranted) {
     return NextResponse.json(

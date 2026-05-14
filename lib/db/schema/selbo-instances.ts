@@ -3,7 +3,7 @@ import { pgTable, uuid, text, numeric, boolean, jsonb, timestamp } from "drizzle
 const DEFAULT_WATCHLIST = ["ETH", "BTC", "SOL"];
 
 /**
- * Per-user Solon instance. One row per signed-up user (user_id UNIQUE).
+ * Per-user Selbo instance. One row per signed-up user (user_id UNIQUE).
  * Stores the user's strategy preferences, kill switch, public profile toggle,
  * and links to their Circle Dev Wallet on Arc Testnet.
  *
@@ -11,7 +11,7 @@ const DEFAULT_WATCHLIST = ["ETH", "BTC", "SOL"];
  * balance — testnet faucet rate limits make it more reliable to track a
  * simulated balance in DB. The wallet still exists on-chain for anchor txs.
  */
-export const solonInstances = pgTable("solon_instances", {
+export const selboInstances = pgTable("selbo_instances", {
   id: uuid("id").primaryKey().defaultRandom(),
   // Text type because Better Auth issues nanoid-format user IDs.
   // FK is application-level (Better Auth user.id) rather than DB-enforced.
@@ -35,7 +35,7 @@ export const solonInstances = pgTable("solon_instances", {
   nextWatcherAt: timestamp("next_watcher_at", { withTimezone: true }).defaultNow().notNull(),
   currentlyWatching: jsonb("currently_watching").$type<string[]>().notNull().default(DEFAULT_WATCHLIST),
   // Subscription tier — gates watcher cadence floor, panel deliberations,
-  // public profile, max Solon count. Matrix in lib/tiers.ts. Billing
+  // public profile, max Selbo count. Matrix in lib/tiers.ts. Billing
   // customer + subscription IDs persisted so the webhook can map events
   // back to the right instance without a user_id lookup. Provider-neutral
   // column names because the billing vendor (currently Polar) may change.
@@ -45,11 +45,11 @@ export const solonInstances = pgTable("solon_instances", {
   // Private-beta gate. When the BETA_CODE env is set, new signups land
   // ungranted; redeeming a matching code via /api/beta/redeem flips this
   // to true and unlocks watcher + orchestrator LLM calls for the user.
-  // When BETA_CODE is unset, ensureSolonInstance auto-grants on signup.
+  // When BETA_CODE is unset, ensureSelboInstance auto-grants on signup.
   betaAccessGranted: boolean("beta_access_granted").notNull().default(false),
   betaGrantedAt: timestamp("beta_granted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export type SolonInstance = typeof solonInstances.$inferSelect;
-export type NewSolonInstance = typeof solonInstances.$inferInsert;
+export type SelboInstance = typeof selboInstances.$inferSelect;
+export type NewSelboInstance = typeof selboInstances.$inferInsert;

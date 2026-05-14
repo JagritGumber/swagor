@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
-import { monitorTicks, solonInstances } from "@/lib/db/schema";
+import { monitorTicks, selboInstances } from "@/lib/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +19,8 @@ export async function GET(request: Request, { params }: { params: Params }) {
 
   const [instance] = await db
     .select()
-    .from(solonInstances)
-    .where(and(eq(solonInstances.username, username), eq(solonInstances.publicProfile, true)))
+    .from(selboInstances)
+    .where(and(eq(selboInstances.username, username), eq(selboInstances.publicProfile, true)))
     .limit(1);
 
   if (!instance) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -35,7 +35,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
       createdAt: monitorTicks.createdAt,
     })
     .from(monitorTicks)
-    .where(eq(monitorTicks.solonInstanceId, instance.id))
+    .where(eq(monitorTicks.selboInstanceId, instance.id))
     .orderBy(desc(monitorTicks.createdAt))
     .limit(limit);
 

@@ -14,7 +14,7 @@ import {
 } from "@/lib/data-sources/hyperliquid";
 import { searchNews } from "@/lib/data-sources/news";
 import { db } from "@/lib/db/client";
-import { solonInstances, trades, monitorTicks } from "@/lib/db/schema";
+import { selboInstances, trades, monitorTicks } from "@/lib/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { getRecentLessons } from "@/app/services/memory.service";
 import {
@@ -47,12 +47,12 @@ export async function runCycle(cycleId: string): Promise<void> {
 
     const [instance] = await db
       .select()
-      .from(solonInstances)
-      .where(eq(solonInstances.circleWalletAddress, portfolio.walletAddress))
+      .from(selboInstances)
+      .where(eq(selboInstances.circleWalletAddress, portfolio.walletAddress))
       .limit(1);
     if (!instance) {
       throw new Error(
-        `No solon instance found for wallet ${portfolio.walletAddress}`,
+        `No selbo instance found for wallet ${portfolio.walletAddress}`,
       );
     }
 
@@ -66,7 +66,7 @@ export async function runCycle(cycleId: string): Promise<void> {
         and(eq(trades.userId, instance.userId), eq(trades.status, "open")),
       ),
       db.select().from(monitorTicks)
-        .where(eq(monitorTicks.solonInstanceId, instance.id))
+        .where(eq(monitorTicks.selboInstanceId, instance.id))
         .orderBy(desc(monitorTicks.createdAt))
         .limit(1)
         .then((r) => r[0]),
@@ -250,7 +250,7 @@ export async function runCycle(cycleId: string): Promise<void> {
           const markPx = mids[asset] ? Number(mids[asset]) : null;
           const result = await closePaperTrade({
             userId: instance.userId,
-            solonInstanceId: instance.id,
+            selboInstanceId: instance.id,
             asset,
             markPriceUsd: markPx,
             source: "panel",

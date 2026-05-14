@@ -15,8 +15,8 @@ export default defineConfig({
     // Falls back to DATABASE_URL if DIRECT_URL isn't set.
     url: process.env.DIRECT_URL ?? process.env.DATABASE_URL!,
   },
-  // Restrict drizzle to our tables only. Leaves existing arc-escrow tables
-  // (profiles, wallets, transactions, escrow_agreements, etc.) untouched.
+  // Restrict drizzle to our tables only. Any other tables that exist in the
+  // database (from prior tenants of this Supabase project) are left untouched.
   tablesFilter: [
     "portfolios",
     "positions",
@@ -28,8 +28,8 @@ export default defineConfig({
     "graph_snapshots",
     "swarm_rounds",
     "aggregations",
-    // Solon v4
-    "solon_instances",
+    // Selbo
+    "selbo_instances",
     "monitor_ticks",
     "trade_proposals",
     "trades",

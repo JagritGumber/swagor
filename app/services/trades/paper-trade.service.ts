@@ -1,7 +1,7 @@
 import "server-only";
 
 import { db } from "@/lib/db/client";
-import { trades, solonInstances, type Trade } from "@/lib/db/schema";
+import { trades, selboInstances, type Trade } from "@/lib/db/schema";
 import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { recordTradeMemory } from "@/app/services/memory.service";
 import { anchorClosedTrade } from "@/lib/arc/anchor";
@@ -21,7 +21,7 @@ export type OpenPaperTradeInput = {
 
 export type ClosePaperTradeInput = {
   userId: string;
-  solonInstanceId: string;
+  selboInstanceId: string;
   asset: string;
   markPriceUsd: number | null;
   rationale: string;
@@ -143,11 +143,11 @@ export async function closePaperTrade(
 
   if (pnl !== null) {
     await db
-      .update(solonInstances)
+      .update(selboInstances)
       .set({
-        simulatedBalanceUsd: sql`${solonInstances.simulatedBalanceUsd} + ${pnl.toString()}`,
+        simulatedBalanceUsd: sql`${selboInstances.simulatedBalanceUsd} + ${pnl.toString()}`,
       })
-      .where(eq(solonInstances.id, input.solonInstanceId));
+      .where(eq(selboInstances.id, input.selboInstanceId));
   }
 
   const closedTrade = {
@@ -234,15 +234,15 @@ export async function enforceSafetyTriggers(): Promise<{ scanned: number; trigge
     if (!reason) continue;
 
     const [inst] = await db
-      .select({ id: solonInstances.id })
-      .from(solonInstances)
-      .where(eq(solonInstances.userId, r.userId))
+      .select({ id: selboInstances.id })
+      .from(selboInstances)
+      .where(eq(selboInstances.userId, r.userId))
       .limit(1);
     if (!inst) continue;
 
     await closePaperTrade({
       userId: r.userId,
-      solonInstanceId: inst.id,
+      selboInstanceId: inst.id,
       asset: r.asset,
       markPriceUsd: markN,
       source: "safety",

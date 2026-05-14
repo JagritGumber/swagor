@@ -5,7 +5,7 @@ import { trades } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { traderLlm, MODELS } from "@/lib/llm-client";
 import { fetchAllMids, fetchMetaAndCtxs, fetchClearinghouse } from "@/lib/data-sources/hyperliquid";
-import type { SolonInstance } from "@/lib/db/schema/solon-instances";
+import type { SelboInstance } from "@/lib/db/schema/selbo-instances";
 import { FAST_TRADER_SCHEMA, FAST_TRADER_SYSTEM_PROMPT, type FastTraderDecision } from "./prompt";
 import {
   openPaperTrade,
@@ -14,13 +14,13 @@ import {
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 
 /**
- * Run the Fast Trader for a Solon instance. Fetches fresh Hyperliquid state,
+ * Run the Fast Trader for a Selbo instance. Fetches fresh Hyperliquid state,
  * calls the trader-tier LLM, and routes by action through the shared
  * paper-trade helpers so the open/close logic stays consistent with the
  * orchestrator's panel-execution path.
  */
 export async function runFastTraderForInstance(
-  instance: SolonInstance,
+  instance: SelboInstance,
   watcherRationale: string,
 ): Promise<FastTraderDecision> {
   const [mids, meta, clearing] = await Promise.all([
@@ -146,7 +146,7 @@ export async function runFastTraderForInstance(
   } else if (decision.action === "close") {
     await closePaperTrade({
       userId: instance.userId,
-      solonInstanceId: instance.id,
+      selboInstanceId: instance.id,
       asset: assetUpper,
       markPriceUsd: markPx,
       source: "fast-trader",

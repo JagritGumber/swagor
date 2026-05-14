@@ -3,13 +3,8 @@ import { arcTestnet } from "@/lib/web3/chains";
 
 /**
  * Read the user's native USDC balance on Arc Testnet.
- * On Arc, USDC is the native gas token (system contract address
- * 0x3600...). Standard `getBalance` returns USDC in 18-decimal units.
- *
- * For the hackathon scope this is the "positions" data the agent reasons
- * over. In production this expands to per-protocol reads
- * (Aave aTokens, Compound v3, Pendle PT/YT, etc.) on the chains where
- * those protocols are deployed.
+ * On Arc, USDC is the native gas token; standard `getBalance` returns USDC
+ * in 18-decimal units.
  */
 const client = createPublicClient({
   chain: arcTestnet,
@@ -17,10 +12,10 @@ const client = createPublicClient({
 });
 
 export type PositionSnapshot = {
-  protocol: "wallet" | "aave" | "compound" | "pendle" | "dsr" | "usyc";
+  protocol: "wallet";
   chain: string;
   asset: string;
-  amount: string; // human-readable, decimal string
+  amount: string;
   amountWei: string;
   decimals: number;
 };

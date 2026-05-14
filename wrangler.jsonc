@@ -19,7 +19,7 @@
 
   // Cron triggers fire `scheduled()` in custom-worker.ts. Minimum cadence is
   // 1 minute. The handler internally calls /api/watcher/tick which queries
-  // solon_instances where next_watcher_at <= now() and runs the watcher for
+  // selbo_instances where next_watcher_at <= now() and runs the watcher for
   // each. Per-instance cadence is agent-decided (30-600s), not this 1m heartbeat.
   "triggers": { "crons": ["* * * * *"] }
 

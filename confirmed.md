@@ -1,6 +1,6 @@
 # Arc Testnet Ecosystem Verification (M0)
 
-Day 0 verification for Solon v4. Conducted 2026-05-12 by research worktree.
+Day 0 verification for Selbo v4. Conducted 2026-05-12 by research worktree.
 Source of truth for all other worktrees. If anything here is wrong, update this file first.
 
 ---
@@ -29,7 +29,7 @@ Source of truth for all other worktrees. If anything here is wrong, update this 
 - Web search confirms Uniswap Labs as an Arc ecosystem partner but specific Arc Testnet deployment is not announced
 - Curve is also mentioned as an ecosystem participant; no testnet deployment confirmed in canonical docs
 
-**Decision for Solon v4:** Doesn't block the build. v4 is simulation-only — Executor uses **mainnet Uniswap pool spot prices** (via subgraph or pool `slot0()`) for simulated entry/exit. No on-chain Uniswap call on Arc needed. Live mode (post-hackathon) would route via CCTP V2 hop to Ethereum/Base + execute on Uniswap there.
+**Decision for Selbo v4:** Doesn't block the build. v4 is simulation-only — Executor uses **mainnet Uniswap pool spot prices** (via subgraph or pool `slot0()`) for simulated entry/exit. No on-chain Uniswap call on Arc needed. Live mode (post-hackathon) would route via CCTP V2 hop to Ethereum/Base + execute on Uniswap there.
 
 **Action item:** before live-mode flip, re-verify or contact Arc team for DEX status.
 
@@ -44,7 +44,7 @@ Deployed contracts on Arc Testnet:
 - **USYC Entitlements:** `0xcc205224862c7641930c87679e98999d23c26113`
 - **USYC Teller:** `0x9fdF14c5B14173D74C08Af27AebFf39240dC105A`
 
-**Decision for Solon v4:** Solon can propose "park idle USDC into USYC" as a low-conviction trade. Teller contract handles the USDC↔USYC conversion. Earns Treasury yield on idle capital between active trades. Same trade pipeline (proposal → council → critic → executor → anchor) treats it as a normal proposal.
+**Decision for Selbo v4:** Selbo can propose "park idle USDC into USYC" as a low-conviction trade. Teller contract handles the USDC↔USYC conversion. Earns Treasury yield on idle capital between active trades. Same trade pipeline (proposal → council → critic → executor → anchor) treats it as a normal proposal.
 
 ---
 
@@ -63,7 +63,7 @@ CCTP V2 contracts on Arc Testnet:
 - **TokenMinterV2:** `0xb43db544E2c27092c107639Ad201b3dEfAbcF192`
 - **MessageV2:** `0xbaC0179bB358A8936169a63408C8481D582390C4`
 
-**Decision for Solon v4:** Out of scope for simulation v1. Available as future stretch for live cross-chain trading. If used: budget 30s-2min per attestation, no Fast Transfer on Arc, never resubmit a successful burn (per plan §3.6 CCTP attestation handling).
+**Decision for Selbo v4:** Out of scope for simulation v1. Available as future stretch for live cross-chain trading. If used: budget 30s-2min per attestation, no Fast Transfer on Arc, never resubmit a successful burn (per plan §3.6 CCTP attestation handling).
 
 ---
 
@@ -73,7 +73,7 @@ CCTP V2 contracts on Arc Testnet:
 
 **EURC token:** `0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a`
 
-**Decision for Solon v4:** Multi-currency features ARE possible. Out of scope for v1 (USDC only), but future Solon strategies could propose EURC trades or USDC↔EURC FX rotations. Keep schema flexible (already use `asset text` not `usdc only`).
+**Decision for Selbo v4:** Multi-currency features ARE possible. Out of scope for v1 (USDC only), but future Selbo strategies could propose EURC trades or USDC↔EURC FX rotations. Keep schema flexible (already use `asset text` not `usdc only`).
 
 ---
 
@@ -87,7 +87,7 @@ Evidence from existing repo state:
 - Anchor contract `0x09da34f9bf0129927084b39061dac4e5dabf0818` deployed via Circle SCP using Dev Wallet
 - `lib/utils/developer-controlled-wallets-client.ts` is wired and working
 
-**Decision for Solon v4:** Per-user provisioning will use the same SDK. Each new user gets a Circle Dev Wallet on signup. Sandbox tier is FREE — no per-wallet cost.
+**Decision for Selbo v4:** Per-user provisioning will use the same SDK. Each new user gets a Circle Dev Wallet on signup. Sandbox tier is FREE — no per-wallet cost.
 
 ---
 
@@ -106,7 +106,7 @@ Evidence from existing repo state:
 - Exact endpoint + auth shape needs confirmation from Circle SDK docs
 - Auto-provisioning flow would call this on user signup
 
-**Decision for Solon v4:** Use Circle Developer Console programmatic faucet for auto-provisioning. If rate-limited or unavailable, fall back to **tracking high simulated balance in DB independent of on-chain wallet balance** (default 1000 simulated USDC per new user). Wallet still exists on-chain (anchor events tied to it); simulated balance is just a database number for trade sizing.
+**Decision for Selbo v4:** Use Circle Developer Console programmatic faucet for auto-provisioning. If rate-limited or unavailable, fall back to **tracking high simulated balance in DB independent of on-chain wallet balance** (default 1000 simulated USDC per new user). Wallet still exists on-chain (anchor events tied to it); simulated balance is just a database number for trade sizing.
 
 **Action item for backend worktree (M2):** confirm programmatic faucet endpoint + auth via Circle Developer Console docs or SDK source. If neither, fall back to simulated-balance-only.
 
@@ -135,7 +135,7 @@ Evidence from existing repo state:
 | §3.6 Executor (simulation against mainnet pool spot) | UNCHANGED — Q1 result means no Arc-DEX execution needed |
 | §3.8 Anchor (TradeAnchored event on Arc) | UNCHANGED — existing contract deployment works |
 | §6 cost model | UNCHANGED — wallet creation $0, faucet $0, LLM ~$10 |
-| **Idle USYC parking (NEW positive)** | Q2 confirms USYC live on Arc. Solon can propose USYC trades via the Teller contract. Add to §2 "Idle USYC management" capability. |
+| **Idle USYC parking (NEW positive)** | Q2 confirms USYC live on Arc. Selbo can propose USYC trades via the Teller contract. Add to §2 "Idle USYC management" capability. |
 | **EURC features (FUTURE positive)** | Q4 confirms EURC live. Out of v1 scope but available for v2 multi-currency. |
 | **Faucet auto-provisioning** | Q6 partial — needs M2 backend worktree to confirm programmatic API. Fall back to simulated balance if needed. |
 
