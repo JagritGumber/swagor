@@ -30,8 +30,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = await request.json().catch(() => ({}));
-  const code = typeof body?.code === "string" ? body.code.trim() : "";
+  const body = (await request.json().catch(() => ({}))) as { code?: unknown };
+  const code = typeof body.code === "string" ? body.code.trim() : "";
   if (!code) {
     return NextResponse.json({ ok: false, error: "Code required" }, { status: 400 });
   }
