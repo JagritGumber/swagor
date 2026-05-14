@@ -11,6 +11,7 @@ import {
   openPaperTrade,
   closePaperTrade,
 } from "@/app/services/trades/paper-trade.service";
+import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 
 /**
  * Run the Fast Trader for a Solon instance. Fetches fresh Hyperliquid state,
@@ -54,6 +55,37 @@ export async function runFastTraderForInstance(
     opened_at: t.openedAt,
   }));
 
+  const risk = evaluatePerpRisk({
+    account: {
+      equityUsd: riskNumber(clearing?.marginSummary.accountValue) ?? Number(instance.simulatedBalanceUsd),
+      withdrawableUsd: riskNumber(clearing?.withdrawable) ?? Number(instance.simulatedBalanceUsd),
+    },
+    positions: [
+      ...hlPositions.map((p) => ({
+        source: "hyperliquid" as const,
+        asset: p.coin.toUpperCase(),
+        side: riskNumber(p.size) === null ? "unknown" as const : riskNumber(p.size)! >= 0 ? "long" as const : "short" as const,
+        sizeUsd: null,
+        entryPrice: riskNumber(p.entry),
+        markPrice: riskNumber(mids[p.coin.toUpperCase()]),
+        leverage: typeof p.leverage === "object" ? p.leverage.value : null,
+        liquidationPrice: riskNumber(p.liquidation),
+        unrealizedPnlUsd: riskNumber(p.unrealized_pnl),
+      })),
+      ...paperOpen.map((t) => {
+        const asset = t.asset.toUpperCase();
+        return {
+          source: "paper" as const,
+          asset,
+          side: t.side === "short" ? "short" as const : "long" as const,
+          sizeUsd: Number(t.amountUsd),
+          entryPrice: t.entryPrice ? Number(t.entryPrice) : null,
+          markPrice: mids[asset] ? Number(mids[asset]) : null,
+        };
+      }),
+    ],
+  });
+
   const payload = JSON.stringify({
     strategy: instance.strategyText,
     watcher_rationale: watcherRationale,
@@ -63,6 +95,7 @@ export async function runFastTraderForInstance(
     paper_positions: paperPositions,
     hl_positions: hlPositions,
     perps,
+    risk,
   });
 
   const completion = await traderLlm.chat.completions.create({
