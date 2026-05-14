@@ -26,7 +26,7 @@ export type NewsResponse = {
  * Feeds the Graph Builder agent with current macro/protocol-specific news.
  *
  * Query supports GDELT operators (topic, near, sourcelang, sourcecountry).
- * Example: `defi OR "aave" OR "compound"` for a multi-keyword search.
+ * Example: `perpetual OR "funding rate" OR liquidation` for a multi-keyword search.
  */
 export async function searchNews(
   query: string,
