@@ -30,8 +30,8 @@ export const TIERS: Record<Tier, TierSpec> = {
     label: "Trial",
     priceUsdMonthly: 0,
     perfFeePct: 0,
-    watcherMinCadenceSeconds: 600,    // 10 min minimum (slow)
-    watcherMaxCadenceSeconds: 3600,   // up to 1 hour
+    watcherMinCadenceSeconds: 120,    // match schema floor; let the watcher pick fast when needed
+    watcherMaxCadenceSeconds: 600,    // 10 min ceiling; funnel/demo tier should feel alive
     maxSelbos: 1,
     panelDeliberations: false,        // free tier skips the swarm, just fast-trader
     publicProfile: false,
