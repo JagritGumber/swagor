@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { TickerTape } from "./ticker-tape";
 import { SectionShader } from "./shaders/section-shader";
+import { CtaPrimary } from "./cta-primary";
 
 export function HeroSection() {
   return (
@@ -37,14 +38,7 @@ export function HeroSection() {
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Link
-                href="/sign-up"
-                style={{ willChange: "transform" }}
-                className="cta-glow group inline-flex items-center justify-center gap-3 border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-6 py-4 text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)] focus:ring-offset-2 focus:ring-offset-black sm:text-sm"
-              >
-                <span>Deploy your Selbo</span>
-                <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
+              <CtaPrimary className="cta-glow group inline-flex items-center justify-center gap-3 border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-6 py-4 text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)] focus:ring-offset-2 focus:ring-offset-black sm:text-sm" />
               <Link
                 href="/selbo/jagrit"
                 style={{ willChange: "transform" }}

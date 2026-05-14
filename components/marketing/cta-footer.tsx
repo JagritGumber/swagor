@@ -9,6 +9,7 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 // ArrowUpRight remains for the genuinely-external Arc Testnet explorer link.
 import { LEGAL_DISCLOSURE_LONG } from "@/lib/marketing-data";
 import { SectionShader } from "./shaders/section-shader";
+import { CtaPrimary } from "./cta-primary";
 
 export function CtaFooter() {
   return (
@@ -27,13 +28,7 @@ export function CtaFooter() {
             Sign in. Get a Circle wallet on Arc. Write your strategy in plain English. <span className="text-foreground">Your AI is cycling within ninety seconds.</span>
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              href="/sign-up"
-              className="cta-glow group inline-flex items-center gap-3 border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-8 py-5 text-sm font-bold uppercase tracking-[0.2em] text-black hover:bg-black hover:text-[var(--neon-cyan)]"
-            >
-              <span>Deploy your Selbo</span>
-              <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
+            <CtaPrimary className="cta-glow group inline-flex items-center gap-3 border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-8 py-5 text-sm font-bold uppercase tracking-[0.2em] text-black hover:bg-black hover:text-[var(--neon-cyan)]" />
             <Link
               href="/selbo/jagrit"
               className="group inline-flex items-center gap-2 border border-[var(--hairline-strong)] px-8 py-5 text-sm font-bold uppercase tracking-[0.2em] text-foreground transition hover:border-foreground"
