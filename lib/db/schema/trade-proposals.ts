@@ -3,7 +3,7 @@ import { relations } from "drizzle-orm";
 import { monitorTicks } from "./monitor-ticks";
 
 /**
- * A trade proposal emitted by Solon's HEAVY-tier LLM call, gated by a
+ * A trade proposal emitted by Selbo's HEAVY-tier LLM call, gated by a
  * monitor tick with hasSignal=true. Captures the proposed action + venue +
  * sizing + reasoning before the reviewer council debates it.
  *

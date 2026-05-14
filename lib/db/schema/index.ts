@@ -3,8 +3,8 @@ export * from "./cycles";
 export * from "./graph";
 export * from "./swarm";
 
-// Solon v4 (per-user) — see C:\Users\jagri\.claude\plans\solon-public-ai-trader.md §4
-export * from "./solon-instances";
+// Selbo (per-user) — see C:\Users\jagri\.claude\plans\better-path-phase-radiant-koala.md
+export * from "./selbo-instances";
 export * from "./monitor-ticks";
 export * from "./trade-proposals";
 export * from "./trades";

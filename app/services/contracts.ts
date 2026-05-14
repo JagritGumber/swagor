@@ -1,8 +1,11 @@
 /**
- * Solon v4 module contracts — single source of truth for parallel worktrees.
+ * Selbo module contracts (deprecated v4 architecture).
  *
- * Every §3.X module in C:\Users\jagri\.claude\plans\solon-public-ai-trader.md
- * exports an Input schema, an Output schema, and at least one mock Fixture.
+ * This file captures the contracts of an earlier yield-routing direction
+ * superseded by the perp-first pivot. It is unimported and scheduled for
+ * deletion in M0 task #8 (strip yield residue). Do not extend.
+ *
+ * Current canonical plan: C:\Users\jagri\.claude\plans\better-path-phase-radiant-koala.md
  * Agents implementing each module read this file, build to match, and
  * validate their function's output with `<Module>OutputSchema.parse(result)`
  * before claiming completion.
@@ -129,10 +132,10 @@ export const MonitorFixtures = {
 };
 
 // ============================================================================
-// §3.2 Solon Agent (Proposal)                                     [BACKEND]
+// §3.2 Selbo Agent (Proposal)                                     [BACKEND]
 // ============================================================================
 
-export const SolonInputSchema = z.object({
+export const SelboInputSchema = z.object({
   signal: MonitorTickSchema,
   positions: z.array(PositionSnapshot),
   market: MarketContext,
@@ -253,7 +256,7 @@ export const PositionUpdateSchema = z.object({
   exitPrice: Decimal.optional(),
   exitTimestamp: ISO.optional(),
   pnlUsd: Decimal.optional(),
-  triggeredBy: z.enum(["stop_loss", "take_profit", "time_budget", "solon_close", "none"]).optional(),
+  triggeredBy: z.enum(["stop_loss", "take_profit", "time_budget", "selbo_close", "none"]).optional(),
 });
 
 // ============================================================================

@@ -28,8 +28,8 @@ export default defineConfig({
     "graph_snapshots",
     "swarm_rounds",
     "aggregations",
-    // Solon v4
-    "solon_instances",
+    // Selbo
+    "selbo_instances",
     "monitor_ticks",
     "trade_proposals",
     "trades",

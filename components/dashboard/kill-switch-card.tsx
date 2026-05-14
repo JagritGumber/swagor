@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 /**
- * Kill switch. Persists to solon_instances.kill_switch_active via
- * /api/solon/kill-switch. The watcher cron loop skips killed instances.
+ * Kill switch. Persists to selbo_instances.kill_switch_active via
+ * /api/selbo/kill-switch. The watcher cron loop skips killed instances.
  */
 export function KillSwitchCard({ initialActive }: { initialActive: boolean }) {
   const [active, setActive] = useState(initialActive);
@@ -16,7 +16,7 @@ export function KillSwitchCard({ initialActive }: { initialActive: boolean }) {
     setPending(true);
     setActive(next); // optimistic
     try {
-      const res = await fetch("/api/solon/kill-switch", {
+      const res = await fetch("/api/selbo/kill-switch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active: next }),

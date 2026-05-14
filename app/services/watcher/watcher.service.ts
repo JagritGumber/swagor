@@ -1,7 +1,7 @@
 import "server-only";
 
 import { db } from "@/lib/db/client";
-import { monitorTicks, solonInstances, type SolonInstance } from "@/lib/db/schema";
+import { monitorTicks, selboInstances, type SelboInstance } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { watcherLlm, MODELS } from "@/lib/llm-client";
 import {
@@ -16,7 +16,7 @@ import { runFastTraderForInstance } from "@/app/services/fast-trader/fast-trader
 import { tierSpec, type Tier } from "@/lib/tiers";
 
 /**
- * Run one watcher tick for a given Solon instance. Reads Hyperliquid mark
+ * Run one watcher tick for a given Selbo instance. Reads Hyperliquid mark
  * prices, funding rates, and the user's open positions, plus recent news,
  * then asks the watcher to classify the tick. Persists the verdict,
  * advances next_watcher_at, and on `execute` or `deliberate` routes to the
@@ -24,8 +24,8 @@ import { tierSpec, type Tier } from "@/lib/tiers";
  */
 export async function runWatcherForInstance(instanceId: string): Promise<WatcherOutput> {
   const [instance] = await db
-    .select().from(solonInstances).where(eq(solonInstances.id, instanceId)).limit(1);
-  if (!instance) throw new Error(`solon_instances ${instanceId} not found`);
+    .select().from(selboInstances).where(eq(selboInstances.id, instanceId)).limit(1);
+  if (!instance) throw new Error(`selbo_instances ${instanceId} not found`);
   if (instance.killSwitchActive) throw new Error("kill switch active, refusing to tick");
 
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
@@ -37,7 +37,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     searchNews(`${watching.join(" OR ")} OR perp OR crypto`)
       .catch(() => ({ results: [] as Array<{ title: string; source: string; publishedAt: string }> })),
     db.select().from(monitorTicks)
-      .where(eq(monitorTicks.solonInstanceId, instance.id))
+      .where(eq(monitorTicks.selboInstanceId, instance.id))
       .orderBy(desc(monitorTicks.createdAt)).limit(1).then((r) => r[0]),
   ]);
 
@@ -104,7 +104,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
   );
 
   await db.insert(monitorTicks).values({
-    solonInstanceId: instance.id,
+    selboInstanceId: instance.id,
     verdict: parsed.verdict,
     rationale: parsed.rationale,
     nextCheckSeconds: clampedNext,
@@ -112,21 +112,21 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     context: { perps, positionCount: positions.length, newsCount: (newsRes.results ?? []).length, tier: spec.id },
   });
 
-  await db.update(solonInstances).set({
+  await db.update(selboInstances).set({
     nextWatcherAt: new Date(Date.now() + clampedNext * 1000),
     currentlyWatching: parsed.watching,
-  }).where(eq(solonInstances.id, instance.id));
+  }).where(eq(selboInstances.id, instance.id));
 
   if (parsed.verdict === "deliberate" && spec.panelDeliberations) {
-    triggerCycleFromWatcher(instance as SolonInstance, parsed.rationale)
+    triggerCycleFromWatcher(instance as SelboInstance, parsed.rationale)
       .catch((e) => console.error("[watcher] cycle trigger failed:", e));
   } else if (parsed.verdict === "deliberate") {
     // Free tier: route deliberate to the cheap Fast Trader instead of the
     // expensive swarm. Better than dropping the signal entirely.
-    runFastTraderForInstance(instance as SolonInstance, `[free-tier downgrade] ${parsed.rationale}`)
+    runFastTraderForInstance(instance as SelboInstance, `[free-tier downgrade] ${parsed.rationale}`)
       .catch((e) => console.error("[watcher] fast-trader (downgrade) failed:", e));
   } else if (parsed.verdict === "execute") {
-    runFastTraderForInstance(instance as SolonInstance, parsed.rationale)
+    runFastTraderForInstance(instance as SelboInstance, parsed.rationale)
       .catch((e) => console.error("[watcher] fast-trader failed:", e));
   }
 

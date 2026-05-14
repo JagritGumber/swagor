@@ -1,7 +1,7 @@
 import type { MonitorTick } from "@/lib/db/schema";
 
 /**
- * "Why did Solon act?" Surfaces the watcher's escalation rationale + the
+ * "Why did Selbo act?" Surfaces the watcher's escalation rationale + the
  * watchlist + tick context so the user understands what the cheap-tier
  * agent saw that warranted the full panel. Renders nothing if this cycle
  * was not triggered by a watcher (legacy, manual trigger, etc.).
