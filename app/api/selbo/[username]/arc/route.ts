@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { selboInstances } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
-import { clampLimit, collectArcEvents } from "@/app/api/arc/recent/route";
+import { clampLimit, collectArcEvents } from "@/app/services/arc/events.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
