@@ -46,6 +46,7 @@ export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
               <th className="py-2 text-right">P/L</th>
               <th className="py-2 text-right">%</th>
               <th className="py-2 text-right">Closed</th>
+              <th className="py-2 text-right">Reason</th>
               <th className="py-2 text-right">Arc</th>
             </tr>
           </thead>
@@ -72,6 +73,19 @@ export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
                   <td className={`py-3 text-right tabular-nums ${tone}`}>{fmtPct(t.pnlPct)}</td>
                   <td className="py-3 text-right text-muted-foreground tabular-nums">
                     {fmtTime(t.closedAt)}
+                  </td>
+                  <td className="py-3 text-right">
+                    {t.safetyTriggerReason === "stop_loss" ? (
+                      <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--neon-red)]">
+                        stop-loss
+                      </span>
+                    ) : t.safetyTriggerReason === "take_profit" ? (
+                      <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--neon-green)]">
+                        take-profit
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">agent</span>
+                    )}
                   </td>
                   <td className="py-3 text-right">
                     {t.arcOnchainTxHash ? (

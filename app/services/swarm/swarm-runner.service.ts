@@ -13,6 +13,8 @@ const SwarmMemberOutputSchema = z.object({
       asset: z.string(),
       size_usd: z.number().positive(),
       leverage: z.number().min(1).max(10),
+      stop_loss_pct: z.number().min(0).max(50).nullable(),
+      take_profit_pct: z.number().min(0).max(200).nullable(),
     })
     .nullable(),
   if_close: z.object({ asset: z.string() }).nullable(),
@@ -38,7 +40,13 @@ Output JSON EXACTLY in this shape:
   "action": "stay" | "open_long" | "open_short" | "close",
   "rationale": "1-3 sentence explanation framed by your persona",
   "regime_assessment": "risk_on" | "neutral" | "risk_off",
-  "if_open": null | { "asset": "ETH" | "BTC" | "SOL" | etc, "size_usd": number, "leverage": number 1-10 },
+  "if_open": null | {
+    "asset": "ETH" | "BTC" | "SOL" | etc,
+    "size_usd": number,
+    "leverage": number 1-10,
+    "stop_loss_pct": number | null,    // positive percent from entry; e.g. 3.5 means a 3.5% adverse move closes the position. Null = no auto-stop.
+    "take_profit_pct": number | null   // positive percent from entry; e.g. 8 means an 8% favourable move closes the position. Null = no auto-tp.
+  },
   "if_close": null | { "asset": "ETH" | "BTC" | "SOL" | etc },
   "safety": { "stop_loss_trigger": string, "take_profit_trigger": string },
   "confidence": number 0-1
@@ -50,7 +58,8 @@ Rules:
 - Asset must be a symbol from the watchlist in the user payload.
 - size_usd should be a sensible fraction of available equity given your persona's risk tolerance.
 - leverage cap is 10x; default to 1-3x unless your persona explicitly warrants more.
-- safety triggers are plain-English thresholds, e.g. "ETH below 3100" or "funding flips positive".
+- stop_loss_pct and take_profit_pct are POSITIVE percentages from entry mark, regardless of side. They become absolute price levels at open and are enforced automatically every cron heartbeat. Use null only when your persona truly wants no auto-stop.
+- safety triggers are plain-English thresholds tied to the same levels you set in if_open, e.g. "ETH below 3100 (4% stop)" or "funding flips positive".
 
 This is YOUR vote. Don't compromise to consensus; bring your persona's bias. The aggregator reconciles across the swarm.`;
 

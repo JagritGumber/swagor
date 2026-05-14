@@ -84,12 +84,29 @@ export async function runFastTraderForInstance(
   const rationale = `${watcherRationale} | trader: ${decision.rationale}`;
 
   if (decision.action === "open_long" || decision.action === "open_short") {
+    const side = decision.action === "open_long" ? "long" : "short";
+    // Translate the trader's percentage triggers into absolute price levels
+    // for the safety enforcer. Pcts are positive numbers regardless of side.
+    let stopLossPriceUsd: number | null = null;
+    let takeProfitPriceUsd: number | null = null;
+    if (markPx !== null) {
+      if (decision.stop_loss_pct !== null) {
+        const mult = side === "long" ? 1 - decision.stop_loss_pct / 100 : 1 + decision.stop_loss_pct / 100;
+        stopLossPriceUsd = markPx * mult;
+      }
+      if (decision.take_profit_pct !== null) {
+        const mult = side === "long" ? 1 + decision.take_profit_pct / 100 : 1 - decision.take_profit_pct / 100;
+        takeProfitPriceUsd = markPx * mult;
+      }
+    }
     await openPaperTrade({
       userId: instance.userId,
       asset: assetUpper,
-      side: decision.action === "open_long" ? "long" : "short",
+      side,
       sizeUsd: decision.size_usd,
       entryPriceUsd: markPx,
+      stopLossPriceUsd,
+      takeProfitPriceUsd,
       source: "fast-trader",
       rationale,
     });

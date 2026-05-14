@@ -4,6 +4,7 @@ import { solonInstances } from "@/lib/db/schema";
 import { and, eq, lte } from "drizzle-orm";
 import { runWatcherForInstance } from "@/app/services/watcher/watcher.service";
 import { pollPendingAnchors } from "@/lib/arc/anchor";
+import { enforceSafetyTriggers } from "@/app/services/trades/paper-trade.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,11 +77,22 @@ export async function POST(request: Request) {
     console.error("[tick] pollPendingAnchors threw:", err);
   }
 
+  // Stop-loss / take-profit enforcement. Single SQL scan + Hyperliquid
+  // mids fetch shared across all open positions. Closes any position
+  // whose mark has crossed an agent-set safety level since the last tick.
+  let safetyEnforcement: { scanned: number; triggered: number } | null = null;
+  try {
+    safetyEnforcement = await enforceSafetyTriggers();
+  } catch (err) {
+    console.error("[tick] enforceSafetyTriggers threw:", err);
+  }
+
   return NextResponse.json({
     ranAt: now.toISOString(),
     count: due.length,
     results: summary,
     anchorPoll,
+    safetyEnforcement,
   });
 }
 
