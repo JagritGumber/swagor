@@ -2,7 +2,25 @@ import { createHash } from "node:crypto";
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
 import { db } from "@/lib/db/client";
 import { trades, monitorTicks } from "@/lib/db/schema";
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
+
+/**
+ * Recursive JSON-safe value type used for anchor reasoning / context
+ * payloads. Replaces `unknown` at service boundaries so the compiler
+ * enforces JSON.stringify-safety on inputs hashed into trace bytes32.
+ */
+export type AnchorJsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | AnchorJsonValue[]
+  | { [key: string]: AnchorJsonValue };
+
+/** Per-source cap for the pending-anchor poll. Bounds work when Circle
+ *  is sluggish or a backlog builds up; oldest-first ordering ensures the
+ *  longest-pending rows retry first. */
+const POLL_LIMIT_PER_SOURCE = 20;
 
 let sdk: ReturnType<typeof initiateDeveloperControlledWalletsClient> | null = null;
 
@@ -168,7 +186,7 @@ export type OpenedTradeAnchorInput = {
   amountUsd: string;
   leverage: number | null;
   entryPrice: string | null;
-  reasoning: unknown;
+  reasoning: AnchorJsonValue;
 };
 
 /**
@@ -215,7 +233,7 @@ export type WatcherAnchorInput = {
   monitorTickId: string;
   verdict: "execute" | "risk_emergency";
   rationale: string;
-  contextDigest: unknown;
+  contextDigest: AnchorJsonValue;
 };
 
 export type WatcherAnchorResult = {
@@ -308,7 +326,9 @@ export async function pollPendingAnchors(): Promise<{
   const pendingCloses = await db
     .select({ id: trades.id, txId: trades.arcAnchorTx })
     .from(trades)
-    .where(and(isNotNull(trades.arcAnchorTx), isNull(trades.arcOnchainTxHash)));
+    .where(and(isNotNull(trades.arcAnchorTx), isNull(trades.arcOnchainTxHash)))
+    .orderBy(asc(trades.createdAt))
+    .limit(POLL_LIMIT_PER_SOURCE);
   scanned += pendingCloses.length;
   for (const row of pendingCloses) {
     if (!row.txId) continue;
@@ -330,7 +350,9 @@ export async function pollPendingAnchors(): Promise<{
   const pendingOpens = await db
     .select({ id: trades.id, txId: trades.openAnchorTx })
     .from(trades)
-    .where(and(isNotNull(trades.openAnchorTx), isNull(trades.openOnchainTxHash)));
+    .where(and(isNotNull(trades.openAnchorTx), isNull(trades.openOnchainTxHash)))
+    .orderBy(asc(trades.createdAt))
+    .limit(POLL_LIMIT_PER_SOURCE);
   scanned += pendingOpens.length;
   for (const row of pendingOpens) {
     if (!row.txId) continue;
@@ -352,7 +374,9 @@ export async function pollPendingAnchors(): Promise<{
   const pendingTicks = await db
     .select({ id: monitorTicks.id, txId: monitorTicks.arcAnchorTx })
     .from(monitorTicks)
-    .where(and(isNotNull(monitorTicks.arcAnchorTx), isNull(monitorTicks.arcOnchainTxHash)));
+    .where(and(isNotNull(monitorTicks.arcAnchorTx), isNull(monitorTicks.arcOnchainTxHash)))
+    .orderBy(asc(monitorTicks.createdAt))
+    .limit(POLL_LIMIT_PER_SOURCE);
   scanned += pendingTicks.length;
   for (const row of pendingTicks) {
     if (!row.txId) continue;

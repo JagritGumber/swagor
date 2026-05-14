@@ -4,7 +4,11 @@ import { db } from "@/lib/db/client";
 import { trades, selboInstances, type Trade } from "@/lib/db/schema";
 import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { recordTradeMemory } from "@/app/services/memory.service";
-import { anchorClosedTrade, anchorOpenedTrade } from "@/lib/arc/anchor";
+import {
+  anchorClosedTrade,
+  anchorOpenedTrade,
+  type AnchorJsonValue,
+} from "@/lib/arc/anchor";
 import { fetchAllMids } from "@/lib/data-sources/hyperliquid";
 
 export type OpenPaperTradeInput = {
@@ -21,7 +25,7 @@ export type OpenPaperTradeInput = {
   // cycle context). Hashed into the Arc open-anchor trace; never stored
   // plain on-chain. Optional so paths that don't have it (tests/dev) still
   // open trades; the resulting anchor just hashes rationale + safety levels.
-  agentContext?: unknown;
+  agentContext?: AnchorJsonValue;
 };
 
 export type ClosePaperTradeInput = {
@@ -105,30 +109,33 @@ export async function openPaperTrade(input: OpenPaperTradeInput): Promise<{ trad
     `[paper-trade] OPEN ${input.side} ${asset} $${input.sizeUsd} @ ${input.entryPriceUsd} (stop=${stop}, tp=${takeProfit}) via ${input.source}`,
   );
 
-  // Fire-and-forget Arc open-anchor (M5). Trade is already persisted; this
-  // never blocks the caller. If Circle is down or env is missing, openAnchorTx
-  // stays null and the UI renders the trade as "not yet anchored."
-  void anchorOpenedTrade({
-    tradeId,
-    asset,
-    side: input.side,
-    amountUsd: input.sizeUsd.toString(),
-    leverage: null,
-    entryPrice: input.entryPriceUsd ? input.entryPriceUsd.toString() : null,
-    reasoning: {
-      rationale: input.rationale,
-      source: input.source,
-      stopLossPriceUsd: stop,
-      takeProfitPriceUsd: takeProfit,
-      agentContext: input.agentContext ?? null,
-    },
-  })
-    .then((res) => {
-      if (res?.txId) {
-        void db.update(trades).set({ openAnchorTx: res.txId }).where(eq(trades.id, tradeId));
-      }
-    })
-    .catch((err) => console.error("[paper-trade] anchorOpenedTrade failed:", err));
+  // Awaited Arc open-anchor (M5). Trade is already persisted before this
+  // call so the row exists even if Circle errors. Awaited (not fire-and-
+  // forget) because Cloudflare Workers cancel post-handler async work
+  // unless wrapped in waitUntil, which Next.js route handlers don't expose.
+  // ~1-2s added to trade-open latency; acceptable at hackathon scale.
+  try {
+    const res = await anchorOpenedTrade({
+      tradeId,
+      asset,
+      side: input.side,
+      amountUsd: input.sizeUsd.toString(),
+      leverage: null,
+      entryPrice: input.entryPriceUsd ? input.entryPriceUsd.toString() : null,
+      reasoning: {
+        rationale: input.rationale,
+        source: input.source,
+        stopLossPriceUsd: stop,
+        takeProfitPriceUsd: takeProfit,
+        agentContext: input.agentContext ?? null,
+      },
+    });
+    if (res?.txId) {
+      await db.update(trades).set({ openAnchorTx: res.txId }).where(eq(trades.id, tradeId));
+    }
+  } catch (err) {
+    console.error("[paper-trade] anchorOpenedTrade failed:", err);
+  }
 
   return { tradeId };
 }
@@ -190,26 +197,30 @@ export async function closePaperTrade(
     pnlUsd: pnl !== null ? pnl.toString() : null,
   };
   void recordTradeMemory(closedTrade);
-  void anchorClosedTrade({
-    tradeId: target.id,
-    asset: target.asset,
-    side: target.side,
-    amountUsd: target.amountUsd.toString(),
-    entryPrice: target.entryPrice ? target.entryPrice.toString() : null,
-    exitPrice: input.markPriceUsd.toString(),
-    pnlUsd: pnl !== null ? pnl.toString() : null,
-    reasoning: {
-      rationale: input.rationale,
-      source: input.source,
-      safetyTrigger: input.safetyTrigger ?? null,
-    },
-  })
-    .then((res) => {
-      if (res?.txId) {
-        void db.update(trades).set({ arcAnchorTx: res.txId }).where(eq(trades.id, target.id));
-      }
-    })
-    .catch((err) => console.error("[paper-trade] anchorClosedTrade failed:", err));
+  // Awaited (same reasoning as open-anchor above): Workers cancel
+  // post-handler async work without waitUntil, so fire-and-forget would
+  // sometimes leave arcAnchorTx null even when Circle queued a tx.
+  try {
+    const res = await anchorClosedTrade({
+      tradeId: target.id,
+      asset: target.asset,
+      side: target.side,
+      amountUsd: target.amountUsd.toString(),
+      entryPrice: target.entryPrice ? target.entryPrice.toString() : null,
+      exitPrice: input.markPriceUsd.toString(),
+      pnlUsd: pnl !== null ? pnl.toString() : null,
+      reasoning: {
+        rationale: input.rationale,
+        source: input.source,
+        safetyTrigger: input.safetyTrigger ?? null,
+      },
+    });
+    if (res?.txId) {
+      await db.update(trades).set({ arcAnchorTx: res.txId }).where(eq(trades.id, target.id));
+    }
+  } catch (err) {
+    console.error("[paper-trade] anchorClosedTrade failed:", err);
+  }
 
   console.log(`[paper-trade] CLOSE ${asset} @ ${input.markPriceUsd}; pnl=${pnl} via ${input.source}`);
   return { tradeId: target.id, pnlUsd: pnl };

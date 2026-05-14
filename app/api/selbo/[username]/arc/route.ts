@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { selboInstances } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
-import { collectArcEvents } from "@/app/api/arc/recent/route";
+import { clampLimit, collectArcEvents } from "@/app/api/arc/recent/route";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export async function GET(
 ) {
   const { username } = await params;
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(Math.max(Number(searchParams.get("limit") ?? "20"), 1), 50);
+  const limit = clampLimit(searchParams.get("limit"));
 
   const [instance] = await db
     .select({ userId: selboInstances.userId })

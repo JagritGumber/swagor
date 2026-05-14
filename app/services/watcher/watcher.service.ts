@@ -15,7 +15,7 @@ import { triggerCycleFromWatcher } from "./trigger";
 import { runFastTraderForInstance } from "@/app/services/fast-trader/fast-trader.service";
 import { tierSpec, type Tier } from "@/lib/tiers";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
-import { anchorWatcherDecision } from "@/lib/arc/anchor";
+import { anchorWatcherDecision, type AnchorJsonValue } from "@/lib/arc/anchor";
 
 /**
  * Run one watcher tick for a given Selbo instance. Reads Hyperliquid mark
@@ -153,36 +153,40 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     },
   }).returning({ id: monitorTicks.id });
 
-  // Fire-and-forget Arc anchor for execute / risk_emergency verdicts (M5).
+  // Awaited Arc anchor for execute / risk_emergency verdicts (M5).
   // `hold` is not anchored (too noisy at ~144 ticks/day/user); `deliberate`
   // is anchored downstream via the swarm cycle path in orchestrator.
+  // Awaited (not fire-and-forget) because Cloudflare cancels post-handler
+  // async work; this guarantees arcAnchorTx is saved when Circle accepts.
   if (
     tickRow &&
     (parsed.verdict === "execute" || parsed.verdict === "risk_emergency")
   ) {
     const tickId = tickRow.id;
-    void anchorWatcherDecision({
-      monitorTickId: tickId,
-      verdict: parsed.verdict,
-      rationale: parsed.rationale,
-      contextDigest: {
-        strategy: instance.strategyText,
-        perps,
-        risk,
-        positions,
-        watching: parsed.watching,
-        tier: spec.id,
-      },
-    })
-      .then((res) => {
-        if (res?.txId) {
-          void db
-            .update(monitorTicks)
-            .set({ arcAnchorTx: res.txId })
-            .where(eq(monitorTicks.id, tickId));
-        }
-      })
-      .catch((err) => console.error("[watcher] anchorWatcherDecision failed:", err));
+    const contextDigest: AnchorJsonValue = {
+      strategy: instance.strategyText,
+      perps: perps as AnchorJsonValue,
+      risk: risk as AnchorJsonValue,
+      positions: positions as AnchorJsonValue,
+      watching: parsed.watching,
+      tier: spec.id,
+    };
+    try {
+      const res = await anchorWatcherDecision({
+        monitorTickId: tickId,
+        verdict: parsed.verdict,
+        rationale: parsed.rationale,
+        contextDigest,
+      });
+      if (res?.txId) {
+        await db
+          .update(monitorTicks)
+          .set({ arcAnchorTx: res.txId })
+          .where(eq(monitorTicks.id, tickId));
+      }
+    } catch (err) {
+      console.error("[watcher] anchorWatcherDecision failed:", err);
+    }
   }
 
   await db.update(selboInstances).set({

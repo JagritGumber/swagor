@@ -45,9 +45,17 @@ export async function GET(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(Math.max(Number(searchParams.get("limit") ?? "20"), 1), 50);
+  const limit = clampLimit(searchParams.get("limit"));
   const events = await collectArcEvents(session.user.id, limit);
   return NextResponse.json({ events });
+}
+
+/** Clamp the user-supplied limit to [1, 50] with default 20; rejects NaN
+ *  / non-finite values silently so a bad `?limit=abc` doesn't 500. */
+export function clampLimit(raw: string | null): number {
+  const n = Number(raw ?? "20");
+  if (!Number.isFinite(n)) return 20;
+  return Math.min(Math.max(Math.floor(n), 1), 50);
 }
 
 export async function collectArcEvents(userId: string, limit: number): Promise<ArcEvent[]> {
