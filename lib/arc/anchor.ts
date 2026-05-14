@@ -189,7 +189,7 @@ export async function pollPendingAnchors(): Promise<{
   for (const row of pending) {
     if (!row.arcAnchorTx) continue;
     try {
-      const resp = await getSdk().getTransaction(row.arcAnchorTx);
+      const resp = await getSdk().getTransaction({ id: row.arcAnchorTx });
       const body = resp.data as { data?: { transaction?: { state?: string; txHash?: string } } } | undefined;
       const tx = body?.data?.transaction;
       const state = tx?.state;
