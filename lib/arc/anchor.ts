@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
 import { db } from "@/lib/db/client";
-import { trades } from "@/lib/db/schema";
+import { trades, monitorTicks } from "@/lib/db/schema";
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 
 let sdk: ReturnType<typeof initiateDeveloperControlledWalletsClient> | null = null;
@@ -161,49 +161,214 @@ export async function anchorClosedTrade(
   };
 }
 
+export type OpenedTradeAnchorInput = {
+  tradeId: string;
+  asset: string;
+  side: "long" | "short";
+  amountUsd: string;
+  leverage: number | null;
+  entryPrice: string | null;
+  reasoning: unknown;
+};
+
+/**
+ * Anchor a paper trade OPEN on Arc (M5). Mirrors anchorClosedTrade but the
+ * verdict string summarizes size + leverage instead of pnl. The trace hash
+ * captures the full agent context the Fast Trader saw (passed as `reasoning`).
+ * Fire-and-forget from openPaperTrade; trade insert must not block on Circle.
+ */
+export async function anchorOpenedTrade(
+  trade: OpenedTradeAnchorInput,
+): Promise<TradeAnchorResult | null> {
+  const contractAddress = process.env.NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS;
+  const walletId = process.env.NEXT_PUBLIC_AGENT_WALLET_ID;
+  if (!contractAddress || !walletId) {
+    console.warn("[anchor] env missing; skipping trade-open anchor");
+    return null;
+  }
+
+  const tradeIdBytes32 = uuidToBytes32(trade.tradeId);
+  const reasoningHash = sha256Hex(trade.reasoning);
+  const zeroBytes32 = `0x${"0".repeat(64)}` as `0x${string}`;
+  const lev = trade.leverage && trade.leverage > 0 ? `${trade.leverage}x` : "1x";
+  const amount = Number(trade.amountUsd);
+  const verdict = `$${amount.toFixed(0)} @ ${lev} ${trade.side}`;
+  const tag = `trade:${trade.asset}:${trade.side}:open`;
+
+  const resp = await getSdk().createContractExecutionTransaction({
+    walletId,
+    contractAddress,
+    abiFunctionSignature: "anchorDecision(bytes32,bytes32,bytes32,string,string)",
+    abiParameters: [tradeIdBytes32, zeroBytes32, reasoningHash, tag, verdict],
+    fee: { type: "level", config: { feeLevel: "MEDIUM" } },
+  });
+
+  return {
+    txId: resp.data?.id ?? "",
+    contractAddress,
+    tradeIdBytes32,
+    reasoningHash,
+  };
+}
+
+export type WatcherAnchorInput = {
+  monitorTickId: string;
+  verdict: "execute" | "risk_emergency";
+  rationale: string;
+  contextDigest: unknown;
+};
+
+export type WatcherAnchorResult = {
+  txId: string;
+  contractAddress: string;
+  tickIdBytes32: string;
+  traceHash: string;
+};
+
+/**
+ * Anchor a watcher decision on Arc (M5). Fires for `execute` and
+ * `risk_emergency` verdicts only. `hold` is not anchored (too noisy);
+ * `deliberate` is anchored via the swarm cycle path. Rationale is truncated
+ * to 120 chars for the on-chain verdict string; full context is hashed.
+ */
+export async function anchorWatcherDecision(
+  input: WatcherAnchorInput,
+): Promise<WatcherAnchorResult | null> {
+  const contractAddress = process.env.NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS;
+  const walletId = process.env.NEXT_PUBLIC_AGENT_WALLET_ID;
+  if (!contractAddress || !walletId) {
+    console.warn("[anchor] env missing; skipping watcher anchor");
+    return null;
+  }
+
+  const tickIdBytes32 = uuidToBytes32(input.monitorTickId);
+  const traceHash = sha256Hex(input.contextDigest);
+  const zeroBytes32 = `0x${"0".repeat(64)}` as `0x${string}`;
+  const tag = `watcher:${input.verdict}`;
+  const verdict = input.rationale.slice(0, 120);
+
+  const resp = await getSdk().createContractExecutionTransaction({
+    walletId,
+    contractAddress,
+    abiFunctionSignature: "anchorDecision(bytes32,bytes32,bytes32,string,string)",
+    abiParameters: [tickIdBytes32, zeroBytes32, traceHash, tag, verdict],
+    fee: { type: "level", config: { feeLevel: "MEDIUM" } },
+  });
+
+  return {
+    txId: resp.data?.id ?? "",
+    contractAddress,
+    tickIdBytes32,
+    traceHash,
+  };
+}
+
 const TERMINAL_FAIL_STATES = new Set(["FAILED", "CANCELLED", "DENIED"]);
 
 /**
- * Poll Circle for trades that have a Circle transaction id but no resolved
- * on-chain hash yet. Updates `arcOnchainTxHash` once the tx reaches
- * `COMPLETE`. Failed/cancelled/denied txs are stamped with a sentinel so
- * we stop polling them.
+ * Resolve one Circle tx id to its on-chain state. Returns the on-chain hash
+ * when state=COMPLETE, a `failed:<STATE>` sentinel for terminal failures,
+ * or null when still pending (caller should leave the column untouched).
+ */
+async function resolveCircleTx(
+  circleTxId: string,
+): Promise<{ outcome: "confirmed"; onchainHash: string } | { outcome: "failed"; sentinel: string } | { outcome: "pending" }> {
+  const resp = await getSdk().getTransaction({ id: circleTxId });
+  const body = resp.data as { data?: { transaction?: { state?: string; txHash?: string } } } | undefined;
+  const tx = body?.data?.transaction;
+  const state = tx?.state;
+  if (state === "COMPLETE" && tx?.txHash) return { outcome: "confirmed", onchainHash: tx.txHash };
+  if (state && TERMINAL_FAIL_STATES.has(state)) return { outcome: "failed", sentinel: `failed:${state}` };
+  return { outcome: "pending" };
+}
+
+/**
+ * Poll Circle for every anchor that has a Circle transaction id but no
+ * resolved on-chain hash yet. Updates the corresponding `*OnchainTxHash`
+ * column when state=COMPLETE; stamps a `failed:<STATE>` sentinel for
+ * terminal failures so we stop polling them.
  *
- * Called from the watcher tick handler each cron heartbeat. Cheap: only
- * reads rows where the Circle id is set AND the on-chain hash is null,
- * which is the small window of "anchor-fired but not yet mined" trades.
+ * Three sources scanned per heartbeat (M5):
+ *   - trades.arcAnchorTx       -> trades.arcOnchainTxHash    (trade close)
+ *   - trades.openAnchorTx      -> trades.openOnchainTxHash   (trade open)
+ *   - monitor_ticks.arcAnchorTx -> monitor_ticks.arcOnchainTxHash (watcher)
+ *
+ * Each is an indexed lookup on a small "fired but not mined" window. Cheap.
  */
 export async function pollPendingAnchors(): Promise<{
   scanned: number;
   resolved: number;
   failed: number;
 }> {
-  const pending = await db
-    .select({ id: trades.id, arcAnchorTx: trades.arcAnchorTx })
-    .from(trades)
-    .where(and(isNotNull(trades.arcAnchorTx), isNull(trades.arcOnchainTxHash)));
-
+  let scanned = 0;
   let resolved = 0;
   let failed = 0;
 
-  for (const row of pending) {
-    if (!row.arcAnchorTx) continue;
+  // Source 1: trade closes (existing)
+  const pendingCloses = await db
+    .select({ id: trades.id, txId: trades.arcAnchorTx })
+    .from(trades)
+    .where(and(isNotNull(trades.arcAnchorTx), isNull(trades.arcOnchainTxHash)));
+  scanned += pendingCloses.length;
+  for (const row of pendingCloses) {
+    if (!row.txId) continue;
     try {
-      const resp = await getSdk().getTransaction({ id: row.arcAnchorTx });
-      const body = resp.data as { data?: { transaction?: { state?: string; txHash?: string } } } | undefined;
-      const tx = body?.data?.transaction;
-      const state = tx?.state;
-      if (state === "COMPLETE" && tx?.txHash) {
-        await db.update(trades).set({ arcOnchainTxHash: tx.txHash }).where(eq(trades.id, row.id));
+      const out = await resolveCircleTx(row.txId);
+      if (out.outcome === "confirmed") {
+        await db.update(trades).set({ arcOnchainTxHash: out.onchainHash }).where(eq(trades.id, row.id));
         resolved++;
-      } else if (state && TERMINAL_FAIL_STATES.has(state)) {
-        await db.update(trades).set({ arcOnchainTxHash: `failed:${state}` }).where(eq(trades.id, row.id));
+      } else if (out.outcome === "failed") {
+        await db.update(trades).set({ arcOnchainTxHash: out.sentinel }).where(eq(trades.id, row.id));
         failed++;
       }
     } catch (err) {
-      console.error(`[anchor-poll] getTransaction(${row.arcAnchorTx}) failed:`, err);
+      console.error(`[anchor-poll] close ${row.txId} failed:`, err);
     }
   }
 
-  return { scanned: pending.length, resolved, failed };
+  // Source 2: trade opens (M5)
+  const pendingOpens = await db
+    .select({ id: trades.id, txId: trades.openAnchorTx })
+    .from(trades)
+    .where(and(isNotNull(trades.openAnchorTx), isNull(trades.openOnchainTxHash)));
+  scanned += pendingOpens.length;
+  for (const row of pendingOpens) {
+    if (!row.txId) continue;
+    try {
+      const out = await resolveCircleTx(row.txId);
+      if (out.outcome === "confirmed") {
+        await db.update(trades).set({ openOnchainTxHash: out.onchainHash }).where(eq(trades.id, row.id));
+        resolved++;
+      } else if (out.outcome === "failed") {
+        await db.update(trades).set({ openOnchainTxHash: out.sentinel }).where(eq(trades.id, row.id));
+        failed++;
+      }
+    } catch (err) {
+      console.error(`[anchor-poll] open ${row.txId} failed:`, err);
+    }
+  }
+
+  // Source 3: watcher anchors (M5)
+  const pendingTicks = await db
+    .select({ id: monitorTicks.id, txId: monitorTicks.arcAnchorTx })
+    .from(monitorTicks)
+    .where(and(isNotNull(monitorTicks.arcAnchorTx), isNull(monitorTicks.arcOnchainTxHash)));
+  scanned += pendingTicks.length;
+  for (const row of pendingTicks) {
+    if (!row.txId) continue;
+    try {
+      const out = await resolveCircleTx(row.txId);
+      if (out.outcome === "confirmed") {
+        await db.update(monitorTicks).set({ arcOnchainTxHash: out.onchainHash }).where(eq(monitorTicks.id, row.id));
+        resolved++;
+      } else if (out.outcome === "failed") {
+        await db.update(monitorTicks).set({ arcOnchainTxHash: out.sentinel }).where(eq(monitorTicks.id, row.id));
+        failed++;
+      }
+    } catch (err) {
+      console.error(`[anchor-poll] watcher ${row.txId} failed:`, err);
+    }
+  }
+
+  return { scanned, resolved, failed };
 }

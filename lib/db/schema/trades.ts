@@ -39,11 +39,15 @@ export const trades = pgTable("trades", {
   mode: text("mode").notNull().default("simulation"), // 'simulation' | 'live'
   simulatedTxHash: text("simulated_tx_hash"),
   failureReason: text("failure_reason"),
-  // Circle's internal transaction id, returned synchronously when the
-  // anchor SDK call is queued. We poll Circle for state=COMPLETE and
-  // backfill `arcOnchainTxHash` once the tx is mined on Arc.
+  // Close-anchor on Arc. `arcAnchorTx` is Circle's internal id, returned
+  // synchronously when the close anchor SDK call is queued; `arcOnchainTxHash`
+  // is backfilled by pollPendingAnchors once Circle reports state=COMPLETE.
   arcAnchorTx: text("arc_anchor_tx"),
   arcOnchainTxHash: text("arc_onchain_tx_hash"),
+  // Open-anchor on Arc (M5). Same shape as the close-anchor pair, but fires
+  // from openPaperTrade so every paper trade has two on-chain markers.
+  openAnchorTx: text("open_anchor_tx"),
+  openOnchainTxHash: text("open_onchain_tx_hash"),
   // Safety levels set by the agent that opened the trade. The watcher
   // tick handler runs an enforcement scan against current Hyperliquid
   // mid; when mark crosses a level, the position is closed automatically

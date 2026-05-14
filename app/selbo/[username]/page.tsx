@@ -11,6 +11,7 @@ import { TradeHistory } from "@/components/dashboard/trade-history";
 import { LifetimeStats } from "@/components/dashboard/lifetime-stats";
 import { PublicWatchingStrip } from "@/components/public/public-watching-strip";
 import { PublicDecisions } from "@/components/public/public-decisions";
+import { PublicArcActivity } from "@/components/public/public-arc-activity";
 
 type Params = Promise<{ username: string }>;
 
@@ -92,6 +93,8 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
       <LifetimeStats stats={lifetime} />
 
       <PublicWatchingStrip username={username} />
+
+      <PublicArcActivity username={username} />
 
       <MarketChartCard watching={watching} />
 

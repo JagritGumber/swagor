@@ -142,6 +142,7 @@ export async function runFastTraderForInstance(
       takeProfitPriceUsd,
       source: "fast-trader",
       rationale,
+      agentContext: { payload: JSON.parse(payload), decision },
     });
   } else if (decision.action === "close") {
     await closePaperTrade({

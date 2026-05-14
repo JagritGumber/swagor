@@ -13,6 +13,7 @@ import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
 import { SelboWalletCard } from "@/components/dashboard/selbo-wallet-card";
 import { WatchingStrip } from "@/components/dashboard/watching-strip";
+import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { ProfileSettings } from "@/components/dashboard/profile-settings";
 import { BetaGate } from "@/components/dashboard/beta-gate";
@@ -56,6 +57,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
       <LifetimeStats stats={lifetime} />
       <WatchingStrip />
       {isDev && <WatcherDevControls />}
+      <ArcActivityCard />
       <MarketChartCard watching={watching} />
       <PositionsTable positions={positions} />
       <TradeHistory trades={closedTrades} />

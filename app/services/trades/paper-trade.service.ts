@@ -4,7 +4,7 @@ import { db } from "@/lib/db/client";
 import { trades, selboInstances, type Trade } from "@/lib/db/schema";
 import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { recordTradeMemory } from "@/app/services/memory.service";
-import { anchorClosedTrade } from "@/lib/arc/anchor";
+import { anchorClosedTrade, anchorOpenedTrade } from "@/lib/arc/anchor";
 import { fetchAllMids } from "@/lib/data-sources/hyperliquid";
 
 export type OpenPaperTradeInput = {
@@ -17,6 +17,11 @@ export type OpenPaperTradeInput = {
   takeProfitPriceUsd?: number | null;
   source: "fast-trader" | "panel";
   rationale: string;
+  // Full agent context the deciding LLM saw (Fast Trader payload, or swarm
+  // cycle context). Hashed into the Arc open-anchor trace; never stored
+  // plain on-chain. Optional so paths that don't have it (tests/dev) still
+  // open trades; the resulting anchor just hashes rationale + safety levels.
+  agentContext?: unknown;
 };
 
 export type ClosePaperTradeInput = {
@@ -95,10 +100,37 @@ export async function openPaperTrade(input: OpenPaperTradeInput): Promise<{ trad
       openedAt: new Date(),
     })
     .returning({ id: trades.id });
+  const tradeId = row!.id;
   console.log(
     `[paper-trade] OPEN ${input.side} ${asset} $${input.sizeUsd} @ ${input.entryPriceUsd} (stop=${stop}, tp=${takeProfit}) via ${input.source}`,
   );
-  return { tradeId: row!.id };
+
+  // Fire-and-forget Arc open-anchor (M5). Trade is already persisted; this
+  // never blocks the caller. If Circle is down or env is missing, openAnchorTx
+  // stays null and the UI renders the trade as "not yet anchored."
+  void anchorOpenedTrade({
+    tradeId,
+    asset,
+    side: input.side,
+    amountUsd: input.sizeUsd.toString(),
+    leverage: null,
+    entryPrice: input.entryPriceUsd ? input.entryPriceUsd.toString() : null,
+    reasoning: {
+      rationale: input.rationale,
+      source: input.source,
+      stopLossPriceUsd: stop,
+      takeProfitPriceUsd: takeProfit,
+      agentContext: input.agentContext ?? null,
+    },
+  })
+    .then((res) => {
+      if (res?.txId) {
+        void db.update(trades).set({ openAnchorTx: res.txId }).where(eq(trades.id, tradeId));
+      }
+    })
+    .catch((err) => console.error("[paper-trade] anchorOpenedTrade failed:", err));
+
+  return { tradeId };
 }
 
 /**

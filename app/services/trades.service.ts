@@ -15,6 +15,11 @@ export type ClosedTradeView = {
   pnlPct: number | null;
   openedAt: Date | null;
   closedAt: Date | null;
+  // M5: each trade has two on-chain markers. `openOnchainTxHash` is the
+  // anchor fired when the trade was inserted; `arcOnchainTxHash` is the
+  // anchor fired when the trade closed. "failed:*" sentinels are mapped
+  // back to null here so the UI renders pending state cleanly.
+  openOnchainTxHash: string | null;
   arcOnchainTxHash: string | null;
   safetyTriggerReason: "stop_loss" | "take_profit" | null;
 };
@@ -45,7 +50,8 @@ export async function listClosedTrades(
   return rows.map((r) => {
     const amount = Number(r.amountUsd);
     const pnl = r.pnlUsd ? Number(r.pnlUsd) : null;
-    const onchain = r.arcOnchainTxHash;
+    const closeHash = r.arcOnchainTxHash;
+    const openHash = r.openOnchainTxHash;
     const trigger = r.safetyTriggerReason;
     return {
       tradeId: r.id,
@@ -58,7 +64,10 @@ export async function listClosedTrades(
       pnlPct: pnlPct(amount, pnl),
       openedAt: r.openedAt ?? null,
       closedAt: r.closedAt ?? null,
-      arcOnchainTxHash: onchain && !onchain.startsWith("failed:") ? onchain : null,
+      openOnchainTxHash:
+        openHash && !openHash.startsWith("failed:") ? openHash : null,
+      arcOnchainTxHash:
+        closeHash && !closeHash.startsWith("failed:") ? closeHash : null,
       safetyTriggerReason:
         trigger === "stop_loss" || trigger === "take_profit" ? trigger : null,
     };
