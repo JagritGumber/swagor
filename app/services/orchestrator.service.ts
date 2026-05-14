@@ -174,12 +174,33 @@ export async function runCycle(cycleId: string): Promise<void> {
           if (!taxAdjusted.if_open) throw new Error("aggregator returned open without if_open");
           const asset = taxAdjusted.if_open.asset.toUpperCase();
           const markPx = mids[asset] ? Number(mids[asset]) : null;
+          const side = taxAdjusted.action === "open_long" ? "long" : "short";
+          // Translate the aggregator's percent triggers into absolute price
+          // levels for the safety enforcer.
+          let stopLossPriceUsd: number | null = null;
+          let takeProfitPriceUsd: number | null = null;
+          if (markPx !== null) {
+            if (taxAdjusted.if_open.stopLossPct !== null) {
+              const m = side === "long"
+                ? 1 - taxAdjusted.if_open.stopLossPct / 100
+                : 1 + taxAdjusted.if_open.stopLossPct / 100;
+              stopLossPriceUsd = markPx * m;
+            }
+            if (taxAdjusted.if_open.takeProfitPct !== null) {
+              const m = side === "long"
+                ? 1 + taxAdjusted.if_open.takeProfitPct / 100
+                : 1 - taxAdjusted.if_open.takeProfitPct / 100;
+              takeProfitPriceUsd = markPx * m;
+            }
+          }
           const opened = await openPaperTrade({
             userId: instance.userId,
             asset,
-            side: taxAdjusted.action === "open_long" ? "long" : "short",
+            side,
             sizeUsd: taxAdjusted.if_open.sizeUsd,
             entryPriceUsd: markPx,
+            stopLossPriceUsd,
+            takeProfitPriceUsd,
             source: "panel",
             rationale: taxAdjusted.rationale,
           });

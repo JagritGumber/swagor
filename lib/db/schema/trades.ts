@@ -44,6 +44,13 @@ export const trades = pgTable("trades", {
   // backfill `arcOnchainTxHash` once the tx is mined on Arc.
   arcAnchorTx: text("arc_anchor_tx"),
   arcOnchainTxHash: text("arc_onchain_tx_hash"),
+  // Safety levels set by the agent that opened the trade. The watcher
+  // tick handler runs an enforcement scan against current Hyperliquid
+  // mid; when mark crosses a level, the position is closed automatically
+  // and `safetyTriggerReason` records which trigger fired.
+  stopLossPriceUsd: numeric("stop_loss_price_usd", { precision: 30, scale: 12 }),
+  takeProfitPriceUsd: numeric("take_profit_price_usd", { precision: 30, scale: 12 }),
+  safetyTriggerReason: text("safety_trigger_reason"),
   openedAt: timestamp("opened_at", { withTimezone: true }),
   closedAt: timestamp("closed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

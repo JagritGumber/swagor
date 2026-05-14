@@ -16,6 +16,7 @@ export type ClosedTradeView = {
   openedAt: Date | null;
   closedAt: Date | null;
   arcOnchainTxHash: string | null;
+  safetyTriggerReason: "stop_loss" | "take_profit" | null;
 };
 
 function pnlPct(amountUsd: number, pnlUsd: number | null): number | null {
@@ -45,6 +46,7 @@ export async function listClosedTrades(
     const amount = Number(r.amountUsd);
     const pnl = r.pnlUsd ? Number(r.pnlUsd) : null;
     const onchain = r.arcOnchainTxHash;
+    const trigger = r.safetyTriggerReason;
     return {
       tradeId: r.id,
       asset: r.asset,
@@ -57,6 +59,8 @@ export async function listClosedTrades(
       openedAt: r.openedAt ?? null,
       closedAt: r.closedAt ?? null,
       arcOnchainTxHash: onchain && !onchain.startsWith("failed:") ? onchain : null,
+      safetyTriggerReason:
+        trigger === "stop_loss" || trigger === "take_profit" ? trigger : null,
     };
   });
 }

@@ -8,7 +8,13 @@ export type AggregatorOutput = {
   action: AggregatorAction;
   rationale: string;
   regime_assessment: "risk_on" | "neutral" | "risk_off";
-  if_open: { asset: string; sizeUsd: number; leverage: number } | null;
+  if_open: {
+    asset: string;
+    sizeUsd: number;
+    leverage: number;
+    stopLossPct: number | null;
+    takeProfitPct: number | null;
+  } | null;
   if_close: { asset: string } | null;
   safety: { stop_loss_trigger: string; take_profit_trigger: string };
   dispersion: number;
@@ -21,6 +27,8 @@ export type AggregatorOutput = {
     count: number;
     avgSizeUsd: number;
     avgLeverage: number;
+    avgStopLossPct: number | null;
+    avgTakeProfitPct: number | null;
   }>;
   closeClusters: Array<{ asset: string; count: number }>;
   keyDrivers: string[];
@@ -74,12 +82,16 @@ export async function aggregate(opts: {
   }
   const openClusters = Array.from(openGrouped.entries()).map(([k, ds]) => {
     const [asset, side] = k.split("__");
+    const stopValues = ds.map((d) => d.if_open!.stop_loss_pct).filter((v): v is number => v !== null);
+    const tpValues = ds.map((d) => d.if_open!.take_profit_pct).filter((v): v is number => v !== null);
     return {
       asset,
       side: side as "long" | "short",
       count: ds.length,
       avgSizeUsd: median(ds.map((d) => d.if_open!.size_usd)),
       avgLeverage: median(ds.map((d) => d.if_open!.leverage)),
+      avgStopLossPct: stopValues.length > 0 ? median(stopValues) : null,
+      avgTakeProfitPct: tpValues.length > 0 ? median(tpValues) : null,
     };
   });
   openClusters.sort((a, b) => b.count - a.count);
@@ -104,6 +116,8 @@ export async function aggregate(opts: {
       asset: match.asset,
       sizeUsd: Math.round(match.avgSizeUsd * 100) / 100,
       leverage: Math.max(1, Math.round(match.avgLeverage)),
+      stopLossPct: match.avgStopLossPct !== null ? Math.round(match.avgStopLossPct * 100) / 100 : null,
+      takeProfitPct: match.avgTakeProfitPct !== null ? Math.round(match.avgTakeProfitPct * 100) / 100 : null,
     };
   } else if (dominantAction === "close" && closeClusters.length > 0) {
     if_close = { asset: closeClusters[0].asset };
