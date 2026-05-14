@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
-import { solonInstances } from "@/lib/db/schema";
+import { selboInstances } from "@/lib/db/schema";
 import { and, eq, lte } from "drizzle-orm";
 import { runWatcherForInstance } from "@/app/services/watcher/watcher.service";
 import { pollPendingAnchors } from "@/lib/arc/anchor";
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * automatic cron — fire ticks manually via /api/watcher/force-tick or
  * the dev strip's Force tick button.
  *
- * Body of work: find Solon instances whose `next_watcher_at <= now()` and
+ * Body of work: find Selbo instances whose `next_watcher_at <= now()` and
  * whose kill switch is off, run a watcher tick for each. The watcher
  * service writes back `next_watcher_at` per its agent-chosen delay, so
  * this endpoint stays state-free.
@@ -48,11 +48,11 @@ export async function POST(request: Request) {
   // happens on accounts that signed up without redeeming a code.
   const due = await db
     .select()
-    .from(solonInstances)
+    .from(selboInstances)
     .where(and(
-      lte(solonInstances.nextWatcherAt, now),
-      eq(solonInstances.killSwitchActive, false),
-      eq(solonInstances.betaAccessGranted, true),
+      lte(selboInstances.nextWatcherAt, now),
+      eq(selboInstances.killSwitchActive, false),
+      eq(selboInstances.betaAccessGranted, true),
     ));
 
   const results = await Promise.allSettled(

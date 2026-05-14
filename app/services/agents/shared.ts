@@ -6,7 +6,7 @@ import { agentReasoning } from "@/lib/db/schema";
 /**
  * One row in the `trades` table flattened for prompt consumption. The agents
  * read this via JSON.stringify, but the type stays explicit so callers can't
- * accidentally pass yield-routing-era PositionSnapshot or raw DB rows.
+ * accidentally pass raw DB rows.
  */
 export type PerpPaperPosition = {
   asset: string;

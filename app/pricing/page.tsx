@@ -49,7 +49,7 @@ export default async function PricingPage() {
               <p className="mt-5 text-sm text-muted-foreground">{t.description}</p>
               <ul className="mt-5 space-y-1.5 text-xs text-muted-foreground">
                 <li>· Watcher cadence min {t.watcherMinCadenceSeconds}s</li>
-                <li>· Up to {t.maxSolons} Solon{t.maxSolons === 1 ? "" : "s"}</li>
+                <li>· Up to {t.maxSelbos} Selbo{t.maxSelbos === 1 ? "" : "s"}</li>
                 <li>· {t.panelDeliberations ? "Full panel deliberation" : "Fast-Trader only"}</li>
                 <li>· {t.publicProfile ? "Public profile enabled" : "No public profile"}</li>
               </ul>

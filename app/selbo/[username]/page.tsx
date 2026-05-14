@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { db } from "@/lib/db/client";
-import { solonInstances } from "@/lib/db/schema";
+import { selboInstances } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { listOpenPositions } from "@/app/services/positions.service";
 import { listClosedTrades, getLifetimeStats } from "@/app/services/trades.service";
@@ -18,8 +18,8 @@ const truncate = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 const ARCSCAN = "https://testnet.arcscan.app/address/";
 
 /**
- * Public flagship Solon profile. Reachable at /selbo/{username} for any
- * solon_instance that has public_profile=true and a username set. Anonymous
+ * Public flagship Selbo profile. Reachable at /selbo/{username} for any
+ * selbo_instance that has public_profile=true and a username set. Anonymous
  * visitors can see: equity, strategy, market chart with trade markers,
  * open positions. Strategy and kill switch are read-only. Recent
  * deliberations are hidden until the read API supports public access.
@@ -29,8 +29,8 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
 
   const [instance] = await db
     .select()
-    .from(solonInstances)
-    .where(and(eq(solonInstances.username, username), eq(solonInstances.publicProfile, true)))
+    .from(selboInstances)
+    .where(and(eq(selboInstances.username, username), eq(selboInstances.publicProfile, true)))
     .limit(1);
 
   if (!instance) notFound();
@@ -47,7 +47,7 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
     <div className="mx-auto max-w-4xl space-y-6 pb-24">
       <header className="border border-[var(--hairline-strong)] bg-black p-8">
         <div className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
-          Public Solon · {username}
+          Public Selbo · {username}
         </div>
         <div className="mt-4 grid gap-6 sm:grid-cols-2">
           <div>

@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ensureSolonInstance } from "@/app/services/solon-instance.service";
+import { ensureSelboInstance } from "@/app/services/selbo-instance.service";
 import { listOpenPositions } from "@/app/services/positions.service";
 import { listClosedTrades, getLifetimeStats } from "@/app/services/trades.service";
 import { DecisionsSection } from "@/components/dashboard/decisions-section";
@@ -11,7 +11,7 @@ import { GoalForm } from "@/components/dashboard/goal-form";
 import { KillSwitchCard } from "@/components/dashboard/kill-switch-card";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
-import { SolonWalletCard } from "@/components/dashboard/solon-wallet-card";
+import { SelboWalletCard } from "@/components/dashboard/selbo-wallet-card";
 import { WatchingStrip } from "@/components/dashboard/watching-strip";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { ProfileSettings } from "@/components/dashboard/profile-settings";
@@ -26,7 +26,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   if (!session) redirect("/sign-in");
   const user = session.user;
 
-  const instance = await ensureSolonInstance(user.id);
+  const instance = await ensureSelboInstance(user.id);
   const addr = instance.circleWalletAddress;
   const devParam = (await searchParams).dev?.toLowerCase() ?? "";
   // Dev strip auto-shows locally; in prod requires ?dev=1 / true / yes.
@@ -52,7 +52,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24">
-      <SolonWalletCard instance={instance} />
+      <SelboWalletCard instance={instance} />
       <LifetimeStats stats={lifetime} />
       <WatchingStrip />
       {isDev && <WatcherDevControls />}

@@ -5,13 +5,13 @@ import {
   saveGoal,
 } from "@/app/services/portfolio.service";
 import { db } from "@/lib/db/client";
-import { solonInstances } from "@/lib/db/schema";
+import { selboInstances } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 /**
  * POST /api/goals
  * Saves the user's strategy text on both the portfolio (legacy) and the
- * Solon instance (what the watcher reads). No LLM parsing.
+ * Selbo instance (what the watcher reads). No LLM parsing.
  */
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -37,9 +37,9 @@ export async function POST(request: Request) {
     await Promise.all([
       saveGoal(portfolio.id, goalText, null),
       db
-        .update(solonInstances)
+        .update(selboInstances)
         .set({ strategyText: goalText })
-        .where(eq(solonInstances.userId, user.id)),
+        .where(eq(selboInstances.userId, user.id)),
     ]);
     return NextResponse.json({ ok: true });
   } catch (e) {

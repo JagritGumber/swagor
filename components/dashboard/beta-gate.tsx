@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 /**
  * Private-beta code redemption form. Shown on the dashboard when the
- * user's solon_instances row has betaAccessGranted=false. While this is
+ * user's selbo_instances row has betaAccessGranted=false. While this is
  * rendered, all other dashboard sections (watcher feed, market chart,
  * trades, etc) are hidden to keep the UI honest about what is actually
  * doing work for the user.

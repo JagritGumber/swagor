@@ -1,4 +1,4 @@
-import type { SolonInstance } from "@/lib/db/schema/solon-instances";
+import type { SelboInstance } from "@/lib/db/schema/selbo-instances";
 import { ArrowUpRight } from "lucide-react";
 
 const truncate = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -9,7 +9,7 @@ const ARCSCAN = "https://testnet.arcscan.app/address/";
  * live watcher feed lives in <WatchingStrip /> immediately below this card,
  * so this card stays static (no client polling).
  */
-export function SolonWalletCard({ instance }: { instance: SolonInstance }) {
+export function SelboWalletCard({ instance }: { instance: SelboInstance }) {
   const balance = Number(instance.simulatedBalanceUsd);
 
   return (

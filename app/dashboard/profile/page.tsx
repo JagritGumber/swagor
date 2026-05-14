@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ensureSolonInstance } from "@/app/services/solon-instance.service";
+import { ensureSelboInstance } from "@/app/services/selbo-instance.service";
 import { ProfileSettings } from "@/components/dashboard/profile-settings";
 
 /**
@@ -14,7 +14,7 @@ import { ProfileSettings } from "@/components/dashboard/profile-settings";
 export default async function ProfilePage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
-  const instance = await ensureSolonInstance(session.user.id);
+  const instance = await ensureSelboInstance(session.user.id);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24">

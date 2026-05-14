@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const WATCHER_SCHEMA = z.object({
-  verdict: z.enum(["hold", "execute", "deliberate"]),
+  verdict: z.enum(["hold", "execute", "deliberate", "risk_emergency"]),
   rationale: z.string().min(1).max(500),
   // Paper-mode background cadence: 2 minutes minimum, 30 minutes maximum.
   // Tightened from the earlier 30-600s range — we are not racing nof1's
@@ -38,6 +38,11 @@ Tiers:
   - Sudden volatility spike threatens leverage health.
   - A clear entry signal at a precise level the user's strategy targets.
 
+- "risk_emergency": deterministic risk engine says the portfolio needs protection. Cases:
+  - Liquidation buffer is dangerously thin.
+  - Margin usage is too high.
+  - Risk engine recommends reducing or closing a position.
+
 - "deliberate": strategic question worth a multi-agent panel. Cases:
   - Regime shift: trend reversal, vol regime change.
   - Hedge construction: portfolio needs balancing.
@@ -53,7 +58,7 @@ Watchlist: 1-10 symbols. Adjust if the user mentions specific assets or if your 
 
 Return JSON only:
 {
-  "verdict": "hold" | "execute" | "deliberate",
+  "verdict": "hold" | "execute" | "deliberate" | "risk_emergency",
   "rationale": "one-line plain-English reasoning, under 500 chars",
   "nextCheckSeconds": integer 120 to 1800,
   "watching": ["SYM1", "SYM2", ...]

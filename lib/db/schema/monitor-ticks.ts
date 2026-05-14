@@ -11,7 +11,7 @@ import { pgTable, uuid, text, integer, jsonb, timestamp } from "drizzle-orm/pg-c
  */
 export const monitorTicks = pgTable("monitor_ticks", {
   id: uuid("id").primaryKey().defaultRandom(),
-  solonInstanceId: uuid("solon_instance_id").notNull(),
+  selboInstanceId: uuid("selbo_instance_id").notNull(),
   verdict: text("verdict").notNull(), // 'hold' | 'escalate'
   rationale: text("rationale").notNull(),
   nextCheckSeconds: integer("next_check_seconds").notNull(),

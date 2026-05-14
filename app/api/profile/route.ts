@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/client";
-import { solonInstances } from "@/lib/db/schema";
+import { selboInstances } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -19,7 +19,7 @@ const Body = z.object({
 
 /**
  * PATCH /api/profile -- updates the caller's username and/or public-profile
- * toggle on solon_instances. Username is unique across all instances; a
+ * toggle on selbo_instances. Username is unique across all instances; a
  * conflict returns 409 with a clear message so the dashboard form can
  * surface it.
  */
@@ -38,15 +38,15 @@ export async function PATCH(request: Request) {
 
   try {
     const [updated] = await db
-      .update(solonInstances)
+      .update(selboInstances)
       .set({
         ...(patch.username !== undefined && { username: patch.username }),
         ...(patch.publicProfile !== undefined && { publicProfile: patch.publicProfile }),
       })
-      .where(eq(solonInstances.userId, session.user.id))
+      .where(eq(selboInstances.userId, session.user.id))
       .returning({
-        username: solonInstances.username,
-        publicProfile: solonInstances.publicProfile,
+        username: selboInstances.username,
+        publicProfile: selboInstances.publicProfile,
       });
     if (!updated) return NextResponse.json({ error: "No instance for user" }, { status: 404 });
     return NextResponse.json({ ok: true, ...updated });

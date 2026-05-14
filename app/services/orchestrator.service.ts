@@ -14,13 +14,14 @@ import {
 } from "@/lib/data-sources/hyperliquid";
 import { searchNews } from "@/lib/data-sources/news";
 import { db } from "@/lib/db/client";
-import { solonInstances, trades, monitorTicks } from "@/lib/db/schema";
+import { selboInstances, trades, monitorTicks } from "@/lib/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { getRecentLessons } from "@/app/services/memory.service";
 import {
   openPaperTrade,
   closePaperTrade,
 } from "@/app/services/trades/paper-trade.service";
+import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 
 /**
  * Runs the deliberation chain for a single cycle: swarm -> aggregator ->
@@ -46,12 +47,12 @@ export async function runCycle(cycleId: string): Promise<void> {
 
     const [instance] = await db
       .select()
-      .from(solonInstances)
-      .where(eq(solonInstances.circleWalletAddress, portfolio.walletAddress))
+      .from(selboInstances)
+      .where(eq(selboInstances.circleWalletAddress, portfolio.walletAddress))
       .limit(1);
     if (!instance) {
       throw new Error(
-        `No solon instance found for wallet ${portfolio.walletAddress}`,
+        `No selbo instance found for wallet ${portfolio.walletAddress}`,
       );
     }
 
@@ -65,7 +66,7 @@ export async function runCycle(cycleId: string): Promise<void> {
         and(eq(trades.userId, instance.userId), eq(trades.status, "open")),
       ),
       db.select().from(monitorTicks)
-        .where(eq(monitorTicks.solonInstanceId, instance.id))
+        .where(eq(monitorTicks.selboInstanceId, instance.id))
         .orderBy(desc(monitorTicks.createdAt))
         .limit(1)
         .then((r) => r[0]),
@@ -107,6 +108,43 @@ export async function runCycle(cycleId: string): Promise<void> {
       opened_at: t.openedAt,
     }));
 
+    const risk = evaluatePerpRisk({
+      account: clearing
+        ? {
+            equityUsd: riskNumber(clearing.marginSummary.accountValue),
+            withdrawableUsd: riskNumber(clearing.withdrawable),
+          }
+        : {
+            equityUsd: Number(instance.simulatedBalanceUsd),
+            withdrawableUsd: Number(instance.simulatedBalanceUsd),
+          },
+      positions: [
+        ...hlPositions.map((p) => ({
+          source: "hyperliquid" as const,
+          asset: p.coin.toUpperCase(),
+          side: riskNumber(p.size) === null ? "unknown" as const : riskNumber(p.size)! >= 0 ? "long" as const : "short" as const,
+          sizeUsd: null,
+          entryPrice: riskNumber(p.entry),
+          markPrice: riskNumber(mids[p.coin.toUpperCase()]),
+          leverage: typeof p.leverage === "object" ? p.leverage.value : null,
+          liquidationPrice: riskNumber(p.liquidation),
+          marginUsedUsd: riskNumber(p.margin_used),
+          unrealizedPnlUsd: riskNumber(p.unrealized_pnl),
+        })),
+        ...paperOpen.map((t) => {
+          const asset = t.asset.toUpperCase();
+          return {
+            source: "paper" as const,
+            asset,
+            side: t.side === "short" ? "short" as const : "long" as const,
+            sizeUsd: Number(t.amountUsd),
+            entryPrice: t.entryPrice ? Number(t.entryPrice) : null,
+            markPrice: mids[asset] ? Number(mids[asset]) : null,
+          };
+        }),
+      ],
+    });
+
     const context = {
       strategy: instance.strategyText,
       watcher_rationale: lastTick?.rationale ?? null,
@@ -120,6 +158,7 @@ export async function runCycle(cycleId: string): Promise<void> {
       paper_positions: paperPositions,
       hl_positions: hlPositions,
       perps,
+      risk,
       recent_news: (newsRes.results ?? []).slice(0, 6).map((n) => ({
         title: n.title,
         source: n.source,
@@ -211,7 +250,7 @@ export async function runCycle(cycleId: string): Promise<void> {
           const markPx = mids[asset] ? Number(mids[asset]) : null;
           const result = await closePaperTrade({
             userId: instance.userId,
-            solonInstanceId: instance.id,
+            selboInstanceId: instance.id,
             asset,
             markPriceUsd: markPx,
             source: "panel",

@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 /**
  * Auth pages shell. Full-bleed dotted-cyan radial background mirrors the
  * landing hero. Home back link sits below the nav at the same x as the
- * Solon wordmark (max-w-6xl rail), so it reads as the next step in the
+ * Selbo wordmark (max-w-6xl rail), so it reads as the next step in the
  * same reading flow.
  */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {

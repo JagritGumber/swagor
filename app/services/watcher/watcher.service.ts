@@ -1,7 +1,7 @@
 import "server-only";
 
 import { db } from "@/lib/db/client";
-import { monitorTicks, solonInstances, type SolonInstance } from "@/lib/db/schema";
+import { monitorTicks, selboInstances, type SelboInstance } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { watcherLlm, MODELS } from "@/lib/llm-client";
 import {
@@ -14,9 +14,10 @@ import { WATCHER_SCHEMA, WATCHER_SYSTEM_PROMPT, type WatcherOutput } from "./pro
 import { triggerCycleFromWatcher } from "./trigger";
 import { runFastTraderForInstance } from "@/app/services/fast-trader/fast-trader.service";
 import { tierSpec, type Tier } from "@/lib/tiers";
+import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 
 /**
- * Run one watcher tick for a given Solon instance. Reads Hyperliquid mark
+ * Run one watcher tick for a given Selbo instance. Reads Hyperliquid mark
  * prices, funding rates, and the user's open positions, plus recent news,
  * then asks the watcher to classify the tick. Persists the verdict,
  * advances next_watcher_at, and on `execute` or `deliberate` routes to the
@@ -24,8 +25,8 @@ import { tierSpec, type Tier } from "@/lib/tiers";
  */
 export async function runWatcherForInstance(instanceId: string): Promise<WatcherOutput> {
   const [instance] = await db
-    .select().from(solonInstances).where(eq(solonInstances.id, instanceId)).limit(1);
-  if (!instance) throw new Error(`solon_instances ${instanceId} not found`);
+    .select().from(selboInstances).where(eq(selboInstances.id, instanceId)).limit(1);
+  if (!instance) throw new Error(`selbo_instances ${instanceId} not found`);
   if (instance.killSwitchActive) throw new Error("kill switch active, refusing to tick");
 
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
@@ -37,7 +38,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     searchNews(`${watching.join(" OR ")} OR perp OR crypto`)
       .catch(() => ({ results: [] as Array<{ title: string; source: string; publishedAt: string }> })),
     db.select().from(monitorTicks)
-      .where(eq(monitorTicks.solonInstanceId, instance.id))
+      .where(eq(monitorTicks.selboInstanceId, instance.id))
       .orderBy(desc(monitorTicks.createdAt)).limit(1).then((r) => r[0]),
   ]);
 
@@ -66,6 +67,25 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     margin_used: p.position.marginUsed,
   })) ?? [];
 
+  const risk = evaluatePerpRisk({
+    account: {
+      equityUsd: riskNumber(clearing?.marginSummary.accountValue),
+      withdrawableUsd: riskNumber(clearing?.withdrawable),
+    },
+    positions: positions.map((p) => ({
+      source: "hyperliquid",
+      asset: p.coin.toUpperCase(),
+      side: riskNumber(p.size) === null ? "unknown" : riskNumber(p.size)! >= 0 ? "long" : "short",
+      sizeUsd: riskNumber(p.margin_used),
+      entryPrice: riskNumber(p.entry),
+      markPrice: riskNumber(mids[p.coin.toUpperCase()]),
+      leverage: typeof p.leverage === "object" ? p.leverage.value : null,
+      liquidationPrice: riskNumber(p.liquidation),
+      marginUsedUsd: riskNumber(p.margin_used),
+      unrealizedPnlUsd: riskNumber(p.unrealized_pnl),
+    })),
+  });
+
   const userPayload = JSON.stringify({
     strategy: instance.strategyText,
     watching,
@@ -74,6 +94,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       : null,
     positions,
     perps,
+    risk,
     news: (newsRes.results ?? []).slice(0, 6).map((n) => ({
       title: n.title, source: n.source,
       hoursAgo: n.publishedAt ? Math.floor((Date.now() - new Date(n.publishedAt).getTime()) / 3_600_000) : null,
@@ -82,51 +103,70 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     minutesSinceLastTick: lastTick ? Math.floor((Date.now() - new Date(lastTick.createdAt).getTime()) / 60_000) : null,
   });
 
-  const completion = await watcherLlm.chat.completions.create({
-    model: MODELS.WATCHER,
-    messages: [
-      { role: "system", content: WATCHER_SYSTEM_PROMPT },
-      { role: "user", content: userPayload },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.2,
-  });
+  const parsed: WatcherOutput =
+    risk.status === "critical"
+      ? {
+          verdict: "risk_emergency",
+          rationale: risk.summary,
+          nextCheckSeconds: 120,
+          watching,
+        }
+      : await (async () => {
+          const completion = await watcherLlm.chat.completions.create({
+            model: MODELS.WATCHER,
+            messages: [
+              { role: "system", content: WATCHER_SYSTEM_PROMPT },
+              { role: "user", content: userPayload },
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.2,
+          });
 
-  const raw = completion.choices[0]?.message?.content;
-  if (!raw) throw new Error("watcher returned empty response");
-  const parsed = WATCHER_SCHEMA.parse(JSON.parse(raw));
+          const raw = completion.choices[0]?.message?.content;
+          if (!raw) throw new Error("watcher returned empty response");
+          return WATCHER_SCHEMA.parse(JSON.parse(raw));
+        })();
 
   // Apply per-tier cadence floor: free users tick less often than basic+.
   const spec = tierSpec(instance.subscriptionTier as Tier);
-  const clampedNext = Math.min(
-    Math.max(parsed.nextCheckSeconds, spec.watcherMinCadenceSeconds),
-    spec.watcherMaxCadenceSeconds,
-  );
+  const clampedNext =
+    parsed.verdict === "risk_emergency"
+      ? Math.min(parsed.nextCheckSeconds, 120)
+      : Math.min(
+          Math.max(parsed.nextCheckSeconds, spec.watcherMinCadenceSeconds),
+          spec.watcherMaxCadenceSeconds,
+        );
 
   await db.insert(monitorTicks).values({
-    solonInstanceId: instance.id,
+    selboInstanceId: instance.id,
     verdict: parsed.verdict,
     rationale: parsed.rationale,
     nextCheckSeconds: clampedNext,
     watching: parsed.watching,
-    context: { perps, positionCount: positions.length, newsCount: (newsRes.results ?? []).length, tier: spec.id },
+    context: {
+      perps,
+      risk,
+      positionCount: positions.length,
+      newsCount: (newsRes.results ?? []).length,
+      tier: spec.id,
+    },
   });
 
-  await db.update(solonInstances).set({
+  await db.update(selboInstances).set({
     nextWatcherAt: new Date(Date.now() + clampedNext * 1000),
     currentlyWatching: parsed.watching,
-  }).where(eq(solonInstances.id, instance.id));
+  }).where(eq(selboInstances.id, instance.id));
 
   if (parsed.verdict === "deliberate" && spec.panelDeliberations) {
-    triggerCycleFromWatcher(instance as SolonInstance, parsed.rationale)
+    triggerCycleFromWatcher(instance as SelboInstance, parsed.rationale)
       .catch((e) => console.error("[watcher] cycle trigger failed:", e));
   } else if (parsed.verdict === "deliberate") {
     // Free tier: route deliberate to the cheap Fast Trader instead of the
     // expensive swarm. Better than dropping the signal entirely.
-    runFastTraderForInstance(instance as SolonInstance, `[free-tier downgrade] ${parsed.rationale}`)
+    runFastTraderForInstance(instance as SelboInstance, `[free-tier downgrade] ${parsed.rationale}`)
       .catch((e) => console.error("[watcher] fast-trader (downgrade) failed:", e));
-  } else if (parsed.verdict === "execute") {
-    runFastTraderForInstance(instance as SolonInstance, parsed.rationale)
+  } else if (parsed.verdict === "execute" || parsed.verdict === "risk_emergency") {
+    runFastTraderForInstance(instance as SelboInstance, parsed.rationale)
       .catch((e) => console.error("[watcher] fast-trader failed:", e));
   }
 
