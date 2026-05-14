@@ -1,91 +1,89 @@
 # Selbo
 
-Per-user AI perpetual futures trader. Sign up, get a Circle Developer Wallet on Arc Testnet, describe your strategy in plain English, and your Selbo runs continuously.
+Selbo is an autonomous perpetual futures risk manager. It monitors leveraged positions 24/7, protects users from liquidation, and uses AI agents to decide when to enter, exit, hedge, or migrate positions across perp venues.
 
-Built for the Agora Agents hackathon (Canteen x Circle x Arc, 2026-05-11 to 2026-05-25) as a submission against **RFB 01 (Perpetual Futures)**. Paper-mode only for the hackathon; live venue execution is post-submission.
+Built for the Agora Agents hackathon (Canteen x Circle x Arc, 2026-05-11 to 2026-05-25) against **RFB 01: Perpetual Futures Trading Agent**. The hackathon milestone is paper-mode autonomy with transparent risk logs, simulated PnL, drawdown, trade volume, and Arc-anchored decision records. Live venue execution comes after the risk engine and venue adapters are stable.
+
+## User Value
+
+Selbo manages perp risk while the user is away from the screen.
+
+- Liquidation protection: detect shrinking liquidation buffers and route urgent protection before deeper deliberation.
+- Managed leverage: size and leverage decisions are checked against portfolio risk before execution.
+- Adaptive exits: stop-loss and take-profit levels are persisted and enforced by the watcher heartbeat.
+- Strategic review: slower multi-agent swarms review regime shifts, hedges, funding opportunities, and long-term positioning.
+- Audit trail: closed-trade reasoning is anchored on Arc so decisions can be inspected later.
+
+## Core Flow
+
+```text
+Market data
+  -> Risk Engine
+  -> Watcher
+  -> Fast Trader for urgent actions
+  -> Swarm for strategic actions
+  -> Evaluators and critic
+  -> Paper executor
+  -> Memory + Arc anchor
+```
+
+The watcher is designed to stay cheap. It reads shared market context, user positions, recent news, and the deterministic risk snapshot. Critical risk can bypass the LLM and route directly to protection.
 
 ## Status
 
-- **Stage:** hackathon build, paper-mode only.
-- **Venue:** Hyperliquid testnet for market data; no live order placement.
-- **Custody:** zero. Trades are simulated against Hyperliquid mark prices.
-- **Audit:** every closed trade is anchored to Arc Testnet via Circle SCP.
+- Stage: hackathon build, paper-mode only.
+- Venue: Hyperliquid testnet for market data; no live order placement.
+- Custody: zero. Trades are simulated against Hyperliquid mark prices.
+- Audit: closed trades are anchored to Arc Testnet via Circle Smart Contract Platform.
 
-## Architecture
-
-Decision loops, ordered by latency:
-
-1. **Watcher** (cheap, frequent). Deterministic pre-filter runs first; only triggers a watcher LLM if the filter flags the user may care. Verdicts: `hold | execute | deliberate | risk_emergency`.
-2. **Risk Engine** (deterministic, no LLM). Gates every trade open and runs on every tick. Limits seeded from tier defaults. Returns `allow | deny | emergency_close`.
-3. **Fast Trader** (tactical, sub-second). LLM picks between allowed actions; risk engine clamps size and leverage before insert.
-4. **Strategic Swarm** (16 perp-native personas plus aggregator, tax/compliance, and critic). Triggered on watcher `deliberate` for paying tiers. Handles regime, watchlist, venue, funding-rate arb, portfolio posture.
-5. **Emergency Guard.** Bypasses all LLMs. Liquidation distance, stop-loss / take-profit cross, or daily-loss breach routes straight from pre-filter to Risk Engine emergency-close.
-
-Strategy text stays raw end-to-end. No prompt-based parsing of user intent.
-
-## Tech stack
+## Tech Stack
 
 - Next.js 15, React 18, TypeScript 5.3, Tailwind 4
 - Drizzle ORM + Supabase Postgres
 - Better Auth + Polar billing
-- Circle Developer-Controlled Wallets (auto-provisioned per user)
-- Circle Smart Contract Platform (`PortfolioDecisions` contract anchors `TradeAnchored` events on Arc Testnet)
-- viem 2 + wagmi 2 + ConnectKit (external-wallet view-only)
-- Hyperliquid testnet for market data
+- Circle Developer-Controlled Wallets and Circle Smart Contract Platform
+- Hyperliquid testnet market data
 - Cloudflare Workers via OpenNext
-- TradingView Lightweight Charts
 - LLM tier mapping configured via env; see `.env.example`
 
 Typechecker: `tsgo` (`@typescript/native-preview`), a Go reimplementation of `tsc`.
 
-## Getting started
+## Development
 
 ```bash
-git clone <repo>
-cd agoratest
 bun install
 cp .env.example .dev.vars
-# edit .dev.vars with your Supabase, Circle, Polar, and LLM keys
 bun run db:push
 bun run dev
 ```
 
-The app runs at `http://localhost:3000`. `drizzle-kit` will prompt to confirm any schema migrations during `db:push`.
+The app runs at `http://localhost:3000`. Production secrets are uploaded via `wrangler secret bulk .dev.vars`.
 
-For Cloudflare preview and deploy:
-
-```bash
-bun run preview   # local Workers preview
-bun run deploy    # ship to Cloudflare
-```
-
-Production secrets are uploaded via `wrangler secret bulk .dev.vars`, not per-key `wrangler secret put` calls.
-
-## Quality gates
+## Quality Gates
 
 ```bash
-bun run typecheck   # tsgo --noEmit
-bun run check       # typecheck plus next build
+bun run typecheck
+bun run check
 ```
 
 CI runs typecheck on every push and pull request via `.github/workflows/typecheck.yml`.
 
-## Project layout
+## Project Layout
 
-- `app/` Next.js app router (pages, API routes, server actions)
-- `app/services/` agent services (watcher, fast-trader, swarm, orchestrator, risk)
-- `lib/db/schema/` Drizzle schema modules
-- `lib/data-sources/` external market data clients (Hyperliquid, CoinGecko, news, DefiLlama)
-- `lib/personas/` swarm persona roster
-- `lib/arc/` Arc anchoring (Circle SCP integration)
-- `components/` React UI
+- `app/services/risk-engine.service.ts`: deterministic perp risk snapshot and emergency action classification.
+- `app/services/watcher`: low-cost routing layer. Outputs `hold`, `execute`, `deliberate`, or `risk_emergency`.
+- `app/services/fast-trader`: tactical short-term decision path for urgent watcher signals.
+- `app/services/swarm`: strategic multi-agent decision path for slower portfolio decisions.
+- `app/services/trades/paper-trade.service.ts`: paper execution, safety-trigger enforcement, memory, and Arc anchor handoff.
+- `lib/db/schema/`: Drizzle schema modules.
+- `lib/arc/`: Arc anchoring integration.
 
-## Out of scope (hackathon)
+## M1 Schema Note
 
-- Live venue execution. Paper-mode only.
-- Multi-venue support. Hyperliquid only for now; dYdX, GMX, Vertex are post-submission.
-- User-editable risk limits. Tier defaults only pre-submission.
+M1 includes a safe database rename migration from `solon_instances` to `selbo_instances` and `monitor_ticks.solon_instance_id` to `monitor_ticks.selbo_instance_id`. Do not use `db:push` against an existing database until that migration has been applied or generated into the target environment.
 
-## Submission
+## Out of Scope For Hackathon
 
-Submission date: 2026-05-25. Selbo is framed against **RFB 01 (Perpetual Futures)**.
+- Live venue execution.
+- Multi-venue support beyond Hyperliquid market data.
+- User-editable risk limits beyond tier defaults.

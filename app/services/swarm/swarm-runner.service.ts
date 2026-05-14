@@ -60,6 +60,7 @@ Rules:
 - leverage cap is 10x; default to 1-3x unless your persona explicitly warrants more.
 - stop_loss_pct and take_profit_pct are POSITIVE percentages from entry mark, regardless of side. They become absolute price levels at open and are enforced automatically every cron heartbeat. Use null only when your persona truly wants no auto-stop.
 - safety triggers are plain-English thresholds tied to the same levels you set in if_open, e.g. "ETH below 3100 (4% stop)" or "funding flips positive".
+- The payload includes a deterministic risk snapshot. If it is urgent or critical, capital protection beats new entries.
 
 This is YOUR vote. Don't compromise to consensus; bring your persona's bias. The aggregator reconciles across the swarm.`;
 
@@ -130,3 +131,8 @@ export async function runSwarm(opts: {
 
   return results.filter((r): r is SwarmDecision => r !== null);
 }
+
+
+
+
+
