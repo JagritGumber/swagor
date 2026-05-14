@@ -25,6 +25,13 @@ export async function POST() {
     .select().from(solonInstances).where(eq(solonInstances.userId, user.id)).limit(1);
   if (!instance) return NextResponse.json({ error: "No Solon instance" }, { status: 404 });
 
+  if (!instance.betaAccessGranted) {
+    return NextResponse.json(
+      { ok: false, error: "Beta access required. Redeem a code first." },
+      { status: 403 },
+    );
+  }
+
   const [lastTick] = await db
     .select({ createdAt: monitorTicks.createdAt })
     .from(monitorTicks)

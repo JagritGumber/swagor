@@ -42,6 +42,12 @@ export const solonInstances = pgTable("solon_instances", {
   subscriptionTier: text("subscription_tier").notNull().default("free"),
   billingCustomerId: text("billing_customer_id").unique(),
   billingSubscriptionId: text("billing_subscription_id").unique(),
+  // Private-beta gate. When the BETA_CODE env is set, new signups land
+  // ungranted; redeeming a matching code via /api/beta/redeem flips this
+  // to true and unlocks watcher + orchestrator LLM calls for the user.
+  // When BETA_CODE is unset, ensureSolonInstance auto-grants on signup.
+  betaAccessGranted: boolean("beta_access_granted").notNull().default(false),
+  betaGrantedAt: timestamp("beta_granted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
