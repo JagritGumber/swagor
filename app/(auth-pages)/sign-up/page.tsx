@@ -32,8 +32,9 @@ export default function SignUp() {
       return;
     }
     // Better Auth's emailAndPassword.autoSignIn: true lands the session
-    // cookie already; just route to the dashboard.
-    router.push("/dashboard");
+    // cookie already. Route to /verify-wallet so the user links an external
+    // wallet (Sybil gate); /dashboard redirects there anyway if unlinked.
+    router.push("/verify-wallet");
     router.refresh();
   }
 
