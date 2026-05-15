@@ -6,12 +6,9 @@ import { useAccount, useSignMessage } from "wagmi";
 import { ConnectKitButton } from "connectkit";
 
 /**
- * Mandatory wallet-verification step between sign-up and dashboard.
- * One free Selbo account per external wallet -- enforced by a unique
- * constraint on selbo_instances.external_wallet_address.
- *
- * Flow: ConnectKit -> wagmi useAccount -> fetch SIWE message (server-built,
- * cookie-bound) -> useSignMessage -> POST /api/auth/connect-wallet -> dash.
+ * Wallet verification gate between sign-up and dashboard.
+ * One Selbo account per wallet, enforced by a unique constraint on
+ * selbo_instances.external_wallet_address.
  */
 export default function VerifyWalletPage() {
   const router = useRouter();
@@ -57,16 +54,12 @@ export default function VerifyWalletPage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-md border border-[var(--hairline-strong)] bg-black p-8">
-      <div className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
-        One last step
-      </div>
-      <h1 className="mt-2 text-2xl font-bold uppercase leading-tight text-foreground">
+    <section className="w-full border border-[var(--hairline-strong)] bg-black p-8">
+      <h1 className="text-2xl font-bold uppercase leading-tight text-foreground">
         Verify wallet
       </h1>
-      <p className="mt-3 text-sm text-muted-foreground">
-        Selbo gives one free account per wallet. Connect any EVM wallet and sign a
-        one-time message proving you control it. No transaction is sent.
+      <p className="mt-2 text-sm text-muted-foreground">
+        One Selbo account per wallet. Sign once. No transaction.
       </p>
 
       <div className="mt-6 space-y-3">
@@ -101,8 +94,7 @@ export default function VerifyWalletPage() {
       </div>
 
       <p className="mt-8 text-xs text-muted-foreground">
-        Different from your Selbo trading wallet on Arc -- that one is auto-provisioned
-        and only signs paper-mode trades. This wallet is for identity only.
+        Identity only. Your Selbo trading wallet on Arc is separate and auto-provisioned.
       </p>
     </section>
   );
