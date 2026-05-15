@@ -29,8 +29,8 @@ export function DebugJSON({
         />
       </button>
       {open && (
-        <pre className="max-h-96 overflow-auto border-t border-[var(--hairline)] bg-[#040404] p-3 font-mono text-[11px] leading-relaxed text-foreground">
-          {JSON.stringify(value, null, 2)}
+        <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words border-t border-[var(--hairline)] bg-[#040404] p-3 font-mono text-[11px] leading-relaxed text-foreground">
+          {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
         </pre>
       )}
     </div>

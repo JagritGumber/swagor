@@ -16,6 +16,7 @@ import { runFastTraderForInstance } from "@/app/services/fast-trader/fast-trader
 import { tierSpec, type Tier } from "@/lib/tiers";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 import { anchorWatcherDecision, type AnchorJsonValue } from "@/lib/arc/anchor";
+import { logLlmCall } from "@/lib/llm/log";
 
 /**
  * Run one watcher tick for a given Selbo instance. Reads Hyperliquid mark
@@ -104,6 +105,14 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     minutesSinceLastTick: lastTick ? Math.floor((Date.now() - new Date(lastTick.createdAt).getTime()) / 60_000) : null,
   });
 
+  let llmCallTrace:
+    | {
+        rawResponse: string;
+        promptTokens: number | undefined;
+        completionTokens: number | undefined;
+      }
+    | null = null;
+
   const parsed: WatcherOutput =
     risk.status === "critical"
       ? {
@@ -125,6 +134,11 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
 
           const raw = completion.choices[0]?.message?.content;
           if (!raw) throw new Error("watcher returned empty response");
+          llmCallTrace = {
+            rawResponse: raw,
+            promptTokens: completion.usage?.prompt_tokens,
+            completionTokens: completion.usage?.completion_tokens,
+          };
           return WATCHER_SCHEMA.parse(JSON.parse(raw));
         })();
 
@@ -158,6 +172,28 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     currentlyWatching: parsed.watching,
   }).where(eq(selboInstances.id, instance.id));
 
+  // Log the watcher LLM call (audit, admin-only surface). Skipped when the
+  // verdict came from the deterministic risk-critical shortcut (no LLM ran).
+  if (tickRow && llmCallTrace) {
+    const trace = llmCallTrace as {
+      rawResponse: string;
+      promptTokens: number | undefined;
+      completionTokens: number | undefined;
+    };
+    await logLlmCall({
+      selboInstanceId: instance.id,
+      tickId: tickRow.id,
+      agentName: "watcher",
+      model: MODELS.WATCHER,
+      systemPrompt: WATCHER_SYSTEM_PROMPT,
+      userMessage: userPayload,
+      rawResponse: trace.rawResponse,
+      parsedOutput: parsed,
+      promptTokens: trace.promptTokens,
+      completionTokens: trace.completionTokens,
+    });
+  }
+
   // Dispatch the trading action BEFORE anchoring -- the anchor is proof of
   // a decision already made, not a gate on it. If Circle is slow, the
   // Fast Trader / cycle trigger has already kicked off; the anchor await
@@ -169,10 +205,10 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
   } else if (parsed.verdict === "deliberate") {
     // Free tier: route deliberate to the cheap Fast Trader instead of the
     // expensive swarm. Better than dropping the signal entirely.
-    runFastTraderForInstance(instance as SelboInstance, `[free-tier downgrade] ${parsed.rationale}`)
+    runFastTraderForInstance(instance as SelboInstance, `[free-tier downgrade] ${parsed.rationale}`, tickRow?.id)
       .catch((e) => console.error("[watcher] fast-trader (downgrade) failed:", e));
   } else if (parsed.verdict === "execute" || parsed.verdict === "risk_emergency") {
-    runFastTraderForInstance(instance as SelboInstance, parsed.rationale)
+    runFastTraderForInstance(instance as SelboInstance, parsed.rationale, tickRow?.id)
       .catch((e) => console.error("[watcher] fast-trader failed:", e));
   }
 
