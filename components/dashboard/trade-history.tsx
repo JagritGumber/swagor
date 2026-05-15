@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import type { ClosedTradeView } from "@/app/services/trades.service";
+import { TradeReasoningModal } from "@/components/dashboard/trade-reasoning-modal";
 
 const ARC_TX = "https://testnet.arcscan.app/tx/";
 
@@ -21,12 +25,13 @@ function fmtTime(d: Date | null): string {
 }
 
 /**
- * Closed-trade history. Server-rendered; no client polling needed since
- * the list only grows on trade close events (rare relative to ticks).
- * Each row links to its Arc anchor tx when the on-chain hash has been
- * resolved by the poller.
+ * Closed-trade history. Each row is a click target that opens the
+ * TradeReasoningModal with the linked watcher tick + proposal + Arc
+ * anchors. Arc anchor links inside the row stop propagation so they
+ * still navigate to Arcscan instead of opening the modal.
  */
 export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
+  const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
   if (trades.length === 0) return null;
 
   return (
@@ -60,7 +65,11 @@ export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
                     ? "text-[var(--neon-green)]"
                     : "text-[var(--neon-red)]";
               return (
-                <tr key={t.tradeId} className="font-mono text-xs">
+                <tr
+                  key={t.tradeId}
+                  onClick={() => setSelectedTradeId(t.tradeId)}
+                  className="cursor-pointer font-mono text-xs transition hover:bg-[#080808]"
+                >
                   <td className="py-3 text-left text-foreground">{t.asset}</td>
                   <td className="py-3 text-left uppercase text-muted-foreground">{t.side}</td>
                   <td className="py-3 text-right text-foreground tabular-nums">${t.amountUsd.toFixed(2)}</td>
@@ -100,6 +109,16 @@ export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
           </tbody>
         </table>
       </div>
+      <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+        Click any row to see why Selbo opened and closed the trade.
+      </p>
+      <TradeReasoningModal
+        tradeId={selectedTradeId}
+        open={selectedTradeId !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedTradeId(null);
+        }}
+      />
     </section>
   );
 }
@@ -113,6 +132,7 @@ function ArcChip({ hash }: { hash: string | null }) {
       href={`${ARC_TX}${hash}`}
       target="_blank"
       rel="noreferrer"
+      onClick={(e) => e.stopPropagation()}
       className="inline-flex items-center gap-1 text-[var(--neon-cyan)] underline-offset-4 hover:underline"
       title={hash}
     >
