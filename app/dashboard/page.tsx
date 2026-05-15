@@ -14,6 +14,7 @@ import { PositionsTable } from "@/components/dashboard/positions-table";
 import { SelboWalletCard } from "@/components/dashboard/selbo-wallet-card";
 import { WatchingStrip } from "@/components/dashboard/watching-strip";
 import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
+import { RiskStatusCard } from "@/components/dashboard/risk-status-card";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { ProfileSettings } from "@/components/dashboard/profile-settings";
 import { BetaGate } from "@/components/dashboard/beta-gate";
@@ -58,16 +59,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24">
-      <SelboWalletCard instance={instance} />
-      <LifetimeStats stats={lifetime} />
+      <RiskStatusCard />
       <WatchingStrip />
       {isDev && <WatcherDevControls />}
-      <ArcActivityCard />
-      <MarketChartCard watching={watching} />
       <PositionsTable positions={positions} />
       <TradeHistory trades={closedTrades} />
-      <GoalForm walletAddress={addr} initialStrategy={instance.strategyText} />
+      <MarketChartCard watching={watching} />
+      <ArcActivityCard />
+      <LifetimeStats stats={lifetime} />
       <DecisionsSection walletAddress={addr} />
+      <SelboWalletCard instance={instance} />
+      <GoalForm walletAddress={addr} initialStrategy={instance.strategyText} />
       <ProfileSettings initialUsername={instance.username ?? null} initialPublic={instance.publicProfile} />
       <KillSwitchCard initialActive={instance.killSwitchActive} />
     </div>

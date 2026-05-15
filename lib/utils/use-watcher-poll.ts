@@ -2,13 +2,50 @@
 
 import { useEffect, useState } from "react";
 
+export type WatcherRiskSnapshot = {
+  status: "normal" | "watch" | "urgent" | "critical";
+  emergencyAction: "none" | "tighten_stops" | "reduce_position" | "close_position";
+  summary: string;
+  closestLiquidationDistancePct: number | null;
+  totalExposureUsd: number;
+  reasons: string[];
+  account: {
+    equityUsd: number | null;
+    withdrawableUsd: number | null;
+    marginUsagePct: number | null;
+  };
+  positions: Array<{
+    asset: string;
+    side: string;
+    sizeUsd: number | null;
+    leverage: number | null;
+    liquidationDistancePct: number | null;
+    pnlPct: number | null;
+    severity: "normal" | "watch" | "urgent" | "critical";
+    reasons: string[];
+  }>;
+};
+
+export type WatcherContext = {
+  perps?: Array<{
+    symbol: string;
+    mid?: number | string | null;
+    funding_hourly?: number | null;
+  }>;
+  risk?: WatcherRiskSnapshot;
+  positionCount?: number;
+  newsCount?: number;
+  tier?: string;
+};
+
 export type WatcherTick = {
   id: string;
-  verdict: "hold" | "execute" | "deliberate" | "escalate";
+  verdict: "hold" | "execute" | "deliberate" | "escalate" | "risk_emergency";
   rationale: string;
   nextCheckSeconds: number;
   watching: string[];
   createdAt: string;
+  context: WatcherContext | null;
 };
 
 export type WatcherRecent = {
