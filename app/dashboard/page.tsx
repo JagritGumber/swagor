@@ -12,7 +12,8 @@ import { MarketStateCard } from "@/components/dashboard/market-state-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
 import { ActivityTape } from "@/components/dashboard/activity-tape";
 import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
-import { RiskStatusCard } from "@/components/dashboard/risk-status-card";
+import { BalanceRisk } from "@/components/dashboard/bento/balance-risk";
+import { EquityCurve } from "@/components/dashboard/bento/equity-curve";
 import { StrategyBriefCard } from "@/components/dashboard/strategy-brief-card";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { DisclosureCard } from "@/components/dashboard/disclosure-card";
@@ -54,17 +55,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
     <div className="mx-auto max-w-7xl pb-24">
       <div className="grid grid-cols-12 gap-3">
         <div className="col-span-12 lg:col-span-8"><ActivityTape /></div>
-        <div className="col-span-12 lg:col-span-4"><RiskStatusCard /></div>
+        <div className="col-span-12 lg:col-span-4"><BalanceRisk /></div>
 
         <div className="col-span-12 lg:col-span-8"><MarketChartCard watching={watching} /></div>
-        <div className="col-span-12 lg:col-span-4"><MarketStateCard /></div>
+        <div className="col-span-12 lg:col-span-4"><EquityCurve /></div>
 
         <div className="col-span-12 lg:col-span-6">
           <StrategyBriefCard strategy={instance.strategyText} watching={watching} />
         </div>
         <div className="col-span-12 lg:col-span-6"><PositionsTable positions={positions} /></div>
 
-        <div className="col-span-12">
+        <div className="col-span-12 lg:col-span-6">
+          <DisclosureCard title="Market state">
+            <MarketStateCard />
+          </DisclosureCard>
+        </div>
+        <div className="col-span-12 lg:col-span-6">
           <DisclosureCard title="Trade history" subtitle={`${closedTrades.length} closed`}>
             <TradeHistory trades={closedTrades} admin={admin} />
           </DisclosureCard>

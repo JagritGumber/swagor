@@ -1,7 +1,7 @@
 import "server-only";
 
 import { db } from "@/lib/db/client";
-import { monitorTicks, selboInstances, type SelboInstance } from "@/lib/db/schema";
+import { monitorTicks, selboInstances, equitySnapshots, type SelboInstance } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { watcherLlm, MODELS } from "@/lib/llm-client";
 import {
@@ -86,6 +86,20 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     unrealized_pnl: p.position.unrealizedPnl,
     margin_used: p.position.marginUsed,
   })) ?? [];
+
+  // Equity snapshot for the dashboard equity curve + balance delta. Audit
+  // write; failure must not break the tick.
+  try {
+    await db.insert(equitySnapshots).values({
+      userId: instance.userId,
+      selboInstanceId: instance.id,
+      equityUsd: String(clearing?.marginSummary.accountValue ?? instance.simulatedBalanceUsd),
+      withdrawableUsd: String(clearing?.withdrawable ?? instance.simulatedBalanceUsd),
+      openPositionsCount: positions.length,
+    });
+  } catch (err) {
+    console.error("[watcher] equity snapshot insert failed:", err);
+  }
 
   const risk = evaluatePerpRisk({
     account: {
