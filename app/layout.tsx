@@ -3,6 +3,7 @@ import { NavBrand } from "@/components/nav-brand";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
+import { Web3Provider } from "@/components/providers/web3-provider";
 import "./globals.css";
 
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans-family" });
@@ -79,6 +80,7 @@ export default async function RootLayout({
           forcedTheme="dark"
           disableTransitionOnChange
         >
+          <Web3Provider>
           <Toaster expand theme="dark" />
           <div className="flex min-h-screen flex-col bg-black">
               <nav className="fixed inset-x-0 top-0 z-50 h-16 border-b border-[var(--hairline-strong)] bg-black/55 backdrop-blur-xl">
@@ -99,6 +101,7 @@ export default async function RootLayout({
               <div className="w-full max-w-screen-2xl">{children}</div>
             </main>
           </div>
+          </Web3Provider>
         </ThemeProvider>
       </body>
     </html>

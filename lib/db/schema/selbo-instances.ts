@@ -42,6 +42,10 @@ export const selboInstances = pgTable("selbo_instances", {
   subscriptionTier: text("subscription_tier").notNull().default("free"),
   billingCustomerId: text("billing_customer_id").unique(),
   billingSubscriptionId: text("billing_subscription_id").unique(),
+  // External wallet linked at signup via SIWE-style signature. Unique so one
+  // wallet maps to exactly one account (Sybil resistance). Null until the
+  // user completes /verify-wallet; dashboard redirects them there if null.
+  externalWalletAddress: text("external_wallet_address").unique(),
   // Private-beta gate. When the BETA_CODE env is set, new signups land
   // ungranted; redeeming a matching code via /api/beta/redeem flips this
   // to true and unlocks watcher + orchestrator LLM calls for the user.

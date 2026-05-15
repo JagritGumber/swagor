@@ -28,6 +28,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const user = session.user;
 
   const instance = await ensureSelboInstance(user.id);
+  // Mandatory wallet-verification gate. Users who signed up before this
+  // landed have a NULL external_wallet_address and get routed to verify.
+  if (!instance.externalWalletAddress) {
+    redirect("/verify-wallet");
+  }
   const addr = instance.circleWalletAddress;
   const devParam = (await searchParams).dev?.toLowerCase() ?? "";
   // Dev strip auto-shows locally; in prod requires ?dev=1 / true / yes.
