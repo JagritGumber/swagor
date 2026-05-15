@@ -98,6 +98,14 @@ export default async function RootLayout({
             <main className="flex flex-1 flex-col items-center pt-24 px-4">
               <div className="w-full max-w-screen-2xl">{children}</div>
             </main>
+            <footer className="border-t border-[var(--hairline)] bg-black py-4">
+              <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <span>Selbo · paper mode · testnet</span>
+                <a href="/legal/disclaimer" className="hover:text-[var(--neon-cyan)]">
+                  Disclaimer
+                </a>
+              </div>
+            </footer>
           </div>
           </Web3Provider>
         </ThemeProvider>

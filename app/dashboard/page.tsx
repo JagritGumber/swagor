@@ -18,6 +18,7 @@ import { StrategyBriefCard } from "@/components/dashboard/strategy-brief-card";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { DisclosureCard } from "@/components/dashboard/disclosure-card";
 import { BetaGate } from "@/components/dashboard/beta-gate";
+import { TosGate } from "@/components/legal/tos-gate";
 import { isAdmin } from "@/lib/auth/admin";
 
 type SearchParams = Promise<{ dev?: string }>;
@@ -31,6 +32,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
 
   const instance = await ensureSelboInstance(user.id);
   if (!instance.externalWalletAddress) redirect("/verify-wallet");
+
+  // Real ToS gate: dashboard data is not fetched and the page does not
+  // render until the user accepts. Earlier version overlaid TosGate over
+  // the rendered dashboard, which could be bypassed via dev tools. Now
+  // the gate is the only thing the server returns when tosAcceptedAt is null.
+  if (!instance.tosAcceptedAt) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6 pb-24">
+        <TosGate />
+      </div>
+    );
+  }
+
   const addr = instance.circleWalletAddress;
   const devParam = (await searchParams).dev?.toLowerCase() ?? "";
   const isDev = process.env.NODE_ENV !== "production" || DEV_TRUTHY.has(devParam);
