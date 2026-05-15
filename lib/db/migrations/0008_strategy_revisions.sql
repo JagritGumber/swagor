@@ -13,3 +13,10 @@ CREATE TABLE IF NOT EXISTS strategy_revisions (
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS strategy_revisions_user_id_created_at_idx
   ON strategy_revisions(user_id, created_at ASC);
+
+--> statement-breakpoint
+ALTER TABLE strategy_revisions
+  DROP CONSTRAINT IF EXISTS strategy_revisions_role_check;
+ALTER TABLE strategy_revisions
+  ADD CONSTRAINT strategy_revisions_role_check
+  CHECK (role IN ('user', 'selbo'));

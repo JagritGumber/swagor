@@ -60,12 +60,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `message too long (max ${MAX_MESSAGE_CHARS} chars)` }, { status: 400 });
   }
 
-  await db.insert(strategyRevisions).values({
-    userId: session.user.id, role: "user", message,
+  // User-side write is atomic: revision row + cache update commit together.
+  // LLM paraphrase runs OUTSIDE the transaction because it can take
+  // seconds and we do not want to hold a transaction open across a
+  // network call to the provider.
+  await db.transaction(async (tx) => {
+    await tx.insert(strategyRevisions).values({
+      userId: session.user.id, role: "user", message,
+    });
+    await tx.update(selboInstances)
+      .set({ strategyText: message })
+      .where(eq(selboInstances.userId, session.user.id));
   });
-  await db.update(selboInstances)
-    .set({ strategyText: message })
-    .where(eq(selboInstances.userId, session.user.id));
 
   let reply = "Got it. I will adjust on the next tick.";
   try {

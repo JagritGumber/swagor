@@ -23,6 +23,7 @@ export function StrategyChat({ initialStrategy, watching }: { initialStrategy: s
   const scrollRef = useRef<HTMLDivElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   // Esc closes the drawer.
   useEffect(() => {
@@ -36,14 +37,21 @@ export function StrategyChat({ initialStrategy, watching }: { initialStrategy: s
 
   // Focus trap: pull focus back into the drawer if it escapes. Initial
   // focus lands on the textarea so the user can start typing right away.
+  // When the textarea is disabled (mid-send) it cannot receive focus, so
+  // fall back to the close-X button to keep focus inside the drawer.
   useEffect(() => {
     if (!open) return;
-    textareaRef.current?.focus();
+    const pullBack = () => {
+      const t = textareaRef.current;
+      if (t && !t.disabled) { t.focus(); return; }
+      closeBtnRef.current?.focus();
+    };
+    pullBack();
     const onFocusIn = (e: FocusEvent) => {
       const drawerEl = drawerRef.current;
       if (!drawerEl || !e.target) return;
       if (drawerEl.contains(e.target as Node)) return;
-      textareaRef.current?.focus();
+      pullBack();
     };
     document.addEventListener("focusin", onFocusIn);
     return () => document.removeEventListener("focusin", onFocusIn);
@@ -126,7 +134,13 @@ export function StrategyChat({ initialStrategy, watching }: { initialStrategy: s
               <span className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
                 Strategy chat
               </span>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="p-1 text-muted-foreground hover:text-[var(--neon-cyan)]">
+              <button
+                ref={closeBtnRef}
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="p-1 text-muted-foreground hover:text-[var(--neon-cyan)]"
+              >
                 <X className="h-4 w-4" />
               </button>
             </header>

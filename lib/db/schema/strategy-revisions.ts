@@ -1,4 +1,5 @@
-import { pgTable, uuid, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, check } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 /**
  * Multi-turn strategy chat. Each user-role row is a strategy revision
@@ -17,7 +18,12 @@ export const strategyRevisions = pgTable("strategy_revisions", {
   role: text("role", { enum: ["user", "selbo"] }).notNull(),
   message: text("message").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  roleCheck: check(
+    "strategy_revisions_role_check",
+    sql`${table.role} IN ('user', 'selbo')`,
+  ),
+}));
 
 export type StrategyRevision = typeof strategyRevisions.$inferSelect;
 export type NewStrategyRevision = typeof strategyRevisions.$inferInsert;
