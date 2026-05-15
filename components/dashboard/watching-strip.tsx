@@ -30,7 +30,7 @@ function countdownString(target: Date): string {
  * current watchlist, and a live countdown to the next check. Cadence-aware
  * polling via useWatcherPoll.
  */
-export function WatchingStrip({ strategy }: { strategy: string }) {
+export function WatchingStrip({ strategy, admin = false }: { strategy: string; admin?: boolean }) {
   const data = useWatcherPoll({ limit: 10 });
   const [now, setNow] = useState(() => Date.now());
   const [selectedTick, setSelectedTick] = useState<WatcherTick | null>(null);
@@ -98,6 +98,7 @@ export function WatchingStrip({ strategy }: { strategy: string }) {
         <TickDetailPanel
           tick={selectedTick}
           strategy={strategy}
+          admin={admin}
           onClose={() => setSelectedTick(null)}
         />
       )}

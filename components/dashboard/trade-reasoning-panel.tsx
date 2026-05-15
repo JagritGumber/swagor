@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X, ArrowUpRight } from "lucide-react";
+import { DebugJSON } from "@/components/dashboard/debug-json";
 
 const ARC_TX = "https://testnet.arcscan.app/tx/";
 const SECTION_HEAD =
@@ -71,9 +72,11 @@ function ArcLink({ hash, label }: { hash: string | null; label: string }) {
  */
 export function TradeReasoningPanel({
   tradeId,
+  admin = false,
   onClose,
 }: {
   tradeId: string;
+  admin?: boolean;
   onClose: () => void;
 }) {
   const [data, setData] = useState<ReasoningBundle | null>(null);
@@ -231,6 +234,22 @@ export function TradeReasoningPanel({
                 {trade.openAnchorTx && <ArcLink hash={trade.openOnchainTxHash} label="Open anchor" />}
                 {trade.arcAnchorTx && <ArcLink hash={trade.arcOnchainTxHash} label="Close anchor" />}
               </div>
+            </div>
+          )}
+
+          {admin && (
+            <div className="mt-5 border-t border-[var(--hairline)] pt-4">
+              <div className={SECTION_HEAD}>Debug (admin)</div>
+              <DebugJSON title="Trade row (raw)" value={trade} />
+              {data?.openTick && (
+                <DebugJSON title="Open-trigger watcher tick (raw)" value={data.openTick} />
+              )}
+              {data?.closeTick && (
+                <DebugJSON title="Close-window watcher tick (raw)" value={data.closeTick} />
+              )}
+              {data?.proposal && (
+                <DebugJSON title="Trade proposal (raw)" value={data.proposal} />
+              )}
             </div>
           )}
         </>
