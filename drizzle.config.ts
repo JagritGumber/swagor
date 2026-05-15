@@ -36,6 +36,10 @@ export default defineConfig({
     "memory_entries",
     "reviewer_track_records",
     "tweet_drafts",
+    "llm_calls",
+    "equity_snapshots",
+    "strategy_revisions",
+    "tick_stages",
     // Better Auth
     "user",
     "session",
