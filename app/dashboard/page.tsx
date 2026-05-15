@@ -15,7 +15,7 @@ import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
 import { BalanceRisk } from "@/components/dashboard/bento/balance-risk";
 import { EquityCurve } from "@/components/dashboard/bento/equity-curve";
 import { MemoryCards } from "@/components/dashboard/bento/memory-cards";
-import { StrategyBriefCard } from "@/components/dashboard/strategy-brief-card";
+import { StrategyChat } from "@/components/dashboard/bento/strategy-chat";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { DisclosureCard } from "@/components/dashboard/disclosure-card";
 import { BetaGate } from "@/components/dashboard/beta-gate";
@@ -76,7 +76,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
         <div className="col-span-12 lg:col-span-4"><EquityCurve /></div>
 
         <div className="col-span-12 lg:col-span-6">
-          <StrategyBriefCard strategy={instance.strategyText} watching={watching} />
+          <StrategyChat initialStrategy={instance.strategyText} watching={watching} />
         </div>
         <div className="col-span-12 lg:col-span-6"><PositionsTable positions={positions} /></div>
 
