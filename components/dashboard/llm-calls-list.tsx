@@ -40,12 +40,16 @@ export function LlmCallsList({
 }) {
   const [rows, setRows] = useState<LlmCallRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Stabilize the array prop for the effect dep: parent literals like
+  // [a, b].filter(...) get a new identity every render, so depending on
+  // the array directly causes a refetch on each parent re-render.
+  const tickIdsKey = tickIds?.join(",") ?? "";
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (tickId) params.set("tickId", tickId);
     if (tradeId) params.set("tradeId", tradeId);
-    if (tickIds && tickIds.length > 0) params.set("tickIds", tickIds.join(","));
+    if (tickIdsKey) params.set("tickIds", tickIdsKey);
     if ([...params.keys()].length === 0) return;
     let cancelled = false;
     fetch(`/api/admin/llm-calls?${params.toString()}`, { cache: "no-store" })
@@ -62,7 +66,7 @@ export function LlmCallsList({
     return () => {
       cancelled = true;
     };
-  }, [tickId, tradeId, tickIds]);
+  }, [tickId, tradeId, tickIdsKey]);
 
   if (error) {
     return (
