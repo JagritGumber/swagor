@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  createChart, AreaSeries, type IChartApi, type LineData, type Time,
+  createChart, AreaSeries,
+  type IChartApi, type ISeriesApi, type LineData, type Time,
 } from "lightweight-charts";
 
 type EquityRecent = {
@@ -25,14 +26,15 @@ function fmtUsd(n: number | null): string {
 
 /**
  * Wallet equity area chart. Fetches /api/equity/recent for the selected
- * range. With a single snapshot, renders a placeholder card with the
- * one value visible so the user sees the writer is alive.
+ * range. Keeps the chart and series in refs so range/data updates call
+ * `series.setData(...)` instead of tearing down and recreating the chart.
  */
 export function EquityCurve() {
   const [range, setRange] = useState<Range>(1);
   const [data, setData] = useState<EquityRecent | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,8 +46,10 @@ export function EquityCurve() {
     return () => { cancelled = true; };
   }, [range]);
 
+  // Create the chart instance ONCE when the container mounts. Updates
+  // happen via setData on the existing series.
   useEffect(() => {
-    if (!containerRef.current || !data || data.snapshots.length < 2) return;
+    if (!containerRef.current) return;
     const container = containerRef.current;
     const chart = createChart(container, {
       width: container.clientWidth, height: 180,
@@ -59,20 +63,27 @@ export function EquityCurve() {
       lineColor: CYAN, lineWidth: 2,
       topColor: "rgba(0,212,255,0.30)", bottomColor: "rgba(0,212,255,0)",
     });
-    const points: LineData[] = data.snapshots.map((s) => ({
-      time: Math.floor(new Date(s.ts).getTime() / 1000) as Time,
-      value: s.equityUsd,
-    }));
-    series.setData(points);
-    chart.timeScale().fitContent();
     chartRef.current = chart;
+    seriesRef.current = series;
     const onResize = () => chart.applyOptions({ width: container.clientWidth });
     window.addEventListener("resize", onResize);
     return () => {
       window.removeEventListener("resize", onResize);
       chart.remove();
       chartRef.current = null;
+      seriesRef.current = null;
     };
+  }, []);
+
+  // Push new data into the existing series whenever it changes.
+  useEffect(() => {
+    if (!seriesRef.current || !chartRef.current || !data || data.snapshots.length < 2) return;
+    const points: LineData[] = data.snapshots.map((s) => ({
+      time: Math.floor(new Date(s.ts).getTime() / 1000) as Time,
+      value: s.equityUsd,
+    }));
+    seriesRef.current.setData(points);
+    chartRef.current.timeScale().fitContent();
   }, [data]);
 
   const last = data?.snapshots[data.snapshots.length - 1];
@@ -114,15 +125,16 @@ export function EquityCurve() {
           : `${delta >= 0 ? "+" : ""}${fmtUsd(delta)} since start of range`}
       </div>
 
-      {data && data.snapshots.length < 2 ? (
-        <div className="mt-3 flex flex-1 items-center justify-center border border-dashed border-[var(--hairline)] p-3">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            Need at least 2 snapshots to draw a curve
-          </p>
-        </div>
-      ) : (
-        <div ref={containerRef} className="mt-3 w-full" />
-      )}
+      <div className="relative mt-3 w-full min-h-[180px]">
+        <div ref={containerRef} className="w-full" />
+        {data && data.snapshots.length < 2 && (
+          <div className="absolute inset-0 flex items-center justify-center border border-dashed border-[var(--hairline)] bg-black/80">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Need at least 2 snapshots to draw a curve
+            </p>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

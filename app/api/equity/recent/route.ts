@@ -34,7 +34,8 @@ export async function GET(request: Request) {
     .select()
     .from(equitySnapshots)
     .where(and(eq(equitySnapshots.userId, user.id), gte(equitySnapshots.takenAt, since)))
-    .orderBy(asc(equitySnapshots.takenAt));
+    .orderBy(asc(equitySnapshots.takenAt))
+    .limit(5000);
 
   if (rows.length === 0) {
     return NextResponse.json({
