@@ -32,6 +32,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
 
   const instance = await ensureSelboInstance(user.id);
   if (!instance.externalWalletAddress) redirect("/verify-wallet");
+
+  // Real ToS gate: dashboard data is not fetched and the page does not
+  // render until the user accepts. Earlier version overlaid TosGate over
+  // the rendered dashboard, which could be bypassed via dev tools. Now
+  // the gate is the only thing the server returns when tosAcceptedAt is null.
+  if (!instance.tosAcceptedAt) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6 pb-24">
+        <TosGate />
+      </div>
+    );
+  }
+
   const addr = instance.circleWalletAddress;
   const devParam = (await searchParams).dev?.toLowerCase() ?? "";
   const isDev = process.env.NODE_ENV !== "production" || DEV_TRUTHY.has(devParam);
@@ -54,7 +67,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
 
   return (
     <div className="mx-auto max-w-7xl pb-24">
-      {!instance.tosAcceptedAt && <TosGate />}
       <div className="grid grid-cols-12 gap-3">
         <div className="col-span-12 lg:col-span-8"><ActivityTape /></div>
         <div className="col-span-12 lg:col-span-4"><BalanceRisk /></div>
