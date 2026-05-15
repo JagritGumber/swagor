@@ -70,7 +70,19 @@ export default function VerifyWalletPage() {
       </p>
 
       <div className="mt-6 space-y-3">
-        <ConnectKitButton />
+        <ConnectKitButton.Custom>
+          {({ show, isConnected: kitConnected, truncatedAddress, ensName }) => (
+            <button
+              type="button"
+              onClick={show}
+              className="inline-flex h-11 w-full items-center justify-center border border-[var(--hairline-strong)] bg-black px-4 font-mono text-xs uppercase tracking-[0.18em] text-foreground transition hover:border-[var(--neon-cyan)] hover:text-[var(--neon-cyan)]"
+            >
+              {kitConnected
+                ? `Connected · ${ensName ?? truncatedAddress}`
+                : "Connect wallet"}
+            </button>
+          )}
+        </ConnectKitButton.Custom>
 
         <button
           type="button"
