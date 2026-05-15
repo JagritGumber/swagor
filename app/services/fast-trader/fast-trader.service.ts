@@ -1,8 +1,8 @@
 import "server-only";
 
 import { db } from "@/lib/db/client";
-import { trades } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { agentReasoning, trades } from "@/lib/db/schema";
+import { and, desc, eq } from "drizzle-orm";
 import { traderLlm, MODELS } from "@/lib/llm-client";
 import { fetchAllMids, fetchMetaAndCtxs, fetchClearinghouse } from "@/lib/data-sources/hyperliquid";
 import type { SelboInstance } from "@/lib/db/schema/selbo-instances";
@@ -13,7 +13,61 @@ import {
 } from "@/app/services/trades/paper-trade.service";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 import { logLlmCall } from "@/lib/llm/log";
-import { buildMarketFeatureSnapshot } from "@/lib/market-features";
+import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
+import { monitorTicks } from "@/lib/db/schema";
+import { evaluateSafetyRails, type SafetyBlock } from "@/app/services/safety-rails/safety-check";
+
+function previousMarketFeatures(row: { context: unknown } | undefined): MarketFeatureSnapshot | null {
+  const context = row?.context as { marketFeatures?: MarketFeatureSnapshot } | null | undefined;
+  return context?.marketFeatures ?? null;
+}
+
+async function persistSafetyBlock({
+  instance,
+  tickId,
+  decision,
+  block,
+  marketFeatures,
+}: {
+  instance: SelboInstance;
+  tickId: string | undefined;
+  decision: FastTraderDecision;
+  block: SafetyBlock;
+  marketFeatures: MarketFeatureSnapshot;
+}) {
+  const safetyEvent = {
+    ...block,
+    createdAt: new Date().toISOString(),
+  };
+
+  await db.insert(agentReasoning).values({
+    cycleId: null,
+    agentName: "safety-rail",
+    model: "deterministic",
+    input: {
+      selboInstanceId: instance.id,
+      decision,
+      marketFeatures,
+    },
+    output: safetyEvent,
+  });
+
+  if (!tickId) return;
+  const [tick] = await db
+    .select({ context: monitorTicks.context })
+    .from(monitorTicks)
+    .where(eq(monitorTicks.id, tickId))
+    .limit(1);
+  const context = (tick?.context ?? {}) as Record<string, unknown>;
+  await db.update(monitorTicks)
+    .set({
+      context: {
+        ...context,
+        safetyBlock: safetyEvent,
+      },
+    })
+    .where(eq(monitorTicks.id, tickId));
+}
 
 /**
  * Run the Fast Trader for a Selbo instance. Fetches fresh Hyperliquid state,
@@ -26,10 +80,15 @@ export async function runFastTraderForInstance(
   watcherRationale: string,
   tickId?: string,
 ): Promise<FastTraderDecision> {
-  const [mids, meta, clearing] = await Promise.all([
+  const [mids, meta, clearing, lastTick] = await Promise.all([
     fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
     fetchMetaAndCtxs().catch(() => ({ universe: [], ctxs: [] })),
     fetchClearinghouse(instance.circleWalletAddress).catch(() => null),
+    db.select().from(monitorTicks)
+      .where(eq(monitorTicks.selboInstanceId, instance.id))
+      .orderBy(desc(monitorTicks.createdAt))
+      .limit(1)
+      .then((r) => r[0]),
   ]);
 
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
@@ -48,6 +107,7 @@ export async function runFastTraderForInstance(
     mids,
     universe: meta.universe,
     ctxs: meta.ctxs,
+    previousSnapshot: previousMarketFeatures(lastTick),
   }).catch((err) => {
     console.error("[fast-trader] market feature build failed:", err);
     return {
@@ -151,6 +211,23 @@ export async function runFastTraderForInstance(
   const rationale = `${watcherRationale} | trader: ${decision.rationale}`;
 
   if (decision.action === "open_long" || decision.action === "open_short") {
+    const safety = evaluateSafetyRails(decision, marketFeatures);
+    if (!safety.allow) {
+      await persistSafetyBlock({
+        instance,
+        tickId,
+        decision,
+        block: safety.block,
+        marketFeatures,
+      });
+      console.warn(`[fast-trader] SAFETY BLOCK for ${instance.id}: ${safety.block.reason}`);
+      return {
+        ...decision,
+        action: "hold",
+        rationale: `${decision.rationale} | Safety rail blocked: ${safety.block.reason}`,
+      };
+    }
+
     const side = decision.action === "open_long" ? "long" : "short";
     // Translate the trader's percentage triggers into absolute price levels
     // for the safety enforcer. Pcts are positive numbers regardless of side.

@@ -22,7 +22,12 @@ import {
   closePaperTrade,
 } from "@/app/services/trades/paper-trade.service";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
-import { buildMarketFeatureSnapshot } from "@/lib/market-features";
+import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
+
+function previousMarketFeatures(row: { context: unknown } | undefined): MarketFeatureSnapshot | null {
+  const context = row?.context as { marketFeatures?: MarketFeatureSnapshot } | null | undefined;
+  return context?.marketFeatures ?? null;
+}
 
 /**
  * Runs the deliberation chain for a single cycle: swarm -> aggregator ->
@@ -95,6 +100,7 @@ export async function runCycle(cycleId: string): Promise<void> {
       mids,
       universe: meta.universe,
       ctxs: meta.ctxs,
+      previousSnapshot: previousMarketFeatures(lastTick),
     }).catch((err) => {
       console.error("[orchestrator] market feature build failed:", err);
       return {

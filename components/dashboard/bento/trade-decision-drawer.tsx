@@ -43,6 +43,12 @@ type SymbolFeature = {
 type TickContext = {
   marketFeatures?: { symbols?: SymbolFeature[] };
   risk?: RiskContext;
+  safetyBlock?: {
+    code?: string;
+    symbol?: string;
+    attemptedAction?: string;
+    reason?: string;
+  };
 } | null;
 
 type TickRow = {
@@ -110,6 +116,7 @@ export function TradeDecisionDrawer({
   const openCtx = data?.openTick?.context;
   const symbols = openCtx?.marketFeatures?.symbols ?? [];
   const risk = openCtx?.risk;
+  const safetyBlock = openCtx?.safetyBlock;
 
   return (
     <div className="mt-4 border border-[var(--hairline-strong)] bg-[#080808] p-5">
@@ -196,6 +203,18 @@ export function TradeDecisionDrawer({
                 <div><div className={SUB_HEAD}>Closest liq</div><div className="mt-0.5 tabular-nums text-foreground">{risk.closestLiquidationDistancePct === null || risk.closestLiquidationDistancePct === undefined ? "n/a" : `${fmtNum(risk.closestLiquidationDistancePct)}%`}</div></div>
               </div>
               {risk.summary && <p className="mt-3 text-sm leading-relaxed text-foreground">{risk.summary}</p>}
+            </div>
+          )}
+
+          {safetyBlock?.reason && (
+            <div className="mt-5 border-t border-[var(--hairline)] pt-4">
+              <div className={SECTION_HEAD}>Safety rail</div>
+              <p className="mt-3 text-sm leading-relaxed text-foreground">
+                {safetyBlock.reason}
+              </p>
+              <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                {(safetyBlock.code ?? "safety_block").replace(/_/g, " ")}
+              </div>
             </div>
           )}
 

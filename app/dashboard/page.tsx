@@ -15,6 +15,7 @@ import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
 import { BalanceRisk } from "@/components/dashboard/bento/balance-risk";
 import { EquityCurve } from "@/components/dashboard/bento/equity-curve";
 import { MemoryCards } from "@/components/dashboard/bento/memory-cards";
+import { PipelineNow } from "@/components/dashboard/bento/pipeline-now";
 import { StrategyChat } from "@/components/dashboard/bento/strategy-chat";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { DisclosureCard } from "@/components/dashboard/disclosure-card";
@@ -80,11 +81,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
         </div>
         <div className="col-span-12 lg:col-span-6"><PositionsTable positions={positions} /></div>
 
-        <div className="col-span-12 lg:col-span-6">
+        <div className="col-span-12 lg:col-span-8">
+          <DisclosureCard title="Pipeline">
+            <PipelineNow />
+          </DisclosureCard>
+        </div>
+        <div className="col-span-12 lg:col-span-4">
           <DisclosureCard title="Market state">
             <MarketStateCard />
           </DisclosureCard>
         </div>
+
         <div className="col-span-12 lg:col-span-6">
           <DisclosureCard title="Trade history" subtitle={`${closedTrades.length} closed`}>
             <TradeHistory trades={closedTrades} admin={admin} />

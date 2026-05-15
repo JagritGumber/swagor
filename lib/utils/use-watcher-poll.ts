@@ -37,6 +37,19 @@ export type WatcherMarketFeatureSnapshot = {
     fundingHourly: number | null;
     openInterest: number | null;
     openInterestChangeHint: "rising" | "falling" | "flat" | "unknown";
+    openInterestDeltas: {
+      last5m: number | null;
+      last1h: number | null;
+      last4h: number | null;
+    };
+    recentCandles: Array<{
+      t: number;
+      o: number;
+      h: number;
+      l: number;
+      c: number;
+      v: number;
+    }>;
     candidateBias:
       | "supports_long"
       | "supports_short"
@@ -86,6 +99,20 @@ export type WatcherContext = {
   }>;
   marketFeatures?: WatcherMarketFeatureSnapshot;
   risk?: WatcherRiskSnapshot;
+  cadenceBlend?: {
+    mode: string;
+    agentNextCheckSeconds: number;
+    nextCheckSeconds: number;
+    averageRealizedVolPct: number | null;
+    reason: string;
+  };
+  safetyBlock?: {
+    code: string;
+    symbol: string;
+    attemptedAction: "open_long" | "open_short";
+    reason: string;
+    createdAt?: string;
+  };
   positionCount?: number;
   newsCount?: number;
   tier?: string;

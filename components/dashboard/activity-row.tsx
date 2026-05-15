@@ -79,6 +79,23 @@ export function ActivityRow({ event, now }: { event: ActivityEvent; now: number 
       </div>
     );
   }
+  if (event.kind === "safety_block") {
+    return (
+      <div className={ROW}>
+        <span aria-hidden className="h-2 w-2 self-center bg-[var(--neon-red)]" />
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--neon-red)]">
+          <ShieldAlert aria-hidden className="mr-1 inline h-3 w-3" />BLOCKED
+        </span>
+        <span className="text-sm leading-relaxed text-foreground">
+          {event.attemptedAction.replace("_", " ").toUpperCase()} {event.asset}:{" "}
+          <span className="text-muted-foreground">{event.reason}</span>
+        </span>
+        <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+          {agoString(event.ts, now)}
+        </span>
+      </div>
+    );
+  }
   const pnl = event.pnlUsd === null ? null : Number(event.pnlUsd);
   const pnlTone =
     pnl === null ? "text-muted-foreground" : pnl >= 0 ? "text-[var(--neon-green)]" : "text-[var(--neon-red)]";

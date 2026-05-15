@@ -41,6 +41,19 @@ export type SymbolMarketFeatures = {
   fundingHourly: number | null;
   openInterest: number | null;
   openInterestChangeHint: "rising" | "falling" | "flat" | "unknown";
+  openInterestDeltas: {
+    last5m: number | null;
+    last1h: number | null;
+    last4h: number | null;
+  };
+  recentCandles: Array<{
+    t: number;
+    o: number;
+    h: number;
+    l: number;
+    c: number;
+    v: number;
+  }>;
   timeframes: {
     "5m": TimeframeFeature;
     "1h": TimeframeFeature;
@@ -68,6 +81,7 @@ const CACHE_TTL_MS: Record<TimeframeFeature["timeframe"], number> = {
 };
 
 const cache = new Map<string, { expiresAt: number; feature: TimeframeFeature }>();
+const candleCache = new Map<string, { expiresAt: number; candles: Candle[] }>();
 
 function finite(value: number | string | null | undefined): number | null {
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
@@ -92,6 +106,26 @@ function sortFinalCandles(candles: Candle[], now = Date.now()): Candle[] {
 
 function closes(candles: Candle[]): number[] {
   return candles.map((c) => Number(c.c)).filter((n) => Number.isFinite(n) && n > 0);
+}
+
+function compactCandles(candles: Candle[], count = 20): SymbolMarketFeatures["recentCandles"] {
+  return sortFinalCandles(candles)
+    .slice(-count)
+    .map((c) => ({
+      t: c.t,
+      o: Number(c.o),
+      h: Number(c.h),
+      l: Number(c.l),
+      c: Number(c.c),
+      v: Number(c.v),
+    }))
+    .filter((c) =>
+      Number.isFinite(c.o) &&
+      Number.isFinite(c.h) &&
+      Number.isFinite(c.l) &&
+      Number.isFinite(c.c) &&
+      Number.isFinite(c.v)
+    );
 }
 
 function ema(values: number[], period: number): number | null {
@@ -295,6 +329,62 @@ async function getTimeframeFeature(
   }
 }
 
+async function getRecentFiveMinuteCandles(symbol: string): Promise<SymbolMarketFeatures["recentCandles"]> {
+  const key = `${symbol}:5m:recent`;
+  const now = Date.now();
+  const hit = candleCache.get(key);
+  if (hit && hit.expiresAt > now) return compactCandles(hit.candles);
+  try {
+    const candles = await fetchCandles(
+      symbol,
+      "5m",
+      now - FIVE_MINUTE_MS * 40,
+      now,
+    );
+    candleCache.set(key, { expiresAt: now + CACHE_TTL_MS["5m"], candles });
+    return compactCandles(candles);
+  } catch {
+    return [];
+  }
+}
+
+function previousOi(symbol: string, previousSnapshot?: MarketFeatureSnapshot | null): {
+  openInterest: number;
+  generatedAt: number;
+} | null {
+  if (!previousSnapshot) return null;
+  const row = previousSnapshot.symbols.find((s) => s.symbol === symbol);
+  if (!row?.openInterest) return null;
+  const generatedAt = new Date(previousSnapshot.generatedAt).getTime();
+  if (!Number.isFinite(generatedAt)) return null;
+  return { openInterest: row.openInterest, generatedAt };
+}
+
+function oiDeltas(opts: {
+  symbol: string;
+  currentOpenInterest: number | null;
+  previousSnapshot?: MarketFeatureSnapshot | null;
+}): SymbolMarketFeatures["openInterestDeltas"] {
+  const previous = previousOi(opts.symbol, opts.previousSnapshot);
+  if (!previous || opts.currentOpenInterest === null || previous.openInterest <= 0) {
+    return { last5m: null, last1h: null, last4h: null };
+  }
+  const ageMs = Date.now() - previous.generatedAt;
+  const deltaPct = (opts.currentOpenInterest - previous.openInterest) / previous.openInterest * 100;
+  return {
+    last5m: ageMs <= 10 * 60_000 ? round(deltaPct) : null,
+    last1h: ageMs <= 70 * 60_000 ? round(deltaPct) : null,
+    last4h: ageMs <= 5 * 60 * 60_000 ? round(deltaPct) : null,
+  };
+}
+
+function oiHint(deltas: SymbolMarketFeatures["openInterestDeltas"]): SymbolMarketFeatures["openInterestChangeHint"] {
+  const delta = deltas.last5m ?? deltas.last1h ?? deltas.last4h;
+  if (delta === null) return "unknown";
+  if (Math.abs(delta) < 0.1) return "flat";
+  return delta > 0 ? "rising" : "falling";
+}
+
 function combineHints(features: Pick<SymbolMarketFeatures, "timeframes">): {
   candidateBias: CandidateBias;
   cadenceHint: CadenceHint;
@@ -354,6 +444,7 @@ export async function buildMarketFeatureSnapshot(opts: {
   mids: MidsMap;
   universe: PerpUniverseEntry[];
   ctxs: PerpAssetCtx[];
+  previousSnapshot?: MarketFeatureSnapshot | null;
 }): Promise<MarketFeatureSnapshot> {
   const validSymbols = new Set(opts.universe.map((u) => u.name.toUpperCase()));
   const ctxBySymbol = new Map(
@@ -371,20 +462,29 @@ export async function buildMarketFeatureSnapshot(opts: {
   });
 
   const rows = await mapConcurrent(symbols, CONCURRENCY, async (symbol) => {
-    const [five, hourly] = await Promise.all([
+    const [five, hourly, recentCandles] = await Promise.all([
       getTimeframeFeature(symbol, "5m"),
       getTimeframeFeature(symbol, "1h"),
+      getRecentFiveMinuteCandles(symbol),
     ]);
     const ctx = ctxBySymbol.get(symbol);
     const timeframes = { "5m": five, "1h": hourly };
     const hints = combineHints({ timeframes });
+    const openInterest = finite(ctx?.openInterest);
+    const openInterestDeltas = oiDeltas({
+      symbol,
+      currentOpenInterest: openInterest,
+      previousSnapshot: opts.previousSnapshot,
+    });
     return {
       symbol,
       mid: finite(opts.mids[symbol]),
       mark: finite(ctx?.markPx),
       fundingHourly: finite(ctx?.funding),
-      openInterest: finite(ctx?.openInterest),
-      openInterestChangeHint: "unknown" as const,
+      openInterest,
+      openInterestDeltas,
+      openInterestChangeHint: oiHint(openInterestDeltas),
+      recentCandles,
       timeframes,
       ...hints,
     };
