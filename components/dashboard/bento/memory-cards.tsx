@@ -38,6 +38,9 @@ function agoString(ts: string): string {
 export function MemoryCards() {
   const [memories, setMemories] = useState<Memory[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Two-click confirm for delete. First click flags the id as pending;
+  // a 3s timer resets it. Second click within the window fires DELETE.
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const refresh = async () => {
     try {
@@ -70,6 +73,14 @@ export function MemoryCards() {
   };
 
   const remove = async (id: string) => {
+    if (pendingDelete !== id) {
+      setPendingDelete(id);
+      setTimeout(() => {
+        setPendingDelete((cur) => (cur === id ? null : cur));
+      }, 3000);
+      return;
+    }
+    setPendingDelete(null);
     setMemories((prev) => prev ? prev.filter((m) => m.id !== id) : prev);
     try {
       await fetch(`/api/memory/${id}`, { method: "DELETE" });
@@ -147,12 +158,14 @@ export function MemoryCards() {
               <button
                 type="button"
                 onClick={() => remove(m.id)}
-                aria-label="Delete"
-                title="Remove this entry"
-                className="ml-auto flex items-center gap-1 border border-[var(--hairline)] px-2 py-1 text-muted-foreground hover:border-[var(--neon-red)] hover:text-[var(--neon-red)]"
+                aria-label={pendingDelete === m.id ? "Click again to confirm delete" : "Delete"}
+                title={pendingDelete === m.id ? "Click again to confirm" : "Remove this entry"}
+                className={`ml-auto flex items-center gap-1 border px-2 py-1 ${pendingDelete === m.id ? "border-[var(--neon-red)] bg-[var(--neon-red)]/10 text-[var(--neon-red)]" : "border-[var(--hairline)] text-muted-foreground hover:border-[var(--neon-red)] hover:text-[var(--neon-red)]"}`}
               >
                 <Trash2 aria-hidden className="h-3 w-3" />
-                <span className="uppercase tracking-[0.14em]">delete</span>
+                <span className="uppercase tracking-[0.14em]">
+                  {pendingDelete === m.id ? "confirm" : "delete"}
+                </span>
               </button>
             </div>
           </li>
