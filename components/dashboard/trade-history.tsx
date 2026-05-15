@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import type { ClosedTradeView } from "@/app/services/trades.service";
-import { TradeReasoningPanel } from "@/components/dashboard/trade-reasoning-panel";
+import { TradeDecisionDrawer } from "@/components/dashboard/bento/trade-decision-drawer";
 
 const ARC_TX = "https://testnet.arcscan.app/tx/";
 
@@ -114,7 +114,7 @@ export function TradeHistory({ trades, admin = false }: { trades: ClosedTradeVie
         Click any row to see why Selbo opened and closed the trade.
       </p>
       {selectedTradeId && (
-        <TradeReasoningPanel
+        <TradeDecisionDrawer
           tradeId={selectedTradeId}
           admin={admin}
           onClose={() => setSelectedTradeId(null)}

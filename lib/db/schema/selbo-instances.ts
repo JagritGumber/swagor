@@ -52,6 +52,10 @@ export const selboInstances = pgTable("selbo_instances", {
   // When BETA_CODE is unset, ensureSelboInstance auto-grants on signup.
   betaAccessGranted: boolean("beta_access_granted").notNull().default(false),
   betaGrantedAt: timestamp("beta_granted_at", { withTimezone: true }),
+  // Terms-of-service / paper-mode disclaimer acceptance. Null until the
+  // user accepts the gate on first dashboard load. See M10 in
+  // C:\Users\jagri\.claude\plans\better-path-phase-radiant-koala.md.
+  tosAcceptedAt: timestamp("tos_accepted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

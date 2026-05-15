@@ -18,6 +18,7 @@ import { StrategyBriefCard } from "@/components/dashboard/strategy-brief-card";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { DisclosureCard } from "@/components/dashboard/disclosure-card";
 import { BetaGate } from "@/components/dashboard/beta-gate";
+import { TosGate } from "@/components/legal/tos-gate";
 import { isAdmin } from "@/lib/auth/admin";
 
 type SearchParams = Promise<{ dev?: string }>;
@@ -53,6 +54,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
 
   return (
     <div className="mx-auto max-w-7xl pb-24">
+      {!instance.tosAcceptedAt && <TosGate />}
       <div className="grid grid-cols-12 gap-3">
         <div className="col-span-12 lg:col-span-8"><ActivityTape /></div>
         <div className="col-span-12 lg:col-span-4"><BalanceRisk /></div>
