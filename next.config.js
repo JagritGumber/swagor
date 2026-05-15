@@ -3,12 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Initialize OpenNext's Cloudflare dev bridge so `next dev` exposes the same
-// Cloudflare bindings (env, R2, KV) that production gets. Safe no-op outside
-// Cloudflare deploys.
-const { initOpenNextCloudflareForDev } = require("@opennextjs/cloudflare");
-initOpenNextCloudflareForDev();
-
 const { CIRCLE_API_KEY, CIRCLE_ENTITY_SECRET } = process.env;
 
 if (!CIRCLE_API_KEY?.trim()) {
@@ -21,9 +15,6 @@ if (!CIRCLE_ENTITY_SECRET?.trim()) {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // OpenNext Cloudflare reads .next/standalone/.next/BUILD_ID during bundle.
-  // Next 15 requires this opt-in; Next 16 sets it automatically.
-  output: "standalone",
   // Empty Turbopack config acknowledges the default-on Turbopack runtime in
   // Next 16+. Turbopack resolves the optional MetaMask / WalletConnect deps
   // gracefully on its own; if a future wallet import errors at runtime, add
