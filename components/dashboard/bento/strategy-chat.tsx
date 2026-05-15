@@ -21,6 +21,33 @@ export function StrategyChat({ initialStrategy, watching }: { initialStrategy: s
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Esc closes the drawer.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // Focus trap: pull focus back into the drawer if it escapes. Initial
+  // focus lands on the textarea so the user can start typing right away.
+  useEffect(() => {
+    if (!open) return;
+    textareaRef.current?.focus();
+    const onFocusIn = (e: FocusEvent) => {
+      const drawerEl = drawerRef.current;
+      if (!drawerEl || !e.target) return;
+      if (drawerEl.contains(e.target as Node)) return;
+      textareaRef.current?.focus();
+    };
+    document.addEventListener("focusin", onFocusIn);
+    return () => document.removeEventListener("focusin", onFocusIn);
+  }, [open]);
 
   useEffect(() => {
     if (!open || data) return;
@@ -89,11 +116,12 @@ export function StrategyChat({ initialStrategy, watching }: { initialStrategy: s
         <div className="fixed inset-0 z-[55] flex" role="dialog" aria-modal="true" aria-label="Strategy chat">
           <button
             type="button"
+            tabIndex={-1}
             aria-label="Close drawer"
             onClick={() => setOpen(false)}
             className="flex-1 bg-black/70 cursor-default"
           />
-          <div className="flex h-full w-full max-w-md flex-col border-l border-[var(--hairline-strong)] bg-black">
+          <div ref={drawerRef} className="flex h-full w-full max-w-md flex-col border-l border-[var(--hairline-strong)] bg-black">
             <header className="flex items-center justify-between border-b border-[var(--hairline)] px-5 py-3">
               <span className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
                 Strategy chat
@@ -137,6 +165,7 @@ export function StrategyChat({ initialStrategy, watching }: { initialStrategy: s
 
             <footer className="border-t border-[var(--hairline)] px-5 py-3">
               <textarea
+                ref={textareaRef}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
