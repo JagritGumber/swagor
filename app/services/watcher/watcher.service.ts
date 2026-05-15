@@ -17,6 +17,7 @@ import { tierSpec, type Tier } from "@/lib/tiers";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 import { anchorWatcherDecision, type AnchorJsonValue } from "@/lib/arc/anchor";
 import { logLlmCall } from "@/lib/llm/log";
+import { buildMarketFeatureSnapshot } from "@/lib/market-features";
 
 /**
  * Run one watcher tick for a given Selbo instance. Reads Hyperliquid mark
@@ -58,6 +59,23 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       prev_day_px: ctx?.prevDayPx ?? null,
     };
   });
+  const marketFeatures = await buildMarketFeatureSnapshot({
+    watching,
+    mids,
+    universe: meta.universe,
+    ctxs: meta.ctxs,
+  }).catch((err) => {
+    console.error("[watcher] market feature build failed:", err);
+    return {
+      source: "hyperliquid-testnet" as const,
+      generatedAt: new Date().toISOString(),
+      symbols: [],
+      skippedSymbols: watching.map((symbol) => ({
+        symbol: symbol.toUpperCase(),
+        reason: "feature build failed",
+      })),
+    };
+  });
 
   const positions = clearing?.assetPositions.map((p) => ({
     coin: p.position.coin,
@@ -96,6 +114,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       : null,
     positions,
     perps,
+    marketFeatures,
     risk,
     news: (newsRes.results ?? []).slice(0, 6).map((n) => ({
       title: n.title, source: n.source,
@@ -160,6 +179,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     watching: parsed.watching,
     context: {
       perps,
+      marketFeatures,
       risk,
       positionCount: positions.length,
       newsCount: (newsRes.results ?? []).length,
@@ -227,6 +247,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     const contextDigest: AnchorJsonValue = {
       strategy: instance.strategyText,
       perps: perps as AnchorJsonValue,
+      marketFeatures: marketFeatures as AnchorJsonValue,
       risk: risk as AnchorJsonValue,
       positions: positions as AnchorJsonValue,
       watching: parsed.watching,

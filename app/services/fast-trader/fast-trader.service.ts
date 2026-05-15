@@ -13,6 +13,7 @@ import {
 } from "@/app/services/trades/paper-trade.service";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 import { logLlmCall } from "@/lib/llm/log";
+import { buildMarketFeatureSnapshot } from "@/lib/market-features";
 
 /**
  * Run the Fast Trader for a Selbo instance. Fetches fresh Hyperliquid state,
@@ -40,6 +41,23 @@ export async function runFastTraderForInstance(
       symbol: upper,
       mark: ctx?.markPx ?? mids[upper] ?? null,
       funding_hourly: ctx?.funding ?? null,
+    };
+  });
+  const marketFeatures = await buildMarketFeatureSnapshot({
+    watching,
+    mids,
+    universe: meta.universe,
+    ctxs: meta.ctxs,
+  }).catch((err) => {
+    console.error("[fast-trader] market feature build failed:", err);
+    return {
+      source: "hyperliquid-testnet" as const,
+      generatedAt: new Date().toISOString(),
+      symbols: [],
+      skippedSymbols: watching.map((symbol) => ({
+        symbol: symbol.toUpperCase(),
+        reason: "feature build failed",
+      })),
     };
   });
 
@@ -97,6 +115,7 @@ export async function runFastTraderForInstance(
     paper_positions: paperPositions,
     hl_positions: hlPositions,
     perps,
+    marketFeatures,
     risk,
   });
 
