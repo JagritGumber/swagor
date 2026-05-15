@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useWatcherPoll, type WatcherTick } from "@/lib/utils/use-watcher-poll";
+import { TickDetailModal } from "@/components/dashboard/tick-detail-modal";
 
 const VERDICT_TONE: Record<WatcherTick["verdict"], string> = {
   hold: "text-muted-foreground",
   execute: "text-[var(--neon-green)]",
   deliberate: "text-[var(--neon-cyan)]",
   escalate: "text-[var(--neon-cyan)]",
+  risk_emergency: "text-[var(--neon-red)]",
 };
 
 function agoString(when: Date): string {
@@ -31,6 +33,7 @@ function countdownString(target: Date): string {
 export function WatchingStrip() {
   const data = useWatcherPoll({ limit: 10 });
   const [now, setNow] = useState(() => Date.now());
+  const [selectedTick, setSelectedTick] = useState<WatcherTick | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -65,17 +68,20 @@ export function WatchingStrip() {
       ) : (
         <ol className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline)]">
           {ticks.map((t, i) => (
-            <li
-              key={t.id}
-              className="grid grid-cols-[88px_1fr_auto] items-baseline gap-4 py-3"
-            >
-              <span className={`font-mono text-xs font-bold uppercase tracking-[0.16em] ${VERDICT_TONE[t.verdict] ?? "text-muted-foreground"}`}>
-                {t.verdict}
-              </span>
-              <span className="text-sm leading-relaxed text-foreground">{t.rationale}</span>
-              <span className="font-mono text-[11px] text-muted-foreground">
-                {i === 0 ? "now" : agoString(new Date(t.createdAt))}
-              </span>
+            <li key={t.id} className="contents">
+              <button
+                type="button"
+                onClick={() => setSelectedTick(t)}
+                className="grid w-full grid-cols-[88px_1fr_auto] items-baseline gap-4 py-3 text-left transition hover:bg-[#080808]"
+              >
+                <span className={`font-mono text-xs font-bold uppercase tracking-[0.16em] ${VERDICT_TONE[t.verdict] ?? "text-muted-foreground"}`}>
+                  {t.verdict}
+                </span>
+                <span className="text-sm leading-relaxed text-foreground">{t.rationale}</span>
+                <span className="font-mono text-[11px] text-muted-foreground">
+                  {i === 0 ? "now" : agoString(new Date(t.createdAt))}
+                </span>
+              </button>
             </li>
           ))}
         </ol>
@@ -83,9 +89,17 @@ export function WatchingStrip() {
 
       {latest && (
         <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-          last tick {agoString(new Date(latest.createdAt))} · agent chose {latest.nextCheckSeconds}s cadence
+          last tick {agoString(new Date(latest.createdAt))} · agent chose {latest.nextCheckSeconds}s cadence · click any row for full reasoning
         </p>
       )}
+
+      <TickDetailModal
+        tick={selectedTick}
+        open={selectedTick !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedTick(null);
+        }}
+      />
     </section>
   );
 }

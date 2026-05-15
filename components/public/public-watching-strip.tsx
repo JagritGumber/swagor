@@ -8,6 +8,7 @@ const VERDICT_TONE: Record<WatcherTick["verdict"], string> = {
   execute: "text-[var(--neon-green)]",
   deliberate: "text-[var(--neon-cyan)]",
   escalate: "text-[var(--neon-cyan)]",
+  risk_emergency: "text-[var(--neon-red)]",
 };
 
 function agoString(when: Date): string {
