@@ -31,6 +31,10 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+# Real secrets live in .env.production for Cloudflare/OpenNext prod builds
+# (NEXT_PUBLIC_* and runtime keys). NEVER commit; treat as .env.local.
+.env.production
+.env.development
 
 # vercel
 .vercel
