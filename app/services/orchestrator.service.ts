@@ -22,6 +22,7 @@ import {
   closePaperTrade,
 } from "@/app/services/trades/paper-trade.service";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
+import { buildMarketFeatureSnapshot } from "@/lib/market-features";
 
 /**
  * Runs the deliberation chain for a single cycle: swarm -> aggregator ->
@@ -87,6 +88,23 @@ export async function runCycle(cycleId: string): Promise<void> {
         funding_hourly: ctx?.funding ?? null,
         open_interest: ctx?.openInterest ?? null,
         prev_day_px: ctx?.prevDayPx ?? null,
+      };
+    });
+    const marketFeatures = await buildMarketFeatureSnapshot({
+      watching,
+      mids,
+      universe: meta.universe,
+      ctxs: meta.ctxs,
+    }).catch((err) => {
+      console.error("[orchestrator] market feature build failed:", err);
+      return {
+        source: "hyperliquid-testnet" as const,
+        generatedAt: new Date().toISOString(),
+        symbols: [],
+        skippedSymbols: watching.map((symbol) => ({
+          symbol: symbol.toUpperCase(),
+          reason: "feature build failed",
+        })),
       };
     });
 
@@ -158,6 +176,7 @@ export async function runCycle(cycleId: string): Promise<void> {
       paper_positions: paperPositions,
       hl_positions: hlPositions,
       perps,
+      marketFeatures,
       risk,
       recent_news: (newsRes.results ?? []).slice(0, 6).map((n) => ({
         title: n.title,

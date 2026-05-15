@@ -8,6 +8,7 @@ import { DecisionsSection } from "@/components/dashboard/decisions-section";
 import { TradeHistory } from "@/components/dashboard/trade-history";
 import { LifetimeStats } from "@/components/dashboard/lifetime-stats";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
+import { MarketStateCard } from "@/components/dashboard/market-state-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
 import { WatchingStrip } from "@/components/dashboard/watching-strip";
 import { ActivityTape } from "@/components/dashboard/activity-tape";
@@ -63,6 +64,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
       <RiskStatusCard />
       <StrategyBriefCard strategy={instance.strategyText} watching={watching} />
       <WatchingStrip strategy={instance.strategyText} admin={admin} />
+      <MarketStateCard />
       {isDev && <WatcherDevControls />}
       <PositionsTable positions={positions} />
       <TradeHistory trades={closedTrades} admin={admin} />

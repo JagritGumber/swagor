@@ -26,12 +26,65 @@ export type WatcherRiskSnapshot = {
   }>;
 };
 
+export type WatcherMarketFeatureSnapshot = {
+  source: "hyperliquid-testnet";
+  generatedAt: string;
+  skippedSymbols: Array<{ symbol: string; reason: string }>;
+  symbols: Array<{
+    symbol: string;
+    mid: number | null;
+    mark: number | null;
+    fundingHourly: number | null;
+    openInterest: number | null;
+    openInterestChangeHint: "rising" | "falling" | "flat" | "unknown";
+    candidateBias:
+      | "supports_long"
+      | "supports_short"
+      | "mixed"
+      | "avoid_new_risk"
+      | "unknown";
+    cadenceHint: "slow" | "normal" | "fast" | "risk_fast";
+    cadenceReason: string;
+    timeframes: {
+      "5m": {
+        timeframe: "5m";
+        featureQuality: "fresh" | "partial" | "stale" | "unavailable";
+        lastCandleAt: string | null;
+        candlesUsed: number;
+        missingReasons: string[];
+        rsi14: number | null;
+        ema20: number | null;
+        ema50: number | null;
+        emaTrend: "bullish" | "bearish" | "flat" | "unknown";
+        atrPct: number | null;
+        realizedVolPct: number | null;
+        marketRegime: "trend_up" | "trend_down" | "range" | "volatile" | "unknown";
+      };
+      "1h": {
+        timeframe: "1h";
+        featureQuality: "fresh" | "partial" | "stale" | "unavailable";
+        lastCandleAt: string | null;
+        candlesUsed: number;
+        missingReasons: string[];
+        rsi14: number | null;
+        ema20: number | null;
+        ema50: number | null;
+        emaTrend: "bullish" | "bearish" | "flat" | "unknown";
+        atrPct: number | null;
+        realizedVolPct: number | null;
+        marketRegime: "trend_up" | "trend_down" | "range" | "volatile" | "unknown";
+      };
+    };
+  }>;
+};
+
 export type WatcherContext = {
   perps?: Array<{
     symbol: string;
     mid?: number | string | null;
     funding_hourly?: number | null;
   }>;
+  marketFeatures?: WatcherMarketFeatureSnapshot;
   risk?: WatcherRiskSnapshot;
   positionCount?: number;
   newsCount?: number;

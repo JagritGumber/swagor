@@ -62,6 +62,7 @@ export function TickDetailPanel({
   const ctx = tick.context;
   const risk = ctx?.risk;
   const perps = ctx?.perps ?? [];
+  const marketFeatures = ctx?.marketFeatures;
   const tier = ctx?.tier;
 
   return (
@@ -162,6 +163,34 @@ export function TickDetailPanel({
                   <span className="tabular-nums">${fmtNum(p.mid)}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+        {marketFeatures && (
+          <div className="mt-3">
+            <div className={SUB_HEAD}>Market features</div>
+            <div className="mt-1 space-y-1 font-mono text-xs text-foreground">
+              {marketFeatures.symbols.length > 0 ? (
+                marketFeatures.symbols.map((s) => (
+                  <div key={s.symbol} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="font-bold">{s.symbol}</span>
+                    <span className="text-muted-foreground">
+                      {s.candidateBias.replace(/_/g, " ")}
+                    </span>
+                    <span className="text-muted-foreground">
+                      5m {s.timeframes["5m"].marketRegime.replace(/_/g, " ")}
+                    </span>
+                    <span className="text-muted-foreground">
+                      RSI {fmtNum(s.timeframes["5m"].rsi14, 1)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      quality {s.timeframes["5m"].featureQuality}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-muted-foreground">No computed market features available.</div>
+              )}
             </div>
           </div>
         )}
