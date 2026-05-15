@@ -10,12 +10,12 @@ import { LifetimeStats } from "@/components/dashboard/lifetime-stats";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { MarketStateCard } from "@/components/dashboard/market-state-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
-import { WatchingStrip } from "@/components/dashboard/watching-strip";
 import { ActivityTape } from "@/components/dashboard/activity-tape";
 import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
 import { RiskStatusCard } from "@/components/dashboard/risk-status-card";
 import { StrategyBriefCard } from "@/components/dashboard/strategy-brief-card";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
+import { DisclosureCard } from "@/components/dashboard/disclosure-card";
 import { BetaGate } from "@/components/dashboard/beta-gate";
 import { isAdmin } from "@/lib/auth/admin";
 
@@ -29,19 +29,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const user = session.user;
 
   const instance = await ensureSelboInstance(user.id);
-  // Mandatory wallet-verification gate. Users who signed up before this
-  // landed have a NULL external_wallet_address and get routed to verify.
-  if (!instance.externalWalletAddress) {
-    redirect("/verify-wallet");
-  }
+  if (!instance.externalWalletAddress) redirect("/verify-wallet");
   const addr = instance.circleWalletAddress;
   const devParam = (await searchParams).dev?.toLowerCase() ?? "";
-  // Dev strip auto-shows locally; in prod requires ?dev=1 / true / yes.
   const isDev = process.env.NODE_ENV !== "production" || DEV_TRUTHY.has(devParam);
 
-  // Private-beta gate: until the user redeems a code, render only the
-  // gate component. No watcher feed, no market chart, no positions --
-  // and no client polling that would generate Worker invocations.
   if (!instance.betaAccessGranted) {
     return (
       <div className="mx-auto max-w-3xl space-y-6 pb-24">
@@ -59,19 +51,50 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const admin = isAdmin(user.email);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 pb-24">
-      <ActivityTape />
-      <RiskStatusCard />
-      <StrategyBriefCard strategy={instance.strategyText} watching={watching} />
-      <WatchingStrip strategy={instance.strategyText} admin={admin} />
-      <MarketStateCard />
-      {isDev && <WatcherDevControls />}
-      <PositionsTable positions={positions} />
-      <TradeHistory trades={closedTrades} admin={admin} />
-      <MarketChartCard watching={watching} />
-      <ArcActivityCard />
-      <LifetimeStats stats={lifetime} />
-      <DecisionsSection walletAddress={addr} />
+    <div className="mx-auto max-w-7xl pb-24">
+      <div className="grid grid-cols-12 gap-3">
+        <div className="col-span-12 lg:col-span-8"><ActivityTape /></div>
+        <div className="col-span-12 lg:col-span-4"><RiskStatusCard /></div>
+
+        <div className="col-span-12 lg:col-span-8"><MarketChartCard watching={watching} /></div>
+        <div className="col-span-12 lg:col-span-4"><MarketStateCard /></div>
+
+        <div className="col-span-12 lg:col-span-6">
+          <StrategyBriefCard strategy={instance.strategyText} watching={watching} />
+        </div>
+        <div className="col-span-12 lg:col-span-6"><PositionsTable positions={positions} /></div>
+
+        <div className="col-span-12">
+          <DisclosureCard title="Trade history" subtitle={`${closedTrades.length} closed`}>
+            <TradeHistory trades={closedTrades} admin={admin} />
+          </DisclosureCard>
+        </div>
+
+        <div className="col-span-12 lg:col-span-6">
+          <DisclosureCard title="Arc anchors">
+            <ArcActivityCard />
+          </DisclosureCard>
+        </div>
+        <div className="col-span-12 lg:col-span-6">
+          <DisclosureCard title="Lifetime stats">
+            <LifetimeStats stats={lifetime} />
+          </DisclosureCard>
+        </div>
+
+        <div className="col-span-12">
+          <DisclosureCard title="Decisions">
+            <DecisionsSection walletAddress={addr} />
+          </DisclosureCard>
+        </div>
+
+        {isDev && (
+          <div className="col-span-12">
+            <DisclosureCard title="Dev controls" subtitle="admin">
+              <WatcherDevControls />
+            </DisclosureCard>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
