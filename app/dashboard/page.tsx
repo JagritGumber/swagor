@@ -7,17 +7,13 @@ import { listClosedTrades, getLifetimeStats } from "@/app/services/trades.servic
 import { DecisionsSection } from "@/components/dashboard/decisions-section";
 import { TradeHistory } from "@/components/dashboard/trade-history";
 import { LifetimeStats } from "@/components/dashboard/lifetime-stats";
-import { GoalForm } from "@/components/dashboard/goal-form";
-import { KillSwitchCard } from "@/components/dashboard/kill-switch-card";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
-import { SelboWalletCard } from "@/components/dashboard/selbo-wallet-card";
 import { WatchingStrip } from "@/components/dashboard/watching-strip";
 import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
 import { RiskStatusCard } from "@/components/dashboard/risk-status-card";
 import { StrategyBriefCard } from "@/components/dashboard/strategy-brief-card";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
-import { ProfileSettings } from "@/components/dashboard/profile-settings";
 import { BetaGate } from "@/components/dashboard/beta-gate";
 
 type SearchParams = Promise<{ dev?: string }>;
@@ -70,10 +66,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
       <ArcActivityCard />
       <LifetimeStats stats={lifetime} />
       <DecisionsSection walletAddress={addr} />
-      <SelboWalletCard instance={instance} />
-      <GoalForm walletAddress={addr} initialStrategy={instance.strategyText} />
-      <ProfileSettings initialUsername={instance.username ?? null} initialPublic={instance.publicProfile} />
-      <KillSwitchCard initialActive={instance.killSwitchActive} />
     </div>
   );
 }

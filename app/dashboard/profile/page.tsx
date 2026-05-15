@@ -5,16 +5,26 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ensureSelboInstance } from "@/app/services/selbo-instance.service";
 import { ProfileSettings } from "@/components/dashboard/profile-settings";
+import { SelboWalletCard } from "@/components/dashboard/selbo-wallet-card";
+import { GoalForm } from "@/components/dashboard/goal-form";
+import { KillSwitchCard } from "@/components/dashboard/kill-switch-card";
 
 /**
- * Dedicated /dashboard/profile page. Renders only the username +
- * publicProfile editor so the user always knows where to find these
- * controls (instead of having to scroll the dashboard to the bottom).
+ * Profile + settings hub. Holds everything that is not "what Selbo is doing
+ * right now" so the dashboard stays focused on live decisions and risk.
+ *
+ * Order:
+ *   1. Identity (username + public profile toggle)
+ *   2. Strategy (the text the watcher and trader read every tick)
+ *   3. Wallet (Selbo's Arc Testnet wallet)
+ *   4. Kill switch (danger zone at the bottom)
  */
 export default async function ProfilePage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
   const instance = await ensureSelboInstance(session.user.id);
+  if (!instance.externalWalletAddress) redirect("/verify-wallet");
+  const addr = instance.circleWalletAddress;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24">
@@ -31,7 +41,7 @@ export default async function ProfilePage() {
           Account
         </div>
         <h1 className="mt-3 text-3xl font-bold uppercase leading-tight text-foreground">
-          Profile
+          Profile and settings
         </h1>
       </header>
 
@@ -39,6 +49,15 @@ export default async function ProfilePage() {
         initialUsername={instance.username ?? null}
         initialPublic={instance.publicProfile}
       />
+
+      <GoalForm
+        walletAddress={addr}
+        initialStrategy={instance.strategyText}
+      />
+
+      <SelboWalletCard instance={instance} />
+
+      <KillSwitchCard initialActive={instance.killSwitchActive} />
     </div>
   );
 }
