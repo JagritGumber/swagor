@@ -43,8 +43,8 @@ export function verifyNonceCookie(
     return null;
   }
   const expectedSig = createHmac(HMAC_ALGO, getSecret()).update(json).digest("base64url");
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expectedSig);
+  const a = new Uint8Array(Buffer.from(sig));
+  const b = new Uint8Array(Buffer.from(expectedSig));
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
   let payload: NoncePayload;
   try {
