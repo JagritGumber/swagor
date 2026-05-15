@@ -52,11 +52,18 @@ export function SelboAccount() {
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
 
+  // Poll every 60s so the equity number + histogram refresh as the
+  // watcher writer lands new snapshots. Pauses on tab hidden so we do
+  // not burn requests in background tabs; refetches immediately on
+  // visibilitychange back to visible.
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/equity/recent?days=1", { cache: "no-store" })
-      .then((r) => r.ok ? r.json() as Promise<EquityRecent> : Promise.reject(r.status))
-      .then((d) => {
+    const pull = async () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      try {
+        const res = await fetch("/api/equity/recent?days=1", { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const d = (await res.json()) as EquityRecent;
         if (cancelled) return;
         if (d.snapshots.length < 2) {
           setData(dummySnapshots());
@@ -65,13 +72,21 @@ export function SelboAccount() {
           setData(d);
           setIsDummy(false);
         }
-      })
-      .catch(() => {
+      } catch {
         if (cancelled) return;
-        setData(dummySnapshots());
-        setIsDummy(true);
-      });
-    return () => { cancelled = true; };
+        setData((prev) => prev ?? dummySnapshots());
+        setIsDummy((prev) => prev || true);
+      }
+    };
+    void pull();
+    const id = setInterval(pull, 60_000);
+    const onVisible = () => { if (document.visibilityState === "visible") void pull(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   useEffect(() => {
