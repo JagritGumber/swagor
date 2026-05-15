@@ -2,6 +2,7 @@
 
 import { createAuthClient } from "better-auth/react";
 import { polarClient } from "@polar-sh/better-auth/client";
+import { betterAuthUrlPublic } from "@/lib/env";
 
 /**
  * Browser-side Better Auth client. Used by sign-in / sign-up pages and any
@@ -14,6 +15,6 @@ import { polarClient } from "@polar-sh/better-auth/client";
  *   await authClient.checkout({ slug: "basic" });
  */
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+  baseURL: betterAuthUrlPublic(),
   plugins: [polarClient()],
 });

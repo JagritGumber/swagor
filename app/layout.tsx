@@ -4,15 +4,13 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { Web3Provider } from "@/components/providers/web3-provider";
+import { siteUrl as resolveSiteUrl } from "@/lib/env";
 import "./globals.css";
 
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans-family" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-family" });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-if (!siteUrl?.trim()) {
-  throw new Error("NEXT_PUBLIC_SITE_URL environment variable is missing or empty");
-}
+const siteUrl = resolveSiteUrl();
 
 const title = "Selbo · Public AI Crypto Trader on Arc";
 const description =

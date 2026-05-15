@@ -6,6 +6,7 @@ import { nextCookies } from "better-auth/next-js";
 import { polar, checkout, portal, webhooks } from "@polar-sh/better-auth";
 import { Polar } from "@polar-sh/sdk";
 import { db } from "@/lib/db/client";
+import { betterAuthUrlServer } from "@/lib/env";
 
 /**
  * Better Auth server singleton. Owns identity, sessions, credentials,
@@ -33,16 +34,18 @@ const polarClient = new Polar({
   server: process.env.POLAR_ENV === "production" ? "production" : "sandbox",
 });
 
+const RESOLVED_AUTH_URL = betterAuthUrlServer();
+
 export const auth = betterAuth({
   secret: requireEnv("BETTER_AUTH_SECRET"),
-  baseURL: requireEnv("BETTER_AUTH_URL"),
+  baseURL: RESOLVED_AUTH_URL,
   database: drizzleAdapter(db, { provider: "pg" }),
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
     autoSignIn: true,
   },
-  trustedOrigins: [requireEnv("BETTER_AUTH_URL")],
+  trustedOrigins: [RESOLVED_AUTH_URL],
   plugins: [
     polar({
       client: polarClient,
@@ -53,7 +56,7 @@ export const auth = betterAuth({
             { productId: requireEnv("POLAR_PRODUCT_BASIC"), slug: "basic" },
             { productId: requireEnv("POLAR_PRODUCT_PRO"), slug: "pro" },
           ],
-          successUrl: `${process.env.BETTER_AUTH_URL}/dashboard?checkout=success`,
+          successUrl: `${RESOLVED_AUTH_URL}/dashboard?checkout=success`,
           authenticatedUsersOnly: true,
         }),
         portal(),

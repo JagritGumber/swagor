@@ -3,6 +3,7 @@ import { headers, cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { WALLET_NONCE_COOKIE, buildSiweMessage, generateNonce, signNonce } from "@/lib/wallet/siwe";
 import { arcTestnet } from "@/lib/web3/chains";
+import { siteUrl as resolveSiteUrl } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,12 +47,12 @@ export async function GET(request: Request) {
     maxAge: NONCE_TTL_MS / 1000,
   });
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://selbo.trade";
-  const host = new URL(siteUrl).host;
+  const resolvedSiteUrl = resolveSiteUrl();
+  const host = new URL(resolvedSiteUrl).host;
   const message = buildSiweMessage({
     domain: host,
     address,
-    uri: siteUrl,
+    uri: resolvedSiteUrl,
     chainId: arcTestnet.id,
     nonce,
     issuedAt: new Date().toISOString(),

@@ -5,6 +5,7 @@ import { WagmiProvider, createConfig, http } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 import { arcTestnet } from "@/lib/web3/chains";
+import { siteUrl } from "@/lib/env";
 
 /**
  * Wagmi + ConnectKit provider mounted at the root layout.
@@ -19,7 +20,7 @@ const wagmiConfig = createConfig(
   getDefaultConfig({
     appName: "Selbo",
     appDescription: "Per-user AI perpetual futures trader on Arc Testnet.",
-    appUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://selbo.trade",
+    appUrl: siteUrl(),
     chains: [arcTestnet],
     transports: { [arcTestnet.id]: http() },
     walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "",
