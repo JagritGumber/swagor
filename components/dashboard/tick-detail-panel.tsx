@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import type { WatcherTick } from "@/lib/utils/use-watcher-poll";
 import { DebugJSON } from "@/components/dashboard/debug-json";
+import { LlmCallsList } from "@/components/dashboard/llm-calls-list";
 
 const VERDICT_TONE: Record<string, string> = {
   hold: "text-muted-foreground",
@@ -196,6 +197,12 @@ export function TickDetailPanel({
             }}
           />
           <DebugJSON title="Tick context (raw jsonb)" value={ctx} />
+          <div className="mt-3">
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              LLM calls for this tick
+            </div>
+            <LlmCallsList tickId={tick.id} />
+          </div>
         </div>
       )}
     </div>

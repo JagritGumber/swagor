@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { X, ArrowUpRight } from "lucide-react";
 import { DebugJSON } from "@/components/dashboard/debug-json";
+import { LlmCallsList } from "@/components/dashboard/llm-calls-list";
 
 const ARC_TX = "https://testnet.arcscan.app/tx/";
 const SECTION_HEAD =
@@ -250,6 +251,17 @@ export function TradeReasoningPanel({
               {data?.proposal && (
                 <DebugJSON title="Trade proposal (raw)" value={data.proposal} />
               )}
+              <div className="mt-3">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  LLM calls around this trade
+                </div>
+                <LlmCallsList
+                  tradeId={trade.id}
+                  tickIds={[data?.openTick?.id, data?.closeTick?.id].filter(
+                    (s): s is string => typeof s === "string",
+                  )}
+                />
+              </div>
             </div>
           )}
         </>

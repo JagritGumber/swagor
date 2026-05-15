@@ -12,6 +12,7 @@ import {
   closePaperTrade,
 } from "@/app/services/trades/paper-trade.service";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
+import { logLlmCall } from "@/lib/llm/log";
 
 /**
  * Run the Fast Trader for a Selbo instance. Fetches fresh Hyperliquid state,
@@ -22,6 +23,7 @@ import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service
 export async function runFastTraderForInstance(
   instance: SelboInstance,
   watcherRationale: string,
+  tickId?: string,
 ): Promise<FastTraderDecision> {
   const [mids, meta, clearing] = await Promise.all([
     fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
@@ -111,6 +113,19 @@ export async function runFastTraderForInstance(
   const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("fast-trader returned empty response");
   const decision = FAST_TRADER_SCHEMA.parse(JSON.parse(raw));
+
+  await logLlmCall({
+    selboInstanceId: instance.id,
+    tickId,
+    agentName: "fast-trader",
+    model: MODELS.TRADER,
+    systemPrompt: FAST_TRADER_SYSTEM_PROMPT,
+    userMessage: payload,
+    rawResponse: raw,
+    parsedOutput: decision,
+    promptTokens: completion.usage?.prompt_tokens,
+    completionTokens: completion.usage?.completion_tokens,
+  });
 
   const assetUpper = decision.asset.toUpperCase();
   const markPx = mids[assetUpper] ? Number(mids[assetUpper]) : null;
