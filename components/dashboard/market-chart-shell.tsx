@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MarketChart, type ChartCandle, type TradeMarker } from "./market-chart";
 import {
   MarketChartControls, type ChartType, type Interval,
@@ -22,6 +22,10 @@ export function MarketChartShell({ watching, admin = false }: { watching: string
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  // Stable callback so MarketChart's mount effect does not retrigger.
+  const handleMarkerClick = useCallback((tradeId: string) => {
+    setSelectedTradeId(tradeId);
+  }, []);
 
   useEffect(() => {
     const ac = new AbortController();
@@ -77,7 +81,7 @@ export function MarketChartShell({ watching, admin = false }: { watching: string
             candles={candles}
             markers={markers}
             chartType={chartType}
-            onMarkerClick={(tradeId) => setSelectedTradeId(tradeId)}
+            onMarkerClick={handleMarkerClick}
           />
         </div>
         {loading && (
