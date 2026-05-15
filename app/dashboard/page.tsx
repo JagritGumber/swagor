@@ -3,31 +3,18 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ensureSelboInstance } from "@/app/services/selbo-instance.service";
 import { listOpenPositions } from "@/app/services/positions.service";
-import { listClosedTrades, getLifetimeStats } from "@/app/services/trades.service";
-import { DecisionsSection } from "@/components/dashboard/decisions-section";
-import { TradeHistory } from "@/components/dashboard/trade-history";
-import { LifetimeStats } from "@/components/dashboard/lifetime-stats";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
-import { MarketStateCard } from "@/components/dashboard/market-state-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
-import { ActivityTape } from "@/components/dashboard/activity-tape";
-import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
-import { BalanceRisk } from "@/components/dashboard/bento/balance-risk";
-import { EquityCurve } from "@/components/dashboard/bento/equity-curve";
+import { SelboAccount } from "@/components/dashboard/bento/selbo-account";
+import { RiskPanel } from "@/components/dashboard/bento/risk-panel";
 import { MemoryCards } from "@/components/dashboard/bento/memory-cards";
-import { PipelineNow } from "@/components/dashboard/bento/pipeline-now";
 import { StrategyChat } from "@/components/dashboard/bento/strategy-chat";
-import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { DisclosureCard } from "@/components/dashboard/disclosure-card";
 import { BetaGate } from "@/components/dashboard/beta-gate";
 import { TosGate } from "@/components/legal/tos-gate";
 import { isAdmin } from "@/lib/auth/admin";
 
-type SearchParams = Promise<{ dev?: string }>;
-
-const DEV_TRUTHY = new Set(["1", "true", "yes", "on"]);
-
-export default async function DashboardPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
   const user = session.user;
@@ -35,10 +22,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const instance = await ensureSelboInstance(user.id);
   if (!instance.externalWalletAddress) redirect("/verify-wallet");
 
-  // Real ToS gate: dashboard data is not fetched and the page does not
-  // render until the user accepts. Earlier version overlaid TosGate over
-  // the rendered dashboard, which could be bypassed via dev tools. Now
-  // the gate is the only thing the server returns when tosAcceptedAt is null.
   if (!instance.tosAcceptedAt) {
     return (
       <div className="mx-auto max-w-3xl space-y-6 pb-24">
@@ -46,10 +29,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
       </div>
     );
   }
-
-  const addr = instance.circleWalletAddress;
-  const devParam = (await searchParams).dev?.toLowerCase() ?? "";
-  const isDev = process.env.NODE_ENV !== "production" || DEV_TRUTHY.has(devParam);
 
   if (!instance.betaAccessGranted) {
     return (
@@ -59,74 +38,36 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
     );
   }
 
-  const [positions, closedTrades, lifetime] = await Promise.all([
-    listOpenPositions(user.id),
-    listClosedTrades(user.id, 20),
-    getLifetimeStats(user.id),
-  ]);
+  const positions = await listOpenPositions(user.id);
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
   const admin = isAdmin(user.email);
 
+  // Layout per user direction:
+  //   Top row: Selbo's account (4) | Market chart (6) | Risk side panel (2)
+  //   Below:   Strategy chat (6) | Positions (6)
+  //   Bottom:  Memory disclosure (12)
+  //
+  // Hidden until the underlying surfaces are polished:
+  //   ActivityTape, EquityCurve (folded into SelboAccount), BalanceRisk
+  //   (replaced by SelboAccount + RiskPanel), TradeHistory, ArcActivityCard,
+  //   LifetimeStats, MarketStateCard, PipelineNow, Decisions, WatcherDevControls.
   return (
     <div className="mx-auto max-w-7xl pb-24">
       <div className="grid grid-cols-12 gap-3">
-        <div className="col-span-12 lg:col-span-8"><ActivityTape /></div>
-        <div className="col-span-12 lg:col-span-4"><BalanceRisk /></div>
-
-        <div className="col-span-12 lg:col-span-8"><MarketChartCard watching={watching} admin={admin} /></div>
-        <div className="col-span-12 lg:col-span-4"><EquityCurve /></div>
+        <div className="col-span-12 lg:col-span-4"><SelboAccount /></div>
+        <div className="col-span-12 lg:col-span-6"><MarketChartCard watching={watching} admin={admin} /></div>
+        <div className="col-span-12 lg:col-span-2"><RiskPanel /></div>
 
         <div className="col-span-12 lg:col-span-6">
           <StrategyChat initialStrategy={instance.strategyText} watching={watching} />
         </div>
         <div className="col-span-12 lg:col-span-6"><PositionsTable positions={positions} /></div>
 
-        <div className="col-span-12 lg:col-span-8">
-          <DisclosureCard title="Pipeline">
-            <PipelineNow />
-          </DisclosureCard>
-        </div>
-        <div className="col-span-12 lg:col-span-4">
-          <DisclosureCard title="Market state">
-            <MarketStateCard />
-          </DisclosureCard>
-        </div>
-
-        <div className="col-span-12 lg:col-span-6">
-          <DisclosureCard title="Trade history" subtitle={`${closedTrades.length} closed`}>
-            <TradeHistory trades={closedTrades} admin={admin} />
-          </DisclosureCard>
-        </div>
-
-        <div className="col-span-12 lg:col-span-6">
-          <DisclosureCard title="Arc anchors">
-            <ArcActivityCard />
-          </DisclosureCard>
-        </div>
-        <div className="col-span-12 lg:col-span-6">
-          <DisclosureCard title="Lifetime stats">
-            <LifetimeStats stats={lifetime} />
-          </DisclosureCard>
-        </div>
-
-        <div className="col-span-12 lg:col-span-6">
+        <div className="col-span-12">
           <DisclosureCard title="Memory" subtitle="thumbs to correct">
             <MemoryCards />
           </DisclosureCard>
         </div>
-        <div className="col-span-12 lg:col-span-6">
-          <DisclosureCard title="Decisions">
-            <DecisionsSection walletAddress={addr} />
-          </DisclosureCard>
-        </div>
-
-        {isDev && (
-          <div className="col-span-12">
-            <DisclosureCard title="Dev controls" subtitle="admin">
-              <WatcherDevControls />
-            </DisclosureCard>
-          </div>
-        )}
       </div>
     </div>
   );
