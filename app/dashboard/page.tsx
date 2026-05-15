@@ -10,6 +10,7 @@ import { LifetimeStats } from "@/components/dashboard/lifetime-stats";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
 import { WatchingStrip } from "@/components/dashboard/watching-strip";
+import { ActivityTape } from "@/components/dashboard/activity-tape";
 import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
 import { RiskStatusCard } from "@/components/dashboard/risk-status-card";
 import { StrategyBriefCard } from "@/components/dashboard/strategy-brief-card";
@@ -58,6 +59,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24">
+      <ActivityTape />
       <RiskStatusCard />
       <StrategyBriefCard strategy={instance.strategyText} watching={watching} />
       <WatchingStrip strategy={instance.strategyText} admin={admin} />
