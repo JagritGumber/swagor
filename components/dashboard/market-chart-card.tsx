@@ -1,6 +1,6 @@
 import { MarketChartShell } from "./market-chart-shell";
 
-export function MarketChartCard({ watching }: { watching: string[] }) {
+export function MarketChartCard({ watching, admin = false }: { watching: string[]; admin?: boolean }) {
   const list = watching.length > 0 ? watching : ["ETH", "BTC", "SOL"];
   return (
     <section className="border border-[var(--hairline-strong)] bg-black p-6">
@@ -8,7 +8,7 @@ export function MarketChartCard({ watching }: { watching: string[] }) {
         Market
       </h2>
       <div className="mt-4">
-        <MarketChartShell watching={list} />
+        <MarketChartShell watching={list} admin={admin} />
       </div>
     </section>
   );

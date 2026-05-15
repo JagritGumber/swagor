@@ -71,7 +71,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
         <div className="col-span-12 lg:col-span-8"><ActivityTape /></div>
         <div className="col-span-12 lg:col-span-4"><BalanceRisk /></div>
 
-        <div className="col-span-12 lg:col-span-8"><MarketChartCard watching={watching} /></div>
+        <div className="col-span-12 lg:col-span-8"><MarketChartCard watching={watching} admin={admin} /></div>
         <div className="col-span-12 lg:col-span-4"><EquityCurve /></div>
 
         <div className="col-span-12 lg:col-span-6">
