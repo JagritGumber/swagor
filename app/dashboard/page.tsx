@@ -15,6 +15,7 @@ import { SelboWalletCard } from "@/components/dashboard/selbo-wallet-card";
 import { WatchingStrip } from "@/components/dashboard/watching-strip";
 import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
 import { RiskStatusCard } from "@/components/dashboard/risk-status-card";
+import { StrategyBriefCard } from "@/components/dashboard/strategy-brief-card";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { ProfileSettings } from "@/components/dashboard/profile-settings";
 import { BetaGate } from "@/components/dashboard/beta-gate";
@@ -60,7 +61,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24">
       <RiskStatusCard />
-      <WatchingStrip />
+      <StrategyBriefCard strategy={instance.strategyText} watching={watching} />
+      <WatchingStrip strategy={instance.strategyText} />
       {isDev && <WatcherDevControls />}
       <PositionsTable positions={positions} />
       <TradeHistory trades={closedTrades} />
