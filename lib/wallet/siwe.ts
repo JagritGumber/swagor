@@ -2,6 +2,12 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 const HMAC_ALGO = "sha256";
 
+/** Cookie name for the HMAC-signed wallet-verification nonce. Lives here
+ *  (not in the route file) because Next.js route.ts files can only export
+ *  handlers + a small config allowlist; any other named export fails the
+ *  route-shape typecheck at build time. */
+export const WALLET_NONCE_COOKIE = "selbo_wallet_nonce";
+
 function getSecret(): string {
   const s = process.env.BETTER_AUTH_SECRET;
   if (!s) throw new Error("BETTER_AUTH_SECRET not set");

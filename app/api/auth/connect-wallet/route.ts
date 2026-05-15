@@ -5,8 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/client";
 import { selboInstances } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { verifyNonceCookie } from "@/lib/wallet/siwe";
-import { WALLET_NONCE_COOKIE } from "@/app/api/auth/wallet-nonce/route";
+import { WALLET_NONCE_COOKIE, verifyNonceCookie } from "@/lib/wallet/siwe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

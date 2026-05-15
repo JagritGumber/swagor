@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { headers, cookies } from "next/headers";
 import { auth } from "@/lib/auth";
-import { buildSiweMessage, generateNonce, signNonce } from "@/lib/wallet/siwe";
+import { WALLET_NONCE_COOKIE, buildSiweMessage, generateNonce, signNonce } from "@/lib/wallet/siwe";
 import { arcTestnet } from "@/lib/web3/chains";
 
 export const runtime = "nodejs";
@@ -9,7 +9,6 @@ export const dynamic = "force-dynamic";
 
 const NONCE_TTL_MS = 5 * 60 * 1000;
 const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
-export const WALLET_NONCE_COOKIE = "selbo_wallet_nonce";
 
 /**
  * Issue the full SIWE-style message for the client to sign, bound to:
