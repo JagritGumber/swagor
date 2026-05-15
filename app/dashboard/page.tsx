@@ -15,6 +15,7 @@ import { RiskStatusCard } from "@/components/dashboard/risk-status-card";
 import { StrategyBriefCard } from "@/components/dashboard/strategy-brief-card";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { BetaGate } from "@/components/dashboard/beta-gate";
+import { isAdmin } from "@/lib/auth/admin";
 
 type SearchParams = Promise<{ dev?: string }>;
 
@@ -53,15 +54,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
     getLifetimeStats(user.id),
   ]);
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
+  const admin = isAdmin(user.email);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24">
       <RiskStatusCard />
       <StrategyBriefCard strategy={instance.strategyText} watching={watching} />
-      <WatchingStrip strategy={instance.strategyText} />
+      <WatchingStrip strategy={instance.strategyText} admin={admin} />
       {isDev && <WatcherDevControls />}
       <PositionsTable positions={positions} />
-      <TradeHistory trades={closedTrades} />
+      <TradeHistory trades={closedTrades} admin={admin} />
       <MarketChartCard watching={watching} />
       <ArcActivityCard />
       <LifetimeStats stats={lifetime} />

@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import type { WatcherTick } from "@/lib/utils/use-watcher-poll";
+import { DebugJSON } from "@/components/dashboard/debug-json";
 
 const VERDICT_TONE: Record<string, string> = {
   hold: "text-muted-foreground",
@@ -49,10 +50,12 @@ const SUB_HEAD =
 export function TickDetailPanel({
   tick,
   strategy,
+  admin = false,
   onClose,
 }: {
   tick: WatcherTick;
   strategy: string;
+  admin?: boolean;
   onClose: () => void;
 }) {
   const ctx = tick.context;
@@ -177,6 +180,24 @@ export function TickDetailPanel({
           {actionLabel(tick.verdict, tier)}
         </p>
       </div>
+
+      {admin && (
+        <div className="mt-5 border-t border-[var(--hairline)] pt-4">
+          <div className={SECTION_HEAD}>Debug (admin)</div>
+          <DebugJSON
+            title="Watcher LLM output"
+            value={{
+              id: tick.id,
+              verdict: tick.verdict,
+              rationale: tick.rationale,
+              nextCheckSeconds: tick.nextCheckSeconds,
+              watching: tick.watching,
+              createdAt: tick.createdAt,
+            }}
+          />
+          <DebugJSON title="Tick context (raw jsonb)" value={ctx} />
+        </div>
+      )}
     </div>
   );
 }

@@ -30,7 +30,7 @@ function fmtTime(d: Date | null): string {
  * anchors. Arc anchor links inside the row stop propagation so they
  * still navigate to Arcscan instead of opening the modal.
  */
-export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
+export function TradeHistory({ trades, admin = false }: { trades: ClosedTradeView[]; admin?: boolean }) {
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
   if (trades.length === 0) return null;
 
@@ -116,6 +116,7 @@ export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
       {selectedTradeId && (
         <TradeReasoningPanel
           tradeId={selectedTradeId}
+          admin={admin}
           onClose={() => setSelectedTradeId(null)}
         />
       )}
