@@ -7,8 +7,9 @@ import {
   jsonb,
   timestamp,
   primaryKey,
+  check,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { trades } from "./trades";
 
 /**
@@ -38,7 +39,12 @@ export const memoryEntries = pgTable("memory_entries", {
   userFeedback: text("user_feedback", { enum: ["good", "bad"] }),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  userFeedbackCheck: check(
+    "memory_entries_user_feedback_check",
+    sql`${table.userFeedback} IS NULL OR ${table.userFeedback} IN ('good', 'bad')`,
+  ),
+}));
 
 /**
  * Per-user, per-reviewer cumulative track record. DISPLAY-ONLY on the user's

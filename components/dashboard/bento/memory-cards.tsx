@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ThumbsUp, ThumbsDown, Trash2 } from "lucide-react";
 
 type Memory = {
@@ -35,12 +35,24 @@ function agoString(ts: string): string {
  * agent context reads (`getRecentLessons`). Optimistic updates so the
  * thumbs-down feedback feels immediate.
  */
+const CONFIRM_COOLDOWN_MS = 200;
+const CONFIRM_TIMEOUT_MS = 3000;
+
 export function MemoryCards() {
   const [memories, setMemories] = useState<Memory[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Two-click confirm for delete. First click flags the id as pending;
-  // a 3s timer resets it. Second click within the window fires DELETE.
-  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  // a 3s timer resets it. Second click within the window fires DELETE,
+  // but ignored if it lands within CONFIRM_COOLDOWN_MS of the first
+  // (prevents an accidental double-click from bypassing the confirm).
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; at: number } | null>(null);
+  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear any active pending timer on unmount so a stale callback can't
+  // setState on an unmounted component.
+  useEffect(() => () => {
+    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+  }, []);
 
   const refresh = async () => {
     try {
@@ -73,12 +85,22 @@ export function MemoryCards() {
   };
 
   const remove = async (id: string) => {
-    if (pendingDelete !== id) {
-      setPendingDelete(id);
-      setTimeout(() => {
-        setPendingDelete((cur) => (cur === id ? null : cur));
-      }, 3000);
+    const now = Date.now();
+    if (pendingDelete?.id !== id) {
+      setPendingDelete({ id, at: now });
+      if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+      pendingTimerRef.current = setTimeout(() => {
+        setPendingDelete((cur) => (cur?.id === id ? null : cur));
+        pendingTimerRef.current = null;
+      }, CONFIRM_TIMEOUT_MS);
       return;
+    }
+    // Accidental double-click protection: reject the confirm if it
+    // landed too soon after the first click.
+    if (now - pendingDelete.at < CONFIRM_COOLDOWN_MS) return;
+    if (pendingTimerRef.current) {
+      clearTimeout(pendingTimerRef.current);
+      pendingTimerRef.current = null;
     }
     setPendingDelete(null);
     setMemories((prev) => prev ? prev.filter((m) => m.id !== id) : prev);
@@ -158,13 +180,13 @@ export function MemoryCards() {
               <button
                 type="button"
                 onClick={() => remove(m.id)}
-                aria-label={pendingDelete === m.id ? "Click again to confirm delete" : "Delete"}
-                title={pendingDelete === m.id ? "Click again to confirm" : "Remove this entry"}
-                className={`ml-auto flex items-center gap-1 border px-2 py-1 ${pendingDelete === m.id ? "border-[var(--neon-red)] bg-[var(--neon-red)]/10 text-[var(--neon-red)]" : "border-[var(--hairline)] text-muted-foreground hover:border-[var(--neon-red)] hover:text-[var(--neon-red)]"}`}
+                aria-label={pendingDelete?.id === m.id ? "Click again to confirm delete" : "Delete"}
+                title={pendingDelete?.id === m.id ? "Click again to confirm" : "Remove this entry"}
+                className={`ml-auto flex items-center gap-1 border px-2 py-1 ${pendingDelete?.id === m.id ? "border-[var(--neon-red)] bg-[var(--neon-red)]/10 text-[var(--neon-red)]" : "border-[var(--hairline)] text-muted-foreground hover:border-[var(--neon-red)] hover:text-[var(--neon-red)]"}`}
               >
                 <Trash2 aria-hidden className="h-3 w-3" />
                 <span className="uppercase tracking-[0.14em]">
-                  {pendingDelete === m.id ? "confirm" : "delete"}
+                  {pendingDelete?.id === m.id ? "confirm" : "delete"}
                 </span>
               </button>
             </div>

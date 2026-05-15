@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/client";
 import { memoryEntries } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,10 +57,16 @@ export async function DELETE(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
+  // Idempotent: only set on first delete so the original timestamp
+  // survives a repeated DELETE.
   await db
     .update(memoryEntries)
     .set({ deletedAt: new Date() })
-    .where(and(eq(memoryEntries.id, id), eq(memoryEntries.userId, session.user.id)));
+    .where(and(
+      eq(memoryEntries.id, id),
+      eq(memoryEntries.userId, session.user.id),
+      isNull(memoryEntries.deletedAt),
+    ));
 
   return NextResponse.json({ ok: true });
 }
