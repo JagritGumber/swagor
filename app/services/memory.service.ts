@@ -3,7 +3,7 @@ import "server-only";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { memoryEntries, type Trade } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, or, ne } from "drizzle-orm";
 import { llm, MODELS } from "@/lib/llm-client";
 
 const LessonsSchema = z.object({
@@ -87,10 +87,16 @@ export async function recordTradeMemory(trade: Trade): Promise<void> {
  * memory has been recorded yet.
  */
 export async function getRecentLessons(userId: string, limit = 8): Promise<string[]> {
+  // Exclude bad-rated and soft-deleted entries so user corrections take
+  // effect on the very next agent context read.
   const rows = await db
     .select({ lessons: memoryEntries.lessons })
     .from(memoryEntries)
-    .where(eq(memoryEntries.userId, userId))
+    .where(and(
+      eq(memoryEntries.userId, userId),
+      isNull(memoryEntries.deletedAt),
+      or(isNull(memoryEntries.userFeedback), ne(memoryEntries.userFeedback, "bad")),
+    ))
     .orderBy(desc(memoryEntries.createdAt))
     .limit(limit);
   return rows.flatMap((r) => r.lessons ?? []);
