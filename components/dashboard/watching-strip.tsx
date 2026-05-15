@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useWatcherPoll, type WatcherTick } from "@/lib/utils/use-watcher-poll";
-import { TickDetailModal } from "@/components/dashboard/tick-detail-modal";
+import { TickDetailPanel } from "@/components/dashboard/tick-detail-panel";
 
 const VERDICT_TONE: Record<WatcherTick["verdict"], string> = {
   hold: "text-muted-foreground",
@@ -71,8 +71,9 @@ export function WatchingStrip({ strategy }: { strategy: string }) {
             <li key={t.id} className="contents">
               <button
                 type="button"
-                onClick={() => setSelectedTick(t)}
-                className="grid w-full grid-cols-[88px_1fr_auto] items-baseline gap-4 py-3 text-left transition hover:bg-[#080808]"
+                onClick={() => setSelectedTick((cur) => (cur?.id === t.id ? null : t))}
+                aria-expanded={selectedTick?.id === t.id}
+                className={`grid w-full grid-cols-[88px_1fr_auto] items-baseline gap-4 py-3 text-left transition hover:bg-[#080808] ${selectedTick?.id === t.id ? "bg-[#080808]" : ""}`}
               >
                 <span className={`font-mono text-xs font-bold uppercase tracking-[0.16em] ${VERDICT_TONE[t.verdict] ?? "text-muted-foreground"}`}>
                   {t.verdict}
@@ -93,14 +94,13 @@ export function WatchingStrip({ strategy }: { strategy: string }) {
         </p>
       )}
 
-      <TickDetailModal
-        tick={selectedTick}
-        strategy={strategy}
-        open={selectedTick !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedTick(null);
-        }}
-      />
+      {selectedTick && (
+        <TickDetailPanel
+          tick={selectedTick}
+          strategy={strategy}
+          onClose={() => setSelectedTick(null)}
+        />
+      )}
     </section>
   );
 }
