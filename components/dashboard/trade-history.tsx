@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import type { ClosedTradeView } from "@/app/services/trades.service";
-import { TradeReasoningModal } from "@/components/dashboard/trade-reasoning-modal";
+import { TradeReasoningPanel } from "@/components/dashboard/trade-reasoning-panel";
 
 const ARC_TX = "https://testnet.arcscan.app/tx/";
 
@@ -67,8 +67,9 @@ export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
               return (
                 <tr
                   key={t.tradeId}
-                  onClick={() => setSelectedTradeId(t.tradeId)}
-                  className="cursor-pointer font-mono text-xs transition hover:bg-[#080808]"
+                  onClick={() => setSelectedTradeId((cur) => (cur === t.tradeId ? null : t.tradeId))}
+                  aria-expanded={selectedTradeId === t.tradeId}
+                  className={`cursor-pointer font-mono text-xs transition hover:bg-[#080808] ${selectedTradeId === t.tradeId ? "bg-[#080808]" : ""}`}
                 >
                   <td className="py-3 text-left text-foreground">{t.asset}</td>
                   <td className="py-3 text-left uppercase text-muted-foreground">{t.side}</td>
@@ -112,13 +113,12 @@ export function TradeHistory({ trades }: { trades: ClosedTradeView[] }) {
       <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
         Click any row to see why Selbo opened and closed the trade.
       </p>
-      <TradeReasoningModal
-        tradeId={selectedTradeId}
-        open={selectedTradeId !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedTradeId(null);
-        }}
-      />
+      {selectedTradeId && (
+        <TradeReasoningPanel
+          tradeId={selectedTradeId}
+          onClose={() => setSelectedTradeId(null)}
+        />
+      )}
     </section>
   );
 }
