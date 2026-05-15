@@ -14,6 +14,16 @@ function clampLimit(raw: string | null): number {
   return Math.min(Math.max(Math.floor(parsed), 1), 100);
 }
 
+type SafetyBlockContext = {
+  safetyBlock?: {
+    createdAt?: string;
+    symbol?: string;
+    attemptedAction?: "open_long" | "open_short";
+    code?: string;
+    reason?: string;
+  };
+};
+
 /**
  * GET /api/activity/recent?limit=30
  *
@@ -63,6 +73,23 @@ export async function GET(request: Request) {
       rationale: t.rationale,
       nextCheckSeconds: t.nextCheckSeconds,
     });
+    const safetyBlock = (t.context as SafetyBlockContext | null)?.safetyBlock;
+    if (
+      safetyBlock?.symbol
+      && safetyBlock.attemptedAction
+      && safetyBlock.code
+      && safetyBlock.reason
+    ) {
+      events.push({
+        kind: "safety_block",
+        id: `${t.id}:safety`,
+        ts: safetyBlock.createdAt ?? t.createdAt.toISOString(),
+        asset: safetyBlock.symbol,
+        attemptedAction: safetyBlock.attemptedAction,
+        code: safetyBlock.code,
+        reason: safetyBlock.reason,
+      });
+    }
   }
   for (const t of tradeOpenRows) {
     const side = t.side === "short" ? "short" : "long";

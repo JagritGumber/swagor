@@ -35,10 +35,21 @@ export type ActivityTradeCloseEvent = {
   reason: string | null;
 };
 
+export type ActivitySafetyBlockEvent = {
+  kind: "safety_block";
+  id: string;
+  ts: string;
+  asset: string;
+  attemptedAction: "open_long" | "open_short";
+  code: string;
+  reason: string;
+};
+
 export type ActivityEvent =
   | ActivityTickEvent
   | ActivityTradeOpenEvent
-  | ActivityTradeCloseEvent;
+  | ActivityTradeCloseEvent
+  | ActivitySafetyBlockEvent;
 
 export type ActivityRecent = {
   events: ActivityEvent[];

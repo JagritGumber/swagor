@@ -17,7 +17,14 @@ import { tierSpec, type Tier } from "@/lib/tiers";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 import { anchorWatcherDecision, type AnchorJsonValue } from "@/lib/arc/anchor";
 import { logLlmCall } from "@/lib/llm/log";
-import { buildMarketFeatureSnapshot } from "@/lib/market-features";
+import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
+import { blendWatcherCadence } from "@/lib/cadence-blend";
+import { recordTickStages, type TickStageInput } from "@/app/services/tick-stages.service";
+
+function previousMarketFeatures(lastTick: { context: unknown } | undefined): MarketFeatureSnapshot | null {
+  const context = lastTick?.context as { marketFeatures?: MarketFeatureSnapshot } | null | undefined;
+  return context?.marketFeatures ?? null;
+}
 
 /**
  * Run one watcher tick for a given Selbo instance. Reads Hyperliquid mark
@@ -64,6 +71,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     mids,
     universe: meta.universe,
     ctxs: meta.ctxs,
+    previousSnapshot: previousMarketFeatures(lastTick),
   }).catch((err) => {
     console.error("[watcher] market feature build failed:", err);
     return {
@@ -173,15 +181,16 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
           return WATCHER_SCHEMA.parse(JSON.parse(raw));
         })();
 
-  // Apply per-tier cadence floor: free users tick less often than basic+.
+  // Apply per-tier cadence plus deterministic realized-volatility blend.
   const spec = tierSpec(instance.subscriptionTier as Tier);
-  const clampedNext =
-    parsed.verdict === "risk_emergency"
-      ? Math.min(parsed.nextCheckSeconds, 120)
-      : Math.min(
-          Math.max(parsed.nextCheckSeconds, spec.watcherMinCadenceSeconds),
-          spec.watcherMaxCadenceSeconds,
-        );
+  const cadenceBlend = blendWatcherCadence({
+    agentNextCheckSeconds: parsed.nextCheckSeconds,
+    marketFeatures,
+    tierMinSeconds: spec.watcherMinCadenceSeconds,
+    tierMaxSeconds: spec.watcherMaxCadenceSeconds,
+    riskEmergency: parsed.verdict === "risk_emergency",
+  });
+  const clampedNext = cadenceBlend.nextCheckSeconds;
 
   const [tickRow] = await db.insert(monitorTicks).values({
     selboInstanceId: instance.id,
@@ -193,11 +202,68 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       perps,
       marketFeatures,
       risk,
+      cadenceBlend,
       positionCount: positions.length,
       newsCount: (newsRes.results ?? []).length,
       tier: spec.id,
     },
   }).returning({ id: monitorTicks.id });
+
+  if (tickRow) {
+    const routingSummary =
+      parsed.verdict === "deliberate" && spec.panelDeliberations
+        ? "Routing to the full swarm panel."
+        : parsed.verdict === "deliberate"
+          ? "Free tier downgrade: routing to the Fast Trader."
+          : parsed.verdict === "execute" || parsed.verdict === "risk_emergency"
+            ? "Routing to the Fast Trader."
+            : "No downstream agent run needed.";
+    const stageRows: TickStageInput[] = [
+      {
+        selboInstanceId: instance.id,
+        tickId: tickRow.id,
+        stage: "market_data",
+        status: marketFeatures.symbols.length > 0 ? "completed" : "failed",
+        summary: `${marketFeatures.symbols.length} symbols enriched; ${marketFeatures.skippedSymbols.length} skipped.`,
+        metadata: { watching, skippedSymbols: marketFeatures.skippedSymbols },
+      },
+      {
+        selboInstanceId: instance.id,
+        tickId: tickRow.id,
+        stage: "risk",
+        status: risk.status === "critical" ? "failed" : "completed",
+        summary: risk.summary,
+        metadata: risk as AnchorJsonValue,
+      },
+      {
+        selboInstanceId: instance.id,
+        tickId: tickRow.id,
+        stage: "watcher",
+        status: "completed",
+        summary: `${parsed.verdict}: ${parsed.rationale}`,
+        metadata: parsed as AnchorJsonValue,
+      },
+      {
+        selboInstanceId: instance.id,
+        tickId: tickRow.id,
+        stage: "cadence_blend",
+        status: "completed",
+        summary: cadenceBlend.reason,
+        metadata: cadenceBlend as AnchorJsonValue,
+      },
+      {
+        selboInstanceId: instance.id,
+        tickId: tickRow.id,
+        stage: "routing",
+        status: parsed.verdict === "hold" ? "skipped" : "pending",
+        summary: routingSummary,
+        metadata: { verdict: parsed.verdict, tier: spec.id },
+      },
+    ];
+    await recordTickStages(stageRows).catch((err) => {
+      console.error("[watcher] tick stage insert failed:", err);
+    });
+  }
 
   await db.update(selboInstances).set({
     nextWatcherAt: new Date(Date.now() + clampedNext * 1000),

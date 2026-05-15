@@ -27,7 +27,7 @@ This is **paper mode running in the background** for every active user. There is
 
 The user's strategy is plain English — read it in their own words. Do NOT use hardcoded numeric thresholds. What counts as "something happening" depends on this user's strategy.
 
-The payload includes deterministic marketFeatures computed by code: RSI, EMA trend, ATR/volatility, regime, candidateBias, cadenceHint, and featureQuality. Do not calculate indicators yourself and do not infer from raw candle history. Treat marketFeatures as tool output, but be conservative when featureQuality is stale, partial, or unavailable. Market features are context, not trade commands.
+The payload includes deterministic marketFeatures computed by code plus compact recentCandles and openInterestDeltas. Use marketFeatures and recentCandles together. You may reason about candle patterns and volume/open-interest relationships against the user's strategy. Be conservative when featureQuality is stale, partial, or unavailable. Market features are context, not trade commands.
 
 Tiers:
 
