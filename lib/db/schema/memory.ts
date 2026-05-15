@@ -31,6 +31,12 @@ export const memoryEntries = pgTable("memory_entries", {
   pnlPct: numeric("pnl_pct"),
   reviewerAccuracy: jsonb("reviewer_accuracy"),
   lessons: text("lessons").array(),
+  // User feedback for in-context-learning correction. Null = no feedback.
+  // 'bad' or deleted -> filtered from future agent context reads. See
+  // memory `decision-transparency-legal-shield` and the M8 spec in the
+  // current phase plan.
+  userFeedback: text("user_feedback", { enum: ["good", "bad"] }),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

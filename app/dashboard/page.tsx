@@ -14,6 +14,7 @@ import { ActivityTape } from "@/components/dashboard/activity-tape";
 import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
 import { BalanceRisk } from "@/components/dashboard/bento/balance-risk";
 import { EquityCurve } from "@/components/dashboard/bento/equity-curve";
+import { MemoryCards } from "@/components/dashboard/bento/memory-cards";
 import { StrategyBriefCard } from "@/components/dashboard/strategy-brief-card";
 import { WatcherDevControls } from "@/components/dashboard/watcher-dev-controls";
 import { DisclosureCard } from "@/components/dashboard/disclosure-card";
@@ -101,7 +102,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
           </DisclosureCard>
         </div>
 
-        <div className="col-span-12">
+        <div className="col-span-12 lg:col-span-6">
+          <DisclosureCard title="Memory" subtitle="thumbs to correct">
+            <MemoryCards />
+          </DisclosureCard>
+        </div>
+        <div className="col-span-12 lg:col-span-6">
           <DisclosureCard title="Decisions">
             <DecisionsSection walletAddress={addr} />
           </DisclosureCard>
