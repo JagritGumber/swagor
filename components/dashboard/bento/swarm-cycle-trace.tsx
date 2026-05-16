@@ -10,6 +10,7 @@ type Trace = {
   aggregation: { recommendedAllocation: unknown; dispersion: string | null; clusterSummary: unknown } | null;
   agentReasoning: Reasoning[];
   llmCalls: LlmCall[];
+  context: unknown;
   summary: {
     cost: { totalTokens: number; totalUsd: number | null; ratePer1k: number | null };
     latency: { totalMs: number | null; slowestAgent: { agentName: string; ms: number } | null };
@@ -60,6 +61,7 @@ export function SwarmCycleTrace({ cycleId, onClose }: { cycleId: string; onClose
           </div>
           <div className="max-h-[600px] overflow-auto p-4">
             <CycleSections
+              context={trace.context}
               aggregation={trace.aggregation}
               rounds={trace.swarmRounds}
               reasoning={trace.agentReasoning}

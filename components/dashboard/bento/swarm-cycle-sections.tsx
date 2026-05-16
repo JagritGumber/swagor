@@ -12,8 +12,9 @@ function matches(needle: string, haystack: string): boolean {
 }
 
 export function CycleSections({
-  aggregation, rounds, reasoning, calls, search,
+  context, aggregation, rounds, reasoning, calls, search,
 }: {
+  context: unknown;
   aggregation: unknown;
   rounds: Round[];
   reasoning: Reasoning[];
@@ -26,6 +27,19 @@ export function CycleSections({
 
   return (
     <div className="space-y-4 text-sm">
+      <details open>
+        <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+          context (what the swarm saw)
+          {context ? "" : " - not recorded for this cycle"}
+        </summary>
+        <div className="mt-2">
+          {context ? <JsonTree data={context} /> : (
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              cycleState not stored. Older cycles ran before context audit landed.
+            </p>
+          )}
+        </div>
+      </details>
       <details open>
         <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">aggregation</summary>
         <div className="mt-2"><JsonTree data={aggregation} /></div>

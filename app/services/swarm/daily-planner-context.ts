@@ -1,25 +1,12 @@
 import "server-only";
 
-import { and, desc, eq } from "drizzle-orm";
-import { db } from "@/lib/db/client";
-import { dailyPlans, monitorTicks, trades, type SelboInstance } from "@/lib/db/schema";
-import { fetchAllMids, fetchMetaAndCtxs } from "@/lib/data-sources/hyperliquid";
-import { searchNews } from "@/lib/data-sources/news";
+import { type SelboInstance } from "@/lib/db/schema";
 import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
-import { getRecentLessons } from "@/app/services/memory.service";
+import { classifyNews } from "@/lib/news-sentiment";
+import { fetchAllForDailyPlan } from "./daily-planner-fetchers";
+import type { DailyPlanContext } from "./daily-planner-types";
 
-export type DailyPlanContext = {
-  mode: "daily_plan";
-  strategy: string;
-  watching: string[];
-  account: { equityUsd: number };
-  paperPositions: Array<{ asset: string; side: string; size_usd: number; entry: number | null }>;
-  perps: Array<{ symbol: string; mid: string | null; mark: string | null; funding_hourly: string | null; open_interest: string | null }>;
-  marketFeatures: MarketFeatureSnapshot;
-  recent_news: Array<{ title: string; source: string; hoursAgo: number | null }>;
-  recent_lessons: string[];
-  yesterdayPlanSummary: { generatedAt: string; biasByAsset: unknown; notes: string } | null;
-};
+export type { DailyPlanContext, RecentPnlEntry } from "./daily-planner-types";
 
 function previousMarketFeatures(row: { context: unknown } | undefined): MarketFeatureSnapshot | null {
   const ctx = row?.context as { marketFeatures?: MarketFeatureSnapshot } | null | undefined;
@@ -28,33 +15,21 @@ function previousMarketFeatures(row: { context: unknown } | undefined): MarketFe
 
 /**
  * Build the swarm context for a daily-plan cycle. Mirrors the orchestrator
- * pattern (mids + meta + market features + news + lessons + yesterday plan)
- * but skips clearing-house and risk-engine evaluation since the daily plan
- * is informational, not a trade order.
+ * pattern but skips clearing-house and risk-engine evaluation since the
+ * daily plan is informational, not a trade order. Captures per-source
+ * ingestion metadata so the dev panel can flag when a swarm reasoned on
+ * an empty or failed feed.
  */
 export async function buildDailyPlanContext(instance: SelboInstance): Promise<DailyPlanContext> {
-  const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
+  const fb = await fetchAllForDailyPlan(instance);
 
-  const [mids, meta, paperOpen, lastTick, newsRes, recentLessons, yesterdayPlan] = await Promise.all([
-    fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
-    fetchMetaAndCtxs().catch(() => ({ universe: [], ctxs: [] })),
-    db.select().from(trades).where(and(eq(trades.userId, instance.userId), eq(trades.status, "open"))),
-    db.select().from(monitorTicks).where(eq(monitorTicks.selboInstanceId, instance.id))
-      .orderBy(desc(monitorTicks.createdAt)).limit(1).then((r) => r[0]),
-    searchNews(`${watching.join(" OR ")} OR perp futures OR funding rate OR crypto market`)
-      .catch(() => ({ results: [] as Array<{ title: string; source: string; publishedAt: string }> })),
-    getRecentLessons(instance.userId, 5).catch(() => [] as string[]),
-    db.select().from(dailyPlans).where(eq(dailyPlans.selboInstanceId, instance.id))
-      .orderBy(desc(dailyPlans.generatedAt)).limit(1).then((r) => r[0]),
-  ]);
-
-  const ctxBySymbol = new Map(meta.universe.map((u, i) => [u.name.toUpperCase(), meta.ctxs[i]]));
-  const perps = watching.map((sym) => {
+  const ctxBySymbol = new Map(fb.meta.universe.map((u, i) => [u.name.toUpperCase(), fb.meta.ctxs[i]]));
+  const perps = fb.watching.map((sym) => {
     const upper = sym.toUpperCase();
     const ctx = ctxBySymbol.get(upper);
     return {
       symbol: upper,
-      mid: mids[upper] ?? null,
+      mid: fb.mids[upper] ?? null,
       mark: ctx?.markPx ?? null,
       funding_hourly: ctx?.funding ?? null,
       open_interest: ctx?.openInterest ?? null,
@@ -62,38 +37,52 @@ export async function buildDailyPlanContext(instance: SelboInstance): Promise<Da
   });
 
   const marketFeatures = await buildMarketFeatureSnapshot({
-    watching, mids, universe: meta.universe, ctxs: meta.ctxs,
-    previousSnapshot: previousMarketFeatures(lastTick),
+    watching: fb.watching, mids: fb.mids, universe: fb.meta.universe, ctxs: fb.meta.ctxs,
+    previousSnapshot: previousMarketFeatures(fb.lastTick),
   }).catch((err) => {
     console.error("[daily-planner] market feature build failed:", err);
     return {
       source: "hyperliquid-testnet" as const,
       generatedAt: new Date().toISOString(),
       symbols: [],
-      skippedSymbols: watching.map((s) => ({ symbol: s.toUpperCase(), reason: "feature build failed" })),
+      skippedSymbols: fb.watching.map((s) => ({ symbol: s.toUpperCase(), reason: "feature build failed" })),
     };
   });
 
+  const recent_news = fb.newsResults.slice(0, 6).map((n) => ({
+    title: n.title, source: n.source,
+    hoursAgo: n.publishedAt ? Math.floor((Date.now() - new Date(n.publishedAt).getTime()) / 3_600_000) : null,
+  }));
+
+  const yp = fb.yesterdayPlan;
   return {
     mode: "daily_plan",
     strategy: instance.strategyText,
-    watching,
+    watching: fb.watching,
     account: { equityUsd: Number(instance.simulatedBalanceUsd) },
-    paperPositions: paperOpen.map((t) => ({
+    paperPositions: fb.paperOpen.map((t) => ({
       asset: t.asset, side: t.side, size_usd: Number(t.amountUsd),
       entry: t.entryPrice ? Number(t.entryPrice) : null,
     })),
     perps,
     marketFeatures,
-    recent_news: (newsRes.results ?? []).slice(0, 6).map((n) => ({
-      title: n.title, source: n.source,
-      hoursAgo: n.publishedAt ? Math.floor((Date.now() - new Date(n.publishedAt).getTime()) / 3_600_000) : null,
-    })),
-    recent_lessons: recentLessons,
-    yesterdayPlanSummary: yesterdayPlan
-      ? { generatedAt: yesterdayPlan.generatedAt.toISOString(),
-          biasByAsset: (yesterdayPlan.planJson as { biasByAsset?: unknown } | null)?.biasByAsset ?? null,
-          notes: (yesterdayPlan.planJson as { notes?: string } | null)?.notes ?? "" }
+    recent_news,
+    news_sentiment: classifyNews(fb.newsResults),
+    recent_lessons: fb.recentLessons,
+    recent_pnl: fb.recentClosedTrades.map((t) => {
+      const amountUsd = Number(t.amountUsd);
+      const pnlUsd = t.pnlUsd === null ? null : Number(t.pnlUsd);
+      const pnlPct = pnlUsd !== null && amountUsd > 0 ? (pnlUsd / amountUsd) * 100 : null;
+      return {
+        asset: t.asset, side: t.side, pnlUsd, pnlPct,
+        closedAt: (t.closedAt ?? new Date()).toISOString(),
+      };
+    }),
+    yesterdayPlanSummary: yp
+      ? { generatedAt: yp.generatedAt.toISOString(),
+          biasByAsset: (yp.planJson as { biasByAsset?: unknown } | null)?.biasByAsset ?? null,
+          notes: (yp.planJson as { notes?: string } | null)?.notes ?? "" }
       : null,
+    _ingestion: fb.ingestion,
   };
 }

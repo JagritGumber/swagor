@@ -50,6 +50,7 @@ export async function GET(
   return NextResponse.json({
     cycle, swarmRounds: rounds, aggregation,
     agentReasoning: reasoning, llmCalls: calls,
+    context: cycle.cycleState,
     summary: { cost, latency, warnings, watchlist },
   });
 }
