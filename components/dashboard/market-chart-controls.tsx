@@ -18,8 +18,6 @@ export const LOOKBACKS: Lookback[] = [
 export const INTERVALS: Interval[] = ["1m", "5m", "15m", "1h", "4h", "1d"];
 export const CHART_TYPES: ChartType[] = ["candles", "line", "area"];
 
-const COMMON_INTERVALS: Interval[] = ["5m", "15m", "1h", "4h", "1d"];
-const EXTRA_INTERVALS: Interval[] = ["1m"];
 type LookbackLabel = (typeof LOOKBACKS)[number]["label"];
 const LOOKBACK_LABELS: LookbackLabel[] = LOOKBACKS.map((l) => l.label);
 
@@ -28,24 +26,6 @@ const TYPE_ICON: Record<ChartType, React.ReactNode> = {
   line: <LineIcon className="h-3.5 w-3.5" />,
   area: <AreaIcon className="h-3.5 w-3.5" />,
 };
-
-function InlineBtn({ active, onClick, children }: {
-  active: boolean; onClick: () => void; children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex h-7 items-center justify-center border px-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.16em] transition ${
-        active
-          ? "border-[var(--neon-cyan)] bg-[var(--neon-cyan)] text-black"
-          : "border-[var(--hairline-strong)] bg-black text-foreground hover:border-[var(--neon-cyan)] hover:text-[var(--neon-cyan)]"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
 
 function Separator() {
   return <span aria-hidden className="mx-1 h-5 w-px bg-[var(--hairline)]" />;
@@ -65,7 +45,6 @@ export function MarketChartControls({
   onLookback: (ms: number) => void;
   onChartType: (t: ChartType) => void;
 }) {
-  const extraSelected = EXTRA_INTERVALS.includes(interval);
   const currentLookback = (LOOKBACKS.find((l) => l.ms === lookbackMs)?.label ?? "24H") as LookbackLabel;
 
   return (
@@ -79,19 +58,22 @@ export function MarketChartControls({
 
       <Separator />
 
-      {COMMON_INTERVALS.map((i) => (
-        <InlineBtn key={i} active={interval === i} onClick={() => onInterval(i)}>
-          {i}
-        </InlineBtn>
-      ))}
-      <Dropdown<Interval>
-        value={extraSelected ? interval : ("1m" as Interval)}
-        options={EXTRA_INTERVALS}
-        onSelect={onInterval}
-        ariaLabel="More timeframes"
-        label={extraSelected ? interval : "..."}
-        active={extraSelected}
-      />
+      <div className="flex h-7 divide-x divide-[var(--hairline-strong)] border border-[var(--hairline-strong)]">
+        {INTERVALS.map((i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onInterval(i)}
+            className={`inline-flex items-center justify-center px-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.16em] transition ${
+              interval === i
+                ? "bg-[var(--neon-cyan)] text-black"
+                : "bg-black text-foreground hover:bg-[var(--neon-cyan)]/10 hover:text-[var(--neon-cyan)]"
+            }`}
+          >
+            {i}
+          </button>
+        ))}
+      </div>
 
       <Separator />
 

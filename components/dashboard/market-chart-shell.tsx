@@ -11,6 +11,12 @@ const DEFAULT_INTERVAL: Interval = "5m";
 const DEFAULT_LOOKBACK_MS = 86_400_000;
 const DEFAULT_CHART_TYPE: ChartType = "candles";
 
+/**
+ * Market card body. Renders one header row (title + compact controls)
+ * with a horizontal divider, then the chart edge-to-edge (no padding
+ * around it), then an optional hint + decision drawer below. Drops the
+ * old diagnostic line ('ETH · 5m · 208 candles · 0 markers').
+ */
 export function MarketChartShell({ watching, admin = false }: { watching: string[]; admin?: boolean }) {
   const [asset, setAsset] = useState(watching[0] ?? "ETH");
   const [interval, setInterval_] = useState<Interval>(DEFAULT_INTERVAL);
@@ -21,8 +27,6 @@ export function MarketChartShell({ watching, admin = false }: { watching: string
   const [otherAssets, setOtherAssets] = useState<string[]>([]);
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-  // Stable callback so MarketChart's mount effect does not retrigger.
   const handleMarkerClick = useCallback((tradeId: string) => {
     setSelectedTradeId(tradeId);
   }, []);
@@ -30,7 +34,7 @@ export function MarketChartShell({ watching, admin = false }: { watching: string
   useEffect(() => {
     const ac = new AbortController();
     let cancelled = false;
-    setLoading(true); setErr(null);
+    setLoading(true);
     const qs = new URLSearchParams({ asset, interval, lookbackMs: String(lookbackMs) });
     fetch(`/api/chart-data?${qs}`, { cache: "no-store", signal: ac.signal })
       .then(async (res) => {
@@ -45,32 +49,35 @@ export function MarketChartShell({ watching, admin = false }: { watching: string
         }
       })
       .catch((e: unknown) => {
-        if ((e as { name?: string })?.name === "AbortError") return;
-        if (!cancelled) setErr(e instanceof Error ? e.message : "fetch failed");
+        if ((e as { name?: string })?.name !== "AbortError") {
+          // swallow; loading indicator hides on finally
+        }
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; ac.abort(); };
   }, [asset, interval, lookbackMs]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <MarketChartControls
-        watching={watching}
-        asset={asset} interval={interval} lookbackMs={lookbackMs} chartType={chartType}
-        onAsset={setAsset} onInterval={setInterval_}
-        onLookback={setLookbackMs} onChartType={setChartType}
-      />
-      <div className="flex flex-wrap items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-        <span>
-          {asset} · {interval} · {loading ? "loading..." : `${candles.length} candles · ${markers.length} markers`}
-          {err ? ` · ${err}` : ""}
-        </span>
-        {otherAssets.length > 0 && (
-          <span className="text-[var(--neon-cyan)]">
-            +{otherAssets.length} on {otherAssets.join(", ")}
-          </span>
-        )}
-      </div>
+    <>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline)] px-6 py-3">
+        <div className="flex items-baseline gap-4">
+          <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
+            Market
+          </h2>
+          {otherAssets.length > 0 && (
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
+              +{otherAssets.length} on {otherAssets.join(", ")}
+            </span>
+          )}
+        </div>
+        <MarketChartControls
+          watching={watching}
+          asset={asset} interval={interval} lookbackMs={lookbackMs} chartType={chartType}
+          onAsset={setAsset} onInterval={setInterval_}
+          onLookback={setLookbackMs} onChartType={setChartType}
+        />
+      </header>
+
       <div className="relative">
         <div
           className={`transition-[filter,opacity] duration-300 ${
@@ -100,18 +107,21 @@ export function MarketChartShell({ watching, admin = false }: { watching: string
           </div>
         )}
       </div>
+
       {markers.length > 0 && !selectedTradeId && (
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="border-t border-[var(--hairline)] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           Click any marker to see why Selbo took the trade
         </p>
       )}
       {selectedTradeId && (
-        <TradeDecisionDrawer
-          tradeId={selectedTradeId}
-          admin={admin}
-          onClose={() => setSelectedTradeId(null)}
-        />
+        <div className="border-t border-[var(--hairline)] px-6 pb-6 pt-2">
+          <TradeDecisionDrawer
+            tradeId={selectedTradeId}
+            admin={admin}
+            onClose={() => setSelectedTradeId(null)}
+          />
+        </div>
       )}
-    </div>
+    </>
   );
 }

@@ -2,14 +2,11 @@ import { MarketChartShell } from "./market-chart-shell";
 
 export function MarketChartCard({ watching, admin = false }: { watching: string[]; admin?: boolean }) {
   const list = watching.length > 0 ? watching : ["ETH", "BTC", "SOL"];
+  // No outer padding: header + chart + hint each manage their own
+  // padding so the chart can stretch edge-to-edge inside the card.
   return (
-    <section className="border border-[var(--hairline-strong)] bg-black p-6">
-      <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-        Market
-      </h2>
-      <div className="mt-4">
-        <MarketChartShell watching={list} admin={admin} />
-      </div>
+    <section className="flex h-full flex-col overflow-hidden border border-[var(--hairline-strong)] bg-black">
+      <MarketChartShell watching={list} admin={admin} />
     </section>
   );
 }
