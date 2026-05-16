@@ -40,6 +40,7 @@ export default defineConfig({
     "equity_snapshots",
     "strategy_revisions",
     "tick_stages",
+    "daily_plans",
     // Better Auth
     "user",
     "session",
