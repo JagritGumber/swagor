@@ -20,9 +20,9 @@ const GREEN = "#00ff7f";
 const GREY = "#737373";
 const HAIRLINE = "rgba(255,255,255,0.18)";
 const GRID = "rgba(255,255,255,0.04)";
-// Subtle blue-tinted near-black so the chart area reads as a distinct
-// surface against the pure-black card without going noticeably blue.
-const CHART_BG = "#06090f";
+// Tinted dark-navy chart surface (TradingView-ish #131722) so the
+// chart area is clearly distinct from the pure-black card border.
+const CHART_BG = "#131722";
 
 function exitColor(pnl: number | null): string {
   if (pnl === null) return GREY;
