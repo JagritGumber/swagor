@@ -39,7 +39,7 @@ Output JSON exactly:
   }],
   "riskCaps": { "maxLeverage": 1-10, "maxNotionalPctOfEquity": 0-100 },
   "notes": "one paragraph on the overall regime read, news caveats, what would change the plan",
-  "markdown": "the same content rendered as user-facing markdown with sections: Today's bias, Boundaries, Risk caps, Notes"
+  "markdown": "the same content rendered as user-facing markdown with sections: Bias, Boundaries, Risk caps, Notes"
 }
 
 Rules:
@@ -49,5 +49,5 @@ Rules:
 - Either both invalidatesIf and flipsTo are set, or both are null. No half-states.
 - riskCaps come from the user's strategy text + the swarm's regime read. Default 1-3x max leverage; default 5-20% max notional per asset.
 - notes is plain English, no jargon dump. Mention dispersion if > 0.5 (the swarm disagreed).
-- markdown sections (in order): "## Today's bias" with one bullet per asset, "## Boundaries" with one bullet per asset that has an invalidatesIf, "## Risk caps", "## Notes". Bullet points only; no walls of text.
+- markdown sections (in order): "## Bias" with one bullet per asset, "## Boundaries" with one bullet per asset that has an invalidatesIf, "## Risk caps", "## Notes". Bullet points only; no walls of text.
 - Ground the analysis in the swarm output and the user's strategy. Do not invent assets or price levels not present in the input.`;

@@ -48,7 +48,7 @@ export function DailyPlan() {
       <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <div className="flex items-baseline gap-3">
           <span aria-hidden className="inline-block h-2.5 w-2.5 bg-[var(--neon-cyan)]" />
-          <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">Today&apos;s analysis</h2>
+          <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">Analysis</h2>
         </div>
         {plan && (
           <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -68,7 +68,7 @@ export function DailyPlan() {
 
       {plan?.status === "pending" && (
         <p className="mt-4 border border-dashed border-[var(--hairline-strong)] bg-[#080808] p-4 text-sm text-muted-foreground">
-          Generating today&apos;s analysis. This page will update automatically.
+          Generating analysis. This page will update automatically.
         </p>
       )}
 
