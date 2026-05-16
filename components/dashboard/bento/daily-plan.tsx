@@ -1,15 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { DailyPlanBody, type PlanJson } from "./daily-plan-body";
 
-type BiasEntry = { asset: string; bias: "long" | "short" | "avoid" | "neutral"; confidence: number; reason: string };
-type PlanJson = {
-  watchlist?: string[];
-  biasByAsset?: BiasEntry[];
-  riskCaps?: { maxLeverage: number; maxNotionalPctOfEquity: number };
-  notes?: string;
-  markdown?: string;
-};
 type DailyPlanRow = {
   id: string;
   generatedAt: string;
@@ -19,17 +12,13 @@ type DailyPlanRow = {
   errorMessage: string | null;
 };
 
-function biasTone(b: BiasEntry["bias"]): string {
-  if (b === "long") return "border-[var(--neon-green)] text-[var(--neon-green)]";
-  if (b === "short") return "border-[var(--neon-red)] text-[var(--neon-red)]";
-  if (b === "avoid") return "border-[var(--neon-yellow)] text-[var(--neon-yellow)]";
-  return "border-[var(--hairline-strong)] text-muted-foreground";
-}
-
 export function DailyPlan() {
   const [plan, setPlan] = useState<DailyPlanRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const planRef = useRef<DailyPlanRow | null>(null);
+  planRef.current = plan;
 
   useEffect(() => {
     let cancelled = false;
@@ -45,6 +34,13 @@ export function DailyPlan() {
       }
     }
     void load();
+    // Poll every 8s while the plan is missing or still generating. Ref
+    // read keeps the interval stable across plan updates.
+    const timer = window.setInterval(() => {
+      const p = planRef.current;
+      if (!p || p.status !== "complete") void load();
+    }, 8_000);
+    return () => { cancelled = true; window.clearInterval(timer); };
   }, []);
 
   return (
@@ -66,7 +62,13 @@ export function DailyPlan() {
 
       {!loading && !error && !plan && (
         <p className="mt-4 border border-dashed border-[var(--hairline-strong)] bg-[#080808] p-4 text-sm text-muted-foreground">
-          First daily plan generates at the next scheduled run (00:05 UTC). Once generated, it will appear here.
+          Your first daily plan is generating. This page will update automatically when it lands.
+        </p>
+      )}
+
+      {plan?.status === "pending" && (
+        <p className="mt-4 border border-dashed border-[var(--hairline-strong)] bg-[#080808] p-4 text-sm text-muted-foreground">
+          Generating today&apos;s plan. This page will update automatically.
         </p>
       )}
 
@@ -77,26 +79,7 @@ export function DailyPlan() {
         </div>
       )}
 
-      {plan?.status === "complete" && plan.planJson && (
-        <div className="mt-4 space-y-4">
-          {plan.planJson.biasByAsset && plan.planJson.biasByAsset.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {plan.planJson.biasByAsset.map((b) => (
-                <div key={b.asset} className={`border bg-[#050505] p-3 ${biasTone(b.bias)}`} title={b.reason}>
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[12px] font-bold uppercase tracking-[0.18em]">{b.asset}</span>
-                    <span className="font-mono text-[10px] uppercase">{b.bias}</span>
-                  </div>
-                  <p className="mt-2 line-clamp-2 text-xs text-foreground">{b.reason}</p>
-                </div>
-              ))}
-            </div>
-          )}
-          {plan.planMarkdown && (
-            <pre className="whitespace-pre-wrap border border-[var(--hairline)] bg-[#050505] p-4 text-sm leading-relaxed text-foreground">{plan.planMarkdown}</pre>
-          )}
-        </div>
-      )}
+      {plan?.status === "complete" && <DailyPlanBody planJson={plan.planJson} planMarkdown={plan.planMarkdown} />}
     </section>
   );
 }

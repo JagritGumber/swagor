@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import HeaderAuth from "@/components/header-auth";
 import { NavBrand } from "@/components/nav-brand";
+import { SelboStatusPill } from "@/components/dashboard/selbo-status-pill";
 
 const DASHBOARD_TABS: Array<{ href: string; label: string; match: (p: string) => boolean }> = [
   { href: "/dashboard", label: "Dashboard", match: (p) => p === "/dashboard" },
@@ -58,12 +59,16 @@ export function NavInner() {
         </div>
         <DashboardTabs path={path ?? "/dashboard"} />
         <div className="flex items-center justify-end gap-3">
+          <SelboStatusPill />
           <HeaderAuth />
         </div>
       </div>
     );
   }
-  // Marketing / legal / public / landing -- ORIGINAL layout verbatim.
+  // Marketing / legal / public / landing -- ORIGINAL layout verbatim,
+  // plus the SelboStatusPill in the right cluster so logged-in users
+  // can pause/resume from anywhere. The pill renders null when there
+  // is no session, keeping the logged-out landing page unchanged.
   return (
     <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6 text-sm">
       <div className="flex items-baseline gap-4">
@@ -73,6 +78,7 @@ export function NavInner() {
         </span>
       </div>
       <div className="flex items-center gap-3">
+        <SelboStatusPill />
         <HeaderAuth />
       </div>
     </div>

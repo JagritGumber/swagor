@@ -7,17 +7,12 @@ import { ensureSelboInstance } from "@/app/services/selbo-instance.service";
 import { ProfileSettings } from "@/components/dashboard/profile-settings";
 import { SelboWalletCard } from "@/components/dashboard/selbo-wallet-card";
 import { GoalForm } from "@/components/dashboard/goal-form";
-import { KillSwitchCard } from "@/components/dashboard/kill-switch-card";
 
 /**
  * Profile + settings hub. Holds everything that is not "what Selbo is doing
  * right now" so the dashboard stays focused on live decisions and risk.
- *
- * Order:
- *   1. Identity (username + public profile toggle)
- *   2. Strategy (the text the watcher and trader read every tick)
- *   3. Wallet (Selbo's Arc Testnet wallet)
- *   4. Kill switch (danger zone at the bottom)
+ * Pause/resume now lives in the navbar status pill, so this page no longer
+ * carries a kill-switch card.
  */
 export default async function ProfilePage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -56,8 +51,6 @@ export default async function ProfilePage() {
       />
 
       <SelboWalletCard instance={instance} />
-
-      <KillSwitchCard initialActive={instance.killSwitchActive} />
     </div>
   );
 }
