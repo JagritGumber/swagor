@@ -44,7 +44,13 @@ Output JSON exactly:
 
 Rules:
 - watchlist mirrors the assets that have a biasByAsset entry.
-- invalidatesIf MUST be observable from price / funding / OI / volume / candle close data. Never use vague sentiment language ("if the mood shifts"). Examples: "ETH funding stays positive for 8h", "BTC reclaims the 1h ema50 and holds 2 candles".
+- invalidatesIf MUST cite a SPECIFIC observable threshold using a concrete number from THIS asset's market features. Examples:
+    - GOOD: "BTC closes above 79552 (1h ema50) on 4h and holds 2 candles"
+    - GOOD: "ETH funding rate flips negative for 4 consecutive hours"
+    - GOOD: "SOL hourly RSI reclaims 50"
+    - BAD (templated): same trigger repeated for every asset (e.g. "closes above the 1h ema50" on all three is a tell that you didn't read the data)
+    - BAD (vague): "if the mood shifts", "on a strong move"
+- Each asset's invalidatesIf MUST be distinct -- different anchor type or different number from the other assets unless the data genuinely supports the same trigger (rare; explain in the reason if so).
 - flipsTo names the bias you would switch to if invalidatesIf triggers. Required when invalidatesIf is not null.
 - Either both invalidatesIf and flipsTo are set, or both are null. No half-states.
 - riskCaps come from the user's strategy text + the swarm's regime read. Default 1-3x max leverage; default 5-20% max notional per asset.

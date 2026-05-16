@@ -7,6 +7,7 @@ import { db } from "@/lib/db/client";
 import { agentReasoning, aggregations, llmCalls, rebalanceCycles, selboInstances, swarmRounds } from "@/lib/db/schema";
 import { computeCycleCost, computeCycleLatency } from "@/lib/utils/cycle-cost";
 import { findCycleWarnings } from "@/lib/utils/cycle-checks";
+import { findHallucinations } from "@/lib/utils/hallucination-check";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,7 +46,20 @@ export async function GET(
   const watchlist = instance[0]?.currentlyWatching ?? [];
   const cost = computeCycleCost(calls);
   const latency = computeCycleLatency(cycle, calls);
-  const warnings = findCycleWarnings({ watchlist, aggregation, agentReasoning: reasoning });
+  const cycleState = cycle.cycleState as { marketFeatures?: { symbols?: unknown[] } } | null;
+  const marketFeatures = cycleState?.marketFeatures ?? { symbols: [] };
+  const hallucinations = findHallucinations({
+    rounds: rounds.map((r) => ({
+      personaId: r.personaId,
+      reasoning: r.reasoning,
+      proposedAllocation: r.proposedAllocation,
+    })),
+    marketFeatures: marketFeatures as { symbols?: import("@/lib/utils/hallucination-check").SymbolFeature[] },
+  });
+  const warnings = [
+    ...findCycleWarnings({ watchlist, aggregation, agentReasoning: reasoning }),
+    ...hallucinations,
+  ];
 
   return NextResponse.json({
     cycle, swarmRounds: rounds, aggregation,
