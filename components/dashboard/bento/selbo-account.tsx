@@ -216,8 +216,17 @@ export function SelboAccount() {
 
       <div className="bg-[#131722]">
         <div className="px-6 pt-5 pb-3">
-          <div className="font-mono text-4xl tabular-nums leading-none text-foreground">
-            {fmtUsd(last?.equityUsd ?? null)}
+          <div className="flex items-baseline justify-between gap-3">
+            <div className="font-mono text-4xl tabular-nums leading-none text-foreground">
+              {fmtUsd(last?.equityUsd ?? null)}
+            </div>
+            <span
+              title="Exposure"
+              aria-label={`Exposure ${fmtUsdShort(exposure)}`}
+              className="cursor-help font-mono text-sm tabular-nums text-muted-foreground hover:text-foreground"
+            >
+              {fmtUsdShort(exposure)}
+            </span>
           </div>
           <div className={`mt-2 font-mono text-[11px] tabular-nums ${deltaTone}`}>
             {delta === null
@@ -241,10 +250,6 @@ export function SelboAccount() {
           displayValue={fmtPct(liqPct)}
           tone={liqTone(liqPct)}
         />
-        <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-          <span>Exposure</span>
-          <span className="tabular-nums text-foreground">{fmtUsdShort(exposure)}</span>
-        </div>
       </div>
     </section>
   );
