@@ -42,16 +42,25 @@ async function existingDailyPlan(instanceId: string): Promise<string | null> {
  * cost-cap, idempotency, rate-limit, swarm, aggregator, plan-compiler, and
  * persistence. Scheduled (`triggeredBy='daily'`) writes a daily_plans row;
  * watcher-triggered runs only write to rebalance_cycles for the dev panel.
+ *
+ * `force: true` (admin only) bypasses the idempotency check so an admin
+ * can regenerate today's analysis on demand. Cost cap still applies --
+ * force isn't permission to blow the daily LLM budget. Multiple complete
+ * daily_plans rows per UTC day are allowed; the Brain page reads the
+ * latest by generatedAt so the new one wins.
  */
 export async function runDailyPlanForInstance(
   instance: SelboInstance,
   triggeredBy: "daily" | "watcher",
+  opts?: { force?: boolean },
 ): Promise<RunResult> {
   if (await isLlmBudgetExhausted()) return { cycleId: "", status: "skipped", reason: "daily_cost_cap_exceeded" };
 
   if (triggeredBy === "daily") {
-    const existing = await existingDailyPlan(instance.id);
-    if (existing) return { cycleId: existing, status: "skipped", reason: "already_ran_today" };
+    if (!opts?.force) {
+      const existing = await existingDailyPlan(instance.id);
+      if (existing) return { cycleId: existing, status: "skipped", reason: "already_ran_today" };
+    }
   } else {
     const blocked = await rateLimitBlocked(instance.id);
     if (blocked) return { cycleId: "", status: "skipped", reason: blocked };

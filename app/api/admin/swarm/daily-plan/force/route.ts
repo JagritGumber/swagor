@@ -30,7 +30,10 @@ export async function POST() {
   if (!instance) return NextResponse.json({ error: "No Selbo instance" }, { status: 404 });
 
   try {
-    const result = await runDailyPlanForInstance(instance, "daily");
+    // Admin force-run bypasses the same-day idempotency check by design.
+    // Cost cap still applies. A fresh daily_plans row lands; Brain reads
+    // the latest by generatedAt so the user sees the new analysis.
+    const result = await runDailyPlanForInstance(instance, "daily", { force: true });
     return NextResponse.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
