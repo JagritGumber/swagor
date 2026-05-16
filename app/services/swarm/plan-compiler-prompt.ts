@@ -44,13 +44,22 @@ Output JSON exactly:
 
 Rules:
 - watchlist mirrors the assets that have a biasByAsset entry.
-- invalidatesIf MUST cite a SPECIFIC observable threshold using a concrete number from THIS asset's market features. Examples:
-    - GOOD: "BTC closes above 79552 (1h ema50) on 4h and holds 2 candles"
-    - GOOD: "ETH funding rate flips negative for 4 consecutive hours"
-    - GOOD: "SOL hourly RSI reclaims 50"
-    - BAD (templated): same trigger repeated for every asset (e.g. "closes above the 1h ema50" on all three is a tell that you didn't read the data)
-    - BAD (vague): "if the mood shifts", "on a strong move"
-- Each asset's invalidatesIf MUST be distinct -- different anchor type or different number from the other assets unless the data genuinely supports the same trigger (rare; explain in the reason if so).
+- invalidatesIf MUST cite a SPECIFIC observable threshold with a concrete NUMBER from THIS asset's marketFeatures. Available anchor types per asset (use the type that's most relevant to the persona consensus and the data):
+    - volume profile: POC (point of control), VAH (value area high), VAL (value area low), VWAP
+    - swing levels: swingHigh, swingLow over the 5m window
+    - EMA: 1h ema20, 1h ema50, 5m ema20, 5m ema50
+    - funding: hourly funding rate flipping sign or crossing a threshold
+    - RSI: reclaim or break of 1h RSI levels (30, 50, 70)
+    - OI: open interest delta crossing a threshold
+- Pick a DIFFERENT anchor TYPE for each asset where the data supports it. Repeating the same anchor type across all assets (e.g. ema50 on three) is a tell that you didn't engage with the data.
+- Examples that get the shape right:
+    - "BTC closes below VAL (78234) on 1h and holds 2 candles"
+    - "ETH funding rate flips negative for 4 consecutive hours"
+    - "SOL hourly RSI reclaims 50"
+    - "BTC reclaims POC at 79120 on 5m"
+- Examples that fail review:
+    - "closes above the 1h ema50" repeated for every asset (templated)
+    - "if the mood shifts", "on a strong move" (vague, not observable)
 - flipsTo names the bias you would switch to if invalidatesIf triggers. Required when invalidatesIf is not null.
 - Either both invalidatesIf and flipsTo are set, or both are null. No half-states.
 - riskCaps come from the user's strategy text + the swarm's regime read. Default 1-3x max leverage; default 5-20% max notional per asset.

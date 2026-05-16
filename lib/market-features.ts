@@ -7,6 +7,7 @@ import {
   type PerpAssetCtx,
   type PerpUniverseEntry,
 } from "@/lib/data-sources/hyperliquid";
+import { computeVolumeProfile } from "@/lib/volume-profile";
 
 export type FeatureQuality = "fresh" | "partial" | "stale" | "unavailable";
 export type EmaTrend = "bullish" | "bearish" | "flat" | "unknown";
@@ -61,6 +62,16 @@ export type SymbolMarketFeatures = {
   candidateBias: CandidateBias;
   cadenceHint: CadenceHint;
   cadenceReason: string;
+  // Price levels real traders anchor on. Computed from 5m candles
+  // over the recentCandles window. Null when no usable volume data.
+  volumeProfile: {
+    vwap: number | null;
+    poc: number | null;
+    vah: number | null;
+    val: number | null;
+    swingHigh: number | null;
+    swingLow: number | null;
+  };
 };
 
 export type MarketFeatureSnapshot = {
@@ -481,6 +492,9 @@ export async function buildMarketFeatureSnapshot(opts: {
       currentOpenInterest: openInterest,
       previousSnapshot: opts.previousSnapshot,
     });
+    const vp = computeVolumeProfile(
+      recentCandles.map((c) => ({ o: c.o, h: c.h, l: c.l, c: c.c, v: c.v })),
+    );
     return {
       symbol,
       mid: finite(opts.mids[symbol]),
@@ -491,6 +505,14 @@ export async function buildMarketFeatureSnapshot(opts: {
       openInterestChangeHint: oiHint(openInterestDeltas),
       recentCandles,
       timeframes,
+      volumeProfile: {
+        vwap: round(vp.vwap, 4),
+        poc: round(vp.poc, 4),
+        vah: round(vp.vah, 4),
+        val: round(vp.val, 4),
+        swingHigh: round(vp.swingHigh, 4),
+        swingLow: round(vp.swingLow, 4),
+      },
       ...hints,
     };
   });
