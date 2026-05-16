@@ -2,11 +2,15 @@
 
 import { MarkdownLite } from "@/components/ui/markdown-lite";
 
+export type BiasLabel = "long" | "short" | "avoid" | "neutral";
+
 export type BiasEntry = {
   asset: string;
-  bias: "long" | "short" | "avoid" | "neutral";
+  bias: BiasLabel;
   confidence: number;
   reason: string;
+  invalidatesIf?: string | null;
+  flipsTo?: BiasLabel | null;
 };
 
 export type PlanJson = {
@@ -17,7 +21,7 @@ export type PlanJson = {
   markdown?: string;
 };
 
-function biasTone(b: BiasEntry["bias"]): string {
+function biasTone(b: BiasLabel): string {
   if (b === "long") return "border-[var(--neon-green)] text-[var(--neon-green)]";
   if (b === "short") return "border-[var(--neon-red)] text-[var(--neon-red)]";
   if (b === "avoid") return "border-[var(--neon-yellow)] text-[var(--neon-yellow)]";
@@ -36,6 +40,14 @@ export function DailyPlanBody({ planJson, planMarkdown }: { planJson: PlanJson |
                 <span className="font-mono text-[10px] uppercase">{b.bias}</span>
               </div>
               <p className="mt-2 line-clamp-2 text-xs text-foreground">{b.reason}</p>
+              {b.invalidatesIf && b.flipsTo && (
+                <div className="mt-2 border-t border-current/30 pt-2">
+                  <div className="font-mono text-[9px] uppercase tracking-[0.16em] opacity-70">
+                    flips {b.flipsTo} if
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-[11px] text-foreground">{b.invalidatesIf}</p>
+                </div>
+              )}
             </div>
           ))}
         </div>

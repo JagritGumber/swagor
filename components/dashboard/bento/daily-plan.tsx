@@ -48,7 +48,7 @@ export function DailyPlan() {
       <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <div className="flex items-baseline gap-3">
           <span aria-hidden className="inline-block h-2.5 w-2.5 bg-[var(--neon-cyan)]" />
-          <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">Today&apos;s plan</h2>
+          <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">Today&apos;s analysis</h2>
         </div>
         {plan && (
           <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -62,19 +62,19 @@ export function DailyPlan() {
 
       {!loading && !error && !plan && (
         <p className="mt-4 border border-dashed border-[var(--hairline-strong)] bg-[#080808] p-4 text-sm text-muted-foreground">
-          Your first daily plan is generating. This page will update automatically when it lands.
+          Your first analysis is generating. This page will update automatically when it lands.
         </p>
       )}
 
       {plan?.status === "pending" && (
         <p className="mt-4 border border-dashed border-[var(--hairline-strong)] bg-[#080808] p-4 text-sm text-muted-foreground">
-          Generating today&apos;s plan. This page will update automatically.
+          Generating today&apos;s analysis. This page will update automatically.
         </p>
       )}
 
       {plan?.status === "failed" && (
         <div className="mt-4 border border-[var(--neon-red)] bg-[#120707] p-4">
-          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--neon-red)]">plan generation failed</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--neon-red)]">analysis generation failed</p>
           <p className="mt-2 text-sm text-foreground">{plan.errorMessage ?? "Unknown error"}</p>
         </div>
       )}
