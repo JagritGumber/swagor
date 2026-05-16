@@ -153,37 +153,62 @@ export function SelboAccount() {
     ? "text-muted-foreground"
     : delta >= 0 ? "text-[var(--neon-green)]" : "text-[var(--neon-red)]";
 
+  const marginPct = risk.account?.marginUsagePct ?? null;
+  const marginBarTone = marginPct === null
+    ? "bg-muted-foreground/30"
+    : marginPct < 30 ? "bg-emerald-500/80"
+    : marginPct < 60 ? "bg-amber-400/80"
+    : marginPct < 85 ? "bg-orange-400/80"
+    : "bg-[var(--neon-red)]/80";
+
   return (
     <section className="flex h-full flex-col border border-[var(--hairline-strong)] bg-black p-6">
-      <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-        Selbo&apos;s account
-      </h2>
-      <div className="mt-4 font-mono text-3xl tabular-nums text-foreground">
+      <header className="flex items-baseline justify-between gap-3">
+        <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
+          Selbo&apos;s account
+        </h2>
+        <span className={`font-mono text-[10px] uppercase tracking-[0.16em] ${tone.text}`}>
+          {tone.label}
+        </span>
+      </header>
+
+      <div className="mt-5 font-mono text-4xl tabular-nums leading-none text-foreground">
         {fmtUsd(last?.equityUsd ?? null)}
       </div>
-      <div className={`mt-0.5 font-mono text-[11px] tabular-nums ${deltaTone}`}>
+      <div className={`mt-2 font-mono text-[11px] tabular-nums ${deltaTone}`}>
         {delta === null
           ? "no snapshots yet"
           : `${delta >= 0 ? "+" : ""}${fmtUsd(delta)} (${deltaPct! >= 0 ? "+" : ""}${deltaPct!.toFixed(2)}%) 24h`}
       </div>
-      <div ref={containerRef} className="mt-3 w-full" />
 
-      <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-[var(--hairline)] pt-4 font-mono text-[11px] sm:grid-cols-4">
-        <div>
-          <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Risk</dt>
-          <dd className={`mt-0.5 font-bold uppercase tracking-[0.14em] ${tone.text}`}>{tone.label}</dd>
+      <div ref={containerRef} className="mt-4 w-full" />
+
+      <div className="mt-4 space-y-1">
+        <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+          <span>Margin used</span>
+          <span className="tabular-nums text-foreground">{fmtPct(marginPct)}</span>
         </div>
+        <div className="h-1.5 w-full bg-[#0a0a0a]">
+          <div
+            className={`h-full ${marginBarTone}`}
+            style={{ width: `${Math.min(100, Math.max(0, marginPct ?? 0))}%` }}
+            aria-hidden
+          />
+        </div>
+      </div>
+
+      <dl className="mt-4 grid grid-cols-3 gap-3 border-t border-[var(--hairline)] pt-4 font-mono text-[11px]">
         <div>
           <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Liq buffer</dt>
           <dd className="mt-0.5 tabular-nums text-foreground">{fmtPct(risk.closestLiquidationDistancePct)}</dd>
         </div>
         <div>
-          <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Margin</dt>
-          <dd className="mt-0.5 tabular-nums text-foreground">{fmtPct(risk.account?.marginUsagePct)}</dd>
-        </div>
-        <div>
           <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Exposure</dt>
           <dd className="mt-0.5 tabular-nums text-foreground">{fmtUsdShort(risk.totalExposureUsd)}</dd>
+        </div>
+        <div>
+          <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Status</dt>
+          <dd className={`mt-0.5 font-bold uppercase tracking-[0.14em] ${tone.text}`}>{tone.label}</dd>
         </div>
       </dl>
     </section>
