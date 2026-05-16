@@ -49,13 +49,15 @@ export async function aggregateDailyPlan(opts: {
   for (const d of decisions) {
     for (const entry of d.perAssetBias) {
       const asset = entry.asset.toUpperCase();
-      if (!perAsset.has(asset)) perAsset.set(asset, []);
-      perAsset.get(asset)!.push({
+      const vote = {
         bias: entry.bias,
         confidence: entry.confidence,
         reason: entry.oneLineReason,
         personaId: d.personaId,
-      });
+      };
+      const bucket = perAsset.get(asset);
+      if (bucket) bucket.push(vote);
+      else perAsset.set(asset, [vote]);
     }
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { authClient } from "@/lib/auth-client";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -17,6 +18,9 @@ type StatusResponse = {
 const POLL_MS = 5_000;
 
 export function SelboStatusPill() {
+  // Gate every fetch on a confirmed session so logged-out landing-page
+  // visitors don't spam /api/selbo/status with 401s every 5s.
+  const { data: session, isPending } = authClient.useSession();
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [resumeOpen, setResumeOpen] = useState(false);
@@ -29,6 +33,7 @@ export function SelboStatusPill() {
   }, []);
 
   useEffect(() => {
+    if (!session) return;
     void refresh();
     const onFocus = () => void refresh();
     window.addEventListener("focus", onFocus);
@@ -37,9 +42,9 @@ export function SelboStatusPill() {
       window.removeEventListener("focus", onFocus);
       window.clearInterval(t);
     };
-  }, [refresh]);
+  }, [refresh, session]);
 
-  if (!status) return null;
+  if (isPending || !session || !status) return null;
   const paused = status.killSwitchActive;
   const dotClass = paused ? "bg-[var(--neon-yellow)]" : "bg-[var(--neon-green)]";
   const label = paused ? "Selbo paused" : "Selbo running";
