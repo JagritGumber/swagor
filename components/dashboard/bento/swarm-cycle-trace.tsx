@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-type Round = { id: string; personaId: string; reasoning: string; confidence: string | null; proposedAllocation: unknown };
-type Reasoning = { id: string; agentName: string; model: string; output: unknown; createdAt: string };
-type LlmCall = { id: string; agentName: string; model: string; promptTokens: number | null; completionTokens: number | null; rawResponse: string; createdAt: string };
+import { SwarmCycleHeader } from "./swarm-cycle-header";
+import { CycleSections, type LlmCall, type Reasoning, type Round } from "./swarm-cycle-sections";
 
 type Trace = {
   cycle: { id: string; status: string; triggeredBy: string | null; errorMessage: string | null; startedAt: string; completedAt: string | null };
@@ -12,11 +10,18 @@ type Trace = {
   aggregation: { recommendedAllocation: unknown; dispersion: string | null; clusterSummary: unknown } | null;
   agentReasoning: Reasoning[];
   llmCalls: LlmCall[];
+  summary: {
+    cost: { totalTokens: number; totalUsd: number | null; ratePer1k: number | null };
+    latency: { totalMs: number | null; slowestAgent: { agentName: string; ms: number } | null };
+    warnings: Array<{ severity: "info" | "warn" | "error"; message: string }>;
+    watchlist: string[];
+  };
 };
 
 export function SwarmCycleTrace({ cycleId, onClose }: { cycleId: string; onClose: () => void }) {
   const [trace, setTrace] = useState<Trace | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -34,54 +39,35 @@ export function SwarmCycleTrace({ cycleId, onClose }: { cycleId: string; onClose
   }, [cycleId]);
 
   return (
-    <div className="mt-4 border border-[var(--hairline-strong)] bg-[#020202]">
-      <header className="flex items-center justify-between border-b border-[var(--hairline)] px-4 py-2">
-        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-foreground">cycle {cycleId.slice(0, 8)}</span>
-        <button onClick={onClose} className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground">close</button>
+    <div className="mt-4 border border-[var(--neon-green)] bg-[#020202]">
+      <header className="flex items-center justify-between border-b border-[var(--neon-green)]/40 px-4 py-2">
+        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)]">cycle {cycleId.slice(0, 8)}</span>
+        <button onClick={onClose} className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)] hover:underline">close</button>
       </header>
       {error && <p className="p-4 font-mono text-xs text-[var(--neon-red)]">{error}</p>}
       {!trace && !error && <p className="p-4 font-mono text-xs text-muted-foreground">loading trace...</p>}
       {trace && (
-        <div className="max-h-[600px] space-y-4 overflow-auto p-4 text-sm">
-          <details open>
-            <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">aggregation</summary>
-            <pre className="mt-2 whitespace-pre-wrap text-xs text-foreground">{JSON.stringify(trace.aggregation, null, 2)}</pre>
-          </details>
-          <details>
-            <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">swarm rounds ({trace.swarmRounds.length})</summary>
-            <div className="mt-2 space-y-2">
-              {trace.swarmRounds.map((r) => (
-                <div key={r.id} className="border border-[var(--hairline)] p-2">
-                  <div className="font-mono text-[10px] uppercase text-muted-foreground">{r.personaId} · conf {r.confidence ?? "-"}</div>
-                  <p className="mt-1 text-xs text-foreground">{r.reasoning}</p>
-                  <pre className="mt-2 whitespace-pre-wrap text-[10px] text-muted-foreground">{JSON.stringify(r.proposedAllocation, null, 2)}</pre>
-                </div>
-              ))}
-            </div>
-          </details>
-          <details>
-            <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">agent reasoning ({trace.agentReasoning.length})</summary>
-            <div className="mt-2 space-y-2">
-              {trace.agentReasoning.map((r) => (
-                <div key={r.id} className="border border-[var(--hairline)] p-2">
-                  <div className="font-mono text-[10px] uppercase text-muted-foreground">{r.agentName} · {r.model}</div>
-                  <pre className="mt-2 whitespace-pre-wrap text-[10px] text-foreground">{JSON.stringify(r.output, null, 2)}</pre>
-                </div>
-              ))}
-            </div>
-          </details>
-          <details>
-            <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">llm calls ({trace.llmCalls.length})</summary>
-            <div className="mt-2 space-y-2">
-              {trace.llmCalls.map((c) => (
-                <div key={c.id} className="border border-[var(--hairline)] p-2">
-                  <div className="font-mono text-[10px] uppercase text-muted-foreground">{c.agentName} · {c.model} · in {c.promptTokens ?? "-"} out {c.completionTokens ?? "-"}</div>
-                  <pre className="mt-2 line-clamp-6 whitespace-pre-wrap text-[10px] text-foreground">{c.rawResponse}</pre>
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
+        <>
+          <SwarmCycleHeader cost={trace.summary.cost} latency={trace.summary.latency} warnings={trace.summary.warnings} />
+          <div className="px-4 pt-3">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter rounds, reasoning, llm calls..."
+              className="w-full border border-[var(--neon-green)]/30 bg-black px-3 py-1.5 font-mono text-[11px] text-foreground placeholder:text-muted-foreground focus:border-[var(--neon-green)] focus:outline-none"
+            />
+          </div>
+          <div className="max-h-[600px] overflow-auto p-4">
+            <CycleSections
+              aggregation={trace.aggregation}
+              rounds={trace.swarmRounds}
+              reasoning={trace.agentReasoning}
+              calls={trace.llmCalls}
+              search={search}
+            />
+          </div>
+        </>
       )}
     </div>
   );
