@@ -189,11 +189,17 @@ export function SelboAccount() {
 
   const last = data?.snapshots[data.snapshots.length - 1];
   const start = data?.lifetime.start;
-  const delta = last && start !== null && start !== undefined ? last.equityUsd - start : null;
-  const deltaPct = last && start && start > 0 ? ((last.equityUsd - start) / start) * 100 : null;
-  const deltaTone = delta === null
+  // delta is renderable only when BOTH the difference and the pct exist.
+  // Pct requires start > 0, so a divide-by-zero floor on a zeroed-out
+  // account window makes pct null while delta would still be a number;
+  // render guard must check both fields, not just one. No `!` assertion.
+  const change: { delta: number; deltaPct: number } | null =
+    last && start !== null && start !== undefined && start > 0
+      ? { delta: last.equityUsd - start, deltaPct: ((last.equityUsd - start) / start) * 100 }
+      : null;
+  const deltaTone = change === null
     ? "text-muted-foreground"
-    : delta >= 0 ? "text-[var(--neon-green)]" : "text-[var(--neon-red)]";
+    : change.delta >= 0 ? "text-[var(--neon-green)]" : "text-[var(--neon-red)]";
 
   // Field-level dummy fallbacks. When the watcher has produced a tick
   // but specific risk fields are null (no open positions yet), we still
@@ -238,9 +244,9 @@ export function SelboAccount() {
             title="24h change vs first snapshot in window"
             className={`mt-2 cursor-help font-mono text-[11px] tabular-nums ${deltaTone}`}
           >
-            {delta === null
+            {change === null
               ? "no snapshots yet"
-              : `${delta >= 0 ? "+" : ""}${fmtUsd(delta)} (${deltaPct! >= 0 ? "+" : ""}${deltaPct!.toFixed(2)}%) 24h`}
+              : `${change.delta >= 0 ? "+" : ""}${fmtUsd(change.delta)} (${change.deltaPct >= 0 ? "+" : ""}${change.deltaPct.toFixed(2)}%) 24h`}
           </div>
         </div>
         <div ref={containerRef} className="w-full" />

@@ -55,6 +55,11 @@ export async function ensureSelboInstance(userId: string): Promise<SelboInstance
         circleWalletAddress: wallet.address.toLowerCase(),
         betaAccessGranted: betaOpen,
         betaGrantedAt: betaOpen ? new Date() : null,
+        // Pause-by-default: new users must explicitly enable Selbo from
+        // the navbar status pill. Their first daily plan fires on the
+        // first resume. Existing users with this row already set to
+        // false stay enabled.
+        killSwitchActive: true,
       })
       .returning();
     return row;

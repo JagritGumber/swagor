@@ -34,7 +34,7 @@ export type ClosePaperTradeInput = {
   asset: string;
   markPriceUsd: number | null;
   rationale: string;
-  source: "fast-trader" | "panel" | "safety";
+  source: "fast-trader" | "panel" | "safety" | "user-pause";
   safetyTrigger?: "stop_loss" | "take_profit";
 };
 
@@ -104,7 +104,8 @@ export async function openPaperTrade(input: OpenPaperTradeInput): Promise<{ trad
       openedAt: new Date(),
     })
     .returning({ id: trades.id });
-  const tradeId = row!.id;
+  if (!row) throw new Error("paper-trade insert returned no row");
+  const tradeId = row.id;
   console.log(
     `[paper-trade] OPEN ${input.side} ${asset} $${input.sizeUsd} @ ${input.entryPriceUsd} (stop=${stop}, tp=${takeProfit}) via ${input.source}`,
   );
