@@ -59,13 +59,17 @@ export async function POST(request: Request) {
     due.map((i) => runWatcherForInstance(i.id)),
   );
 
-  const summary = results.map((r, idx) => ({
-    instanceId: due[idx]!.id,
-    status: r.status,
-    ...(r.status === "fulfilled"
-      ? { verdict: r.value.verdict, nextCheckSeconds: r.value.nextCheckSeconds }
-      : { error: r.reason instanceof Error ? r.reason.message : String(r.reason) }),
-  }));
+  const summary = due.map((instance, idx) => {
+    const r = results[idx];
+    if (!r) return { instanceId: instance.id, status: "missing" as const };
+    return {
+      instanceId: instance.id,
+      status: r.status,
+      ...(r.status === "fulfilled"
+        ? { verdict: r.value.verdict, nextCheckSeconds: r.value.nextCheckSeconds }
+        : { error: r.reason instanceof Error ? r.reason.message : String(r.reason) }),
+    };
+  });
 
   // Piggyback the anchor-status poll on the same cron heartbeat so we don't
   // double Worker invocations. Cheap query: only scans trades with a pending
