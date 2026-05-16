@@ -14,6 +14,7 @@ export * from "./llm-calls";
 export * from "./equity-snapshots";
 export * from "./strategy-revisions";
 export * from "./tick-stages";
+export * from "./daily-plans";
 
 // Better Auth — replaces Supabase auth.users dependency
 export * from "./auth";
