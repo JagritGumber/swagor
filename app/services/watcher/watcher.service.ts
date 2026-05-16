@@ -4,6 +4,8 @@ import { db } from "@/lib/db/client";
 import { monitorTicks, selboInstances, equitySnapshots, type SelboInstance } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { watcherLlm, MODELS } from "@/lib/llm-client";
+import { getCachedDailyPlan } from "@/lib/utils/daily-plan-cache";
+import { runDailyPlanForInstance } from "@/app/services/swarm/daily-planner.service";
 import {
   fetchAllMids,
   fetchMetaAndCtxs,
@@ -11,7 +13,6 @@ import {
 } from "@/lib/data-sources/hyperliquid";
 import { searchNews } from "@/lib/data-sources/news";
 import { WATCHER_SCHEMA, WATCHER_SYSTEM_PROMPT, type WatcherOutput } from "./prompt";
-import { triggerCycleFromWatcher } from "./trigger";
 import { runFastTraderForInstance } from "@/app/services/fast-trader/fast-trader.service";
 import { tierSpec, type Tier } from "@/lib/tiers";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
@@ -41,7 +42,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
 
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
 
-  const [mids, meta, clearing, newsRes, lastTick] = await Promise.all([
+  const [mids, meta, clearing, newsRes, lastTick, currentDailyPlan] = await Promise.all([
     fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
     fetchMetaAndCtxs().catch(() => ({ universe: [], ctxs: [] })),
     fetchClearinghouse(instance.circleWalletAddress).catch(() => null),
@@ -50,6 +51,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     db.select().from(monitorTicks)
       .where(eq(monitorTicks.selboInstanceId, instance.id))
       .orderBy(desc(monitorTicks.createdAt)).limit(1).then((r) => r[0]),
+    getCachedDailyPlan(instance.userId).catch(() => null),
   ]);
 
   // Build a per-coin perp snapshot the agent can read directly.
@@ -142,6 +144,9 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     })),
     lastVerdict: lastTick?.verdict ?? null,
     minutesSinceLastTick: lastTick ? Math.floor((Date.now() - new Date(lastTick.createdAt).getTime()) / 60_000) : null,
+    currentDailyPlan: currentDailyPlan
+      ? { generatedAt: currentDailyPlan.generatedAt.toISOString(), plan: currentDailyPlan.planJson }
+      : null,
   });
 
   let llmCallTrace:
@@ -298,8 +303,12 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
   // below just keeps the worker alive long enough for both to land via
   // Cloudflare's scheduled() waitUntil envelope.
   if (parsed.verdict === "deliberate" && spec.panelDeliberations) {
-    triggerCycleFromWatcher(instance as SelboInstance, parsed.rationale)
-      .catch((e) => console.error("[watcher] cycle trigger failed:", e));
+    // Daily-planning phase: deliberate now triggers a daily-plan-mode
+    // cycle (watcher-triggered, rate-limited inside the orchestrator).
+    // Does NOT overwrite the user-facing daily_plans row; only the
+    // scheduled cron path writes that.
+    void runDailyPlanForInstance(instance as SelboInstance, "watcher")
+      .catch((e) => console.error("[watcher] daily-plan (watcher) failed:", e));
   } else if (parsed.verdict === "deliberate") {
     // Free tier: route deliberate to the cheap Fast Trader instead of the
     // expensive swarm. Better than dropping the signal entirely.

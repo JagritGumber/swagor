@@ -16,6 +16,7 @@ import { logLlmCall } from "@/lib/llm/log";
 import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
 import { monitorTicks } from "@/lib/db/schema";
 import { evaluateSafetyRails, type SafetyBlock } from "@/app/services/safety-rails/safety-check";
+import { getCachedDailyPlan } from "@/lib/utils/daily-plan-cache";
 
 function previousMarketFeatures(row: { context: unknown } | undefined): MarketFeatureSnapshot | null {
   const context = row?.context as { marketFeatures?: MarketFeatureSnapshot } | null | undefined;
@@ -80,7 +81,7 @@ export async function runFastTraderForInstance(
   watcherRationale: string,
   tickId?: string,
 ): Promise<FastTraderDecision> {
-  const [mids, meta, clearing, lastTick] = await Promise.all([
+  const [mids, meta, clearing, lastTick, currentDailyPlan] = await Promise.all([
     fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
     fetchMetaAndCtxs().catch(() => ({ universe: [], ctxs: [] })),
     fetchClearinghouse(instance.circleWalletAddress).catch(() => null),
@@ -89,6 +90,7 @@ export async function runFastTraderForInstance(
       .orderBy(desc(monitorTicks.createdAt))
       .limit(1)
       .then((r) => r[0]),
+    getCachedDailyPlan(instance.userId).catch(() => null),
   ]);
 
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
@@ -177,6 +179,9 @@ export async function runFastTraderForInstance(
     perps,
     marketFeatures,
     risk,
+    currentDailyPlan: currentDailyPlan
+      ? { generatedAt: currentDailyPlan.generatedAt.toISOString(), plan: currentDailyPlan.planJson }
+      : null,
   });
 
   const completion = await traderLlm.chat.completions.create({
