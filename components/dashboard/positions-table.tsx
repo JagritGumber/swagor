@@ -2,20 +2,41 @@ import type { PositionView } from "@/app/services/positions.service";
 
 /**
  * Dashboard positions panel. Server-rendered with the user's open trades
- * joined to live mark prices. Renders nothing when there are no positions
- * yet (early dashboard state). When Fast Trader writes a trade, this card
- * materializes.
+ * joined to live mark prices. Always renders; shows an empty-state
+ * message when there are no open positions yet so the user sees the
+ * surface and knows what will appear when Selbo opens a trade.
  */
 export function PositionsTable({ positions }: { positions: PositionView[] }) {
-  if (positions.length === 0) return null;
+  if (positions.length === 0) {
+    return (
+      <section className="border border-[var(--hairline-strong)] bg-black">
+        <header className="border-b border-[var(--hairline)] px-6 py-3">
+          <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
+            Open trades
+          </h2>
+        </header>
+        <div className="px-6 py-10 text-center">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            No open trades yet
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            When Selbo opens a paper trade, it lands here with asset,
+            side, size, entry, mark, and live PnL.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className="border border-[var(--hairline-strong)] bg-black p-6">
-      <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-        Positions
-      </h2>
+    <section className="border border-[var(--hairline-strong)] bg-black">
+      <header className="border-b border-[var(--hairline)] px-6 py-3">
+        <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
+          Open trades
+        </h2>
+      </header>
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="overflow-x-auto px-6 py-4">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-[var(--hairline-strong)] text-left font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
