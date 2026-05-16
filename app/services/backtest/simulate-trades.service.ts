@@ -4,36 +4,26 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { backtestRuns, backtestTrades, dailyPlans } from "@/lib/db/schema";
 import { fetchCandles, type Candle } from "@/lib/data-sources/hyperliquid";
+import { closeAt, normalizeSimulateOpts, type SimulateOpts, utcDayMs } from "./simulate-helpers";
 
 export { summarizeBacktestTrades, type BacktestSummary } from "./summarize-trades";
-
-const ENTRY_CONF = 0.6;
-const HOLD_DAYS = 3;
-const SIZE_USD = 150;
+export type { SimulateOpts } from "./simulate-helpers";
 
 type BiasEntry = { asset: string; bias: string; confidence: number };
 
-function utcDayMs(d: Date): number {
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-}
-
-function closeAt(candles: Candle[], dayMs: number): number | null {
-  const c = candles.find((cd) => cd.t === dayMs);
-  if (!c) return null;
-  const n = Number(c.c);
-  return Number.isFinite(n) ? n : null;
-}
-
 /**
  * Walk every complete daily_plan for the run, open a simulated trade
- * for each asset whose bias is long/short with confidence >= 0.6,
- * close after HOLD_DAYS or at end-of-run. Fixed $150 size per trade
- * (15% of $1000 simulated starting equity). No leverage. Idempotent:
- * deletes existing backtest_trades for the run before re-simulating.
+ * for each asset whose bias is long/short with confidence >= the
+ * requested threshold, close after holdDays or at end-of-run. No
+ * leverage. Idempotent: deletes existing backtest_trades for the run
+ * before re-simulating so the admin can sweep params on the same
+ * LLM-generated analyses without re-running the swarm.
  */
-export async function simulateTradesForBacktest(runId: string): Promise<{
-  opened: number; closed: number; skipped: number;
-}> {
+export async function simulateTradesForBacktest(
+  runId: string, opts?: SimulateOpts,
+): Promise<{ opened: number; closed: number; skipped: number; params: Required<SimulateOpts> }> {
+  const params = normalizeSimulateOpts(opts);
+
   const [run] = await db.select().from(backtestRuns).where(eq(backtestRuns.id, runId)).limit(1);
   if (!run) throw new Error(`backtest_run ${runId} not found`);
 
@@ -44,7 +34,7 @@ export async function simulateTradesForBacktest(runId: string): Promise<{
     .orderBy(asc(dailyPlans.generatedAt));
 
   const startMs = Date.parse(`${run.startDate}T00:00:00Z`);
-  const endMs = Date.parse(`${run.endDate}T00:00:00Z`) + (HOLD_DAYS + 1) * 86_400_000;
+  const endMs = Date.parse(`${run.endDate}T00:00:00Z`) + (params.holdDays + 1) * 86_400_000;
   const assets = Array.from(new Set(plans.flatMap((p) => {
     const j = p.planJson as { biasByAsset?: BiasEntry[] } | null;
     return j?.biasByAsset?.map((b) => b.asset.toUpperCase()) ?? [];
@@ -60,13 +50,13 @@ export async function simulateTradesForBacktest(runId: string): Promise<{
     const json = plan.planJson as { biasByAsset?: BiasEntry[] } | null;
     if (!json?.biasByAsset) continue;
     const entryDayMs = utcDayMs(plan.generatedAt);
-    const targetExit = entryDayMs + HOLD_DAYS * 86_400_000;
+    const targetExit = entryDayMs + params.holdDays * 86_400_000;
     const exitDayMs = targetExit > runEndMs ? runEndMs : targetExit;
 
     for (const b of json.biasByAsset) {
       const side = b.bias;
       if (side !== "long" && side !== "short") continue;
-      if (b.confidence < ENTRY_CONF) continue;
+      if (b.confidence < params.entryConfidence) continue;
       const asset = b.asset.toUpperCase();
       const candles = candleCache.get(asset);
       if (!candles) continue;
@@ -75,14 +65,14 @@ export async function simulateTradesForBacktest(runId: string): Promise<{
       if (entryPrice === null || exitPrice === null) { skipped++; continue; }
 
       const move = side === "long" ? (exitPrice - entryPrice) / entryPrice : (entryPrice - exitPrice) / entryPrice;
-      const pnlUsd = SIZE_USD * move;
+      const pnlUsd = params.sizeUsd * move;
       const pnlPct = move * 100;
       opened++; closed++;
       await db.insert(backtestTrades).values({
         backtestRunId: runId, asset, side,
         entryDate: new Date(entryDayMs), entryPrice: entryPrice.toString(),
         exitDate: new Date(exitDayMs), exitPrice: exitPrice.toString(),
-        sizeUsd: SIZE_USD.toString(),
+        sizeUsd: params.sizeUsd.toString(),
         pnlUsd: pnlUsd.toString(), pnlPct: pnlPct.toString(),
         biasConfidence: b.confidence.toString(),
         status: "closed",
@@ -91,5 +81,5 @@ export async function simulateTradesForBacktest(runId: string): Promise<{
     }
   }
 
-  return { opened, closed, skipped };
+  return { opened, closed, skipped, params };
 }
