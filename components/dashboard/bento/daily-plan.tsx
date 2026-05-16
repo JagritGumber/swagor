@@ -46,10 +46,7 @@ export function DailyPlan() {
   return (
     <section className="border border-[var(--hairline-strong)] bg-black p-6">
       <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-        <div className="flex items-baseline gap-3">
-          <span aria-hidden className="inline-block h-2.5 w-2.5 bg-[var(--neon-cyan)]" />
-          <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">Analysis</h2>
-        </div>
+        <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">Analysis</h2>
         {plan && (
           <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
             generated {new Date(plan.generatedAt).toLocaleTimeString()}
