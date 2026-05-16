@@ -46,7 +46,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
     fetchMetaAndCtxs().catch(() => ({ universe: [], ctxs: [] })),
     fetchClearinghouse(instance.circleWalletAddress).catch(() => null),
-    searchNews(`${watching.join(" OR ")} OR perp OR crypto`)
+    searchNews(`${watching.join(" OR ")} OR "perp futures" OR "funding rate" OR cryptocurrency`)
       .catch(() => ({ results: [] as Array<{ title: string; source: string; publishedAt: string }> })),
     db.select().from(monitorTicks)
       .where(eq(monitorTicks.selboInstanceId, instance.id))
