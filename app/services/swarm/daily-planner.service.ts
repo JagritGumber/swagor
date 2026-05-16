@@ -66,6 +66,11 @@ export async function runDailyPlanForInstance(
 
   try {
     const context = await buildDailyPlanContext(instance);
+    // Persist the swarm context for the dev panel BEFORE we kick off
+    // LLM calls so even a failed cycle has a verifiable input record.
+    await db.update(rebalanceCycles).set({ cycleState: context as object })
+      .where(eq(rebalanceCycles.id, cycleId));
+
     const decisions = await runSwarm({ cycleId, context, size: SWARM_SIZE, mode: "daily_plan" });
     if (decisions.length === 0) throw new Error("swarm produced no usable decisions");
 
