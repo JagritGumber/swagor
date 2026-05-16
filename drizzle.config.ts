@@ -42,6 +42,7 @@ export default defineConfig({
     "tick_stages",
     "daily_plans",
     "backtest_runs",
+    "backtest_trades",
     // Better Auth
     "user",
     "session",
