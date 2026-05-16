@@ -49,7 +49,7 @@ export function NavInner() {
   const path = usePathname();
   if (isDashboardRoute(path)) {
     return (
-      <div className="mx-auto grid h-full max-w-7xl grid-cols-3 items-center text-sm">
+      <div className="mx-auto grid h-full max-w-7xl grid-cols-3 items-center px-4 xl:px-0 text-sm">
         <div className="flex items-baseline gap-4">
           <NavBrand />
           <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
@@ -83,7 +83,7 @@ export function FooterInner() {
   const path = usePathname();
   if (isDashboardRoute(path)) {
     return (
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 xl:px-0 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         <span>Selbo · paper mode · testnet</span>
         <a href="/legal/disclaimer" className="hover:text-[var(--neon-cyan)]">
           Disclaimer
