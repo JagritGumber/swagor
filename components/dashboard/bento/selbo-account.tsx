@@ -14,10 +14,10 @@ type EquityRecent = {
 
 const CYAN = "#00d4ff";
 const HAIRLINE = "rgba(255,255,255,0.18)";
-const GRID = "rgba(255,255,255,0.03)";
-// Subtle blue-tinted near-black for the chart surface so it reads as
-// distinct from the card background without going noticeably blue.
-const CHART_BG = "#06090f";
+const GRID = "rgba(255,255,255,0.05)";
+// Tinted dark-navy chart surface (TradingView-ish #131722) so the
+// chart area is clearly distinct from the pure-black card border.
+const CHART_BG = "#131722";
 
 // Dummy fallback so the UI shape is visible before any real ticks fire.
 // Silent: no badge in the header. Switches to real data automatically
@@ -195,12 +195,17 @@ export function SelboAccount() {
     ? "text-muted-foreground"
     : delta >= 0 ? "text-[var(--neon-green)]" : "text-[var(--neon-red)]";
 
-  const marginPct = risk.account?.marginUsagePct ?? null;
-  const liqPct = risk.closestLiquidationDistancePct ?? null;
+  // Field-level dummy fallbacks. When the watcher has produced a tick
+  // but specific risk fields are null (no open positions yet), we still
+  // show the dummy bar values so the user can see the UI shape. Drop
+  // these once real positions consistently populate the fields.
+  const marginPct = risk.account?.marginUsagePct ?? DUMMY_RISK.account.marginUsagePct;
+  const liqPct = risk.closestLiquidationDistancePct ?? DUMMY_RISK.closestLiquidationDistancePct;
+  const exposure = risk.totalExposureUsd ?? 0;
 
   return (
     <section className="flex h-full flex-col overflow-hidden border border-[var(--hairline-strong)] bg-black">
-      <header className="flex items-baseline justify-between gap-3 px-6 pt-6">
+      <header className="flex items-center justify-between gap-3 border-b border-[var(--hairline)] px-6 py-3">
         <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
           Selbo&apos;s account
         </h2>
@@ -209,18 +214,19 @@ export function SelboAccount() {
         </span>
       </header>
 
-      <div className="px-6 pt-5">
-        <div className="font-mono text-4xl tabular-nums leading-none text-foreground">
-          {fmtUsd(last?.equityUsd ?? null)}
+      <div className="bg-[#131722]">
+        <div className="px-6 pt-5 pb-3">
+          <div className="font-mono text-4xl tabular-nums leading-none text-foreground">
+            {fmtUsd(last?.equityUsd ?? null)}
+          </div>
+          <div className={`mt-2 font-mono text-[11px] tabular-nums ${deltaTone}`}>
+            {delta === null
+              ? "no snapshots yet"
+              : `${delta >= 0 ? "+" : ""}${fmtUsd(delta)} (${deltaPct! >= 0 ? "+" : ""}${deltaPct!.toFixed(2)}%) 24h`}
+          </div>
         </div>
-        <div className={`mt-2 font-mono text-[11px] tabular-nums ${deltaTone}`}>
-          {delta === null
-            ? "no snapshots yet"
-            : `${delta >= 0 ? "+" : ""}${fmtUsd(delta)} (${deltaPct! >= 0 ? "+" : ""}${deltaPct!.toFixed(2)}%) 24h`}
-        </div>
+        <div ref={containerRef} className="w-full" />
       </div>
-
-      <div ref={containerRef} className="mt-4 w-full" />
 
       <div className="space-y-3 border-t border-[var(--hairline)] px-6 py-4">
         <ProgressBar
@@ -237,7 +243,7 @@ export function SelboAccount() {
         />
         <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
           <span>Exposure</span>
-          <span className="tabular-nums text-foreground">{fmtUsdShort(risk.totalExposureUsd)}</span>
+          <span className="tabular-nums text-foreground">{fmtUsdShort(exposure)}</span>
         </div>
       </div>
     </section>
