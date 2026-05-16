@@ -41,6 +41,7 @@ export default defineConfig({
     "strategy_revisions",
     "tick_stages",
     "daily_plans",
+    "backtest_runs",
     // Better Auth
     "user",
     "session",

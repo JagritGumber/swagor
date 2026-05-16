@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { dailyPlans, selboInstances } from "@/lib/db/schema";
 
@@ -22,13 +22,22 @@ export async function GET() {
     .where(eq(selboInstances.userId, userId)).limit(1);
   if (!instance) return NextResponse.json({ plan: null }, { status: 404 });
 
+  // Backtest plans live in the same table tagged with backtest_run_id;
+  // exclude them from the Brain page so the live UI stays unpolluted.
   const [completed] = await db.select().from(dailyPlans)
-    .where(and(eq(dailyPlans.selboInstanceId, instance.id), eq(dailyPlans.status, "complete")))
+    .where(and(
+      eq(dailyPlans.selboInstanceId, instance.id),
+      eq(dailyPlans.status, "complete"),
+      isNull(dailyPlans.backtestRunId),
+    ))
     .orderBy(desc(dailyPlans.generatedAt)).limit(1);
   if (completed) return NextResponse.json({ plan: completed });
 
   const [latest] = await db.select().from(dailyPlans)
-    .where(eq(dailyPlans.selboInstanceId, instance.id))
+    .where(and(
+      eq(dailyPlans.selboInstanceId, instance.id),
+      isNull(dailyPlans.backtestRunId),
+    ))
     .orderBy(desc(dailyPlans.generatedAt)).limit(1);
   return NextResponse.json({ plan: latest ?? null });
 }

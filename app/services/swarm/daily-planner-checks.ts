@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { dailyPlans, rebalanceCycles } from "@/lib/db/schema";
 
@@ -34,9 +34,12 @@ export async function rateLimitBlocked(instanceId: string): Promise<string | nul
  * 00:30 UTC retry path to regenerate.
  */
 export async function existingDailyPlan(instanceId: string): Promise<string | null> {
+  // Backtest plans share the table but must NEVER satisfy the live
+  // idempotency check; filter them out via isNull(backtestRunId).
   const [row] = await db.select({ cycleId: dailyPlans.cycleId }).from(dailyPlans)
     .where(and(eq(dailyPlans.selboInstanceId, instanceId),
       eq(dailyPlans.status, "complete"),
+      isNull(dailyPlans.backtestRunId),
       gte(dailyPlans.generatedAt, UTC_DAY_START as unknown as Date)));
   return row?.cycleId ?? null;
 }

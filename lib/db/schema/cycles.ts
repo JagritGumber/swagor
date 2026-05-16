@@ -18,6 +18,11 @@ export const rebalanceCycles = pgTable("rebalance_cycles", {
   cycleState: jsonb("cycle_state"),
   ipfsCid: text("ipfs_cid"),
   arcTxHash: text("arc_tx_hash"),
+  // Backtest scoping. When set, this cycle was produced by a historical
+  // replay; the Brain page query filters these out so live UI is clean.
+  // `asOf` records the simulated wall-clock the orchestrator used.
+  backtestRunId: uuid("backtest_run_id"),
+  asOf: timestamp("as_of", { withTimezone: true }),
 }, (table) => ({
   triggeredByCheck: check(
     "rebalance_cycles_triggered_by_check",
