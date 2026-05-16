@@ -6,7 +6,6 @@ import { listOpenPositions } from "@/app/services/positions.service";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
 import { SelboAccount } from "@/components/dashboard/bento/selbo-account";
-import { RiskPanel } from "@/components/dashboard/bento/risk-panel";
 import { MemoryCards } from "@/components/dashboard/bento/memory-cards";
 import { StrategyChat } from "@/components/dashboard/bento/strategy-chat";
 import { DisclosureCard } from "@/components/dashboard/disclosure-card";
@@ -43,20 +42,14 @@ export default async function DashboardPage() {
   const admin = isAdmin(user.email);
 
   // Layout per user direction:
-  //   Top row: Selbo's account (4) | Market chart (6) | Risk side panel (2)
+  //   Top row: Selbo's account (4, includes risk fields) | Market chart (8)
   //   Below:   Strategy chat (6) | Positions (6)
   //   Bottom:  Memory disclosure (12)
-  //
-  // Hidden until the underlying surfaces are polished:
-  //   ActivityTape, EquityCurve (folded into SelboAccount), BalanceRisk
-  //   (replaced by SelboAccount + RiskPanel), TradeHistory, ArcActivityCard,
-  //   LifetimeStats, MarketStateCard, PipelineNow, Decisions, WatcherDevControls.
   return (
     <div className="mx-auto max-w-7xl pb-24">
       <div className="grid grid-cols-12 gap-3">
         <div className="col-span-12 lg:col-span-4"><SelboAccount /></div>
-        <div className="col-span-12 lg:col-span-6"><MarketChartCard watching={watching} admin={admin} /></div>
-        <div className="col-span-12 lg:col-span-2"><RiskPanel /></div>
+        <div className="col-span-12 lg:col-span-8"><MarketChartCard watching={watching} admin={admin} /></div>
 
         <div className="col-span-12 lg:col-span-6">
           <StrategyChat initialStrategy={instance.strategyText} watching={watching} />
