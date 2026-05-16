@@ -9,10 +9,33 @@ function utcDayString(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function createBacktestRun(instance: SelboInstance, days: number): Promise<BacktestRun> {
+/**
+ * Pick a random UTC day in [today-365, today-days] so a `days`-long
+ * window starting from it ends on or before yesterday. Used by the
+ * admin "random month" button.
+ */
+export function pickRandomStartDate(days: number): Date {
   const today = new Date();
-  const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1));
-  const start = new Date(end.getTime() - (days - 1) * 86_400_000);
+  const latestStartMs = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - days);
+  const earliestStartMs = latestStartMs - (365 - days) * 86_400_000;
+  const span = Math.max(0, latestStartMs - earliestStartMs);
+  return new Date(earliestStartMs + Math.floor(Math.random() * (span + 1)));
+}
+
+export async function createBacktestRun(
+  instance: SelboInstance,
+  days: number,
+  startDate?: Date,
+): Promise<BacktestRun> {
+  let start: Date;
+  if (startDate) {
+    start = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
+  } else {
+    const today = new Date();
+    const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1));
+    start = new Date(end.getTime() - (days - 1) * 86_400_000);
+  }
+  const end = new Date(start.getTime() + (days - 1) * 86_400_000);
   const [row] = await db.insert(backtestRuns).values({
     userId: instance.userId,
     selboInstanceId: instance.id,
