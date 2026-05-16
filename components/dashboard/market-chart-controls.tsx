@@ -1,5 +1,8 @@
 "use client";
 
+import { BarChart3, LineChart as LineIcon, AreaChart as AreaIcon } from "lucide-react";
+import { Dropdown } from "./dropdown";
+
 export type ChartType = "candles" | "line" | "area";
 export type Interval = "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
 export type Lookback = { label: string; ms: number };
@@ -15,7 +18,18 @@ export const LOOKBACKS: Lookback[] = [
 export const INTERVALS: Interval[] = ["1m", "5m", "15m", "1h", "4h", "1d"];
 export const CHART_TYPES: ChartType[] = ["candles", "line", "area"];
 
-function Btn({ active, onClick, children }: {
+const COMMON_INTERVALS: Interval[] = ["5m", "15m", "1h", "4h", "1d"];
+const EXTRA_INTERVALS: Interval[] = ["1m"];
+type LookbackLabel = (typeof LOOKBACKS)[number]["label"];
+const LOOKBACK_LABELS: LookbackLabel[] = LOOKBACKS.map((l) => l.label);
+
+const TYPE_ICON: Record<ChartType, React.ReactNode> = {
+  candles: <BarChart3 className="h-3.5 w-3.5" />,
+  line: <LineIcon className="h-3.5 w-3.5" />,
+  area: <AreaIcon className="h-3.5 w-3.5" />,
+};
+
+function InlineBtn({ active, onClick, children }: {
   active: boolean; onClick: () => void; children: React.ReactNode;
 }) {
   return (
@@ -33,15 +47,8 @@ function Btn({ active, onClick, children }: {
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="w-20 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-        {label}
-      </span>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
-    </div>
-  );
+function Separator() {
+  return <span aria-hidden className="mx-1 h-5 w-px bg-[var(--hairline)]" />;
 }
 
 export function MarketChartControls({
@@ -58,28 +65,62 @@ export function MarketChartControls({
   onLookback: (ms: number) => void;
   onChartType: (t: ChartType) => void;
 }) {
+  const extraSelected = EXTRA_INTERVALS.includes(interval);
+  const currentLookback = (LOOKBACKS.find((l) => l.ms === lookbackMs)?.label ?? "24H") as LookbackLabel;
+
   return (
-    <div className="flex flex-col gap-2.5">
-      <Row label="Asset">
-        {watching.map((a) => (
-          <Btn key={a} active={asset === a} onClick={() => onAsset(a)}>{a}</Btn>
-        ))}
-      </Row>
-      <Row label="Timeframe">
-        {INTERVALS.map((i) => (
-          <Btn key={i} active={interval === i} onClick={() => onInterval(i)}>{i}</Btn>
-        ))}
-      </Row>
-      <Row label="Window">
-        {LOOKBACKS.map((l) => (
-          <Btn key={l.label} active={lookbackMs === l.ms} onClick={() => onLookback(l.ms)}>{l.label}</Btn>
-        ))}
-      </Row>
-      <Row label="Type">
-        {CHART_TYPES.map((t) => (
-          <Btn key={t} active={chartType === t} onClick={() => onChartType(t)}>{t}</Btn>
-        ))}
-      </Row>
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Dropdown
+        value={asset}
+        options={watching}
+        onSelect={onAsset}
+        ariaLabel="Select asset"
+      />
+
+      <Separator />
+
+      {COMMON_INTERVALS.map((i) => (
+        <InlineBtn key={i} active={interval === i} onClick={() => onInterval(i)}>
+          {i}
+        </InlineBtn>
+      ))}
+      <Dropdown<Interval>
+        value={extraSelected ? interval : ("1m" as Interval)}
+        options={EXTRA_INTERVALS}
+        onSelect={onInterval}
+        ariaLabel="More timeframes"
+        label={extraSelected ? interval : "..."}
+        active={extraSelected}
+      />
+
+      <Separator />
+
+      <Dropdown<LookbackLabel>
+        value={currentLookback}
+        options={LOOKBACK_LABELS}
+        onSelect={(label) => {
+          const hit = LOOKBACKS.find((l) => l.label === label);
+          if (hit) onLookback(hit.ms);
+        }}
+        ariaLabel="Window"
+      />
+
+      <Separator />
+
+      <Dropdown<ChartType>
+        value={chartType}
+        options={CHART_TYPES}
+        onSelect={onChartType}
+        ariaLabel="Chart type"
+        icon={TYPE_ICON[chartType]}
+        iconOnly
+        renderOption={(t) => (
+          <span className="flex items-center gap-2">
+            {TYPE_ICON[t]} {t}
+          </span>
+        )}
+        align="right"
+      />
     </div>
   );
 }
