@@ -71,25 +71,37 @@ export async function aggregate(opts: {
   for (const d of decisions) regimeCounts[d.regime_assessment] = (regimeCounts[d.regime_assessment] ?? 0) + 1;
   const dominantRegime = mode(decisions.map((d) => d.regime_assessment));
 
-  const openGrouped = new Map<string, TacticalDecision[]>();
-  for (const d of decisions) {
-    if ((d.action === "open_long" || d.action === "open_short") && d.if_open) {
-      const side = d.action === "open_long" ? "long" : "short";
-      const k = `${d.if_open.asset.toUpperCase()}__${side}`;
-      if (!openGrouped.has(k)) openGrouped.set(k, []);
-      openGrouped.get(k)!.push(d);
-    }
+  // Type-honest grouping: a TacticalOpen is a decision known to have
+  // `action` in the open set AND `if_open` non-null. Filtering with a
+  // type predicate narrows once, so downstream code sees if_open as
+  // present without any `!` assertions or `as` casts.
+  type TacticalOpen = TacticalDecision & {
+    action: "open_long" | "open_short";
+    if_open: NonNullable<TacticalDecision["if_open"]>;
+  };
+  const opens: TacticalOpen[] = decisions.filter(
+    (d): d is TacticalOpen =>
+      (d.action === "open_long" || d.action === "open_short") && d.if_open !== null,
+  );
+  type OpenGroup = { asset: string; side: "long" | "short"; decisions: TacticalOpen[] };
+  const openGrouped = new Map<string, OpenGroup>();
+  for (const d of opens) {
+    const side: "long" | "short" = d.action === "open_long" ? "long" : "short";
+    const asset = d.if_open.asset.toUpperCase();
+    const k = `${asset}__${side}`;
+    const existing = openGrouped.get(k);
+    if (existing) existing.decisions.push(d);
+    else openGrouped.set(k, { asset, side, decisions: [d] });
   }
-  const openClusters = Array.from(openGrouped.entries()).map(([k, ds]) => {
-    const [asset, side] = k.split("__");
-    const stopValues = ds.map((d) => d.if_open!.stop_loss_pct).filter((v): v is number => v !== null);
-    const tpValues = ds.map((d) => d.if_open!.take_profit_pct).filter((v): v is number => v !== null);
+  const openClusters = Array.from(openGrouped.values()).map((group) => {
+    const stopValues = group.decisions.map((d) => d.if_open.stop_loss_pct).filter((v): v is number => v !== null);
+    const tpValues = group.decisions.map((d) => d.if_open.take_profit_pct).filter((v): v is number => v !== null);
     return {
-      asset,
-      side: side as "long" | "short",
-      count: ds.length,
-      avgSizeUsd: median(ds.map((d) => d.if_open!.size_usd)),
-      avgLeverage: median(ds.map((d) => d.if_open!.leverage)),
+      asset: group.asset,
+      side: group.side,
+      count: group.decisions.length,
+      avgSizeUsd: median(group.decisions.map((d) => d.if_open.size_usd)),
+      avgLeverage: median(group.decisions.map((d) => d.if_open.leverage)),
       avgStopLossPct: stopValues.length > 0 ? median(stopValues) : null,
       avgTakeProfitPct: tpValues.length > 0 ? median(tpValues) : null,
     };

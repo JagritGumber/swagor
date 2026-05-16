@@ -8,12 +8,16 @@ type EquityRecent = {
   lifetime: { start: number | null; high: number | null; low: number | null };
 };
 
-const STATUS_TONE: Record<string, { label: string; text: string }> = {
+type StatusKey = "normal" | "watch" | "urgent" | "critical";
+const STATUS_TONE: Record<StatusKey, { label: string; text: string }> = {
   normal: { label: "Normal", text: "text-emerald-400" },
   watch: { label: "Watch", text: "text-amber-300" },
   urgent: { label: "Urgent", text: "text-orange-400" },
   critical: { label: "Critical", text: "text-[var(--neon-red)]" },
 };
+function isStatusKey(s: string): s is StatusKey {
+  return s === "normal" || s === "watch" || s === "urgent" || s === "critical";
+}
 
 function fmtUsd(n: number | null | undefined, digits = 2): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return "n/a";
@@ -68,11 +72,11 @@ export function BalanceRisk() {
     : deltaUsd >= 0
       ? "text-[var(--neon-green)]"
       : "text-[var(--neon-red)]";
-  const onlyOne = snaps.length === 1 && current;
+  const onlyOne = snaps.length === 1 && current !== null;
 
   const risk = watcher?.ticks[0]?.context?.risk;
-  const status = risk?.status ?? "normal";
-  const tone = STATUS_TONE[status] ?? STATUS_TONE.normal!;
+  const rawStatus = risk?.status ?? "normal";
+  const tone = isStatusKey(rawStatus) ? STATUS_TONE[rawStatus] : STATUS_TONE.normal;
 
   return (
     <section className="flex h-full flex-col border border-[var(--hairline-strong)] bg-black p-5">
@@ -83,8 +87,8 @@ export function BalanceRisk() {
         ${fmtUsd(current?.equityUsd, 2)}
       </div>
       <div className={`mt-1 font-mono text-xs tabular-nums ${deltaTone}`}>
-        {onlyOne
-          ? `first snapshot ${Math.max(0, Math.round((Date.now() - new Date(current!.ts).getTime()) / 60_000))}m ago`
+        {snaps.length === 1 && current
+          ? `first snapshot ${Math.max(0, Math.round((Date.now() - new Date(current.ts).getTime()) / 60_000))}m ago`
           : deltaUsd === null
             ? "loading..."
             : `${deltaUsd >= 0 ? "+" : ""}$${fmtUsd(deltaUsd, 2)} (${fmtPct(deltaPct)}) 24h`}
