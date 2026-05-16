@@ -1,5 +1,4 @@
-import HeaderAuth from "@/components/header-auth";
-import { NavBrand } from "@/components/nav-brand";
+import { NavInner, FooterInner } from "@/components/layout-chrome";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
@@ -82,29 +81,14 @@ export default async function RootLayout({
           <Toaster expand theme="dark" />
           <div className="flex min-h-screen flex-col bg-black">
               <nav className="fixed inset-x-0 top-0 z-50 h-16 border-b border-[var(--hairline-strong)] bg-black/55 backdrop-blur-xl">
-                <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-6 text-sm">
-                  <div className="flex items-baseline gap-4">
-                    <NavBrand />
-                    <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
-                      testnet
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <HeaderAuth />
-                  </div>
-                </div>
+                <NavInner />
               </nav>
 
             <main className="flex flex-1 flex-col items-center pt-24 px-4">
               <div className="w-full max-w-screen-2xl">{children}</div>
             </main>
             <footer className="border-t border-[var(--hairline)] bg-black py-4">
-              <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                <span>Selbo · paper mode · testnet</span>
-                <a href="/legal/disclaimer" className="hover:text-[var(--neon-cyan)]">
-                  Disclaimer
-                </a>
-              </div>
+              <FooterInner />
             </footer>
           </div>
           </Web3Provider>
