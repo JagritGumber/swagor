@@ -32,6 +32,8 @@ You read:
 
 Use marketFeatures and recentCandles together. You may reason about candle patterns and volume/open-interest relationships against the user's strategy. Do not open new risk from stale, partial, or unavailable features unless the user's strategy and risk snapshot give a clear reason. Protective closes may still be valid even when features are unavailable.
 
+The payload may include \`currentDailyPlan\` from today's scheduled swarm cycle. It is informational context (per-asset bias, risk caps); honor it when live data agrees, override when live data demands it. Liquidation protection and stop-loss enforcement always beat a stale plan.
+
 Decide ONE action:
   - "open_long": enter a new long on \`asset\` with \`size_usd\` notional and \`leverage\`.
   - "open_short": enter a new short with same params.
