@@ -4,26 +4,23 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { backtestRuns, backtestTrades, dailyPlans } from "@/lib/db/schema";
 import { fetchCandles, type Candle } from "@/lib/data-sources/hyperliquid";
-import { closeAt, normalizeSimulateOpts, type SimulateOpts, utcDayMs } from "./simulate-helpers";
+import { closeAt, type OpenPos, STARTING_EQUITY_USD, utcDayMs, writeBacktestClose } from "./simulate-helpers";
 
 export { summarizeBacktestTrades, type BacktestSummary } from "./summarize-trades";
-export type { SimulateOpts } from "./simulate-helpers";
 
 type BiasEntry = { asset: string; bias: string; confidence: number };
+type PlanJson = {
+  biasByAsset?: BiasEntry[];
+  riskCaps?: { maxLeverage?: number; maxNotionalPctOfEquity?: number };
+};
 
 /**
- * Walk every complete daily_plan for the run, open a simulated trade
- * for each asset whose bias is long/short with confidence >= the
- * requested threshold, close after holdDays or at end-of-run. No
- * leverage. Idempotent: deletes existing backtest_trades for the run
- * before re-simulating so the admin can sweep params on the same
- * LLM-generated analyses without re-running the swarm.
+ * Replay agent decisions. Direction from bias; size from
+ * riskCaps.maxNotionalPctOfEquity * current equity; leverage from
+ * riskCaps.maxLeverage; exit when bias reverses or goes neutral.
+ * Equity compounds. No hardcoded thresholds.
  */
-export async function simulateTradesForBacktest(
-  runId: string, opts?: SimulateOpts,
-): Promise<{ opened: number; closed: number; skipped: number; params: Required<SimulateOpts> }> {
-  const params = normalizeSimulateOpts(opts);
-
+export async function simulateTradesForBacktest(runId: string): Promise<{ opened: number; closed: number }> {
   const [run] = await db.select().from(backtestRuns).where(eq(backtestRuns.id, runId)).limit(1);
   if (!run) throw new Error(`backtest_run ${runId} not found`);
 
@@ -34,52 +31,69 @@ export async function simulateTradesForBacktest(
     .orderBy(asc(dailyPlans.generatedAt));
 
   const startMs = Date.parse(`${run.startDate}T00:00:00Z`);
-  const endMs = Date.parse(`${run.endDate}T00:00:00Z`) + (params.holdDays + 1) * 86_400_000;
-  const assets = Array.from(new Set(plans.flatMap((p) => {
-    const j = p.planJson as { biasByAsset?: BiasEntry[] } | null;
+  const endMs = Date.parse(`${run.endDate}T00:00:00Z`) + 2 * 86_400_000;
+  const allAssets = Array.from(new Set(plans.flatMap((p) => {
+    const j = p.planJson as PlanJson | null;
     return j?.biasByAsset?.map((b) => b.asset.toUpperCase()) ?? [];
   })));
   const candleCache = new Map<string, Candle[]>();
-  for (const a of assets) candleCache.set(a, await fetchCandles(a, "1d", startMs, endMs));
+  for (const a of allAssets) candleCache.set(a, await fetchCandles(a, "1d", startMs, endMs));
 
-  let opened = 0, closed = 0, skipped = 0;
-  const runEndMs = Date.parse(`${run.endDate}T00:00:00Z`);
+  let equity = STARTING_EQUITY_USD;
+  let opened = 0, closed = 0;
+  const positions = new Map<string, OpenPos>();
 
   for (const plan of plans) {
-    if (plan.status !== "complete") { skipped++; continue; }
-    const json = plan.planJson as { biasByAsset?: BiasEntry[] } | null;
+    if (plan.status !== "complete") continue;
+    const json = plan.planJson as PlanJson | null;
     if (!json?.biasByAsset) continue;
-    const entryDayMs = utcDayMs(plan.generatedAt);
-    const targetExit = entryDayMs + params.holdDays * 86_400_000;
-    const exitDayMs = targetExit > runEndMs ? runEndMs : targetExit;
+    const dayMs = utcDayMs(plan.generatedAt);
+    const notionalPct = json.riskCaps?.maxNotionalPctOfEquity ?? 15;
+    const leverage = Math.max(1, json.riskCaps?.maxLeverage ?? 1);
 
     for (const b of json.biasByAsset) {
-      const side = b.bias;
-      if (side !== "long" && side !== "short") continue;
-      if (b.confidence < params.entryConfidence) continue;
       const asset = b.asset.toUpperCase();
       const candles = candleCache.get(asset);
-      if (!candles) continue;
-      const entryPrice = closeAt(candles, entryDayMs);
-      const exitPrice = closeAt(candles, exitDayMs);
-      if (entryPrice === null || exitPrice === null) { skipped++; continue; }
+      const price = candles ? closeAt(candles, dayMs) : null;
+      if (price === null) continue;
+      const current = positions.get(asset);
+      const wantsLong = b.bias === "long";
+      const wantsShort = b.bias === "short";
+      const reverse = current && ((current.side === "long" && wantsShort) || (current.side === "short" && wantsLong));
+      const neutralized = current && !wantsLong && !wantsShort;
 
-      const move = side === "long" ? (exitPrice - entryPrice) / entryPrice : (entryPrice - exitPrice) / entryPrice;
-      const pnlUsd = params.sizeUsd * move;
-      const pnlPct = move * 100;
-      opened++; closed++;
-      await db.insert(backtestTrades).values({
-        backtestRunId: runId, asset, side,
-        entryDate: new Date(entryDayMs), entryPrice: entryPrice.toString(),
-        exitDate: new Date(exitDayMs), exitPrice: exitPrice.toString(),
-        sizeUsd: params.sizeUsd.toString(),
-        pnlUsd: pnlUsd.toString(), pnlPct: pnlPct.toString(),
-        biasConfidence: b.confidence.toString(),
-        status: "closed",
-        exitReason: targetExit > runEndMs ? "end_of_backtest" : "time_exit",
-      });
+      if (current && (reverse || neutralized)) {
+        equity += await writeBacktestClose({
+          runId, asset, pos: current,
+          exitDate: new Date(dayMs), exitPrice: price,
+          reason: neutralized ? "agent_neutral" : "agent_reversed",
+        });
+        closed++;
+        positions.delete(asset);
+      }
+
+      if ((wantsLong || wantsShort) && !positions.has(asset)) {
+        positions.set(asset, {
+          side: wantsLong ? "long" : "short",
+          entryDate: new Date(dayMs), entryPrice: price,
+          sizeUsd: equity * notionalPct / 100,
+          leverage, confidence: b.confidence,
+        });
+        opened++;
+      }
     }
   }
 
-  return { opened, closed, skipped, params };
+  const lastDayMs = Date.parse(`${run.endDate}T00:00:00Z`);
+  for (const [asset, pos] of positions) {
+    const candles = candleCache.get(asset);
+    const price = candles ? closeAt(candles, lastDayMs) : null;
+    if (price === null) continue;
+    equity += await writeBacktestClose({
+      runId, asset, pos, exitDate: new Date(lastDayMs), exitPrice: price, reason: "end_of_backtest",
+    });
+    closed++;
+  }
+
+  return { opened, closed };
 }
