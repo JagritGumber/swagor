@@ -1,5 +1,7 @@
 "use client";
 
+import { MarkdownLite } from "@/components/ui/markdown-lite";
+
 export type BiasEntry = {
   asset: string;
   bias: "long" | "short" | "avoid" | "neutral";
@@ -39,7 +41,9 @@ export function DailyPlanBody({ planJson, planMarkdown }: { planJson: PlanJson |
         </div>
       )}
       {planMarkdown && (
-        <pre className="whitespace-pre-wrap border border-[var(--hairline)] bg-[#050505] p-4 text-sm leading-relaxed text-foreground">{planMarkdown}</pre>
+        <div className="border border-[var(--hairline)] bg-[#050505] p-4">
+          <MarkdownLite source={planMarkdown} />
+        </div>
       )}
     </div>
   );
