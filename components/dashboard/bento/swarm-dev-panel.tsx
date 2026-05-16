@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { SwarmCycleTrace } from "./swarm-cycle-trace";
+import { BacktestRunner } from "./backtest-runner";
 
 type CycleRow = {
   id: string;
@@ -100,6 +101,7 @@ export function SwarmDevPanel() {
           {activeCycle && <SwarmCycleTrace cycleId={activeCycle} onClose={() => setActiveCycle(null)} />}
         </div>
       )}
+      {open && <BacktestRunner />}
     </section>
   );
 }

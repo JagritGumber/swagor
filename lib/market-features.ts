@@ -108,14 +108,14 @@ function round(value: number | null, digits = 2): number | null {
   return Number(value.toFixed(digits));
 }
 
-function sortFinalCandles(candles: Candle[], now = Date.now()): Candle[] {
+export function sortFinalCandles(candles: Candle[], now = Date.now()): Candle[] {
   return candles
     .filter((c) => finite(c.c) !== null && finite(c.h) !== null && finite(c.l) !== null)
     .sort((a, b) => a.t - b.t)
     .filter((c) => c.T <= now - 1000);
 }
 
-function closes(candles: Candle[]): number[] {
+export function closes(candles: Candle[]): number[] {
   return candles.map((c) => Number(c.c)).filter((n) => Number.isFinite(n) && n > 0);
 }
 
@@ -139,7 +139,7 @@ function compactCandles(candles: Candle[], count = 20): SymbolMarketFeatures["re
     );
 }
 
-function ema(values: number[], period: number): number | null {
+export function ema(values: number[], period: number): number | null {
   if (values.length < period) return null;
   const seed = values.slice(0, period).reduce((sum, v) => sum + v, 0) / period;
   const multiplier = 2 / (period + 1);
@@ -150,7 +150,7 @@ function ema(values: number[], period: number): number | null {
   return out;
 }
 
-function rsiWilder(values: number[], period = 14): number | null {
+export function rsiWilder(values: number[], period = 14): number | null {
   if (values.length < period + 1) return null;
   let gain = 0;
   let loss = 0;
@@ -171,7 +171,7 @@ function rsiWilder(values: number[], period = 14): number | null {
   return 100 - 100 / (1 + rs);
 }
 
-function atrPct(candles: Candle[], period = 14): number | null {
+export function atrPct(candles: Candle[], period = 14): number | null {
   if (candles.length < period + 1) return null;
   const ranges: number[] = [];
   for (let i = 1; i < candles.length; i++) {
@@ -193,7 +193,7 @@ function atrPct(candles: Candle[], period = 14): number | null {
   return lastClose > 0 ? (atr / lastClose) * 100 : null;
 }
 
-function realizedVolPct(values: number[], period = 20): number | null {
+export function realizedVolPct(values: number[], period = 20): number | null {
   if (values.length < period + 1) return null;
   const recent = values.slice(-(period + 1));
   const returns: number[] = [];

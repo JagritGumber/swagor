@@ -21,6 +21,9 @@ export const dailyPlans = pgTable("daily_plans", {
   planMarkdown: text("plan_markdown"),
   planJson: jsonb("plan_json"),
   errorMessage: text("error_message"),
+  // Backtest scoping. When set, this plan was produced by a historical
+  // replay run; live Brain page queries filter `backtest_run_id IS NULL`.
+  backtestRunId: uuid("backtest_run_id"),
 }, (table) => ({
   statusCheck: check(
     "daily_plans_status_check",
