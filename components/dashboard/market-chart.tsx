@@ -101,9 +101,9 @@ export function MarketChart({
       const cs = candlesRef.current;
       if (!cb || !param.time || ms.length === 0) return;
       const t = Number(param.time);
-      const intervalSec = cs.length > 1
-        ? Math.floor((cs[1]!.t - cs[0]!.t) / 1000)
-        : 300;
+      const first = cs[0];
+      const second = cs[1];
+      const intervalSec = first && second ? Math.floor((second.t - first.t) / 1000) : 300;
       let best: TradeMarker | null = null;
       let bestDist = Infinity;
       for (const m of ms) {

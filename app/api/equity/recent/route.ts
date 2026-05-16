@@ -37,14 +37,15 @@ export async function GET(request: Request) {
     .orderBy(asc(equitySnapshots.takenAt))
     .limit(5000);
 
-  if (rows.length === 0) {
+  const first = rows[0];
+  if (!first) {
     return NextResponse.json({
       snapshots: [],
       lifetime: { start: null, high: null, low: null },
     });
   }
 
-  let highVal = Number(rows[0]!.equityUsd);
+  let highVal = Number(first.equityUsd);
   let lowVal = highVal;
   for (const r of rows) {
     const v = Number(r.equityUsd);
@@ -62,7 +63,7 @@ export async function GET(request: Request) {
       openPositions: r.openPositionsCount,
     })),
     lifetime: {
-      start: Number(rows[0]!.equityUsd),
+      start: Number(first.equityUsd),
       high: highVal,
       low: lowVal,
     },

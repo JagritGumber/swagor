@@ -164,16 +164,21 @@ function atrPct(candles: Candle[], period = 14): number | null {
   if (candles.length < period + 1) return null;
   const ranges: number[] = [];
   for (let i = 1; i < candles.length; i++) {
-    const high = Number(candles[i]!.h);
-    const low = Number(candles[i]!.l);
-    const prevClose = Number(candles[i - 1]!.c);
+    const current = candles[i];
+    const prev = candles[i - 1];
+    if (!current || !prev) continue;
+    const high = Number(current.h);
+    const low = Number(current.l);
+    const prevClose = Number(prev.c);
     const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
     if (Number.isFinite(tr)) ranges.push(tr);
   }
   if (ranges.length < period) return null;
   const recent = ranges.slice(-period);
   const atr = recent.reduce((sum, value) => sum + value, 0) / recent.length;
-  const lastClose = Number(candles[candles.length - 1]!.c);
+  const lastCandle = candles[candles.length - 1];
+  if (!lastCandle) return null;
+  const lastClose = Number(lastCandle.c);
   return lastClose > 0 ? (atr / lastClose) * 100 : null;
 }
 
