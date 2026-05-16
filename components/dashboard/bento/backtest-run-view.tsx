@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { DailyPlanBody, type PlanJson } from "./daily-plan-body";
 import { BacktestSummaryHeader, type BacktestSummary } from "./backtest-summary-header";
 import { BacktestTradesTable, type BacktestTradeRow } from "./backtest-trades-table";
-import { BacktestSimControls, type SimParams } from "./backtest-sim-controls";
 
 type Plan = {
   id: string; generatedAt: string; status: string;
@@ -34,17 +33,14 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
   }, [runId]);
   useEffect(() => { void load(); }, [load]);
 
-  async function simulate(params: SimParams) {
+  async function simulate() {
     if (simulating) return;
     setSimulating(true);
     try {
-      const res = await fetch(`/api/admin/backtest/runs/${runId}/simulate`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      });
+      const res = await fetch(`/api/admin/backtest/runs/${runId}/simulate`, { method: "POST" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const body = await res.json() as { opened: number; skipped: number };
-      toast.success(`Simulated. ${body.opened} trades, ${body.skipped} skipped.`);
+      const body = await res.json() as { opened: number; closed: number };
+      toast.success(`Replay complete. Opened ${body.opened}, closed ${body.closed}.`);
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
@@ -59,13 +55,17 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
         <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)]">
           {detail ? `${detail.run.startDate} to ${detail.run.endDate} (${detail.run.days}d)` : `backtest ${runId.slice(0, 8)}`}
         </span>
-        <button onClick={onClose} className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)] hover:underline">close</button>
+        <div className="flex items-center gap-2">
+          <button onClick={simulate} disabled={simulating} className="border border-[var(--neon-green)] bg-black px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)] hover:bg-[var(--neon-green)] hover:text-black disabled:opacity-60">
+            {simulating ? "replaying..." : "replay agent decisions"}
+          </button>
+          <button onClick={onClose} className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)] hover:underline">close</button>
+        </div>
       </header>
       {error && <p className="p-4 font-mono text-xs text-[var(--neon-red)]">{error}</p>}
       {!detail && !error && <p className="p-4 font-mono text-xs text-muted-foreground">loading...</p>}
       {detail && (
         <div className="max-h-[600px] space-y-4 overflow-auto p-4">
-          <BacktestSimControls disabled={simulating} onSimulate={simulate} />
           <BacktestSummaryHeader summary={detail.summary} />
           <BacktestTradesTable trades={detail.trades} />
           <details>
