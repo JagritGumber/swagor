@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import HeaderAuth from "@/components/header-auth";
 import { NavBrand } from "@/components/nav-brand";
 import { SelboStatusPill } from "@/components/dashboard/selbo-status-pill";
+import { AdminTogglePill } from "@/components/admin/admin-toggle-pill";
 
 const DASHBOARD_TABS: Array<{ href: string; label: string; match: (p: string) => boolean }> = [
   { href: "/dashboard", label: "Dashboard", match: (p) => p === "/dashboard" },
@@ -59,6 +60,7 @@ export function NavInner() {
         </div>
         <DashboardTabs path={path ?? "/dashboard"} />
         <div className="flex items-center justify-end gap-3">
+          <AdminTogglePill />
           <SelboStatusPill />
           <HeaderAuth />
         </div>
@@ -78,6 +80,7 @@ export function NavInner() {
         </span>
       </div>
       <div className="flex items-center gap-3">
+        <AdminTogglePill />
         <SelboStatusPill />
         <HeaderAuth />
       </div>

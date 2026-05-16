@@ -7,6 +7,7 @@ import { BetaGate } from "@/components/dashboard/beta-gate";
 import { TosGate } from "@/components/legal/tos-gate";
 import { DailyPlan } from "@/components/dashboard/bento/daily-plan";
 import { SwarmDevPanel } from "@/components/dashboard/bento/swarm-dev-panel";
+import { AdminGate } from "@/components/admin/admin-gate";
 
 export default async function BrainPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -28,7 +29,11 @@ export default async function BrainPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-4 pb-24">
       <DailyPlan />
-      {admin && <SwarmDevPanel />}
+      {admin && (
+        <AdminGate>
+          <SwarmDevPanel />
+        </AdminGate>
+      )}
     </div>
   );
 }
