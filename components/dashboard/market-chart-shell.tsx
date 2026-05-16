@@ -78,7 +78,7 @@ export function MarketChartShell({ watching, admin = false }: { watching: string
         />
       </header>
 
-      <div className="relative">
+      <div className="relative min-h-80 bg-[#131722]">
         <div
           className={`transition-[filter,opacity] duration-300 ${
             loading ? "pointer-events-none opacity-60 blur-[2px]" : ""
