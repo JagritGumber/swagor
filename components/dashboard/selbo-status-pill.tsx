@@ -52,7 +52,7 @@ export function SelboStatusPill() {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="inline-flex items-center gap-2 border border-[var(--hairline-strong)] bg-black px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-foreground hover:border-[var(--neon-cyan)]">
+        <DropdownMenuTrigger className="inline-flex h-9 items-center gap-2 border border-[var(--hairline-strong)] bg-black px-3 font-mono text-xs font-bold uppercase tracking-[0.18em] text-foreground hover:border-[var(--neon-cyan)] hover:text-[var(--neon-cyan)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)] focus:ring-offset-2 focus:ring-offset-black">
           <span aria-hidden className={`inline-block h-2 w-2 rounded-full ${dotClass}`} />
           {label}
         </DropdownMenuTrigger>
