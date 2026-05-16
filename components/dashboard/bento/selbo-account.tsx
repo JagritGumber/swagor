@@ -89,15 +89,15 @@ function liqTone(pct: number | null): string {
 }
 
 function ProgressBar({
-  label, valuePct, displayValue, tone,
+  label, valuePct, displayValue, tone, tooltip,
 }: {
-  label: string; valuePct: number | null; displayValue: string; tone: string;
+  label: string; valuePct: number | null; displayValue: string; tone: string; tooltip: string;
 }) {
   const width = valuePct === null ? 0 : Math.min(100, Math.max(0, valuePct));
   return (
-    <div className="space-y-1">
+    <div className="space-y-1" title={tooltip}>
       <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-        <span>{label}</span>
+        <span className="cursor-help">{label}</span>
         <span className="tabular-nums text-foreground">{displayValue}</span>
       </div>
       <div className="h-1.5 w-full bg-[#0a0a0a]">
@@ -209,7 +209,10 @@ export function SelboAccount() {
         <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
           Selbo&apos;s account
         </h2>
-        <span className={`font-mono text-[10px] uppercase tracking-[0.16em] ${tone.text}`}>
+        <span
+          title="Risk status"
+          className={`cursor-help font-mono text-[10px] uppercase tracking-[0.16em] ${tone.text}`}
+        >
           {tone.label}
         </span>
       </header>
@@ -217,7 +220,10 @@ export function SelboAccount() {
       <div className="bg-[#131722]">
         <div className="px-6 pt-5 pb-3">
           <div className="flex items-baseline justify-between gap-3">
-            <div className="font-mono text-4xl tabular-nums leading-none text-foreground">
+            <div
+              title="Equity (USD)"
+              className="cursor-help font-mono text-4xl tabular-nums leading-none text-foreground"
+            >
               {fmtUsd(last?.equityUsd ?? null)}
             </div>
             <span
@@ -228,7 +234,10 @@ export function SelboAccount() {
               {fmtUsdShort(exposure)}
             </span>
           </div>
-          <div className={`mt-2 font-mono text-[11px] tabular-nums ${deltaTone}`}>
+          <div
+            title="24h change vs first snapshot in window"
+            className={`mt-2 cursor-help font-mono text-[11px] tabular-nums ${deltaTone}`}
+          >
             {delta === null
               ? "no snapshots yet"
               : `${delta >= 0 ? "+" : ""}${fmtUsd(delta)} (${deltaPct! >= 0 ? "+" : ""}${deltaPct!.toFixed(2)}%) 24h`}
@@ -243,12 +252,14 @@ export function SelboAccount() {
           valuePct={marginPct}
           displayValue={fmtPct(marginPct)}
           tone={marginTone(marginPct)}
+          tooltip="Margin used: percent of account margin currently committed to open positions"
         />
         <ProgressBar
           label="Liq buffer"
           valuePct={liqPct}
           displayValue={fmtPct(liqPct)}
           tone={liqTone(liqPct)}
+          tooltip="Liquidation buffer: how far the closest position's mark price is from its liquidation price"
         />
       </div>
     </section>
