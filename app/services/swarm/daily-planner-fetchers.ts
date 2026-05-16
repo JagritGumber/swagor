@@ -51,7 +51,7 @@ export async function fetchAllForDailyPlan(instance: SelboInstance) {
         .orderBy(desc(monitorTicks.createdAt)).limit(1).then((r) => r[0]),
       undefined as { context: unknown } | undefined),
     timed("news:gdelt",
-      () => searchNews(`${watching.join(" OR ")} OR perp futures OR funding rate OR crypto market`),
+      () => searchNews(`${watching.join(" OR ")} OR "perp futures" OR "funding rate" OR cryptocurrency`),
       { results: [] } as News, (v) => v.results.length),
     timed("db:lessons", () => getRecentLessons(instance.userId, 5), [] as string[], (v) => v.length),
     timed("db:yesterday-plan",
