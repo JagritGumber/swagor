@@ -28,7 +28,7 @@ const TYPE_ICON: Record<ChartType, React.ReactNode> = {
 };
 
 function Separator() {
-  return <span aria-hidden className="mx-1 h-5 w-px bg-[var(--hairline)]" />;
+  return <span aria-hidden className="h-5 w-px bg-[var(--hairline)]" />;
 }
 
 export function MarketChartControls({
@@ -48,7 +48,7 @@ export function MarketChartControls({
   const currentLookback = (LOOKBACKS.find((l) => l.ms === lookbackMs)?.label ?? "24H") as LookbackLabel;
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-1">
       <Dropdown
         value={asset}
         options={watching}

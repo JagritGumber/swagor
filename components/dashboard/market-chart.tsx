@@ -20,6 +20,9 @@ const GREEN = "#00ff7f";
 const GREY = "#737373";
 const HAIRLINE = "rgba(255,255,255,0.18)";
 const GRID = "rgba(255,255,255,0.04)";
+// Subtle blue-tinted near-black so the chart area reads as a distinct
+// surface against the pure-black card without going noticeably blue.
+const CHART_BG = "#06090f";
 
 function exitColor(pnl: number | null): string {
   if (pnl === null) return GREY;
@@ -81,7 +84,7 @@ export function MarketChart({
 
     const chart = createChart(container, {
       width: container.clientWidth, height: 320,
-      layout: { background: { color: "#000000" }, textColor: "#737373", fontFamily: "ui-monospace, monospace" },
+      layout: { background: { color: CHART_BG }, textColor: "#737373", fontFamily: "ui-monospace, monospace" },
       grid: { vertLines: { color: GRID }, horzLines: { color: GRID } },
       timeScale: { borderColor: HAIRLINE, timeVisible: true, secondsVisible: false },
       rightPriceScale: { borderColor: HAIRLINE },
