@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/client";
 import { aggregations } from "@/lib/db/schema";
-import type { SwarmDecision } from "./swarm-runner.service";
+import type { TacticalDecision } from "./swarm-runner.service";
 
 export type AggregatorAction = "open_long" | "open_short" | "close" | "stay";
 
@@ -58,7 +58,7 @@ function median(arr: number[]): number {
  */
 export async function aggregate(opts: {
   cycleId: string;
-  decisions: SwarmDecision[];
+  decisions: TacticalDecision[];
 }): Promise<AggregatorOutput> {
   const { cycleId, decisions } = opts;
   if (decisions.length === 0) throw new Error("No swarm decisions to aggregate");
@@ -71,7 +71,7 @@ export async function aggregate(opts: {
   for (const d of decisions) regimeCounts[d.regime_assessment] = (regimeCounts[d.regime_assessment] ?? 0) + 1;
   const dominantRegime = mode(decisions.map((d) => d.regime_assessment));
 
-  const openGrouped = new Map<string, SwarmDecision[]>();
+  const openGrouped = new Map<string, TacticalDecision[]>();
   for (const d of decisions) {
     if ((d.action === "open_long" || d.action === "open_short") && d.if_open) {
       const side = d.action === "open_long" ? "long" : "short";
