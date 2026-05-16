@@ -28,8 +28,11 @@ async function rateLimitBlocked(instanceId: string): Promise<string | null> {
 }
 
 async function existingDailyPlan(instanceId: string): Promise<string | null> {
+  // Only `complete` rows count as "already ran today". A failed row from
+  // an earlier attempt MUST allow the 00:30 UTC retry path to regenerate.
   const [row] = await db.select({ cycleId: dailyPlans.cycleId }).from(dailyPlans)
     .where(and(eq(dailyPlans.selboInstanceId, instanceId),
+      eq(dailyPlans.status, "complete"),
       gte(dailyPlans.generatedAt, UTC_DAY_START as unknown as Date)));
   return row?.cycleId ?? null;
 }
