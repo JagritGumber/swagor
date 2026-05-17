@@ -5,6 +5,7 @@
  *   - ./anchor-watcher       watcher-tick anchors
  *   - ./anchor-analysis      daily plan / backtest analysis anchors
  *   - ./poll-pending-anchors heartbeat poller + registry for new sources
+ *   - ./broker-fees-poll     side-effect: registers broker_fees as a source
  *   - ./register-erc8004.service  per-user ERC-8004 identity mint
  *
  * Every anchor function takes a `walletId` arg: it's the user's own
@@ -12,6 +13,8 @@
  * shared PortfolioDecisions contract carry that wallet as msg.sender,
  * so per-user track records resolve by wallet address on-chain.
  */
+import "./broker-fees-poll";
+
 export { sha256Hex, type AnchorJsonValue } from "./sdk";
 export {
   anchorClosedTrade,

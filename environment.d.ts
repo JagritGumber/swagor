@@ -1,6 +1,5 @@
 namespace NodeJS {
   interface ProcessEnv {
-    NEXT_PUBLIC_USDC_CONTRACT_ADDRESS: string
     NEXT_PUBLIC_SITE_URL: string
     CIRCLE_API_KEY: string
     CIRCLE_ENTITY_SECRET: string

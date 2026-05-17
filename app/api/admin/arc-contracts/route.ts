@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const BodySchema = z.object({
-  key: z.enum(["portfolio_decisions", "identity_registry"]),
+  key: z.enum(["portfolio_decisions", "identity_registry", "usdc", "treasury_wallet"]),
   address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Must be a 0x-prefixed 40-hex EVM address"),
   label: z.string().optional(),
 });
