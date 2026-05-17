@@ -28,5 +28,9 @@ namespace NodeJS {
     LLM_TRADER_BASE_URL: string
     LLM_TRADER_MODEL: string
     CRON_SECRET: string
+    BREVO_API_KEY: string
+    BREVO_FROM_EMAIL: string
+    BREVO_FROM_NAME: string
+    BETA_CODE: string
   }
 }

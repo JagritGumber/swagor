@@ -4,7 +4,9 @@ import type { Blockchain } from "@circle-fin/developer-controlled-wallets";
 import { circleDeveloperSdk } from "@/lib/utils/developer-controlled-wallets-client";
 import { db } from "@/lib/db/client";
 import { selboInstances, type SelboInstance } from "@/lib/db/schema/selbo-instances";
+import { user } from "@/lib/db/schema/auth";
 import { registerSelboAgentForInstance } from "@/lib/arc/register-erc8004.service";
+import { sendWaitlistConfirmation } from "@/lib/email/send-waitlist-confirmation";
 import { eq } from "drizzle-orm";
 
 // Circle SDK enum hasn't shipped a literal for the Arc testnet yet; runtime
@@ -70,6 +72,14 @@ export async function ensureSelboInstance(userId: string): Promise<SelboInstance
     registerSelboAgentForInstance({
       instanceId: row.id, walletId: row.circleWalletId, walletAddress: row.circleWalletAddress,
     }).catch((err) => console.error("[selbo-instance] erc8004:", err));
+    // Fire-and-forget waitlist confirmation email when the beta gate is
+    // active (BETA_CODE set). Skips when beta is open (auto-granted).
+    if (!betaOpen) {
+      db.select({ email: user.email, name: user.name }).from(user)
+        .where(eq(user.id, userId)).limit(1)
+        .then(([u]) => u && sendWaitlistConfirmation(u.email, u.name))
+        .catch((err) => console.error("[selbo-instance] waitlist email:", err));
+    }
     return row;
   } catch {
     const refetch = await db

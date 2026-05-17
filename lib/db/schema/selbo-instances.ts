@@ -61,6 +61,9 @@ export const selboInstances = pgTable("selbo_instances", {
   // Fire-and-forget background job; null until the registration lands.
   erc8004TokenId: text("erc8004_token_id"),
   erc8004RegistrationTxHash: text("erc8004_registration_tx_hash"),
+  // When the admin sent the beta-invite email containing the BETA_CODE.
+  // Set by POST /api/admin/waitlist/invite. Null until invited.
+  betaInviteSentAt: timestamp("beta_invite_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
