@@ -3,6 +3,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { dailyPlans, rebalanceCycles, type SelboInstance } from "@/lib/db/schema";
+import { fireDailyPlanAnchor } from "@/lib/arc/anchor-analysis";
 import { buildHistoricalContext } from "./historical-context.service";
 import { runSwarm } from "@/app/services/swarm/swarm-runner.service";
 import { aggregateDailyPlan } from "@/app/services/swarm/daily-aggregator.service";
@@ -43,9 +44,12 @@ export async function runBacktestDay(
   await db.update(rebalanceCycles).set({ status: "completed", completedAt: new Date() })
     .where(eq(rebalanceCycles.id, cycleId));
 
-  await db.insert(dailyPlans).values({
+  const [plan] = await db.insert(dailyPlans).values({
     userId: instance.userId, selboInstanceId: instance.id, cycleId,
     status: "complete", planMarkdown: compiled.markdown, planJson: compiled as object,
     backtestRunId, generatedAt: asOf,
-  });
+  }).returning({ id: dailyPlans.id });
+  fireDailyPlanAnchor({
+    planId: plan.id, generatedAt: asOf, compiled, kind: "backtest", backtestRunId,
+  }).catch((err) => console.error("[backtest-day] anchor:", err));
 }

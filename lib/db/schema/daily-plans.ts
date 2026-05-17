@@ -24,6 +24,11 @@ export const dailyPlans = pgTable("daily_plans", {
   // Backtest scoping. When set, this plan was produced by a historical
   // replay run; live Brain page queries filter `backtest_run_id IS NULL`.
   backtestRunId: uuid("backtest_run_id"),
+  // Arc anchor pair. `arcAnchorTx` is Circle's internal id, returned when
+  // anchorDailyAnalysis is queued; `arcOnchainTxHash` is backfilled by
+  // pollPendingAnchors once Circle reports state=COMPLETE.
+  arcAnchorTx: text("arc_anchor_tx"),
+  arcOnchainTxHash: text("arc_onchain_tx_hash"),
 }, (table) => ({
   statusCheck: check(
     "daily_plans_status_check",

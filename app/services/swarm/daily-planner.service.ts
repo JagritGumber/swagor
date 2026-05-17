@@ -3,6 +3,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { dailyPlans, rebalanceCycles, type SelboInstance } from "@/lib/db/schema";
+import { fireDailyPlanAnchor } from "@/lib/arc/anchor-analysis";
 import { isLlmBudgetExhausted } from "./cost-cap.service";
 import { buildDailyPlanContext } from "./daily-planner-context";
 import { runSwarm } from "./swarm-runner.service";
@@ -27,15 +28,11 @@ async function writeFailedCycle(cycleId: string, instance: SelboInstance, trigge
 }
 
 /**
- * Run a daily-plan swarm cycle for one Selbo instance. Orchestrates
- * cost-cap, idempotency, rate-limit, ingestion-quality abort, swarm,
- * aggregator, plan-compiler, and persistence. Scheduled cycles
- * (`triggeredBy='daily'`) write a daily_plans row; watcher-triggered
- * cycles only write to rebalance_cycles for the dev panel.
- *
- * `force: true` (admin only) bypasses idempotency AND ingestion abort
- * so an admin can run on demand even on a degraded context window.
- * Cost cap still applies.
+ * Run a daily-plan swarm cycle for one Selbo instance. `triggeredBy='daily'`
+ * writes a daily_plans row; watcher-triggered cycles only write to
+ * rebalance_cycles. `force: true` (admin only) bypasses idempotency +
+ * ingestion abort; cost cap always applies. Completed daily plans are
+ * anchored fire-and-forget on Arc; anchor failures are logged.
  */
 export async function runDailyPlanForInstance(
   instance: SelboInstance,
@@ -85,10 +82,13 @@ export async function runDailyPlanForInstance(
       .where(eq(rebalanceCycles.id, cycleId));
 
     if (triggeredBy === "daily") {
-      await db.insert(dailyPlans).values({
+      const [plan] = await db.insert(dailyPlans).values({
         userId: instance.userId, selboInstanceId: instance.id, cycleId,
         status: "complete", planMarkdown: compiled.markdown, planJson: compiled as object,
-      });
+      }).returning({ id: dailyPlans.id, generatedAt: dailyPlans.generatedAt });
+      fireDailyPlanAnchor({
+        planId: plan.id, generatedAt: plan.generatedAt, compiled, kind: "live",
+      }).catch((err) => console.error("[daily-planner] anchor:", err));
     }
     return { cycleId, status: "complete" };
   } catch (err) {
