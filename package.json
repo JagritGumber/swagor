@@ -4,7 +4,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "generate-wallet": "node generate-wallet.mjs",
+    "emails:build": "cd emails && maizzle build production && cd .. && node emails/bake.mjs",
     "typecheck": "tsgo --noEmit",
     "check": "bun run typecheck && bun run build",
     "db:push": "drizzle-kit push",
@@ -16,6 +16,7 @@
     "@circle-fin/smart-contract-platform": "^4.3.0",
     "@circle-fin/user-controlled-wallets": "^4.5.0",
     "@ethersproject/abi": "^5.7.0",
+    "@getbrevo/brevo": "^5.0.4",
     "@paper-design/shaders-react": "^0.0.76",
     "@polar-sh/better-auth": "^1.8.4",
     "@polar-sh/nextjs": "^0.9.6",
@@ -57,6 +58,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@maizzle/framework": "^5.5.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "20.10.6",
     "@types/react": "18.2.46",

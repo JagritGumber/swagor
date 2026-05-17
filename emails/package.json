@@ -1,0 +1,6 @@
+{
+  "name": "selbo-emails",
+  "private": true,
+  "type": "module",
+  "description": "Maizzle email templates for Selbo. Not a published package; just here to scope ESM locally so Maizzle can read config.production.js."
+}
