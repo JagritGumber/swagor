@@ -24,3 +24,9 @@ export {
   type WatcherAnchorResult,
 } from "./anchor-watcher";
 export { pollPendingAnchors, registerAnchorSource, type AnchorSource } from "./poll-pending-anchors";
+export {
+  anchorDailyAnalysis,
+  fireDailyPlanAnchor,
+  type DailyAnalysisAnchorInput,
+  type DailyAnalysisAnchorResult,
+} from "./anchor-analysis";
