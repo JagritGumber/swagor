@@ -1,11 +1,9 @@
 namespace NodeJS {
   interface ProcessEnv {
     NEXT_PUBLIC_USDC_CONTRACT_ADDRESS: string
-    NEXT_PUBLIC_AGENT_WALLET_ID: string
-    NEXT_PUBLIC_AGENT_WALLET_ADDRESS: string
+    NEXT_PUBLIC_SITE_URL: string
     CIRCLE_API_KEY: string
     CIRCLE_ENTITY_SECRET: string
-    CIRCLE_BLOCKCHAIN: string
     DATABASE_URL: string
     DIRECT_URL: string
     BETTER_AUTH_SECRET: string

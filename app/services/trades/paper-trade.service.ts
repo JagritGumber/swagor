@@ -13,6 +13,9 @@ import { fetchAllMids } from "@/lib/data-sources/hyperliquid";
 
 export type OpenPaperTradeInput = {
   userId: string;
+  // User's Circle Dev Wallet id; required because the trade-open anchor
+  // emits from this wallet so on-chain events carry the user's address.
+  walletId: string;
   asset: string;
   side: "long" | "short";
   sizeUsd: number;
@@ -21,15 +24,17 @@ export type OpenPaperTradeInput = {
   takeProfitPriceUsd?: number | null;
   source: "fast-trader" | "panel";
   rationale: string;
-  // Full agent context the deciding LLM saw (Fast Trader payload, or swarm
-  // cycle context). Hashed into the Arc open-anchor trace; never stored
-  // plain on-chain. Optional so paths that don't have it (tests/dev) still
-  // open trades; the resulting anchor just hashes rationale + safety levels.
+  // Full agent context the deciding LLM saw. Hashed into the Arc open
+  // anchor trace; never stored plain on-chain. Optional so paths without
+  // it still open trades; the anchor just hashes rationale + safety.
   agentContext?: AnchorJsonValue;
 };
 
 export type ClosePaperTradeInput = {
   userId: string;
+  // User's Circle Dev Wallet id; required because the close anchor emits
+  // from this wallet so on-chain events carry the user's address.
+  walletId: string;
   selboInstanceId: string;
   asset: string;
   markPriceUsd: number | null;
@@ -117,6 +122,7 @@ export async function openPaperTrade(input: OpenPaperTradeInput): Promise<{ trad
   // ~1-2s added to trade-open latency; acceptable at hackathon scale.
   try {
     const res = await anchorOpenedTrade({
+      walletId: input.walletId,
       tradeId,
       asset,
       side: input.side,
@@ -203,6 +209,7 @@ export async function closePaperTrade(
   // sometimes leave arcAnchorTx null even when Circle queued a tx.
   try {
     const res = await anchorClosedTrade({
+      walletId: input.walletId,
       tradeId: target.id,
       asset: target.asset,
       side: target.side,
@@ -278,7 +285,7 @@ export async function enforceSafetyTriggers(): Promise<{ scanned: number; trigge
     if (!reason) continue;
 
     const [inst] = await db
-      .select({ id: selboInstances.id })
+      .select({ id: selboInstances.id, walletId: selboInstances.circleWalletId })
       .from(selboInstances)
       .where(eq(selboInstances.userId, r.userId))
       .limit(1);
@@ -286,6 +293,7 @@ export async function enforceSafetyTriggers(): Promise<{ scanned: number; trigge
 
     await closePaperTrade({
       userId: r.userId,
+      walletId: inst.walletId,
       selboInstanceId: inst.id,
       asset: r.asset,
       markPriceUsd: markN,

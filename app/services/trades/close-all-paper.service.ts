@@ -26,6 +26,7 @@ export type CloseAllResult = {
  */
 export async function closeAllOpenPaperTrades(input: {
   userId: string;
+  walletId: string;
   selboInstanceId: string;
 }): Promise<CloseAllResult> {
   const open = await db.select().from(trades).where(
@@ -59,6 +60,7 @@ export async function closeAllOpenPaperTrades(input: {
     tradeable.map((t) =>
       closePaperTrade({
         userId: input.userId,
+        walletId: input.walletId,
         selboInstanceId: input.selboInstanceId,
         asset: t.asset,
         markPriceUsd: t.markPriceUsd,

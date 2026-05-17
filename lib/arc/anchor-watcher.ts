@@ -1,6 +1,8 @@
 import { getSdk, sha256Hex, uuidToBytes32, ZERO_BYTES32, type AnchorJsonValue } from "./sdk";
+import { getArcContractOrSkip } from "./contracts";
 
 export type WatcherAnchorInput = {
+  walletId: string;
   monitorTickId: string;
   verdict: "execute" | "risk_emergency";
   rationale: string;
@@ -15,20 +17,15 @@ export type WatcherAnchorResult = {
 };
 
 /**
- * Anchor a watcher decision on Arc. Fires for `execute` and `risk_emergency`
- * verdicts only. `hold` is not anchored (too noisy); `deliberate` is anchored
- * via the swarm cycle path. Rationale truncated to 120 chars for the on-chain
- * verdict string; full context is hashed.
+ * Anchor a watcher decision from the user's Circle wallet. Fires for
+ * `execute` and `risk_emergency` only; `hold` is too noisy and
+ * `deliberate` is anchored via the swarm cycle path.
  */
 export async function anchorWatcherDecision(
   input: WatcherAnchorInput,
 ): Promise<WatcherAnchorResult | null> {
-  const contractAddress = process.env.NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS;
-  const walletId = process.env.NEXT_PUBLIC_AGENT_WALLET_ID;
-  if (!contractAddress || !walletId) {
-    console.warn("[anchor] env missing; skipping watcher anchor");
-    return null;
-  }
+  const contractAddress = await getArcContractOrSkip("portfolio_decisions");
+  if (!contractAddress) return null;
 
   const tickIdBytes32 = uuidToBytes32(input.monitorTickId);
   const traceHash = sha256Hex(input.contextDigest);
@@ -36,7 +33,7 @@ export async function anchorWatcherDecision(
   const verdict = input.rationale.slice(0, 120);
 
   const resp = await getSdk().createContractExecutionTransaction({
-    walletId,
+    walletId: input.walletId,
     contractAddress,
     abiFunctionSignature: "anchorDecision(bytes32,bytes32,bytes32,string,string)",
     abiParameters: [tickIdBytes32, ZERO_BYTES32, traceHash, tag, verdict],

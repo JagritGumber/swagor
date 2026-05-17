@@ -250,6 +250,7 @@ export async function runFastTraderForInstance(
     }
     await openPaperTrade({
       userId: instance.userId,
+      walletId: instance.circleWalletId,
       asset: assetUpper,
       side,
       sizeUsd: decision.size_usd,
@@ -266,6 +267,7 @@ export async function runFastTraderForInstance(
   } else if (decision.action === "close") {
     await closePaperTrade({
       userId: instance.userId,
+      walletId: instance.circleWalletId,
       selboInstanceId: instance.id,
       asset: assetUpper,
       markPriceUsd: markPx,

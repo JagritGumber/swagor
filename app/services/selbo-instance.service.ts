@@ -4,6 +4,7 @@ import type { Blockchain } from "@circle-fin/developer-controlled-wallets";
 import { circleDeveloperSdk } from "@/lib/utils/developer-controlled-wallets-client";
 import { db } from "@/lib/db/client";
 import { selboInstances, type SelboInstance } from "@/lib/db/schema/selbo-instances";
+import { registerSelboAgentForInstance } from "@/lib/arc/register-erc8004.service";
 import { eq } from "drizzle-orm";
 
 // Circle SDK enum hasn't shipped a literal for the Arc testnet yet; runtime
@@ -62,6 +63,13 @@ export async function ensureSelboInstance(userId: string): Promise<SelboInstance
         killSwitchActive: true,
       })
       .returning();
+    if (!row) throw new Error("selbo_instances insert returned no row");
+    // Fire-and-forget ERC-8004 registration: mints the user's permanent
+    // agent identity on Arc using their own Circle wallet. Failures leave
+    // erc8004TokenId null and are logged; backfill can retry.
+    registerSelboAgentForInstance({
+      instanceId: row.id, walletId: row.circleWalletId, walletAddress: row.circleWalletAddress,
+    }).catch((err) => console.error("[selbo-instance] erc8004:", err));
     return row;
   } catch {
     const refetch = await db

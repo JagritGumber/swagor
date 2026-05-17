@@ -43,6 +43,7 @@ export default defineConfig({
     "daily_plans",
     "backtest_runs",
     "backtest_trades",
+    "arc_contracts",
     // Better Auth
     "user",
     "session",

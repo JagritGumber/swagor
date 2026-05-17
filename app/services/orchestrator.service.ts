@@ -259,6 +259,7 @@ export async function runCycle(cycleId: string): Promise<void> {
           }
           const opened = await openPaperTrade({
             userId: instance.userId,
+            walletId: instance.circleWalletId,
             asset,
             side,
             sizeUsd: taxAdjusted.if_open.sizeUsd,
@@ -281,6 +282,7 @@ export async function runCycle(cycleId: string): Promise<void> {
           const markPx = mids[asset] ? Number(mids[asset]) : null;
           const result = await closePaperTrade({
             userId: instance.userId,
+            walletId: instance.circleWalletId,
             selboInstanceId: instance.id,
             asset,
             markPriceUsd: markPx,
