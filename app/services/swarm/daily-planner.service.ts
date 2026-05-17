@@ -87,7 +87,8 @@ export async function runDailyPlanForInstance(
         status: "complete", planMarkdown: compiled.markdown, planJson: compiled as object,
       }).returning({ id: dailyPlans.id, generatedAt: dailyPlans.generatedAt });
       fireDailyPlanAnchor({
-        planId: plan.id, generatedAt: plan.generatedAt, compiled, kind: "live",
+        walletId: instance.circleWalletId, planId: plan.id, generatedAt: plan.generatedAt,
+        compiled, kind: "live",
       }).catch((err) => console.error("[daily-planner] anchor:", err));
     }
     return { cycleId, status: "complete" };

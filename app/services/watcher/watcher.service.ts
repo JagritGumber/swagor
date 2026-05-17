@@ -342,6 +342,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     };
     try {
       const res = await anchorWatcherDecision({
+        walletId: instance.circleWalletId,
         monitorTickId: tickId,
         verdict: parsed.verdict,
         rationale: parsed.rationale,

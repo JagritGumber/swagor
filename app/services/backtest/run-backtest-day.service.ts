@@ -50,6 +50,7 @@ export async function runBacktestDay(
     backtestRunId, generatedAt: asOf,
   }).returning({ id: dailyPlans.id });
   fireDailyPlanAnchor({
-    planId: plan.id, generatedAt: asOf, compiled, kind: "backtest", backtestRunId,
+    walletId: instance.circleWalletId, planId: plan.id, generatedAt: asOf,
+    compiled, kind: "backtest", backtestRunId,
   }).catch((err) => console.error("[backtest-day] anchor:", err));
 }

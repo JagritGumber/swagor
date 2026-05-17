@@ -56,6 +56,11 @@ export const selboInstances = pgTable("selbo_instances", {
   // user accepts the gate on first dashboard load. See M10 in
   // C:\Users\jagri\.claude\plans\better-path-phase-radiant-koala.md.
   tosAcceptedAt: timestamp("tos_accepted_at", { withTimezone: true }),
+  // ERC-8004 agent identity: each instance mints its own NFT on the Arc
+  // IdentityRegistry at signup, signed by the user's Circle wallet.
+  // Fire-and-forget background job; null until the registration lands.
+  erc8004TokenId: text("erc8004_token_id"),
+  erc8004RegistrationTxHash: text("erc8004_registration_tx_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

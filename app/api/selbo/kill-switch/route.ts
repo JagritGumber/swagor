@@ -50,6 +50,7 @@ export async function POST(request: Request) {
   if (nextActive === true && body.closeOpenPositions === true) {
     closedPositions = await closeAllOpenPaperTrades({
       userId: current.userId,
+      walletId: current.circleWalletId,
       selboInstanceId: current.id,
     });
   }

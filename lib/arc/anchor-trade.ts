@@ -1,4 +1,5 @@
 import { getSdk, sha256Hex, uuidToBytes32, ZERO_BYTES32, type AnchorJsonValue } from "./sdk";
+import { getArcContractOrSkip } from "./contracts";
 
 export type TradeAnchorResult = {
   txId: string;
@@ -8,6 +9,7 @@ export type TradeAnchorResult = {
 };
 
 export type ClosedTradeAnchorInput = {
+  walletId: string;
   tradeId: string;
   asset: string;
   side: string;
@@ -19,20 +21,15 @@ export type ClosedTradeAnchorInput = {
 };
 
 /**
- * Anchor a single closed paper trade on Arc. Reuses PortfolioDecisions.anchorDecision
- * with cycleId<-tradeId, swarmTraceHash<-sha256(reasoning), graphSnapshotHash<-zero,
- * ipfsCid<-`trade:{asset}:{side}`, verdict<-pnl summary.
- * Fire-and-forget; null when env is unset.
+ * Anchor a closed paper trade on Arc from the USER'S Circle Dev Wallet.
+ * Reuses PortfolioDecisions.anchorDecision; verdict carries the pnl %.
+ * Returns null if the shared contract address env is unset (dev mode).
  */
 export async function anchorClosedTrade(
   trade: ClosedTradeAnchorInput,
 ): Promise<TradeAnchorResult | null> {
-  const contractAddress = process.env.NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS;
-  const walletId = process.env.NEXT_PUBLIC_AGENT_WALLET_ID;
-  if (!contractAddress || !walletId) {
-    console.warn("[anchor] env missing; skipping trade-close anchor");
-    return null;
-  }
+  const contractAddress = await getArcContractOrSkip("portfolio_decisions");
+  if (!contractAddress) return null;
 
   const tradeIdBytes32 = uuidToBytes32(trade.tradeId);
   const reasoningHash = sha256Hex(trade.reasoning);
@@ -43,7 +40,7 @@ export async function anchorClosedTrade(
   const tag = `trade:${trade.asset}:${trade.side}`;
 
   const resp = await getSdk().createContractExecutionTransaction({
-    walletId,
+    walletId: trade.walletId,
     contractAddress,
     abiFunctionSignature: "anchorDecision(bytes32,bytes32,bytes32,string,string)",
     abiParameters: [tradeIdBytes32, ZERO_BYTES32, reasoningHash, tag, verdict],
@@ -54,6 +51,7 @@ export async function anchorClosedTrade(
 }
 
 export type OpenedTradeAnchorInput = {
+  walletId: string;
   tradeId: string;
   asset: string;
   side: "long" | "short";
@@ -64,18 +62,14 @@ export type OpenedTradeAnchorInput = {
 };
 
 /**
- * Anchor a paper trade OPEN on Arc. Mirrors anchorClosedTrade but verdict
+ * Anchor a paper trade OPEN from the user's Circle wallet. Verdict
  * summarizes size + leverage instead of pnl.
  */
 export async function anchorOpenedTrade(
   trade: OpenedTradeAnchorInput,
 ): Promise<TradeAnchorResult | null> {
-  const contractAddress = process.env.NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS;
-  const walletId = process.env.NEXT_PUBLIC_AGENT_WALLET_ID;
-  if (!contractAddress || !walletId) {
-    console.warn("[anchor] env missing; skipping trade-open anchor");
-    return null;
-  }
+  const contractAddress = await getArcContractOrSkip("portfolio_decisions");
+  if (!contractAddress) return null;
 
   const tradeIdBytes32 = uuidToBytes32(trade.tradeId);
   const reasoningHash = sha256Hex(trade.reasoning);
@@ -85,7 +79,7 @@ export async function anchorOpenedTrade(
   const tag = `trade:${trade.asset}:${trade.side}:open`;
 
   const resp = await getSdk().createContractExecutionTransaction({
-    walletId,
+    walletId: trade.walletId,
     contractAddress,
     abiFunctionSignature: "anchorDecision(bytes32,bytes32,bytes32,string,string)",
     abiParameters: [tradeIdBytes32, ZERO_BYTES32, reasoningHash, tag, verdict],
