@@ -1,24 +1,17 @@
----
-page:
-  title: "You're on the Selbo waitlist"
-  preview: "Thanks for the interest. We'll email you when your seat is ready."
----
-<extends src="src/layouts/main.html">
-  <block name="body">
-    <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#ffffff;font-weight:600">
-      You're on the list.
-    </h1>
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#c4c4c4">
-      Selbo is an AI perp futures agent in private beta on Arc Testnet. Every analysis,
-      every trade, every fee is anchored on-chain. We're letting users in slowly while
-      the system burns in.
-    </p>
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#c4c4c4">
-      You'll get a second email from us with a beta code the moment your seat is ready.
-      No further action needed on your end right now.
-    </p>
-    <p style="margin:24px 0 0;font-family:monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#7a7a7a">
-      &mdash; Team Selbo
-    </p>
-  </block>
-</extends>
+<component src="src/layouts/main.html">
+  <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#ffffff;font-weight:600">
+    You're on the list.
+  </h1>
+  <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#c4c4c4">
+    Selbo is an AI perp futures agent in private beta on Arc Testnet. Every analysis,
+    every trade, every fee is anchored on-chain. We're letting users in slowly while
+    the system burns in.
+  </p>
+  <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#c4c4c4">
+    You'll get a second email from us with a beta code the moment your seat is ready.
+    No further action needed on your end right now.
+  </p>
+  <p style="margin:24px 0 0;font-family:monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#7a7a7a">
+    &mdash; Team Selbo
+  </p>
+</component>
