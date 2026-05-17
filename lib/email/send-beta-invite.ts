@@ -1,23 +1,27 @@
 import "server-only";
 import { betaInvite } from "./compiled-templates";
 import { sendTransactionalEmail } from "./brevo.service";
+import { firstNameOrFriend } from "./first-name";
 
 /**
- * Send the "You're in" beta invite email containing the shared BETA_CODE
- * the user pastes into the dashboard's BetaGate. Triggered by an admin
- * POST to /api/admin/waitlist/invite. The compiled template includes a
- * literal `{{BETA_CODE}}` placeholder that gets string-replaced here.
+ * Send the personalized "your seat's ready" beta invite. Awaited by the
+ * admin endpoint so the operator sees success/error in the response.
+ * Substitutes {{NAME}} and {{BETA_CODE}} placeholders in the compiled
+ * template at send time.
  */
 export async function sendBetaInvite(
   to: string,
   betaCode: string,
   toName?: string,
 ): Promise<void> {
-  const html = betaInvite.replace(/{{BETA_CODE}}/g, betaCode);
+  const name = firstNameOrFriend(toName, to);
+  const html = betaInvite
+    .replace(/\{\{NAME\}\}/g, name)
+    .replace(/\{\{BETA_CODE\}\}/g, betaCode);
   await sendTransactionalEmail({
     to,
     toName,
-    subject: "You're in: Selbo private beta",
+    subject: `Your Selbo seat's ready, ${name}`,
     htmlContent: html,
   });
 }
