@@ -1,0 +1,87 @@
+{
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "portfolio",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "cycleId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "graphSnapshotHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "swarmTraceHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "ipfsCid",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "verdict",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "anchoredAt",
+          "type": "uint64"
+        }
+      ],
+      "name": "DecisionAnchored",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "cycleId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "graphSnapshotHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "swarmTraceHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "ipfsCid",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "verdict",
+          "type": "string"
+        }
+      ],
+      "name": "anchorDecision",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600e575f5ffd5b506102188061001c5f395ff3fe608060405234801561000f575f5ffd5b5060043610610029575f3560e01c8063b5e040091461002d575b5f5ffd5b61004061003b3660046100de565b610042565b005b86336001600160a01b03167f3633f4fe52b787eb193ddcb85b9ffc6aa5b457fc8aac79d59d08dfed429be117888888888888426040516100889796959493929190610191565b60405180910390a350505050505050565b5f5f83601f8401126100a9575f5ffd5b50813567ffffffffffffffff8111156100c0575f5ffd5b6020830191508360208285010111156100d7575f5ffd5b9250929050565b5f5f5f5f5f5f5f60a0888a0312156100f4575f5ffd5b873596506020880135955060408801359450606088013567ffffffffffffffff81111561011f575f5ffd5b61012b8a828b01610099565b909550935050608088013567ffffffffffffffff81111561014a575f5ffd5b6101568a828b01610099565b989b979a50959850939692959293505050565b81835281816020850137505f828201602090810191909152601f909101601f19169091010190565b87815286602082015260a060408201525f6101b060a083018789610169565b82810360608401526101c3818688610169565b91505067ffffffffffffffff831660808301529897505050505050505056fea26469706673582212206f2e1f7834e674eb292231ea5baf82090fead6c3abac885950ec5863b32fc42164736f6c63430008230033"
+}
