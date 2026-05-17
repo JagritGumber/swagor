@@ -18,6 +18,7 @@ export * from "./daily-plans";
 export * from "./backtest-runs";
 export * from "./backtest-trades";
 export * from "./arc-contracts";
+export * from "./broker-fees";
 
 // Better Auth — replaces Supabase auth.users dependency
 export * from "./auth";

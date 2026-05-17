@@ -3,7 +3,11 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { arcContracts } from "@/lib/db/schema";
 
-export type ArcContractKey = "portfolio_decisions" | "identity_registry";
+export type ArcContractKey =
+  | "portfolio_decisions"
+  | "identity_registry"
+  | "usdc"
+  | "treasury_wallet";
 
 /**
  * Look up an Arc contract address from the global registry. Single

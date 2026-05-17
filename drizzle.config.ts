@@ -44,6 +44,7 @@ export default defineConfig({
     "backtest_runs",
     "backtest_trades",
     "arc_contracts",
+    "broker_fees",
     // Better Auth
     "user",
     "session",

@@ -9,6 +9,7 @@ import {
   anchorOpenedTrade,
   type AnchorJsonValue,
 } from "@/lib/arc/anchor";
+import { chargeBrokerFee } from "@/app/services/brokerage/charge-fee.service";
 import { fetchAllMids } from "@/lib/data-sources/hyperliquid";
 
 export type OpenPaperTradeInput = {
@@ -195,6 +196,14 @@ export async function closePaperTrade(
       })
       .where(eq(selboInstances.id, input.selboInstanceId));
   }
+
+  // Fire-and-forget brokerage fee: min($0.10, sizeUsd * 2%) USDC from the
+  // user's Circle wallet to the Selbo treasury. Idempotent via the unique
+  // index on broker_fees.trade_id so retries can't double-charge.
+  chargeBrokerFee({
+    userId: input.userId, walletId: input.walletId, tradeId: target.id,
+    sizeUsd: Number(target.amountUsd), pnlUsd: pnl,
+  }).catch((err) => console.error("[paper-trade] broker fee:", err));
 
   const closedTrade = {
     ...target,
