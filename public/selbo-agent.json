@@ -1,0 +1,16 @@
+{
+  "name": "Selbo",
+  "description": "Autonomous AI perp futures trader on Hyperliquid testnet. Daily research-driven analysis with multi-persona swarm consensus, plus minute-tick risk watcher. Anchors every decision on Arc via Circle Developer-Controlled Wallets. Built for the Agora Agents Hackathon (RFB 01).",
+  "agent_type": "trading",
+  "capabilities": [
+    "perp_futures_trading",
+    "daily_research_planning",
+    "swarm_consensus",
+    "risk_emergency_response",
+    "historical_backtest_replay"
+  ],
+  "version": "0.1.0",
+  "homepage": "https://selbo.app",
+  "venue": "hyperliquid_testnet",
+  "image": null
+}
