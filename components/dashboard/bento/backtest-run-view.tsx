@@ -54,9 +54,19 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
   return (
     <div className="mt-3 border border-[var(--neon-green)] bg-[#020202]">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--neon-green)]/40 px-4 py-2">
-        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)]">
-          {detail ? `${detail.run.startDate} to ${detail.run.endDate} (${detail.run.days}d)` : `backtest ${runId.slice(0, 8)}`}
-        </span>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)]">
+            {detail ? `${detail.run.startDate} to ${detail.run.endDate} (${detail.run.days}d)` : "loading..."}
+          </span>
+          <button
+            type="button"
+            onClick={() => navigator.clipboard.writeText(runId).catch(() => {})}
+            title={`Click to copy ${runId}`}
+            className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground hover:text-[var(--neon-green)]"
+          >
+            id {runId.slice(0, 8)}
+          </button>
+        </div>
         <div className="flex items-center gap-2">
           <button onClick={simulate} disabled={simulating} className="border border-[var(--neon-green)] bg-black px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)] hover:bg-[var(--neon-green)] hover:text-black disabled:opacity-60">
             {simulating ? "replaying..." : "replay agent decisions"}
