@@ -61,6 +61,7 @@ export async function stepBacktestRun(
 ): Promise<{ done: boolean; completed: number; total: number; reason?: string }> {
   const [run] = await db.select().from(backtestRuns).where(eq(backtestRuns.id, runId)).limit(1);
   if (!run) throw new Error(`backtest_run ${runId} not found`);
+  if (run.status !== "running") return { done: true, completed: run.cyclesCompleted, total: run.days, reason: run.status };
 
   const existing = await db.select({ ts: dailyPlans.generatedAt })
     .from(dailyPlans).where(eq(dailyPlans.backtestRunId, runId));
