@@ -11,6 +11,8 @@ export type OpenPos = {
   sizeUsd: number;
   leverage: number;
   confidence: number;
+  stopPrice: number;
+  tpPrice: number;
 };
 
 export function utcDayMs(d: Date): number {
@@ -18,10 +20,55 @@ export function utcDayMs(d: Date): number {
 }
 
 export function closeAt(candles: Candle[], dayMs: number): number | null {
-  const c = candles.find((cd) => cd.t === dayMs);
-  if (!c) return null;
-  const n = Number(c.c);
+  const n = Number(candles.find((cd) => cd.t === dayMs)?.c);
   return Number.isFinite(n) ? n : null;
+}
+
+export function candleAt(candles: Candle[], dayMs: number): Candle | null {
+  return candles.find((cd) => cd.t === dayMs) ?? null;
+}
+
+const STOP_PCT = 0.04;
+const TP_PCT = 0.08;
+
+export function stopTpForSide(side: "long" | "short", entry: number): { stop: number; tp: number } {
+  if (side === "long") return { stop: entry * (1 - STOP_PCT), tp: entry * (1 + TP_PCT) };
+  return { stop: entry * (1 + STOP_PCT), tp: entry * (1 - TP_PCT) };
+}
+
+export async function closeAllAtEnd(input: {
+  runId: string;
+  positions: Map<string, OpenPos>;
+  candleCache: Map<string, Candle[]>;
+  lastDayMs: number;
+}): Promise<{ equityDelta: number; closed: number }> {
+  let equityDelta = 0;
+  let closed = 0;
+  for (const [asset, pos] of input.positions) {
+    const candles = input.candleCache.get(asset);
+    const price = candles ? closeAt(candles, input.lastDayMs) : null;
+    if (price === null) continue;
+    equityDelta += await writeBacktestClose({
+      runId: input.runId, asset, pos,
+      exitDate: new Date(input.lastDayMs), exitPrice: price, reason: "end_of_backtest",
+    });
+    closed++;
+  }
+  return { equityDelta, closed };
+}
+
+export function checkStopTpHit(pos: OpenPos, candle: Candle): { price: number; reason: string } | null {
+  const high = Number(candle.h);
+  const low = Number(candle.l);
+  if (!Number.isFinite(high) || !Number.isFinite(low)) return null;
+  if (pos.side === "long") {
+    if (low <= pos.stopPrice) return { price: pos.stopPrice, reason: "stop_loss" };
+    if (high >= pos.tpPrice) return { price: pos.tpPrice, reason: "take_profit" };
+  } else {
+    if (high >= pos.stopPrice) return { price: pos.stopPrice, reason: "stop_loss" };
+    if (low <= pos.tpPrice) return { price: pos.tpPrice, reason: "take_profit" };
+  }
+  return null;
 }
 
 export function computePnl(
@@ -32,12 +79,7 @@ export function computePnl(
   return { pnlUsd: sizeUsd * leverage * move, pnlPct: leverage * move * 100 };
 }
 
-/**
- * Persist a closed simulated trade and return the realized PnL so the
- * caller can update its compounding equity counter. Keeps the
- * simulator loop body focused on agent-decision routing instead of
- * row-shape boilerplate.
- */
+/** Persist a closed simulated trade; returns realized PnL for the caller's compounding counter. */
 export async function writeBacktestClose(input: {
   runId: string; asset: string; pos: OpenPos;
   exitDate: Date; exitPrice: number; reason: string;
