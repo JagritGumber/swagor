@@ -90,7 +90,7 @@ export default async function OpengraphImage() {
             color: "#a8a8a8",
           }}
         >
-          <span>selbo.trade</span>
+          <span>selbo.app</span>
           <span style={{ color: "#00d4ff" }}>Built on Circle. Recorded on Arc.</span>
         </div>
 
