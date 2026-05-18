@@ -3,7 +3,6 @@
 type Cost = {
   totalTokens: number;
   totalUsd: number | null;
-  ratePer1k: number | null;
 };
 type Latency = {
   totalMs: number | null;
@@ -17,7 +16,7 @@ function fmtMs(ms: number | null): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 function fmtUsd(usd: number | null): string {
-  if (usd === null) return "rate not set";
+  if (usd === null) return "n/a";
   return `$${usd.toFixed(4)}`;
 }
 function toneClass(s: Warning["severity"]): string {

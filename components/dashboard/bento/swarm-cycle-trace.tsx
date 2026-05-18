@@ -12,7 +12,7 @@ type Trace = {
   llmCalls: LlmCall[];
   context: unknown;
   summary: {
-    cost: { totalTokens: number; totalUsd: number | null; ratePer1k: number | null };
+    cost: { totalTokens: number; totalUsd: number | null };
     latency: { totalMs: number | null; slowestAgent: { agentName: string; ms: number } | null };
     warnings: Array<{ severity: "info" | "warn" | "error"; message: string }>;
     watchlist: string[];
