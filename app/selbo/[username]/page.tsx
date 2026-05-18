@@ -12,6 +12,8 @@ import { LifetimeStats } from "@/components/dashboard/lifetime-stats";
 import { PublicWatchingStrip } from "@/components/public/public-watching-strip";
 import { PublicDecisions } from "@/components/public/public-decisions";
 import { PublicArcActivity } from "@/components/public/public-arc-activity";
+import { PublicEquityCurve } from "@/components/public/public-equity-curve";
+import { Erc8004Badge } from "@/components/public/erc8004-badge";
 
 type Params = Promise<{ username: string }>;
 
@@ -72,6 +74,12 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
                 Arc Testnet
               </span>
             </div>
+            <div className="mt-3">
+              <Erc8004Badge
+                tokenId={instance.erc8004TokenId}
+                registrationTxHash={instance.erc8004RegistrationTxHash}
+              />
+            </div>
           </div>
           <div>
             <div className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
@@ -91,6 +99,8 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
       </header>
 
       <LifetimeStats stats={lifetime} />
+
+      <PublicEquityCurve username={username} />
 
       <PublicWatchingStrip username={username} />
 
