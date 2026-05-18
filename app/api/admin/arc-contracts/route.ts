@@ -19,7 +19,7 @@ const BodySchema = z.object({
 /**
  * Admin upsert for the Arc contract registry. After `bun run db:push` lands
  * the table + IdentityRegistry seed, run:
- *   curl -X POST https://selbo.trade/api/admin/arc-contracts \
+ *   curl -X POST https://selbo.app/api/admin/arc-contracts \
  *     -H 'Content-Type: application/json' \
  *     -d '{"key":"portfolio_decisions","address":"0xYOURDEPLOYEDADDR"}'
  */
