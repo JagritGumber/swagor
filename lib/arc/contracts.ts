@@ -7,7 +7,8 @@ export type ArcContractKey =
   | "portfolio_decisions"
   | "identity_registry"
   | "usdc"
-  | "treasury_wallet";
+  | "treasury_wallet"
+  | "seed_wallet";
 
 /**
  * Look up an Arc contract address from the global registry. Single
@@ -42,4 +43,19 @@ export async function getArcContractOrSkip(key: ArcContractKey): Promise<string 
     console.warn(`[arc-contracts] skipping: ${err instanceof Error ? err.message : err}`);
     return null;
   }
+}
+
+/**
+ * Look up an entry with both its EVM address and the Circle wallet id we
+ * control. Only entries we transmit FROM (e.g. seed_wallet) have a wallet
+ * id. Returns null on either missing row or missing wallet id so callers
+ * can degrade gracefully when the operator hasn't seeded the entry yet.
+ */
+export async function getArcWallet(
+  key: ArcContractKey,
+): Promise<{ address: string; walletId: string } | null> {
+  const [row] = await db.select({ address: arcContracts.address, walletId: arcContracts.walletId })
+    .from(arcContracts).where(eq(arcContracts.key, key)).limit(1);
+  if (!row || !row.walletId) return null;
+  return { address: row.address, walletId: row.walletId };
 }
