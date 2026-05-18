@@ -31,7 +31,10 @@ function fmtUsd(n: number | null): string {
  * in refs so range/data updates call `series.setData(...)` instead of
  * tearing down and recreating the chart.
  */
-export function EquityCurve({ endpoint = "/api/equity/recent" }: { endpoint?: string } = {}) {
+export function EquityCurve({
+  endpoint = "/api/equity/recent",
+  refreshKey,
+}: { endpoint?: string; refreshKey?: number | string } = {}) {
   const [range, setRange] = useState<Range>(1);
   const [data, setData] = useState<EquityRecent | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,7 +49,7 @@ export function EquityCurve({ endpoint = "/api/equity/recent" }: { endpoint?: st
       .then((d) => { if (!cancelled) setData(d); })
       .catch(() => { /* swallow */ });
     return () => { cancelled = true; };
-  }, [range, endpoint]);
+  }, [range, endpoint, refreshKey]);
 
   // Create the chart instance ONCE when the container mounts. Updates
   // happen via setData on the existing series.

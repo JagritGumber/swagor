@@ -5,6 +5,7 @@ import { BacktestSummaryHeader, type BacktestSummary } from "./backtest-summary-
 import { BacktestTradesTable, type BacktestTradeRow } from "./backtest-trades-table";
 import { BacktestRunHeader } from "./backtest-run-header";
 import { BacktestPlansList, type BacktestPlan } from "./backtest-plans-list";
+import { EquityCurve } from "./equity-curve";
 import { useBacktestControls } from "./use-backtest-controls";
 
 const LIVE_POLL_MS = 2_000;
@@ -68,13 +69,12 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
       {!detail && !error && <p className="p-4 font-mono text-xs text-muted-foreground">loading...</p>}
       {detail && (
         <div className="max-h-[600px] space-y-4 overflow-auto p-4">
+          <EquityCurve
+            endpoint={`/api/admin/backtest/runs/${runId}/equity`}
+            refreshKey={`${detail.run.status}:${detail.trades.length}`}
+          />
           <BacktestSummaryHeader summary={detail.summary} />
           <BacktestTradesTable trades={detail.trades} />
-          {isLive && detail.trades.length === 0 && (
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-              trades simulate after the run completes. use "replay agent decisions".
-            </p>
-          )}
           <BacktestPlansList plans={detail.plans} open={plansOpen} onOpenChange={setPlansOpen} />
         </div>
       )}

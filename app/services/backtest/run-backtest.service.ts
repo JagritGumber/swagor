@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { backtestRuns, dailyPlans, type BacktestRun, type SelboInstance } from "@/lib/db/schema";
 import { runBacktestDay } from "./run-backtest-day.service";
+import { completeBacktestRun } from "./complete-backtest-run.service";
 
 function utcDayString(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -75,10 +76,8 @@ export async function stepBacktestRun(
   }
   const completed = doneDays.size;
   if (!nextDay) {
-    await db.update(backtestRuns).set({
-      status: "completed", cyclesCompleted: completed, completedAt: new Date(),
-    }).where(eq(backtestRuns.id, runId));
-    return { done: true, completed, total: run.days };
+    const { reason } = await completeBacktestRun(runId, completed);
+    return { done: true, completed, total: run.days, reason };
   }
 
   // Anchor asOf at the END of the UTC day so the day's candles are mature.
