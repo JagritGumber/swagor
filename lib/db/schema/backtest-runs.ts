@@ -21,6 +21,11 @@ export const backtestRuns = pgTable("backtest_runs", {
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
+  // Records which compiler prompt produced this run's plans. Null on rows
+  // created before the thesis-based reframe; "thesis_v1" on new runs.
+  // Lets us side-by-side compare prompt versions on identical date windows
+  // without keeping the old prompt code path live.
+  plannerPromptVersion: text("planner_prompt_version"),
 }, (table) => ({
   statusCheck: check(
     "backtest_runs_status_check",
