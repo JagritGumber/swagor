@@ -31,7 +31,11 @@ function fmtUsd(n: number | null): string {
  * in refs so range/data updates call `series.setData(...)` instead of
  * tearing down and recreating the chart.
  */
-export function EquityCurve({ endpoint = "/api/equity/recent" }: { endpoint?: string } = {}) {
+export function EquityCurve({
+  endpoint = "/api/equity/recent",
+  refreshKey,
+  hideRangeSelector = false,
+}: { endpoint?: string; refreshKey?: number | string; hideRangeSelector?: boolean } = {}) {
   const [range, setRange] = useState<Range>(1);
   const [data, setData] = useState<EquityRecent | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,7 +50,7 @@ export function EquityCurve({ endpoint = "/api/equity/recent" }: { endpoint?: st
       .then((d) => { if (!cancelled) setData(d); })
       .catch(() => { /* swallow */ });
     return () => { cancelled = true; };
-  }, [range, endpoint]);
+  }, [range, endpoint, refreshKey]);
 
   // Create the chart instance ONCE when the container mounts. Updates
   // happen via setData on the existing series.
@@ -104,18 +108,20 @@ export function EquityCurve({ endpoint = "/api/equity/recent" }: { endpoint?: st
             Equity history
           </h3>
         </div>
-        <div className="flex gap-1 font-mono text-[10px] uppercase tracking-[0.14em]">
-          {([1, 7, 30] as Range[]).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setRange(r)}
-              className={`px-2 py-0.5 border ${r === range ? "border-[var(--neon-cyan)] text-[var(--neon-cyan)]" : "border-[var(--hairline)] text-muted-foreground hover:text-foreground"}`}
-            >
-              {RANGE_LABEL[r]}
-            </button>
-          ))}
-        </div>
+        {!hideRangeSelector && (
+          <div className="flex gap-1 font-mono text-[10px] uppercase tracking-[0.14em]">
+            {([1, 7, 30] as Range[]).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRange(r)}
+                className={`px-2 py-0.5 border ${r === range ? "border-[var(--neon-cyan)] text-[var(--neon-cyan)]" : "border-[var(--hairline)] text-muted-foreground hover:text-foreground"}`}
+              >
+                {RANGE_LABEL[r]}
+              </button>
+            ))}
+          </div>
+        )}
       </header>
 
       <div className="mt-2 font-mono text-2xl tabular-nums text-foreground">

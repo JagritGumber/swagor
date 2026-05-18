@@ -1,10 +1,8 @@
 "use client";
 
 type ControlState = {
-  simulate: () => void;
   abort: () => void;
   resume: () => void;
-  simulating: boolean;
   aborting: boolean;
   resuming: boolean;
 };
@@ -20,9 +18,9 @@ const STATUS_TONE: Record<string, string> = {
 
 /**
  * Header strip for the backtest run detail view. Shows the date range,
- * click-to-copy run ID, status-aware abort/resume buttons, the trade
- * replay button, and close. Status drives which recovery action is
- * available so users can't (e.g.) abort a completed run.
+ * click-to-copy run ID, progress and status chips, status-aware
+ * abort/resume buttons, and close. Trade simulation runs automatically
+ * when a backtest completes, so there is no manual replay control.
  */
 export function BacktestRunHeader({
   runId,
@@ -73,9 +71,6 @@ export function BacktestRunHeader({
             {controls.resuming ? "resuming..." : "resume"}
           </button>
         )}
-        <button onClick={controls.simulate} disabled={controls.simulating} className={BTN}>
-          {controls.simulating ? "replaying..." : "replay agent decisions"}
-        </button>
         <button onClick={onClose} className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)] hover:underline">
           close
         </button>
