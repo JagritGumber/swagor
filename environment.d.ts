@@ -31,5 +31,6 @@ namespace NodeJS {
     BREVO_FROM_EMAIL: string
     BREVO_FROM_NAME: string
     BETA_CODE: string
+    PER_USER_DAILY_LLM_USD: string
   }
 }

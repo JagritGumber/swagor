@@ -2,6 +2,7 @@ import "server-only";
 
 import { db } from "@/lib/db/client";
 import { llmCalls } from "@/lib/db/schema";
+import { computeLlmCost } from "./rates";
 
 export type LogLlmCallInput = {
   selboInstanceId?: string;
@@ -19,14 +20,17 @@ export type LogLlmCallInput = {
 };
 
 /**
- * Append a row to llm_calls. Swallows errors so a logging failure never
- * propagates into the calling agent path. Audit data, not load-bearing.
- *
- * Caller is responsible for which context ids to attach (tickId, tradeId,
- * cycleId). Pass whichever apply; leave the rest undefined.
+ * Append a row to llm_calls. Stamps cost_usd at insert time using the
+ * per-model rate table in lib/llm/rates.ts so downstream cost queries
+ * just sum a column (no rate guessing). Swallows errors so logging
+ * failures never propagate into the calling agent path.
  */
 export async function logLlmCall(input: LogLlmCallInput): Promise<void> {
   try {
+    const costUsd = computeLlmCost(input.model, input.promptTokens, input.completionTokens);
+    if (costUsd === null) {
+      console.warn(`[llm-log] no rate registered for model="${input.model}"; cost_usd will be null`);
+    }
     await db.insert(llmCalls).values({
       selboInstanceId: input.selboInstanceId ?? null,
       tickId: input.tickId ?? null,
@@ -40,6 +44,7 @@ export async function logLlmCall(input: LogLlmCallInput): Promise<void> {
       parsedOutput: (input.parsedOutput ?? null) as never,
       promptTokens: input.promptTokens ?? null,
       completionTokens: input.completionTokens ?? null,
+      costUsd: costUsd !== null ? costUsd.toString() : null,
     });
   } catch (err) {
     console.error("[llm-log] insert failed:", err);

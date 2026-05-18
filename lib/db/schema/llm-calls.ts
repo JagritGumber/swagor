@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, numeric, jsonb, timestamp } from "drizzle-orm/pg-core";
 
 /**
  * Every LLM invocation Selbo makes gets a row here: system prompt, user
@@ -24,6 +24,9 @@ export const llmCalls = pgTable("llm_calls", {
   parsedOutput: jsonb("parsed_output"),
   promptTokens: integer("prompt_tokens"),
   completionTokens: integer("completion_tokens"),
+  // Per-call cost in USD, computed at log time using lib/llm/rates.ts.
+  // NULL for legacy rows or models not registered in the rate table.
+  costUsd: numeric("cost_usd", { precision: 20, scale: 8 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

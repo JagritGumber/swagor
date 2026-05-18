@@ -39,7 +39,7 @@ export async function runDailyPlanForInstance(
   triggeredBy: "daily" | "watcher",
   opts?: { force?: boolean },
 ): Promise<RunResult> {
-  if (await isLlmBudgetExhausted()) return { cycleId: "", status: "skipped", reason: "daily_cost_cap_exceeded" };
+  if (await isLlmBudgetExhausted(instance.id)) return { cycleId: "", status: "skipped", reason: "daily_cost_cap_exceeded" };
 
   if (triggeredBy === "daily") {
     if (!opts?.force) {

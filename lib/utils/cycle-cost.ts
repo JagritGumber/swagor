@@ -3,8 +3,7 @@ import "server-only";
 export type CycleCost = {
   totalTokens: number;
   totalUsd: number | null;
-  ratePer1k: number | null;
-  byAgent: Array<{ agentName: string; tokens: number; calls: number }>;
+  byAgent: Array<{ agentName: string; tokens: number; costUsd: number; calls: number }>;
 };
 
 export type CycleLatency = {
@@ -17,41 +16,44 @@ type LlmCall = {
   agentName: string;
   promptTokens: number | null;
   completionTokens: number | null;
+  costUsd: string | null;
   createdAt: Date;
 };
 
 /**
- * Sum tokens per agentName and multiply by the flat blended rate from
- * LLM_COST_PER_1K_TOKENS_USD. Returns null totals when the rate is not
- * configured so the UI can prompt the admin to set it. Per-agent rows
- * sorted by token count desc.
+ * Aggregate per-cycle LLM spend from real cost_usd values stamped at log
+ * time by lib/llm/log.ts. Per-agent rows sorted by USD desc so the top
+ * spender surfaces first. `totalUsd` is null only when EVERY row in the
+ * cycle has a null cost (unmapped model); otherwise unmapped rows
+ * contribute 0 and the rest sum normally.
  */
 export function computeCycleCost(calls: LlmCall[]): CycleCost {
-  const rateStr = process.env.LLM_COST_PER_1K_TOKENS_USD;
-  const ratePer1k = rateStr && Number.isFinite(Number(rateStr)) ? Number(rateStr) : null;
-  const acc = new Map<string, { tokens: number; calls: number }>();
+  const acc = new Map<string, { tokens: number; costUsd: number; calls: number }>();
   let totalTokens = 0;
+  let totalUsd = 0;
+  let anyCost = false;
   for (const c of calls) {
     const t = (c.promptTokens ?? 0) + (c.completionTokens ?? 0);
+    const u = c.costUsd !== null ? Number(c.costUsd) : 0;
+    if (c.costUsd !== null) anyCost = true;
     totalTokens += t;
-    const existing = acc.get(c.agentName) ?? { tokens: 0, calls: 0 };
+    totalUsd += u;
+    const existing = acc.get(c.agentName) ?? { tokens: 0, costUsd: 0, calls: 0 };
     existing.tokens += t;
+    existing.costUsd += u;
     existing.calls += 1;
     acc.set(c.agentName, existing);
   }
   const byAgent = Array.from(acc.entries())
     .map(([agentName, v]) => ({ agentName, ...v }))
-    .sort((a, b) => b.tokens - a.tokens);
-  const totalUsd = ratePer1k !== null ? (totalTokens / 1000) * ratePer1k : null;
-  return { totalTokens, totalUsd, ratePer1k, byAgent };
+    .sort((a, b) => b.costUsd - a.costUsd);
+  return { totalTokens, totalUsd: anyCost ? Number(totalUsd.toFixed(6)) : null, byAgent };
 }
 
 /**
- * Per-call latency = createdAt - cycle.startedAt. For parallel swarm
- * calls this is approximate wall-clock; for sequential pipeline stages
- * (aggregator -> plan-compiler) it's the time from cycle kickoff to
- * stage completion. Slowest agent points at the call that lagged the
- * cycle's overall wall-clock.
+ * Per-call latency = createdAt - cycle.startedAt. Parallel calls land at
+ * different times; the slowest agent points at the call that lagged the
+ * cycle's wall-clock.
  */
 export function computeCycleLatency(
   cycle: { startedAt: Date; completedAt: Date | null },
