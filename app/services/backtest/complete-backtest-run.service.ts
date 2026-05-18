@@ -32,6 +32,7 @@ export async function completeBacktestRun(
     status: "completed",
     cyclesCompleted: completed,
     completedAt: new Date(),
+    errorMessage: null,
   }).where(eq(backtestRuns.id, runId));
   return {};
 }

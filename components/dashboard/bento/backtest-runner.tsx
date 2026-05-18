@@ -38,7 +38,11 @@ export function BacktestRunner() {
       if (!res.ok) throw new Error(`step HTTP ${res.status}`);
       const body = await res.json() as { done: boolean; completed: number; total: number; reason?: string };
       setProgress({ runId, completed: body.completed, total: body.total });
-      if (body.done) { toast.success(`Backtest done. ${body.completed}/${body.total} days.`); return; }
+      if (body.done) {
+        if (body.reason) toast.error(`Backtest failed: ${body.reason}`);
+        else toast.success(`Backtest done. ${body.completed}/${body.total} days.`);
+        return;
+      }
       if (body.reason) toast.error(`Step failure: ${body.reason}`);
       await new Promise((r) => setTimeout(r, STEP_POLL_MS));
     }

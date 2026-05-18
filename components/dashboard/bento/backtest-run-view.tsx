@@ -72,6 +72,7 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
           <EquityCurve
             endpoint={`/api/admin/backtest/runs/${runId}/equity`}
             refreshKey={`${detail.run.status}:${detail.trades.length}`}
+            hideRangeSelector
           />
           <BacktestSummaryHeader summary={detail.summary} />
           <BacktestTradesTable trades={detail.trades} />

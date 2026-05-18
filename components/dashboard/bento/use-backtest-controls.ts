@@ -14,7 +14,10 @@ async function pollSteps(runId: string): Promise<void> {
     });
     if (!res.ok) throw new Error(`step HTTP ${res.status}`);
     const body = await res.json() as { done: boolean; reason?: string };
-    if (body.done) return;
+    if (body.done) {
+      if (body.reason) throw new Error(body.reason);
+      return;
+    }
     if (body.reason) toast.error(`Step failure: ${body.reason}`);
     await new Promise((r) => setTimeout(r, STEP_POLL_MS));
   }
