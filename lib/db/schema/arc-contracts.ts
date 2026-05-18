@@ -14,6 +14,10 @@ export const arcContracts = pgTable("arc_contracts", {
   key: text("key").primaryKey(),
   address: text("address").notNull(),
   label: text("label"),
+  // Optional Circle wallet id. Set for entries where the operator controls
+  // the wallet AND needs to send transactions FROM it (e.g. seed_wallet
+  // funding new users at signup). Null for receive-only entries.
+  walletId: text("wallet_id"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
