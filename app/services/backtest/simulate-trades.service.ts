@@ -40,12 +40,7 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
   const positions = new Map<string, OpenPos>();
 
   for (const plan of plans) {
-    if (plan.status !== "complete") continue;
-    const json = plan.planJson as PlanJson | null;
-    if (!json?.biasByAsset) continue;
     const dayMs = utcDayMs(plan.generatedAt);
-    const notionalPct = json.riskCaps?.maxNotionalPctOfEquity ?? 15;
-    const leverage = Math.max(1, json.riskCaps?.maxLeverage ?? 1);
 
     for (const [asset, pos] of [...positions]) {
       const candle = (candleCache.get(asset) && candleAt(candleCache.get(asset)!, dayMs)) || null;
@@ -56,6 +51,12 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
       closed++;
       positions.delete(asset);
     }
+
+    if (plan.status !== "complete") continue;
+    const json = plan.planJson as PlanJson | null;
+    if (!json?.biasByAsset) continue;
+    const notionalPct = json.riskCaps?.maxNotionalPctOfEquity ?? 15;
+    const leverage = Math.max(1, json.riskCaps?.maxLeverage ?? 1);
 
     for (const b of json.biasByAsset) {
       const asset = b.asset.toUpperCase();
