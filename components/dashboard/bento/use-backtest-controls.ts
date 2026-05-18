@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 const STEP_POLL_MS = 1_500;
 
-async function pollSteps(runId: string, onTick: () => Promise<void>): Promise<void> {
+async function pollSteps(runId: string): Promise<void> {
   while (true) {
     const res = await fetch("/api/admin/backtest/step", {
       method: "POST",
@@ -14,7 +14,6 @@ async function pollSteps(runId: string, onTick: () => Promise<void>): Promise<vo
     });
     if (!res.ok) throw new Error(`step HTTP ${res.status}`);
     const body = await res.json() as { done: boolean; reason?: string };
-    await onTick();
     if (body.done) return;
     if (body.reason) toast.error(`Step failure: ${body.reason}`);
     await new Promise((r) => setTimeout(r, STEP_POLL_MS));
@@ -69,9 +68,9 @@ export function useBacktestControls(runId: string, onChange: () => Promise<void>
     try {
       const res = await fetch(`/api/admin/backtest/runs/${runId}/resume`, { method: "POST" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      toast.success("Backtest resumed. Polling...");
+      toast.success("Backtest resumed.");
       await onChange();
-      await pollSteps(runId, onChange);
+      await pollSteps(runId);
       toast.success("Backtest done.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
