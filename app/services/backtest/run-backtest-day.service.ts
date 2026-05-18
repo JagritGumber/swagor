@@ -9,7 +9,7 @@ import { runSwarm } from "@/app/services/swarm/swarm-runner.service";
 import { aggregateDailyPlan } from "@/app/services/swarm/daily-aggregator.service";
 import { compileDailyPlan } from "@/app/services/swarm/plan-compiler.service";
 
-const SWARM_SIZE = 16;
+const SWARM_SIZE = 6;
 
 /**
  * Execute one backtest day end-to-end: insert cycle row tagged with

@@ -11,7 +11,7 @@ import { aggregateDailyPlan } from "./daily-aggregator.service";
 import { compileDailyPlan } from "./plan-compiler.service";
 import { checkIngestionAbort, existingDailyPlan, rateLimitBlocked } from "./daily-planner-checks";
 
-const SWARM_SIZE = 16;
+const SWARM_SIZE = 6;
 
 type RunResult = { cycleId: string; status: "complete" | "failed" | "skipped"; reason?: string };
 
