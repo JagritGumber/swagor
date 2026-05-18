@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/auth/admin";
 import { db } from "@/lib/db/client";
 import { backtestRuns } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+
+const IdSchema = z.string().uuid();
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +30,8 @@ export async function POST(
   }
 
   const { id } = await context.params;
+  const parsed = IdSchema.safeParse(id);
+  if (!parsed.success) return NextResponse.json({ error: "Invalid run id" }, { status: 400 });
 
   const [run] = await db.select().from(backtestRuns).where(eq(backtestRuns.id, id)).limit(1);
   if (!run) return NextResponse.json({ error: "Not found" }, { status: 404 });

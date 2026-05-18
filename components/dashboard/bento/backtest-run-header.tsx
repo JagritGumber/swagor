@@ -22,12 +22,14 @@ export function BacktestRunHeader({
   runId,
   label,
   status,
+  progress,
   controls,
   onClose,
 }: {
   runId: string;
   label: string;
-  status: string | undefined;
+  status: "running" | "completed" | "failed" | undefined;
+  progress: { completed: number; total: number } | null;
   controls: ControlState;
   onClose: () => void;
 }) {
@@ -43,6 +45,11 @@ export function BacktestRunHeader({
         >
           id {runId.slice(0, 8)}
         </button>
+        {progress && (
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+            {progress.completed}/{progress.total} cycles
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-2">
         {status === "running" && (

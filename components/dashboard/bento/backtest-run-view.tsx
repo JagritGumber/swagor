@@ -13,8 +13,9 @@ type Plan = {
   planMarkdown: string | null; planJson: PlanJson | null; errorMessage: string | null;
   arcAnchorTx: string | null; arcOnchainTxHash: string | null;
 };
+type RunStatus = "running" | "completed" | "failed";
 type RunDetail = {
-  run: { id: string; startDate: string; endDate: string; days: number; status: string };
+  run: { id: string; startDate: string; endDate: string; days: number; status: RunStatus; cyclesCompleted: number };
   plans: Plan[];
   trades: BacktestTradeRow[];
   summary: BacktestSummary;
@@ -44,6 +45,7 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
         runId={runId}
         label={label}
         status={detail?.run.status}
+        progress={detail ? { completed: detail.run.cyclesCompleted, total: detail.run.days } : null}
         controls={controls}
         onClose={onClose}
       />
