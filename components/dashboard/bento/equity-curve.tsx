@@ -25,11 +25,13 @@ function fmtUsd(n: number | null): string {
 }
 
 /**
- * Wallet equity area chart. Fetches /api/equity/recent for the selected
- * range. Keeps the chart and series in refs so range/data updates call
- * `series.setData(...)` instead of tearing down and recreating the chart.
+ * Wallet equity area chart. Fetches the configured `endpoint` (default
+ * /api/equity/recent for authenticated dashboard use; pass a public
+ * variant for unauthenticated profile views). Keeps the chart and series
+ * in refs so range/data updates call `series.setData(...)` instead of
+ * tearing down and recreating the chart.
  */
-export function EquityCurve() {
+export function EquityCurve({ endpoint = "/api/equity/recent" }: { endpoint?: string } = {}) {
   const [range, setRange] = useState<Range>(1);
   const [data, setData] = useState<EquityRecent | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -39,12 +41,12 @@ export function EquityCurve() {
   useEffect(() => {
     let cancelled = false;
     setData(null);
-    fetch(`/api/equity/recent?days=${range}`, { cache: "no-store" })
+    fetch(`${endpoint}?days=${range}`, { cache: "no-store" })
       .then((r) => r.ok ? r.json() as Promise<EquityRecent> : Promise.reject(r.status))
       .then((d) => { if (!cancelled) setData(d); })
       .catch(() => { /* swallow */ });
     return () => { cancelled = true; };
-  }, [range]);
+  }, [range, endpoint]);
 
   // Create the chart instance ONCE when the container mounts. Updates
   // happen via setData on the existing series.
