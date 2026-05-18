@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "prebuild": "bun run emails:build",
     "build": "next build",
     "start": "next start",
     "emails:build": "cd emails && maizzle build production && cd .. && node emails/bake.mjs",
