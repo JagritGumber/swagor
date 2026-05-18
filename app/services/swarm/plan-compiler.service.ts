@@ -6,6 +6,7 @@ import { traderLlm, MODELS } from "@/lib/llm-client";
 import { logLlmCall } from "@/lib/llm/log";
 import type { DailyAggregatorOutput } from "./daily-aggregator.service";
 import { COMPILER_SYSTEM_PROMPT, PlanCompilerSchema, type CompiledPlan } from "./plan-compiler-prompt";
+import { formatThesisMemoryForPrompt, type ThesisMemory } from "./build-thesis-memory";
 
 export type { CompiledPlan };
 
@@ -20,13 +21,15 @@ export async function compileDailyPlan(opts: {
   swarmContext: object;
   strategyText: string;
   yesterdayPlanSummary: object | null;
+  thesisMemory: ThesisMemory;
 }): Promise<CompiledPlan> {
-  const userPayload = JSON.stringify({
+  const memoryBlock = formatThesisMemoryForPrompt(opts.thesisMemory);
+  const userPayload = `${memoryBlock}\n\n${JSON.stringify({
     aggregator: opts.aggregator,
     swarmContext: opts.swarmContext,
     strategy: opts.strategyText,
     yesterdayPlanSummary: opts.yesterdayPlanSummary,
-  }, null, 2);
+  }, null, 2)}`;
 
   // Compiler runs on the TRADER tier (DeepInfra Mistral 24B by default)
   // for sub-second TTFT. Earlier cycles spent 37s of 38s wall-clock
@@ -49,7 +52,7 @@ export async function compileDailyPlan(opts: {
     cycleId: opts.cycleId,
     agentName: "plan-compiler",
     model: MODELS.TRADER,
-    input: { aggregator: opts.aggregator, strategy: opts.strategyText, yesterdayPlanSummary: opts.yesterdayPlanSummary } as object,
+    input: { aggregator: opts.aggregator, strategy: opts.strategyText, yesterdayPlanSummary: opts.yesterdayPlanSummary, thesisMemory: opts.thesisMemory } as object,
     output: parsed as object,
     promptTokens: completion.usage?.prompt_tokens,
     completionTokens: completion.usage?.completion_tokens,
