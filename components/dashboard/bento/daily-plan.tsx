@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { DailyPlanBody, type PlanJson } from "./daily-plan-body";
+import { ArcTxLink } from "@/components/ui/arc-tx-link";
 
 type DailyPlanRow = {
   id: string;
@@ -10,6 +11,8 @@ type DailyPlanRow = {
   planMarkdown: string | null;
   planJson: PlanJson | null;
   errorMessage: string | null;
+  arcAnchorTx: string | null;
+  arcOnchainTxHash: string | null;
 };
 
 export function DailyPlan() {
@@ -48,8 +51,9 @@ export function DailyPlan() {
       <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">Analysis</h2>
         {plan && (
-          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            generated {new Date(plan.generatedAt).toLocaleTimeString()}
+          <div className="flex flex-wrap items-center gap-4 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            <span>generated {new Date(plan.generatedAt).toLocaleTimeString()}</span>
+            <ArcTxLink hash={plan.arcOnchainTxHash} queuedId={plan.arcAnchorTx} label="arc anchor" />
           </div>
         )}
       </header>

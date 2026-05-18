@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUpRight } from "lucide-react";
 import type { ClosedTradeView } from "@/app/services/trades.service";
 import { TradeDecisionDrawer } from "@/components/dashboard/bento/trade-decision-drawer";
-
-const ARC_TX = "https://testnet.arcscan.app/tx/";
+import { ArcTxLink } from "@/components/ui/arc-tx-link";
 
 function fmtUsd(n: number | null): string {
   if (n === null) return "n/a";
@@ -99,10 +97,10 @@ export function TradeHistory({ trades, admin = false }: { trades: ClosedTradeVie
                     )}
                   </td>
                   <td className="py-3 text-right">
-                    <ArcChip hash={t.openOnchainTxHash} />
+                    <ArcTxLink hash={t.openOnchainTxHash} emptyLabel="pending" stopPropagation />
                   </td>
                   <td className="py-3 text-right">
-                    <ArcChip hash={t.arcOnchainTxHash} />
+                    <ArcTxLink hash={t.arcOnchainTxHash} emptyLabel="pending" stopPropagation />
                   </td>
                 </tr>
               );
@@ -124,21 +122,3 @@ export function TradeHistory({ trades, admin = false }: { trades: ClosedTradeVie
   );
 }
 
-function ArcChip({ hash }: { hash: string | null }) {
-  if (!hash) {
-    return <span className="text-muted-foreground">pending</span>;
-  }
-  return (
-    <a
-      href={`${ARC_TX}${hash}`}
-      target="_blank"
-      rel="noreferrer"
-      onClick={(e) => e.stopPropagation()}
-      className="inline-flex items-center gap-1 text-[var(--neon-cyan)] underline-offset-4 hover:underline"
-      title={hash}
-    >
-      view
-      <ArrowUpRight aria-hidden className="h-3 w-3 opacity-70" />
-    </a>
-  );
-}

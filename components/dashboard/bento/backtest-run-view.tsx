@@ -5,10 +5,12 @@ import { toast } from "sonner";
 import { DailyPlanBody, type PlanJson } from "./daily-plan-body";
 import { BacktestSummaryHeader, type BacktestSummary } from "./backtest-summary-header";
 import { BacktestTradesTable, type BacktestTradeRow } from "./backtest-trades-table";
+import { ArcTxLink } from "@/components/ui/arc-tx-link";
 
 type Plan = {
   id: string; generatedAt: string; status: string;
   planMarkdown: string | null; planJson: PlanJson | null; errorMessage: string | null;
+  arcAnchorTx: string | null; arcOnchainTxHash: string | null;
 };
 type RunDetail = {
   run: { id: string; startDate: string; endDate: string; days: number; status: string };
@@ -75,9 +77,12 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
             <div className="mt-3 space-y-3">
               {detail.plans.map((p) => (
                 <div key={p.id} className="border border-[var(--neon-green)]/30 p-3">
-                  <header className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.16em]">
+                  <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[0.16em]">
                     <span className="text-[var(--neon-green)]">{p.generatedAt.slice(0, 10)}</span>
-                    <span className={p.status === "failed" ? "text-[var(--neon-red)]" : "text-muted-foreground"}>{p.status}</span>
+                    <div className="flex items-center gap-3">
+                      <ArcTxLink hash={p.arcOnchainTxHash} queuedId={p.arcAnchorTx} label="anchor" />
+                      <span className={p.status === "failed" ? "text-[var(--neon-red)]" : "text-muted-foreground"}>{p.status}</span>
+                    </div>
                   </header>
                   {p.status === "failed" && p.errorMessage && (
                     <p className="mt-2 font-mono text-xs text-[var(--neon-red)]">{p.errorMessage}</p>
