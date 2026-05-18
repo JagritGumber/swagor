@@ -6,7 +6,7 @@ import { db } from "@/lib/db/client";
 import { selboInstances, type SelboInstance } from "@/lib/db/schema/selbo-instances";
 import { user } from "@/lib/db/schema/auth";
 import { registerSelboAgentForInstance } from "@/lib/arc/register-erc8004.service";
-import { fundNewUserWallet } from "@/lib/arc/seed-wallet.service";
+import { fundNewUserWalletFromFaucet } from "@/lib/arc/faucet.service";
 import { sendWaitlistConfirmation } from "@/lib/email/send-waitlist-confirmation";
 import { eq } from "drizzle-orm";
 
@@ -73,11 +73,11 @@ export async function ensureSelboInstance(userId: string): Promise<SelboInstance
     registerSelboAgentForInstance({
       instanceId: row.id, walletId: row.circleWalletId, walletAddress: row.circleWalletAddress,
     }).catch((err) => console.error("[selbo-instance] erc8004:", err));
-    // Fire-and-forget: seed the new user's wallet with $1000 testnet USDC
-    // from the operator-managed seed_wallet entry in arc_contracts.
-    // Skips silently if seed_wallet hasn't been registered yet.
-    fundNewUserWallet({ userWalletAddress: row.circleWalletAddress })
-      .catch((err) => console.error("[selbo-instance] seed funding:", err));
+    // Fire-and-forget: drip testnet USDC from Circle's public faucet to
+    // the new wallet so broker fees + gas have headroom. ~20 USDC per
+    // drip, rate-limited per address; failures are logged.
+    fundNewUserWalletFromFaucet({ walletAddress: row.circleWalletAddress })
+      .catch((err) => console.error("[selbo-instance] faucet:", err));
     // Fire-and-forget waitlist confirmation email when the beta gate is
     // active (BETA_CODE set). Skips when beta is open (auto-granted).
     if (!betaOpen) {
