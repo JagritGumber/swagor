@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { DailyPlanBody, type PlanJson } from "./daily-plan-body";
 import { BacktestSummaryHeader, type BacktestSummary } from "./backtest-summary-header";
 import { BacktestTradesTable, type BacktestTradeRow } from "./backtest-trades-table";
+import { BacktestRunHeader } from "./backtest-run-header";
+import { useBacktestControls } from "./use-backtest-controls";
 import { ArcTxLink } from "@/components/ui/arc-tx-link";
 
 type Plan = {
@@ -12,8 +13,9 @@ type Plan = {
   planMarkdown: string | null; planJson: PlanJson | null; errorMessage: string | null;
   arcAnchorTx: string | null; arcOnchainTxHash: string | null;
 };
+type RunStatus = "running" | "completed" | "failed";
 type RunDetail = {
-  run: { id: string; startDate: string; endDate: string; days: number; status: string };
+  run: { id: string; startDate: string; endDate: string; days: number; status: RunStatus; cyclesCompleted: number };
   plans: Plan[];
   trades: BacktestTradeRow[];
   summary: BacktestSummary;
@@ -22,7 +24,6 @@ type RunDetail = {
 export function BacktestRunView({ runId, onClose }: { runId: string; onClose: () => void }) {
   const [detail, setDetail] = useState<RunDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [simulating, setSimulating] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -35,45 +36,19 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
   }, [runId]);
   useEffect(() => { void load(); }, [load]);
 
-  async function simulate() {
-    if (simulating) return;
-    setSimulating(true);
-    try {
-      const res = await fetch(`/api/admin/backtest/runs/${runId}/simulate`, { method: "POST" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const body = await res.json() as { opened: number; closed: number };
-      toast.success(`Replay complete. Opened ${body.opened}, closed ${body.closed}.`);
-      await load();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSimulating(false);
-    }
-  }
+  const controls = useBacktestControls(runId, load);
+  const label = detail ? `${detail.run.startDate} to ${detail.run.endDate} (${detail.run.days}d)` : "loading...";
 
   return (
     <div className="mt-3 border border-[var(--neon-green)] bg-[#020202]">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--neon-green)]/40 px-4 py-2">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)]">
-            {detail ? `${detail.run.startDate} to ${detail.run.endDate} (${detail.run.days}d)` : "loading..."}
-          </span>
-          <button
-            type="button"
-            onClick={() => navigator.clipboard.writeText(runId).catch(() => {})}
-            title={`Click to copy ${runId}`}
-            className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground hover:text-[var(--neon-green)]"
-          >
-            id {runId.slice(0, 8)}
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={simulate} disabled={simulating} className="border border-[var(--neon-green)] bg-black px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)] hover:bg-[var(--neon-green)] hover:text-black disabled:opacity-60">
-            {simulating ? "replaying..." : "replay agent decisions"}
-          </button>
-          <button onClick={onClose} className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)] hover:underline">close</button>
-        </div>
-      </header>
+      <BacktestRunHeader
+        runId={runId}
+        label={label}
+        status={detail?.run.status}
+        progress={detail ? { completed: detail.run.cyclesCompleted, total: detail.run.days } : null}
+        controls={controls}
+        onClose={onClose}
+      />
       {error && <p className="p-4 font-mono text-xs text-[var(--neon-red)]">{error}</p>}
       {!detail && !error && <p className="p-4 font-mono text-xs text-muted-foreground">loading...</p>}
       {detail && (
