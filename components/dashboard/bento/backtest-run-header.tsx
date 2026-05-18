@@ -12,6 +12,12 @@ type ControlState = {
 const BTN = "border border-[var(--neon-green)] bg-black px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)] hover:bg-[var(--neon-green)] hover:text-black disabled:opacity-60";
 const DESTRUCTIVE = "border border-[var(--neon-red)] bg-black px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-red)] hover:bg-[var(--neon-red)] hover:text-black disabled:opacity-60";
 
+const STATUS_TONE: Record<string, string> = {
+  running: "border-[var(--neon-cyan)] text-[var(--neon-cyan)]",
+  completed: "border-[var(--neon-green)] text-[var(--neon-green)]",
+  failed: "border-[var(--neon-red)] text-[var(--neon-red)]",
+};
+
 /**
  * Header strip for the backtest run detail view. Shows the date range,
  * click-to-copy run ID, status-aware abort/resume buttons, the trade
@@ -48,6 +54,11 @@ export function BacktestRunHeader({
         {progress && (
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             {progress.completed}/{progress.total} cycles
+          </span>
+        )}
+        {status && (
+          <span className={`border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.16em] ${STATUS_TONE[status]}`}>
+            {status}
           </span>
         )}
       </div>
