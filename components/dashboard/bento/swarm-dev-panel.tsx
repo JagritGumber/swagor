@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { SwarmCycleTrace } from "./swarm-cycle-trace";
 import { BacktestRunner } from "./backtest-runner";
+import { EmailTestButtons } from "@/components/admin/email-test-buttons";
 
 type CycleRow = {
   id: string;
@@ -102,6 +103,7 @@ export function SwarmDevPanel() {
         </div>
       )}
       {open && <BacktestRunner />}
+      {open && <EmailTestButtons />}
     </section>
   );
 }
