@@ -56,17 +56,14 @@ export async function closeAllAtEnd(input: {
   return { equityDelta, closed };
 }
 
+/** Stop and TP fire only on a daily close past the level; intraday wicks do not invalidate a multi-day thesis. Exit price is the close (not the stop/tp level) so the realistic adverse-move loss is booked, not the wick price. */
 export function checkStopTpHit(pos: OpenPos, candle: Candle): { price: number; reason: string } | null {
-  const high = Number(candle.h);
-  const low = Number(candle.l);
-  if (!Number.isFinite(high) || !Number.isFinite(low)) return null;
-  if (pos.side === "long") {
-    if (low <= pos.stopPrice) return { price: pos.stopPrice, reason: "stop_loss" };
-    if (high >= pos.tpPrice) return { price: pos.tpPrice, reason: "take_profit" };
-  } else {
-    if (high >= pos.stopPrice) return { price: pos.stopPrice, reason: "stop_loss" };
-    if (low <= pos.tpPrice) return { price: pos.tpPrice, reason: "take_profit" };
-  }
+  const close = Number(candle.c);
+  if (!Number.isFinite(close)) return null;
+  const stopHit = pos.side === "long" ? close <= pos.stopPrice : close >= pos.stopPrice;
+  if (stopHit) return { price: close, reason: "stop_loss" };
+  const tpHit = pos.side === "long" ? close >= pos.tpPrice : close <= pos.tpPrice;
+  if (tpHit) return { price: close, reason: "take_profit" };
   return null;
 }
 
