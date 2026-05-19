@@ -31,31 +31,41 @@ export async function runBacktestDay(
   if (!cycle) throw new Error("cycle insert returned no row");
   const cycleId = cycle.id;
 
-  const context = await buildHistoricalContext(instance, asOf);
-  await db.update(rebalanceCycles).set({ cycleState: context as object })
-    .where(eq(rebalanceCycles.id, cycleId));
+  try {
+    const context = await buildHistoricalContext(instance, asOf);
+    await db.update(rebalanceCycles).set({ cycleState: context as object })
+      .where(eq(rebalanceCycles.id, cycleId));
 
-  const externalContext = externalSwarmContext(context);
-  const decisions = await runSwarm({ cycleId, context: externalContext, size: SWARM_SIZE, mode: "daily_plan" });
-  if (decisions.length === 0) throw new Error("swarm produced no usable decisions");
+    const externalContext = externalSwarmContext(context);
+    const decisions = await runSwarm({ cycleId, context: externalContext, size: SWARM_SIZE, mode: "daily_plan" });
+    if (decisions.length === 0) throw new Error("swarm produced no usable decisions");
 
-  const aggregator = await aggregateDailyPlan({ cycleId, decisions });
-  const compiled = await compileDailyPlan({
-    cycleId, aggregator, swarmContext: externalContext,
-    strategyText: instance.strategyText, yesterdayPlanSummary: context.yesterdayPlanSummary,
-    thesisMemory: EMPTY_THESIS_MEMORY,
-  });
+    const aggregator = await aggregateDailyPlan({ cycleId, decisions });
+    const compiled = await compileDailyPlan({
+      cycleId, aggregator, swarmContext: externalContext,
+      strategyText: instance.strategyText, yesterdayPlanSummary: context.yesterdayPlanSummary,
+      thesisMemory: EMPTY_THESIS_MEMORY,
+    });
 
-  await db.update(rebalanceCycles).set({ status: "completed", completedAt: new Date() })
-    .where(eq(rebalanceCycles.id, cycleId));
+    await db.update(rebalanceCycles).set({ status: "completed", completedAt: new Date() })
+      .where(eq(rebalanceCycles.id, cycleId));
 
-  const [plan] = await db.insert(dailyPlans).values({
-    userId: instance.userId, selboInstanceId: instance.id, cycleId,
-    status: "complete", planMarkdown: compiled.markdown, planJson: compiled as object,
-    backtestRunId, generatedAt: asOf,
-  }).returning({ id: dailyPlans.id });
-  fireDailyPlanAnchor({
-    walletId: instance.circleWalletId, planId: plan.id, generatedAt: asOf,
-    compiled, kind: "backtest", backtestRunId,
-  }).catch((err) => console.error("[backtest-day] anchor:", err));
+    const [plan] = await db.insert(dailyPlans).values({
+      userId: instance.userId, selboInstanceId: instance.id, cycleId,
+      status: "complete", planMarkdown: compiled.markdown, planJson: compiled as object,
+      backtestRunId, generatedAt: asOf,
+    }).returning({ id: dailyPlans.id });
+    fireDailyPlanAnchor({
+      walletId: instance.circleWalletId, planId: plan.id, generatedAt: asOf,
+      compiled, kind: "backtest", backtestRunId,
+    }).catch((err) => console.error("[backtest-day] anchor:", err));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await db.update(rebalanceCycles).set({
+      status: "failed",
+      errorMessage: msg,
+      completedAt: new Date(),
+    }).where(eq(rebalanceCycles.id, cycleId));
+    throw err;
+  }
 }

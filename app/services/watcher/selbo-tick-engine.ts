@@ -169,6 +169,12 @@ function setupBlocks(symbol: SymbolMarketFeatures, candidate: PerpSetupCandidate
   if (candidate.permission === "wait_for_retest") blocks.push("wait_for_retest");
   if (candidate.setupType === "range_rotation") blocks.push("mid_value_no_edge");
   if (state.valueLocation === "at_poc") blocks.push("mid_value_no_edge");
+  if (state.strategyMode === "scalper"
+    && candidate.setupType === "liquidity_sweep_reclaim"
+    && state.regime !== "range"
+    && state.regime !== "chop") {
+    blocks.push("sweep_reclaim_outside_range");
+  }
   if (candidate.side === "long") {
     const valueLowReclaim = candidate.setupType === "value_reclaim"
       && (state.valueLocation === "near_val" || state.valueLocation === "below_value");

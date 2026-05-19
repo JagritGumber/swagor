@@ -65,6 +65,7 @@ export function BacktestRunsList({ runs, activeId, onSelect }: {
                 <span className="text-foreground">{r.startDate} to {r.endDate}</span>
                 <span className="text-muted-foreground">{r.cyclesCompleted}/{r.cyclesRequested}</span>
                 <span className={statusTone(r.status)}>{r.status}</span>
+                {r.cyclesFailed > 0 && <span className="border border-[var(--neon-red)]/40 px-1.5 py-0.5 text-[var(--neon-red)]">{r.cyclesFailed} retries</span>}
                 {r.plannerPromptVersion && <span className="border border-[var(--neon-cyan)]/40 px-1.5 py-0.5 text-[var(--neon-cyan)]">{r.plannerPromptVersion}</span>}
                 {r.errorMessage && <span className="text-[var(--neon-red)]" title={r.errorMessage}>click for console</span>}
               </button>

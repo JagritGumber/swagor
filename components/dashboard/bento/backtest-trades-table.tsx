@@ -12,6 +12,7 @@ export type BacktestTradeRow = {
   pnlUsd: string | null;
   pnlPct: string | null;
   biasConfidence: string;
+  qualityScore?: string | null;
   status: string;
   exitReason: string | null;
 };
@@ -58,7 +59,7 @@ export function BacktestTradesTable({ trades }: { trades: BacktestTradeRow[] }) 
             <th className="px-2 py-1">Date</th>
             <th className="px-2 py-1">Asset</th>
             <th className="px-2 py-1">Side</th>
-            <th className="px-2 py-1">Conf</th>
+            <th className="px-2 py-1">Score</th>
             <th className="px-2 py-1 text-right">Entry</th>
             <th className="px-2 py-1 text-right">Exit</th>
             <th className="px-2 py-1 text-right">PnL $</th>
@@ -72,7 +73,7 @@ export function BacktestTradesTable({ trades }: { trades: BacktestTradeRow[] }) 
               <td className="px-2 py-1 text-foreground">{t.entryDate.slice(0, 10)}</td>
               <td className="px-2 py-1 text-foreground">{t.asset}</td>
               <td className={`px-2 py-1 ${t.side === "long" ? "text-[var(--neon-green)]" : "text-[var(--neon-red)]"}`}>{t.side}</td>
-              <td className="px-2 py-1 text-muted-foreground">{Number(t.biasConfidence).toFixed(2)}</td>
+              <td className="px-2 py-1 text-muted-foreground" title="Engine quality score">{Number(t.qualityScore ?? t.biasConfidence).toFixed(2)}</td>
               <td className="px-2 py-1 text-right text-muted-foreground">{Number(t.entryPrice).toFixed(2)}</td>
               <td className="px-2 py-1 text-right text-muted-foreground">{t.exitPrice ? Number(t.exitPrice).toFixed(2) : "-"}</td>
               <td className={`px-2 py-1 text-right ${pnlTone(t.pnlUsd)}`}>{fmtUsd(t.pnlUsd)}</td>
