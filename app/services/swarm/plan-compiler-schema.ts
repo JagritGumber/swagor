@@ -11,6 +11,20 @@ const ThesisReview = z.object({
   { message: "decision=flip requires non-null flipTo", path: ["flipTo"] },
 );
 
+// Strip null-id placeholder reviews before per-entry validation. Some
+// reasoning models emit `{thesisId: null, asset: null, ...}` when they
+// have no real review to make. plan-compiler.service.ts still throws if
+// an ACTIVE thesis went un-reviewed, so dropping these is safe.
+const stripInvalidReviews = (val: unknown): unknown => {
+  if (!Array.isArray(val)) return val;
+  return val.filter((v) => {
+    if (!v || typeof v !== "object") return false;
+    const o = v as Record<string, unknown>;
+    return typeof o.thesisId === "string" && o.thesisId.length > 0
+      && typeof o.asset === "string" && o.asset.length > 0;
+  });
+};
+
 export const PlanCompilerSchema = z.object({
   watchlist: z.array(z.string()).min(1).max(20),
   // Reviews of currently-active multi-day theses. Maintain = position
@@ -18,7 +32,7 @@ export const PlanCompilerSchema = z.object({
   // day's close, flip = exit then open opposite (requires flipTo).
   // Defaults to [] so a model that omits the field still parses; the
   // prompt still demands it on every plan that has active theses.
-  activeThesisReviews: z.array(ThesisReview).default([]),
+  activeThesisReviews: z.preprocess(stripInvalidReviews, z.array(ThesisReview).default([])),
   // New bias entries ONLY for assets without an active thesis. The
   // compiler must NOT list an asset here if it appears in
   // activeThesisReviews. These spawn new theses.
