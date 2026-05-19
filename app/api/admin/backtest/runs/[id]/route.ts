@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/auth/admin";
 import { db } from "@/lib/db/client";
-import { backtestRuns, backtestTrades, dailyPlans } from "@/lib/db/schema";
+import { backtestRuns, backtestTrades, dailyPlans, rebalanceCycles } from "@/lib/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { summarizeBacktestTrades } from "@/app/services/backtest/summarize-trades";
 
@@ -29,12 +29,17 @@ export async function GET(
   const [run] = await db.select().from(backtestRuns).where(eq(backtestRuns.id, id)).limit(1);
   if (!run) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const [plans, trades] = await Promise.all([
+  const [plans, trades, cycles] = await Promise.all([
     db.select().from(dailyPlans).where(eq(dailyPlans.backtestRunId, id)).orderBy(asc(dailyPlans.generatedAt)),
     db.select().from(backtestTrades).where(eq(backtestTrades.backtestRunId, id)).orderBy(asc(backtestTrades.entryDate)),
+    db.select({
+      id: rebalanceCycles.id, asOf: rebalanceCycles.asOf, status: rebalanceCycles.status,
+      createdAt: rebalanceCycles.startedAt, completedAt: rebalanceCycles.completedAt,
+      errorMessage: rebalanceCycles.errorMessage,
+    }).from(rebalanceCycles).where(eq(rebalanceCycles.backtestRunId, id)).orderBy(asc(rebalanceCycles.asOf)),
   ]);
 
   const summary = summarizeBacktestTrades(trades);
 
-  return NextResponse.json({ run, plans, trades, summary });
+  return NextResponse.json({ run, plans, trades, summary, cycles });
 }

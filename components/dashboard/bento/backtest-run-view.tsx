@@ -6,6 +6,7 @@ import { BacktestTradesTable, type BacktestTradeRow } from "./backtest-trades-ta
 import { BacktestRunHeader } from "./backtest-run-header";
 import { BacktestPlansList, type BacktestPlan } from "./backtest-plans-list";
 import { BacktestLlmCalls } from "./backtest-llm-calls";
+import { BacktestPipeline, type PipelineCycle } from "./backtest-pipeline";
 import { EquityCurve } from "./equity-curve";
 import { useBacktestControls } from "./use-backtest-controls";
 
@@ -17,6 +18,7 @@ type RunDetail = {
   plans: BacktestPlan[];
   trades: BacktestTradeRow[];
   summary: BacktestSummary;
+  cycles: PipelineCycle[];
 };
 
 export function BacktestRunView({ runId, onClose }: { runId: string; onClose: () => void }) {
@@ -80,6 +82,12 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
             hideRangeSelector
           />
           <BacktestSummaryHeader summary={detail.summary} />
+          <BacktestPipeline
+            runId={runId}
+            isLive={isLive ?? false}
+            cycles={detail.cycles}
+            plans={detail.plans.map((p) => ({ cycleId: p.cycleId, generatedAt: p.generatedAt, arcAnchorTx: p.arcAnchorTx, arcOnchainTxHash: p.arcOnchainTxHash }))}
+          />
           <BacktestTradesTable trades={detail.trades} />
           <BacktestPlansList plans={detail.plans} open={plansOpen} onOpenChange={setPlansOpen} />
           <BacktestLlmCalls runId={runId} isLive={isLive ?? false} />

@@ -20,7 +20,7 @@ function toTradeRow(t: BacktestTrade): BacktestTradeRow {
 
 function toPlan(p: DailyPlan): BacktestPlan {
   return {
-    id: p.id, generatedAt: p.generatedAt.toISOString(), status: p.status,
+    id: p.id, cycleId: p.cycleId, generatedAt: p.generatedAt.toISOString(), status: p.status,
     planMarkdown: p.planMarkdown, planJson: p.planJson as BacktestPlan["planJson"],
     errorMessage: p.errorMessage, arcAnchorTx: p.arcAnchorTx, arcOnchainTxHash: p.arcOnchainTxHash,
   };
