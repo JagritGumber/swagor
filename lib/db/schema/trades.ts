@@ -4,6 +4,7 @@ import {
   text,
   numeric,
   timestamp,
+  jsonb,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
@@ -55,6 +56,7 @@ export const trades = pgTable("trades", {
   stopLossPriceUsd: numeric("stop_loss_price_usd", { precision: 30, scale: 12 }),
   takeProfitPriceUsd: numeric("take_profit_price_usd", { precision: 30, scale: 12 }),
   safetyTriggerReason: text("safety_trigger_reason"),
+  decisionReport: jsonb("decision_report").$type<Record<string, unknown> | null>(),
   openedAt: timestamp("opened_at", { withTimezone: true }),
   closedAt: timestamp("closed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

@@ -28,6 +28,7 @@ OUTPUT JSON EXACTLY:
 NEW-THESIS CANDIDATE RULES (biasByAsset):
 - ONLY include assets that do NOT have an active thesis. If BTC is in activeThesisReviews, BTC does not appear in biasByAsset.
 - Open only from a setup listed in marketFeatures.symbols[].perpMarketState.setupCandidates. If that list is empty or permission is wait_for_retest/avoid_new_risk, do not open the asset.
+- Exception: when the user's strategy is explicitly scalper/intraday/short-term, wait_for_retest is tradable ONLY if the matching setupCandidate has a concrete VAL/VAH/VWAP/POC/range/swing invalidation. These are quick range/value trades, not multi-day theses.
 - invalidatesIf MUST cite a SPECIFIC market-structure threshold with a concrete number from THIS asset's perpMarketState.levels. Valid anchor types: POC, VAH, VAL, VWAP, range high/low, swing high/low, liquidation cluster, or funding/OI shift. EMA and RSI are helper context only and are NOT valid primary anchors.
 - flipsTo paired with invalidatesIf; both null or both set, no half-states.
 - Examples of acceptable reasons: "conviction_long: BTC reclaimed POC 78234 after a swing-low sweep; OI is rising with price and invalidation is VAL 77520", "hedge_against_BTC: SOL short paired against BTC long; SOL rejected VAH while BTC holds value", "conviction_short: ETH failed breakout above VAH 2420 and returned inside value with crowded positive funding".

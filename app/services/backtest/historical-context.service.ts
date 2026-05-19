@@ -2,6 +2,7 @@ import "server-only";
 
 import { searchNews } from "@/lib/data-sources/news";
 import { classifyNews } from "@/lib/news-sentiment";
+import { detectStrategyMode } from "@/lib/strategy-mode";
 import type { SelboInstance } from "@/lib/db/schema";
 import type { DailyPlanContext } from "@/app/services/swarm/daily-planner-types";
 import { buildHistoricalSymbolFeatures } from "./historical-symbol-features";
@@ -19,8 +20,9 @@ import { buildHistoricalSymbolFeatures } from "./historical-symbol-features";
 export async function buildHistoricalContext(instance: SelboInstance, asOf: Date): Promise<DailyPlanContext> {
   const asOfMs = asOf.getTime();
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
+  const strategyMode = detectStrategyMode(instance.strategyText);
 
-  const features = await Promise.all(watching.map((s) => buildHistoricalSymbolFeatures(s, asOfMs)));
+  const features = await Promise.all(watching.map((s) => buildHistoricalSymbolFeatures(s, asOfMs, strategyMode)));
 
   const newsResults = await searchNews(`${watching.join(" OR ")} OR "perp futures" OR cryptocurrency`)
     .then((r) => r.results.filter((n) => {

@@ -4,6 +4,7 @@ import { fetchCandles, type Candle } from "@/lib/data-sources/hyperliquid";
 import { computeVolumeProfile } from "@/lib/volume-profile";
 import { atrPct, closes, ema, realizedVolPct, rsiWilder, sortFinalCandles } from "@/lib/market-features";
 import { buildPerpMarketState } from "@/lib/perp-market-state";
+import type { StrategyMode } from "@/lib/strategy-mode";
 
 const CANDLES = 120;
 type Tf = { interval: "5m" | "1h" | "4h" | "1d"; spanMs: number };
@@ -31,10 +32,11 @@ function trendOf(e20: number | null, e50: number | null): "bullish" | "bearish" 
  * shape the live market-features pipeline emits; OI fields nulled
  * because Hyperliquid only exposes point-in-time OI.
  */
-export async function buildHistoricalSymbolFeatures(symbol: string, asOfMs: number) {
+export async function buildHistoricalSymbolFeatures(symbol: string, asOfMs: number, strategyMode: StrategyMode = "swing") {
   const sym = symbol.toUpperCase();
   const [c5, c1h, c4h, c1d] = await Promise.all(TFS.map((tf) => fetchTimeframe(sym, tf, asOfMs)));
-  const recentCandles = c5.slice(-20).map((c) => ({
+  const recentSource = c5.length >= 4 ? c5 : c1h;
+  const recentCandles = recentSource.slice(-20).map((c) => ({
     t: c.t, o: Number(c.o), h: Number(c.h), l: Number(c.l), c: Number(c.c), v: Number(c.v),
   }));
   const closes5 = closes(c5);
@@ -42,7 +44,7 @@ export async function buildHistoricalSymbolFeatures(symbol: string, asOfMs: numb
   const closes4h = closes(c4h);
   const closes1d = closes(c1d);
   const vp = computeVolumeProfile(recentCandles);
-  const lastClose = closes5[closes5.length - 1] ?? null;
+  const lastClose = closes5[closes5.length - 1] ?? closes1h[closes1h.length - 1] ?? closes4h[closes4h.length - 1] ?? closes1d[closes1d.length - 1] ?? null;
   const timeframes = {
     "5m": {
       timeframe: "5m" as const, featureQuality: "fresh" as const, lastCandleAt: null,
@@ -90,6 +92,7 @@ export async function buildHistoricalSymbolFeatures(symbol: string, asOfMs: numb
     timeframes,
     volumeProfile,
     perpMarketState: buildPerpMarketState({
+      strategyMode,
       symbol: sym, mid: lastClose, fundingHourly: null,
       openInterestChangeHint: "unknown" as const,
       openInterestDeltas: { last5m: null, last1h: null, last4h: null },

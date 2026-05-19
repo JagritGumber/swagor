@@ -1,6 +1,7 @@
 import { db } from "@/lib/db/client";
 import { backtestTrades } from "@/lib/db/schema";
 import type { Candle } from "@/lib/data-sources/hyperliquid";
+import type { TradeQualityReport } from "@/app/services/trade-quality-engine";
 
 export const STARTING_EQUITY_USD = 1000;
 
@@ -10,6 +11,12 @@ export type OpenPos = {
   entryDate: Date; entryPrice: number; sizeUsd: number; leverage: number; confidence: number;
   stopPrice: number; tpPrice: number;
   thesisId: string; entryReason: string; invalidatesIf: string | null;
+  strategyMode?: "scalper" | "swing";
+  setupType?: string | null;
+  invalidationSource?: string | null;
+  invalidationLevel?: number | null;
+  llmConfidence?: number;
+  qualityReport?: TradeQualityReport | null;
 };
 
 export function utcDayMs(d: Date): number {
@@ -60,6 +67,11 @@ export async function closeAllAtEnd(input: {
 export function checkStopTpHit(pos: OpenPos, candle: Candle): { price: number; reason: string } | null {
   const close = Number(candle.c);
   if (!Number.isFinite(close)) return null;
+  const invalidation = pos.invalidationLevel;
+  if (typeof invalidation === "number" && Number.isFinite(invalidation)) {
+    const thesisHit = pos.side === "long" ? close < invalidation : close > invalidation;
+    if (thesisHit) return { price: close, reason: "thesis_invalidated" };
+  }
   const stopHit = pos.side === "long" ? close <= pos.stopPrice : close >= pos.stopPrice;
   if (stopHit) return { price: close, reason: "stop_loss" };
   const tpHit = pos.side === "long" ? close >= pos.tpPrice : close <= pos.tpPrice;
@@ -88,6 +100,15 @@ export async function writeBacktestClose(input: {
     sizeUsd: input.pos.sizeUsd.toString(),
     pnlUsd: pnlUsd.toString(), pnlPct: pnlPct.toString(),
     biasConfidence: input.pos.confidence.toString(),
+    llmConfidence: (input.pos.llmConfidence ?? input.pos.confidence).toString(),
+    engineConfidence: input.pos.qualityReport?.engineConfidence.toString() ?? input.pos.confidence.toString(),
+    qualityScore: input.pos.qualityReport?.qualityScore.toString() ?? input.pos.confidence.toString(),
+    capitalGate: input.pos.qualityReport?.capitalGate ?? "ALLOW_PAPER",
+    setupType: input.pos.setupType ?? null,
+    invalidationSource: input.pos.invalidationSource ?? null,
+    invalidationLevel: input.pos.invalidationLevel?.toString() ?? null,
+    rejectReasons: input.pos.qualityReport?.rejectReasons ?? [],
+    decisionReport: input.pos.qualityReport ? input.pos.qualityReport as unknown as Record<string, unknown> : null,
     status: "closed", exitReason: input.reason,
   });
   return pnlUsd;

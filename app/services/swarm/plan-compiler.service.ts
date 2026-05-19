@@ -8,6 +8,7 @@ import type { DailyAggregatorOutput } from "./daily-aggregator.service";
 import { COMPILER_SYSTEM_PROMPT, PlanCompilerSchema, type CompiledPlan } from "./plan-compiler-prompt";
 import { formatThesisMemoryForPrompt, type ThesisMemory } from "./build-thesis-memory";
 import { extractJson } from "@/lib/llm/extract-json";
+import { detectStrategyMode } from "@/lib/strategy-mode";
 
 export type { CompiledPlan };
 type SetupCandidate = {
@@ -18,7 +19,7 @@ type SetupCandidate = {
 type SymFeature = {
   symbol: string;
   timeframes?: { "1h"?: { realizedVolPct?: number } };
-  perpMarketState?: { permission?: string; setupCandidates?: SetupCandidate[]; brief?: string };
+  perpMarketState?: { strategyMode?: string; permission?: string; setupCandidates?: SetupCandidate[]; brief?: string };
 };
 
 const STRUCTURE_WORDS = ["poc", "vah", "val", "vwap", "swing", "range", "value", "breakout", "breakdown", "sweep", "reclaim", "rejection", "funding", "oi", "open interest"];
@@ -78,6 +79,7 @@ export async function compileDailyPlan(opts: {
   // model is NOT asked to emit this; risk math is the engine's job.
   const features = (opts.swarmContext as { marketFeatures?: { symbols?: SymFeature[] } }).marketFeatures?.symbols ?? [];
   const featureMap = new Map(features.map((s) => [s.symbol.toUpperCase(), s]));
+  const strategyMode = detectStrategyMode(opts.strategyText);
   parsed.biasByAsset = parsed.biasByAsset.flatMap((b) => {
     const feature = featureMap.get(b.asset.toUpperCase());
     const side = b.bias === "long" || b.bias === "short" ? b.bias : null;
@@ -86,7 +88,7 @@ export async function compileDailyPlan(opts: {
     const match = state?.setupCandidates?.find((c) => c.side === side);
     const permission = state?.permission;
     const text = `${b.reason} ${b.invalidatesIf ?? ""} ${b.marketStructureSummary ?? ""}`;
-    const blocked = !state || !match || permission === "avoid_new_risk" || permission === "wait_for_retest" || indicatorOnly(text);
+    const blocked = !state || !match || permission === "avoid_new_risk" || (permission === "wait_for_retest" && strategyMode !== "scalper") || indicatorOnly(text);
     if (blocked) {
       console.warn(`[plan-compiler] rejected weak ${b.asset} ${side}: permission=${permission ?? "missing"} reason=${b.reason}`);
       return [];
@@ -94,6 +96,7 @@ export async function compileDailyPlan(opts: {
     return [{
       ...b,
       setupType: b.setupType ?? match.setupType,
+      strategyMode: b.strategyMode ?? (state.strategyMode === "scalper" ? "scalper" : "swing"),
       invalidationSource: b.invalidationSource ?? match.invalidationSource,
       marketStructureSummary: b.marketStructureSummary ?? state.brief,
       realizedVolPct1h: feature?.timeframes?.["1h"]?.realizedVolPct ?? b.realizedVolPct1h,

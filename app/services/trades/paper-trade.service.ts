@@ -11,6 +11,7 @@ import {
 } from "@/lib/arc/anchor";
 import { chargeBrokerFee } from "@/app/services/brokerage/charge-fee.service";
 import { fetchAllMids } from "@/lib/data-sources/hyperliquid";
+import type { TradeQualityReport } from "@/app/services/trade-quality-engine";
 
 export type OpenPaperTradeInput = {
   userId: string;
@@ -25,6 +26,7 @@ export type OpenPaperTradeInput = {
   takeProfitPriceUsd?: number | null;
   source: "fast-trader" | "panel";
   rationale: string;
+  decisionReport?: TradeQualityReport | null;
   // Full agent context the deciding LLM saw. Hashed into the Arc open
   // anchor trace; never stored plain on-chain. Optional so paths without
   // it still open trades; the anchor just hashes rationale + safety.
@@ -105,6 +107,7 @@ export async function openPaperTrade(input: OpenPaperTradeInput): Promise<{ trad
       entryPrice: input.entryPriceUsd ? input.entryPriceUsd.toString() : null,
       stopLossPriceUsd: stop !== null ? stop.toString() : null,
       takeProfitPriceUsd: takeProfit !== null ? takeProfit.toString() : null,
+      decisionReport: input.decisionReport ? input.decisionReport as unknown as Record<string, unknown> : null,
       status: "open",
       mode: "simulation",
       openedAt: new Date(),
@@ -135,6 +138,7 @@ export async function openPaperTrade(input: OpenPaperTradeInput): Promise<{ trad
         source: input.source,
         stopLossPriceUsd: stop,
         takeProfitPriceUsd: takeProfit,
+        decisionReport: input.decisionReport ?? null,
         agentContext: input.agentContext ?? null,
       },
     });
@@ -230,6 +234,7 @@ export async function closePaperTrade(
         rationale: input.rationale,
         source: input.source,
         safetyTrigger: input.safetyTrigger ?? null,
+        decisionReport: target.decisionReport ?? null,
       },
     });
     if (res?.txId) {

@@ -9,6 +9,7 @@ import {
 } from "@/lib/data-sources/hyperliquid";
 import { computeVolumeProfile } from "@/lib/volume-profile";
 import { buildPerpMarketState, type PerpMarketState } from "@/lib/perp-market-state";
+import type { StrategyMode } from "@/lib/strategy-mode";
 
 export type FeatureQuality = "fresh" | "partial" | "stale" | "unavailable";
 export type EmaTrend = "bullish" | "bearish" | "flat" | "unknown";
@@ -468,6 +469,7 @@ export async function buildMarketFeatureSnapshot(opts: {
   mids: MidsMap;
   universe: PerpUniverseEntry[];
   ctxs: PerpAssetCtx[];
+  strategyMode?: StrategyMode;
   previousSnapshot?: MarketFeatureSnapshot | null;
 }): Promise<MarketFeatureSnapshot> {
   const validSymbols = new Set(opts.universe.map((u) => u.name.toUpperCase()));
@@ -514,6 +516,7 @@ export async function buildMarketFeatureSnapshot(opts: {
       swingLow: round(vp.swingLow, 4),
     };
     const perpMarketState = buildPerpMarketState({
+      strategyMode: opts.strategyMode,
       symbol, mid: finite(opts.mids[symbol]), fundingHourly: finite(ctx?.funding),
       openInterestChangeHint: oiHint(openInterestDeltas), openInterestDeltas,
       recentCandles, timeframes, volumeProfile,

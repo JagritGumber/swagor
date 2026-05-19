@@ -3,6 +3,7 @@ import "server-only";
 import { type SelboInstance } from "@/lib/db/schema";
 import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
 import { classifyNews } from "@/lib/news-sentiment";
+import { detectStrategyMode } from "@/lib/strategy-mode";
 import { fetchAllForDailyPlan } from "./daily-planner-fetchers";
 import type { DailyPlanContext } from "./daily-planner-types";
 
@@ -22,6 +23,7 @@ function previousMarketFeatures(row: { context: unknown } | undefined): MarketFe
  */
 export async function buildDailyPlanContext(instance: SelboInstance): Promise<DailyPlanContext> {
   const fb = await fetchAllForDailyPlan(instance);
+  const strategyMode = detectStrategyMode(instance.strategyText);
 
   const ctxBySymbol = new Map(fb.meta.universe.map((u, i) => [u.name.toUpperCase(), fb.meta.ctxs[i]]));
   const perps = fb.watching.map((sym) => {
@@ -38,6 +40,7 @@ export async function buildDailyPlanContext(instance: SelboInstance): Promise<Da
 
   const marketFeatures = await buildMarketFeatureSnapshot({
     watching: fb.watching, mids: fb.mids, universe: fb.meta.universe, ctxs: fb.meta.ctxs,
+    strategyMode,
     previousSnapshot: previousMarketFeatures(fb.lastTick),
   }).catch((err) => {
     console.error("[daily-planner] market feature build failed:", err);
