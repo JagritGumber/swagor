@@ -20,6 +20,7 @@ import { anchorWatcherDecision, type AnchorJsonValue } from "@/lib/arc/anchor";
 import { logLlmCall } from "@/lib/llm/log";
 import { extractJson } from "@/lib/llm/extract-json";
 import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
+import { detectStrategyMode } from "@/lib/strategy-mode";
 import { blendWatcherCadence } from "@/lib/cadence-blend";
 import { recordTickStages, type TickStageInput } from "@/app/services/tick-stages.service";
 
@@ -42,6 +43,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
   if (instance.killSwitchActive) throw new Error("kill switch active, refusing to tick");
 
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
+  const strategyMode = detectStrategyMode(instance.strategyText);
 
   const [mids, meta, clearing, newsRes, lastTick, currentDailyPlan] = await Promise.all([
     fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
@@ -74,6 +76,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     mids,
     universe: meta.universe,
     ctxs: meta.ctxs,
+    strategyMode,
     previousSnapshot: previousMarketFeatures(lastTick),
   }).catch((err) => {
     console.error("[watcher] market feature build failed:", err);

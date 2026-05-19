@@ -1,10 +1,11 @@
 import { stopTpForSide, computePnl, type OpenPos } from "./simulate-helpers";
 import { notionalForConfidence, type StrategyPolicy } from "./strategy-policy";
+import type { StrategyMode } from "@/lib/strategy-mode";
 
 export type BacktestCloseEvent = { asset: string; pos: OpenPos; exitDate: Date; exitPrice: number; reason: string };
 
 export type OpenCandidate = {
-  b: { asset: string; confidence: number; reason?: string; invalidatesIf?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number };
+  b: { asset: string; confidence: number; reason?: string; invalidatesIf?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number; setupType?: string; strategyMode?: StrategyMode };
   price: number; side: "long" | "short";
 };
 
@@ -21,13 +22,14 @@ export function clampOverride(model: number | undefined, deterministic: number):
   return Math.max(deterministic * 0.8, Math.min(deterministic * 1.2, model));
 }
 
-export function openPosition(asset: string, side: "long" | "short", price: number, dayMs: number, equity: number, notionalPct: number, leverage: number, confidence: number, reason: string, invalidatesIf: string | null, stopPct: number, tpPct: number): OpenPos {
+export function openPosition(asset: string, side: "long" | "short", price: number, dayMs: number, equity: number, notionalPct: number, leverage: number, confidence: number, reason: string, invalidatesIf: string | null, stopPct: number, tpPct: number, strategyMode: StrategyMode = "swing", setupType?: string): OpenPos {
   const { stop, tp } = stopTpForSide(side, price, stopPct, tpPct);
   const entryDate = new Date(dayMs);
   return {
     side, entryDate, entryPrice: price, sizeUsd: equity * notionalPct / 100,
     leverage, confidence, stopPrice: stop, tpPrice: tp,
     thesisId: `${asset}:${entryDate.toISOString()}:${side}`, entryReason: reason, invalidatesIf,
+    strategyMode, setupType: setupType ?? null,
   };
 }
 
@@ -73,7 +75,7 @@ export function openTopCandidate(candidates: OpenCandidate[], policy: StrategyPo
   const tpPct = clampOverride(top.b.takeProfitPct, det.tpPct);
   const asset = top.b.asset.toUpperCase();
   const notionalPct = notionalForConfidence(policy, top.b.confidence);
-  const newPos = openPosition(asset, top.side, top.price, dayMs, equity, notionalPct, policy.maxLeverage, top.b.confidence, top.b.reason ?? "", top.b.invalidatesIf ?? null, stopPct, tpPct);
+  const newPos = openPosition(asset, top.side, top.price, dayMs, equity, notionalPct, policy.maxLeverage, top.b.confidence, top.b.reason ?? "", top.b.invalidatesIf ?? null, stopPct, tpPct, top.b.strategyMode ?? "swing", top.b.setupType);
   positions.set(asset, newPos);
   opens.push({ asset, pos: newPos });
 }

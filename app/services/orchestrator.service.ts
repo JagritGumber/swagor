@@ -23,6 +23,7 @@ import {
 } from "@/app/services/trades/paper-trade.service";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
+import { detectStrategyMode } from "@/lib/strategy-mode";
 
 function previousMarketFeatures(row: { context: unknown } | undefined): MarketFeatureSnapshot | null {
   const context = row?.context as { marketFeatures?: MarketFeatureSnapshot } | null | undefined;
@@ -63,6 +64,7 @@ export async function runCycle(cycleId: string): Promise<void> {
     }
 
     const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
+    const strategyMode = detectStrategyMode(instance.strategyText);
 
     const [mids, meta, clearing, paperOpen, lastTick, newsRes, recentLessons] = await Promise.all([
       fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
@@ -100,6 +102,7 @@ export async function runCycle(cycleId: string): Promise<void> {
       mids,
       universe: meta.universe,
       ctxs: meta.ctxs,
+      strategyMode,
       previousSnapshot: previousMarketFeatures(lastTick),
     }).catch((err) => {
       console.error("[orchestrator] market feature build failed:", err);

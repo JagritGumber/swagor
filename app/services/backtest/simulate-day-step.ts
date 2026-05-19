@@ -4,7 +4,7 @@ import { candleAt, checkStopTpHit, closeAt, computePnl, type OpenPos, utcDayMs }
 import { deterministicRiskPct, openPosition, openTopCandidate, tryReduce, type BacktestCloseEvent, type OpenCandidate } from "./simulate-day-helpers";
 import { DEFAULT_POLICY, notionalForConfidence } from "./strategy-policy";
 
-type BiasEntry = { asset: string; bias: string; confidence: number; reason?: string; invalidatesIf?: string | null; flipsTo?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number };
+type BiasEntry = { asset: string; bias: string; confidence: number; reason?: string; invalidatesIf?: string | null; flipsTo?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number; setupType?: string; strategyMode?: "scalper" | "swing" };
 type ThesisReviewJson = { thesisId: string; asset: string; decision: "maintain" | "reduce" | "close" | "flip"; flipTo: "long" | "short" | "avoid" | "neutral" | null; reason: string };
 type PlanJson = { biasByAsset?: BiasEntry[]; riskCaps?: { maxLeverage?: number; maxNotionalPctOfEquity?: number }; activeThesisReviews?: ThesisReviewJson[] };
 export type { BacktestCloseEvent };
@@ -23,9 +23,11 @@ export function simulateOneBacktestDay(input: { plan: DailyPlan; positions: Map<
     const candle = (input.candleCache.get(asset) && candleAt(input.candleCache.get(asset)!, dayMs)) || null;
     if (!candle) continue;
     const hit = checkStopTpHit(pos, candle);
-    if (!hit) continue;
-    const { pnlUsd } = computePnl(pos.side, pos.entryPrice, hit.price, pos.sizeUsd, pos.leverage);
-    closes.push({ asset, pos, exitDate: new Date(dayMs), exitPrice: hit.price, reason: hit.reason });
+    if (!hit && !(pos.strategyMode === "scalper" && dayMs - utcDayMs(pos.entryDate) >= 86_400_000)) continue;
+    const exit = hit ?? { price: Number(candle.c), reason: "time_stop" };
+    if (!Number.isFinite(exit.price)) continue;
+    const { pnlUsd } = computePnl(pos.side, pos.entryPrice, exit.price, pos.sizeUsd, pos.leverage);
+    closes.push({ asset, pos, exitDate: new Date(dayMs), exitPrice: exit.price, reason: exit.reason });
     equity += pnlUsd;
     input.positions.delete(asset);
   }
@@ -82,8 +84,9 @@ export function simulateOneBacktestDay(input: { plan: DailyPlan; positions: Map<
     }
 
     if ((wantsLong || wantsShort) && !input.positions.has(asset)) {
-      if (b.confidence < DEFAULT_POLICY.minConfidenceToOpen) {
-        console.info(`[backtest-sim] skip ${asset}: conf ${b.confidence.toFixed(2)} < ${DEFAULT_POLICY.minConfidenceToOpen}`);
+      const minConfidence = b.strategyMode === "scalper" ? 0.55 : DEFAULT_POLICY.minConfidenceToOpen;
+      if (b.confidence < minConfidence) {
+        console.info(`[backtest-sim] skip ${asset}: conf ${b.confidence.toFixed(2)} < ${minConfidence}`);
         continue;
       }
       candidates.push({ b, price, side: wantsLong ? "long" : "short" });

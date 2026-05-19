@@ -15,6 +15,7 @@ import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service
 import { logLlmCall } from "@/lib/llm/log";
 import { extractJson } from "@/lib/llm/extract-json";
 import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
+import { detectStrategyMode } from "@/lib/strategy-mode";
 import { monitorTicks } from "@/lib/db/schema";
 import { evaluateSafetyRails, type SafetyBlock } from "@/app/services/safety-rails/safety-check";
 import { getCachedDailyPlan } from "@/lib/utils/daily-plan-cache";
@@ -95,6 +96,7 @@ export async function runFastTraderForInstance(
   ]);
 
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
+  const strategyMode = detectStrategyMode(instance.strategyText);
   const ctxByCoin = new Map(meta.universe.map((u, i) => [u.name.toUpperCase(), meta.ctxs[i]]));
   const perps = watching.map((sym) => {
     const upper = sym.toUpperCase();
@@ -110,6 +112,7 @@ export async function runFastTraderForInstance(
     mids,
     universe: meta.universe,
     ctxs: meta.ctxs,
+    strategyMode,
     previousSnapshot: previousMarketFeatures(lastTick),
   }).catch((err) => {
     console.error("[fast-trader] market feature build failed:", err);

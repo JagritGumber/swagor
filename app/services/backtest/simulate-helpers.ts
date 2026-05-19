@@ -10,6 +10,8 @@ export type OpenPos = {
   entryDate: Date; entryPrice: number; sizeUsd: number; leverage: number; confidence: number;
   stopPrice: number; tpPrice: number;
   thesisId: string; entryReason: string; invalidatesIf: string | null;
+  strategyMode?: "scalper" | "swing";
+  setupType?: string | null;
 };
 
 export function utcDayMs(d: Date): number {

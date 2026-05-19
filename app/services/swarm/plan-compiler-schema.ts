@@ -52,6 +52,7 @@ export const PlanCompilerSchema = z.object({
     confidence: z.number().min(0).max(1),
     reason: z.string().min(1).max(280),
     setupType: z.enum(["value_reclaim", "value_rejection", "accepted_breakout", "failed_breakout", "failed_breakdown", "liquidity_sweep_reclaim", "trend_pullback_to_value", "range_rotation", "crowded_side_fade", "hedge_against_active_thesis"]).optional(),
+    strategyMode: z.enum(["scalper", "swing"]).optional(),
     marketStructureSummary: z.string().min(1).max(280).optional(),
     invalidationSource: z.enum(["vwap", "poc", "vah", "val", "range_high", "range_low", "swing_high", "swing_low", "liquidation_cluster", "funding_oi_shift"]).optional(),
     invalidatesIf: z.preprocess(coerceInvalidatesIf, z.string().min(1).max(280).nullable().optional()),
