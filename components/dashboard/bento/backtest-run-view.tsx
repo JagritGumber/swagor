@@ -5,6 +5,7 @@ import { BacktestSummaryHeader, type BacktestSummary } from "./backtest-summary-
 import { BacktestTradesTable, type BacktestTradeRow } from "./backtest-trades-table";
 import { BacktestRunHeader } from "./backtest-run-header";
 import { BacktestPlansList, type BacktestPlan } from "./backtest-plans-list";
+import { BacktestLlmCalls } from "./backtest-llm-calls";
 import { EquityCurve } from "./equity-curve";
 import { useBacktestControls } from "./use-backtest-controls";
 
@@ -77,6 +78,7 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
           <BacktestSummaryHeader summary={detail.summary} />
           <BacktestTradesTable trades={detail.trades} />
           <BacktestPlansList plans={detail.plans} open={plansOpen} onOpenChange={setPlansOpen} />
+          <BacktestLlmCalls runId={runId} />
         </div>
       )}
     </div>

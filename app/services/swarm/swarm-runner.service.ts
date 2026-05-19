@@ -105,6 +105,7 @@ async function runSwarmMember(opts: {
   const userMessage = `Portfolio + market state:\n${JSON.stringify(opts.context, null, 2)}\n\nFrom your persona's viewpoint, output your JSON decision.`;
 
   try {
+    const startedAt = Date.now();
     const response = await llm.chat.completions.create({
       model: MODELS.LIGHT,
       messages: [
@@ -114,6 +115,7 @@ async function runSwarmMember(opts: {
       response_format: { type: "json_object" },
       temperature: 0.6,
     });
+    const durationMs = Date.now() - startedAt;
 
     const raw = response.choices[0]?.message?.content;
     if (!raw) return null;
@@ -148,6 +150,7 @@ async function runSwarmMember(opts: {
       parsedOutput: parsed,
       promptTokens: response.usage?.prompt_tokens,
       completionTokens: response.usage?.completion_tokens,
+      durationMs,
     });
 
     return { ...parsed, personaId: opts.persona.id } as SwarmDecision;

@@ -17,6 +17,7 @@ export type LogLlmCallInput = {
   parsedOutput?: unknown;
   promptTokens?: number | null;
   completionTokens?: number | null;
+  durationMs?: number | null;
 };
 
 /**
@@ -45,6 +46,7 @@ export async function logLlmCall(input: LogLlmCallInput): Promise<void> {
       promptTokens: input.promptTokens ?? null,
       completionTokens: input.completionTokens ?? null,
       costUsd: costUsd !== null ? costUsd.toString() : null,
+      durationMs: input.durationMs ?? null,
     });
   } catch (err) {
     console.error("[llm-log] insert failed:", err);

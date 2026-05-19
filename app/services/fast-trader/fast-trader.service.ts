@@ -184,6 +184,7 @@ export async function runFastTraderForInstance(
       : null,
   });
 
+  const startedAt = Date.now();
   const completion = await traderLlm.chat.completions.create({
     model: MODELS.TRADER,
     messages: [
@@ -193,6 +194,7 @@ export async function runFastTraderForInstance(
     response_format: { type: "json_object" },
     temperature: 0.1,
   });
+  const durationMs = Date.now() - startedAt;
 
   const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("fast-trader returned empty response");
@@ -209,6 +211,7 @@ export async function runFastTraderForInstance(
     parsedOutput: decision,
     promptTokens: completion.usage?.prompt_tokens,
     completionTokens: completion.usage?.completion_tokens,
+    durationMs,
   });
 
   const assetUpper = decision.asset.toUpperCase();
