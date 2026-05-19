@@ -4,10 +4,10 @@ const ThesisReview = z.object({
   thesisId: z.string(),
   asset: z.string(),
   decision: z.enum(["maintain", "reduce", "close", "flip"]),
-  flipTo: z.enum(["long", "short", "avoid", "neutral"]).nullable(),
+  flipTo: z.enum(["long", "short", "avoid", "neutral"]).nullable().optional(),
   reason: z.string().min(1).max(280),
 }).refine(
-  (v) => v.decision !== "flip" || v.flipTo !== null,
+  (v) => v.decision !== "flip" || (v.flipTo !== null && v.flipTo !== undefined),
   { message: "decision=flip requires non-null flipTo", path: ["flipTo"] },
 );
 
@@ -27,17 +27,18 @@ export const PlanCompilerSchema = z.object({
     bias: z.enum(["long", "short", "avoid", "neutral"]),
     confidence: z.number().min(0).max(1),
     reason: z.string().min(1).max(280),
-    invalidatesIf: z.string().min(1).max(280).nullable(),
-    flipsTo: z.enum(["long", "short", "avoid", "neutral"]).nullable(),
+    invalidatesIf: z.string().min(1).max(280).nullable().optional(),
+    flipsTo: z.enum(["long", "short", "avoid", "neutral"]).nullable().optional(),
     // Filled deterministically by the compile service AFTER Zod parse,
     // from swarmContext.marketFeatures.symbols[i].timeframes["1h"].realizedVolPct.
-    // The model is not asked to emit this; the engine owns risk math.
-    realizedVolPct1h: z.number().min(0).max(50).optional(),
-    // Advisory hints from the model. The simulator computes its own
-    // deterministic stop/TP and clamps any model-provided value within
-    // +/- 20% of that compute. Code is source of truth.
-    stopLossPct: z.number().min(1).max(15).optional(),
-    takeProfitPct: z.number().min(2).max(30).optional(),
+    // No bounds: code overwrites whatever the model emits.
+    realizedVolPct1h: z.number().optional(),
+    // Advisory hints. NO bounds at the schema layer: the engine clamps
+    // every model value within +/- 20% of its deterministic compute.
+    // Hardcoded min/max here would just turn model overreach into a
+    // Zod failure, defeating the whole point of code-as-source-of-truth.
+    stopLossPct: z.number().optional(),
+    takeProfitPct: z.number().optional(),
   })).min(0).max(20),
   riskCaps: z.object({
     maxLeverage: z.number().min(1).max(20),
