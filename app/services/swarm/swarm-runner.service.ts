@@ -90,7 +90,8 @@ Output JSON EXACTLY in this shape:
 Rules:
 - One entry per asset in the watchlist. No specific entry/exit prices; this is a daily bias plan, not a trade order.
 - bias: 'long' wants to be long today, 'short' wants to be short, 'avoid' says don't take new risk on this asset, 'neutral' has no strong view.
-- oneLineReason ties the bias to concrete features from the payload (RSI, EMA trend, regime, OI delta, news, recent memory, yesterday's plan).
+- oneLineReason ties the bias to perpMarketState first: volume profile location, auction state, structure state, OI/funding flow, setup candidates, recent memory, and yesterday's plan. EMA/RSI are helper context only; never use them as the primary reason.
+- If perpMarketState.permission is wait_for_retest or avoid_new_risk, vote avoid/neutral unless you are explicitly proposing a hedge.
 - The user strategy text is the north star; do not contradict it without a concrete reason.
 - This is YOUR vote. Don't average to consensus; the aggregator reconciles across personas.`;
 

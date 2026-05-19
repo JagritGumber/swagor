@@ -8,6 +8,7 @@ import {
   type PerpUniverseEntry,
 } from "@/lib/data-sources/hyperliquid";
 import { computeVolumeProfile } from "@/lib/volume-profile";
+import { buildPerpMarketState, type PerpMarketState } from "@/lib/perp-market-state";
 
 export type FeatureQuality = "fresh" | "partial" | "stale" | "unavailable";
 export type EmaTrend = "bullish" | "bearish" | "flat" | "unknown";
@@ -21,7 +22,7 @@ export type CandidateBias =
 export type CadenceHint = "slow" | "normal" | "fast" | "risk_fast";
 
 export type TimeframeFeature = {
-  timeframe: "5m" | "1h";
+  timeframe: "5m" | "1h" | "4h" | "1d";
   featureQuality: FeatureQuality;
   lastCandleAt: string | null;
   candlesUsed: number;
@@ -58,6 +59,8 @@ export type SymbolMarketFeatures = {
   timeframes: {
     "5m": TimeframeFeature;
     "1h": TimeframeFeature;
+    "4h": TimeframeFeature;
+    "1d": TimeframeFeature;
   };
   candidateBias: CandidateBias;
   cadenceHint: CadenceHint;
@@ -72,6 +75,7 @@ export type SymbolMarketFeatures = {
     swingHigh: number | null;
     swingLow: number | null;
   };
+  perpMarketState: PerpMarketState;
 };
 
 export type MarketFeatureSnapshot = {
@@ -86,9 +90,13 @@ const CANDLES_PER_TIMEFRAME = 120;
 const CONCURRENCY = 3;
 const FIVE_MINUTE_MS = 5 * 60_000;
 const ONE_HOUR_MS = 60 * 60_000;
+const FOUR_HOUR_MS = 4 * ONE_HOUR_MS;
+const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 const CACHE_TTL_MS: Record<TimeframeFeature["timeframe"], number> = {
   "5m": 90_000,
   "1h": 20 * 60_000,
+  "4h": 60 * 60_000,
+  "1d": 4 * 60 * 60_000,
 };
 
 const cache = new Map<string, { expiresAt: number; feature: TimeframeFeature }>();
@@ -328,7 +336,7 @@ async function getTimeframeFeature(
   const hit = cache.get(key);
   if (hit && hit.expiresAt > now) return hit.feature;
 
-  const intervalMs = timeframe === "5m" ? FIVE_MINUTE_MS : ONE_HOUR_MS;
+  const intervalMs = timeframe === "5m" ? FIVE_MINUTE_MS : timeframe === "1h" ? ONE_HOUR_MS : timeframe === "4h" ? FOUR_HOUR_MS : ONE_DAY_MS;
   try {
     const candles = await fetchCandles(
       symbol,
@@ -478,13 +486,15 @@ export async function buildMarketFeatureSnapshot(opts: {
   });
 
   const rows = await mapConcurrent(symbols, CONCURRENCY, async (symbol) => {
-    const [five, hourly, recentCandles] = await Promise.all([
+    const [five, hourly, fourHour, daily, recentCandles] = await Promise.all([
       getTimeframeFeature(symbol, "5m"),
       getTimeframeFeature(symbol, "1h"),
+      getTimeframeFeature(symbol, "4h"),
+      getTimeframeFeature(symbol, "1d"),
       getRecentFiveMinuteCandles(symbol),
     ]);
     const ctx = ctxBySymbol.get(symbol);
-    const timeframes = { "5m": five, "1h": hourly };
+    const timeframes = { "5m": five, "1h": hourly, "4h": fourHour, "1d": daily };
     const hints = combineHints({ timeframes });
     const openInterest = finite(ctx?.openInterest);
     const openInterestDeltas = oiDeltas({
@@ -495,6 +505,19 @@ export async function buildMarketFeatureSnapshot(opts: {
     const vp = computeVolumeProfile(
       recentCandles.map((c) => ({ o: c.o, h: c.h, l: c.l, c: c.c, v: c.v })),
     );
+    const volumeProfile = {
+      vwap: round(vp.vwap, 4),
+      poc: round(vp.poc, 4),
+      vah: round(vp.vah, 4),
+      val: round(vp.val, 4),
+      swingHigh: round(vp.swingHigh, 4),
+      swingLow: round(vp.swingLow, 4),
+    };
+    const perpMarketState = buildPerpMarketState({
+      symbol, mid: finite(opts.mids[symbol]), fundingHourly: finite(ctx?.funding),
+      openInterestChangeHint: oiHint(openInterestDeltas), openInterestDeltas,
+      recentCandles, timeframes, volumeProfile,
+    });
     return {
       symbol,
       mid: finite(opts.mids[symbol]),
@@ -505,14 +528,8 @@ export async function buildMarketFeatureSnapshot(opts: {
       openInterestChangeHint: oiHint(openInterestDeltas),
       recentCandles,
       timeframes,
-      volumeProfile: {
-        vwap: round(vp.vwap, 4),
-        poc: round(vp.poc, 4),
-        vah: round(vp.vah, 4),
-        val: round(vp.val, 4),
-        swingHigh: round(vp.swingHigh, 4),
-        swingLow: round(vp.swingLow, 4),
-      },
+      volumeProfile,
+      perpMarketState,
       ...hints,
     };
   });

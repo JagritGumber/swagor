@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Activity, Check, Circle, X } from "lucide-react";
 
 const EXPECTED_SWARM_PERSONAS = 6;
 
 type CycleRow = { id: string; asOf: string | null; status: string; createdAt: string; completedAt: string | null; errorMessage: string | null };
 type CallRow = { id: string; agentName: string; durationMs: number | null; createdAt: string };
 type PlanRow = { generatedAt: string; arcAnchorTx: string | null; arcOnchainTxHash: string | null } | null;
-type StageState = "pending" | "running" | "done";
-type Stage = { label: string; state: StageState; durationMs: number | null; detail?: string };
+type StageState = "pending" | "running" | "done" | "failed";
+type Stage = { label: string; state: StageState; durationMs: number | null; detail?: string; meta?: string[] };
 
 function fmtMs(ms: number | null): string {
   if (ms === null) return "n/a";
@@ -19,6 +20,7 @@ function fmtMs(ms: number | null): string {
 function deriveStages(cycle: CycleRow, calls: CallRow[], plan: PlanRow): Stage[] {
   const sorted = [...calls].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
   const personas = sorted.filter((c) => c.agentName.startsWith("swarm:"));
+  const personaNames = personas.map((c) => c.agentName.replace(/^swarm:/, "")).sort();
   const compiler = sorted.find((c) => c.agentName === "plan-compiler");
   const cycleStart = Date.parse(cycle.createdAt);
   const running = cycle.status === "running";
@@ -33,29 +35,27 @@ function deriveStages(cycle: CycleRow, calls: CallRow[], plan: PlanRow): Stage[]
   const compileState: StageState = compiler ? "done" : swarmState === "done" && running ? "running" : "pending";
   let anchorState: StageState = "pending";
   let anchorDetail: string | undefined;
-  if (plan?.arcOnchainTxHash) { anchorState = "done"; anchorDetail = "mined"; }
+  if (plan?.arcOnchainTxHash?.startsWith("failed:")) { anchorState = "failed"; anchorDetail = "failed"; }
+  else if (plan?.arcOnchainTxHash) { anchorState = "done"; anchorDetail = "mined"; }
   else if (plan?.arcAnchorTx) { anchorState = "running"; anchorDetail = "queued"; }
+  else if (plan && cycle.status === "completed") { anchorDetail = "not anchored"; }
   return [
     { label: "context", state: contextDone ? "done" : running ? "running" : "pending", durationMs: contextMs },
-    { label: `swarm (${personaCount}/${EXPECTED_SWARM_PERSONAS})`, state: swarmState, durationMs: swarmMs },
+    { label: `swarm (${personaCount}/${EXPECTED_SWARM_PERSONAS})`, state: swarmState, durationMs: swarmMs, meta: personaNames },
     { label: "aggregate", state: aggState, durationMs: aggMs },
     { label: "compile", state: compileState, durationMs: compiler?.durationMs ?? null },
     { label: "anchor", state: anchorState, durationMs: null, detail: anchorDetail },
   ];
 }
 
-const DOT: Record<StageState, JSX.Element> = {
-  done: <span className="text-[var(--neon-green)]">✓</span>,
-  running: <span className="animate-pulse text-[var(--neon-cyan)]">⏳</span>,
-  pending: <span className="text-muted-foreground">·</span>,
-};
+function StageIcon({ state }: { state: StageState }) {
+  const cls = state === "done" ? "text-[var(--neon-green)]"
+    : state === "running" ? "animate-pulse text-[var(--neon-cyan)]"
+    : state === "failed" ? "text-[var(--neon-red)]" : "text-muted-foreground";
+  const Icon = state === "done" ? Check : state === "running" ? Activity : state === "failed" ? X : Circle;
+  return <Icon className={`h-3 w-3 ${cls}`} aria-hidden="true" />;
+}
 
-/**
- * One pipeline strip per backtest cycle. Header (date + status + total) is
- * always visible; clicking toggles the stage list. The currently-running
- * cycle defaults open via a one-shot effect; once the user manually toggles
- * it, their choice sticks across polls.
- */
 export function BacktestPipelineCycle({ cycle, calls, plan, isCurrent }: { cycle: CycleRow; calls: CallRow[]; plan: PlanRow; isCurrent: boolean }) {
   const [open, setOpen] = useState(isCurrent);
   const userTouched = useRef(false);
@@ -73,12 +73,13 @@ export function BacktestPipelineCycle({ cycle, calls, plan, isCurrent }: { cycle
   return (
     <div className={`border ${tone} bg-[#050505]`}>
       <button
-        type="button" aria-expanded={open}
+        type="button"
+        aria-expanded={open}
         onClick={() => { userTouched.current = true; setOpen((v) => !v); }}
         className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left font-mono text-[11px] uppercase tracking-[0.16em]"
       >
         <span className="text-foreground">{asOfStr}</span>
-        <span className="opacity-80">{cycle.status} · {fmtMs(totalMs)}</span>
+        <span className="opacity-80">{cycle.status} / {fmtMs(totalMs)}</span>
       </button>
       {cycle.errorMessage && (
         <p className="px-3 pb-2 font-mono text-[10px] text-[var(--neon-red)]">{cycle.errorMessage.slice(0, 140)}</p>
@@ -86,11 +87,18 @@ export function BacktestPipelineCycle({ cycle, calls, plan, isCurrent }: { cycle
       {open && (
         <ul className="border-t border-current/20 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em]">
           {stages.map((s) => (
-            <li key={s.label} className="flex items-center gap-2 py-0.5">
-              {DOT[s.state]}
-              <span className="min-w-[110px] text-foreground">{s.label}</span>
-              <span className="text-muted-foreground">{fmtMs(s.durationMs)}</span>
-              {s.detail && <span className="text-muted-foreground">· {s.detail}</span>}
+            <li key={s.label} className="py-0.5">
+              <div className="flex items-center gap-2">
+                <StageIcon state={s.state} />
+                <span className="min-w-[110px] text-foreground">{s.label}</span>
+                <span className="text-muted-foreground">{fmtMs(s.durationMs)}</span>
+                {s.detail && <span className="text-muted-foreground">/ {s.detail}</span>}
+              </div>
+              {s.meta && s.meta.length > 0 && (
+                <div className="ml-5 mt-1 flex flex-wrap gap-1 normal-case tracking-normal">
+                  {s.meta.map((m) => <span key={m} className="border border-current/20 px-1.5 py-0.5 text-muted-foreground">{m}</span>)}
+                </div>
+              )}
             </li>
           ))}
         </ul>
