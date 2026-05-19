@@ -5,6 +5,7 @@ import { db } from "@/lib/db/client";
 import { memoryEntries, type Trade } from "@/lib/db/schema";
 import { and, desc, eq, isNull, or, ne } from "drizzle-orm";
 import { llm, MODELS } from "@/lib/llm-client";
+import { extractJson } from "@/lib/llm/extract-json";
 
 const LessonsSchema = z.object({
   outcome: z.enum(["win", "loss", "breakeven"]),
@@ -67,7 +68,7 @@ export async function recordTradeMemory(trade: Trade): Promise<void> {
     });
     const raw = completion.choices[0]?.message?.content;
     if (!raw) throw new Error("memory keeper returned empty response");
-    const parsed = LessonsSchema.parse(JSON.parse(raw));
+    const parsed = LessonsSchema.parse(JSON.parse(extractJson(raw)));
 
     await db.insert(memoryEntries).values({
       userId: trade.userId,

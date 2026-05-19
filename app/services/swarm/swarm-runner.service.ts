@@ -3,6 +3,7 @@ import { llm, MODELS } from "@/lib/llm-client";
 import { db } from "@/lib/db/client";
 import { swarmRounds } from "@/lib/db/schema";
 import { logLlmCall } from "@/lib/llm/log";
+import { extractJson } from "@/lib/llm/extract-json";
 import { samplePersonas, type Persona } from "./persona-roster";
 
 export type SwarmMode = "tactical" | "daily_plan";
@@ -119,7 +120,7 @@ async function runSwarmMember(opts: {
 
     const raw = response.choices[0]?.message?.content;
     if (!raw) return null;
-    const parsedJson = JSON.parse(raw);
+    const parsedJson = JSON.parse(extractJson(raw));
     const parsed = opts.mode === "daily_plan"
       ? DailyPlanMemberSchema.parse(parsedJson)
       : TacticalMemberSchema.parse(parsedJson);
