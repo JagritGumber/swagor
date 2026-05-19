@@ -1,8 +1,8 @@
 import "server-only";
 
 import { db } from "@/lib/db/client";
-import { monitorTicks, selboInstances, equitySnapshots, type SelboInstance } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { monitorTicks, selboInstances, equitySnapshots, trades, type SelboInstance } from "@/lib/db/schema";
+import { and, eq, desc, gte, or } from "drizzle-orm";
 import { MODELS } from "@/lib/llm-client";
 import { getCachedDailyPlan } from "@/lib/utils/daily-plan-cache";
 import { runDailyPlanForInstance } from "@/app/services/swarm/daily-planner.service";
@@ -21,12 +21,46 @@ import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/ma
 import { detectStrategyMode } from "@/lib/strategy-mode";
 import { blendWatcherCadence } from "@/lib/cadence-blend";
 import { recordTickStages, type TickStageInput } from "@/app/services/tick-stages.service";
-import { evaluateSelboTick, type SelboTickInput } from "./selbo-tick-engine";
+import { evaluateSelboTick, type SelboTickInput, type WatcherExecutionState } from "./selbo-tick-engine";
 import { executeWatcherDecision } from "./execute-watcher-decision";
 
 function previousMarketFeatures(lastTick: { context: unknown } | undefined): MarketFeatureSnapshot | null {
   const context = lastTick?.context as { marketFeatures?: MarketFeatureSnapshot } | null | undefined;
   return context?.marketFeatures ?? null;
+}
+
+function liveExecutionState(todayTrades: Array<{
+  asset: string;
+  side: string;
+  pnlUsd: string | null;
+  safetyTriggerReason: string | null;
+  openedAt: Date | null;
+  closedAt: Date | null;
+}>): WatcherExecutionState {
+  const now = Date.now();
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+  const cooldowns: Record<string, string> = {};
+  let dailyLossCount = 0;
+  let dailyRealizedPnlUsd = 0;
+  for (const t of todayTrades) {
+    if (!t.closedAt) continue;
+    const pnl = t.pnlUsd === null ? 0 : Number(t.pnlUsd);
+    if (Number.isFinite(pnl)) {
+      dailyRealizedPnlUsd += pnl;
+      if (pnl < 0) dailyLossCount++;
+    }
+    if (t.safetyTriggerReason === "stop_loss" && (t.side === "long" || t.side === "short")) {
+      const until = new Date(t.closedAt.getTime() + 6 * 3_600_000);
+      if (until.getTime() > now) cooldowns[`${t.asset.toUpperCase()}:${t.side}`] = until.toISOString();
+    }
+  }
+  return {
+    dailyTradeCount: todayTrades.filter((t) => t.openedAt !== null && t.openedAt >= todayStart).length,
+    dailyLossCount,
+    dailyRealizedPnlUsd,
+    assetSideCooldownUntil: cooldowns,
+  };
 }
 
 /**
@@ -44,8 +78,10 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
 
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
   const strategyMode = detectStrategyMode(instance.strategyText);
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
 
-  const [mids, meta, clearing, newsRes, lastTick, currentDailyPlan] = await Promise.all([
+  const [mids, meta, clearing, newsRes, lastTick, currentDailyPlan, openPaperTrades, todayTrades] = await Promise.all([
     fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
     fetchMetaAndCtxs().catch(() => ({ universe: [], ctxs: [] })),
     fetchClearinghouse(instance.circleWalletAddress).catch(() => null),
@@ -55,6 +91,18 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       .where(eq(monitorTicks.selboInstanceId, instance.id))
       .orderBy(desc(monitorTicks.createdAt)).limit(1).then((r) => r[0]),
     getCachedDailyPlan(instance.userId).catch(() => null),
+    db.select().from(trades).where(and(eq(trades.userId, instance.userId), eq(trades.status, "open"))),
+    db.select({
+      asset: trades.asset,
+      side: trades.side,
+      pnlUsd: trades.pnlUsd,
+      safetyTriggerReason: trades.safetyTriggerReason,
+      openedAt: trades.openedAt,
+      closedAt: trades.closedAt,
+    }).from(trades).where(and(
+      eq(trades.userId, instance.userId),
+      or(gte(trades.openedAt, todayStart), gte(trades.closedAt, todayStart)),
+    )),
   ]);
 
   // Build a per-coin perp snapshot the agent can read directly.
@@ -163,6 +211,14 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     | null = null;
 
   const markByAsset = new Map(perps.map((p) => [p.symbol, riskNumber(p.mark ?? p.mid)]));
+  const paperPositions = openPaperTrades.map((t) => ({
+    asset: t.asset.toUpperCase(),
+    side: t.side === "long" ? "long" as const : t.side === "short" ? "short" as const : "unknown" as const,
+    entryPrice: riskNumber(t.entryPrice),
+    markPrice: riskNumber(mids[t.asset.toUpperCase()]),
+    sizeUsd: riskNumber(t.amountUsd),
+    openedAt: t.openedAt?.toISOString() ?? null,
+  }));
   const tickInput: SelboTickInput = {
     mode: "live",
     asOf: new Date().toISOString(),
@@ -170,6 +226,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     externalSentiment: currentDailyPlan?.planJson as SelboTickInput["externalSentiment"] ?? null,
     marketFeatures,
     positions: [
+      ...paperPositions,
       ...positions.map((p) => ({
         asset: p.coin.toUpperCase(),
         side: riskNumber(p.size) === null ? "unknown" as const : riskNumber(p.size)! >= 0 ? "long" as const : "short" as const,
@@ -179,6 +236,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     ],
     risk,
     recentLessons: [],
+    executionState: liveExecutionState(todayTrades),
   };
   const watcherDecision = evaluateSelboTick(tickInput);
   const parsed: WatcherOutput = {

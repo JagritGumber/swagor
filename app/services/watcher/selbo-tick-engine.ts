@@ -29,6 +29,14 @@ export type PositionSnapshot = {
   entryPrice: number | null;
   markPrice: number | null;
   sizeUsd?: number | null;
+  openedAt?: string | null;
+};
+
+export type WatcherExecutionState = {
+  dailyTradeCount: number;
+  dailyLossCount: number;
+  dailyRealizedPnlUsd: number;
+  assetSideCooldownUntil: Record<string, string>;
 };
 
 export type CadenceDecision = {
@@ -61,7 +69,16 @@ export type SelboTickInput = {
   positions: PositionSnapshot[];
   risk: RiskSnapshot;
   recentLessons: string[];
+  executionState: WatcherExecutionState;
 };
+
+const SCALPER_MAX_OPEN_POSITIONS = 1;
+const SCALPER_MAX_DAILY_TRADES = 4;
+const SCALPER_MAX_DAILY_LOSSES = 2;
+const SCALPER_MAX_DAILY_LOSS_USD = -15;
+const SCALPER_MAX_HOLD_MS = 6 * 3_600_000;
+const SCALPER_SIZE_USD = 100;
+const SCALPER_LEVERAGE = 1;
 
 function round(n: number): number {
   return Number(n.toFixed(3));
@@ -103,14 +120,22 @@ function cadence(input: SelboTickInput, hasCandidate: boolean): CadenceDecision 
   return { nextCheckSeconds: input.mode === "live" ? 900 : 3600, state: "dormant", reason: "quiet market and no clean trigger" };
 }
 
-function score(symbol: SymbolMarketFeatures, side: "long" | "short", pressure: WatcherDecision["externalPressure"]): number {
-  let s = 0.58;
+function score(
+  symbol: SymbolMarketFeatures,
+  side: "long" | "short",
+  pressure: WatcherDecision["externalPressure"],
+  trigger: WatcherDecision["marketTrigger"],
+): number {
+  let s = 0.45;
   const state = symbol.perpMarketState;
-  if (state.dataQuality === "complete") s += 0.06;
-  if (state.executionQuality === "good" || state.executionQuality === "acceptable") s += 0.04;
-  if (state.setupCandidates.some((c) => c.side === side)) s += 0.08;
-  if (pressure === "aligned") s += 0.06;
-  if (pressure === "contradicted") s -= 0.12;
+  if (trigger === "sweep_reclaim" || trigger === "vah_rejection" || trigger === "val_reclaim") s += 0.18;
+  else if (trigger === "range_break" || trigger === "poc_acceptance") s += 0.12;
+  if (state.dataQuality === "complete") s += 0.05;
+  if (state.executionQuality === "good") s += 0.05;
+  else if (state.executionQuality === "acceptable") s += 0.03;
+  if (state.setupCandidates.some((c) => c.side === side)) s += 0.06;
+  if (pressure === "aligned") s += 0.04;
+  if (pressure === "contradicted") s -= 0.1;
   if (state.derivativesFlow.fundingCostWarning) s -= 0.04;
   return Math.max(0, Math.min(1, s));
 }
@@ -125,6 +150,34 @@ function levels(symbol: SymbolMarketFeatures, side: "long" | "short"): { stop: n
   return { stop, tp: side === "long" ? price + 2 * risk : price - 2 * risk };
 }
 
+function cooldownKey(asset: string, side: "long" | "short"): string {
+  return `${asset.toUpperCase()}:${side}`;
+}
+
+function cooldownActive(input: SelboTickInput, asset: string, side: "long" | "short"): boolean {
+  const until = input.executionState.assetSideCooldownUntil[cooldownKey(asset, side)];
+  return typeof until === "string" && Date.parse(until) > Date.parse(input.asOf);
+}
+
+function staleOpen(input: SelboTickInput): PositionSnapshot | null {
+  const asOf = Date.parse(input.asOf);
+  return input.positions.find((p) => {
+    if (p.side !== "long" && p.side !== "short") return false;
+    const openedAt = p.openedAt ? Date.parse(p.openedAt) : NaN;
+    return Number.isFinite(openedAt) && asOf - openedAt >= SCALPER_MAX_HOLD_MS;
+  }) ?? null;
+}
+
+function profileBlocks(input: SelboTickInput): string[] {
+  const blocks: string[] = [];
+  const openCount = input.positions.filter((p) => p.side === "long" || p.side === "short").length;
+  if (openCount >= SCALPER_MAX_OPEN_POSITIONS) blocks.push("one_position_at_a_time");
+  if (input.executionState.dailyTradeCount >= SCALPER_MAX_DAILY_TRADES) blocks.push("daily_trade_cap");
+  if (input.executionState.dailyLossCount >= SCALPER_MAX_DAILY_LOSSES) blocks.push("daily_loss_count_cap");
+  if (input.executionState.dailyRealizedPnlUsd <= SCALPER_MAX_DAILY_LOSS_USD) blocks.push("daily_loss_usd_cap");
+  return blocks;
+}
+
 export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
   const open = input.positions.find((p) => p.side === "long" || p.side === "short");
   if ((input.risk.status === "critical" || input.risk.status === "urgent") && open) {
@@ -135,23 +188,45 @@ export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
       stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: [],
     };
   }
+  const stale = staleOpen(input);
+  if (stale) {
+    return {
+      action: "close", asset: stale.asset, reason: "scalper time-stop: position exceeded max hold window",
+      marketTrigger: "risk_exit", externalPressure: "unknown", confidence: 1,
+      cadence: cadence(input, false), sizeUsd: 0, leverage: 1,
+      stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: ["stale_position"],
+    };
+  }
 
   const candidates = input.marketFeatures.symbols.flatMap((symbol) => {
     const price = symbol.mark ?? symbol.mid;
     if (price === null || symbol.perpMarketState.permission === "avoid_new_risk") return [];
+    if (symbol.perpMarketState.permission === "hedge_only") return [];
     if (input.positions.some((p) => p.asset.toUpperCase() === symbol.symbol.toUpperCase())) return [];
     return symbol.perpMarketState.setupCandidates.map((c) => {
       const pressure = alignment(c.side, pressureFor(input, symbol.symbol));
-      const confidence = score(symbol, c.side, pressure);
+      const trigger = triggerName(symbol, c.side);
+      const confidence = score(symbol, c.side, pressure, trigger);
       const lv = levels(symbol, c.side);
-      return { symbol, side: c.side, confidence, pressure, trigger: triggerName(symbol, c.side), levels: lv };
-    });
+      return { symbol, side: c.side, confidence, pressure, trigger, levels: lv };
+    }).filter((c) => c.trigger !== "none");
   }).sort((a, b) => b.confidence - a.confidence);
 
   const cd = cadence(input, candidates.length > 0);
   const best = candidates[0];
   if (!best) {
-    return { action: "hold", asset: null, reason: "no inside-market trigger passed watcher filters", marketTrigger: "none", externalPressure: "unknown", confidence: 0, cadence: cd, sizeUsd: 0, leverage: 1, stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: [] };
+    return { action: "hold", asset: null, reason: "no inside-market trigger passed watcher filters", marketTrigger: "none", externalPressure: "unknown", confidence: 0, cadence: cd, sizeUsd: 0, leverage: 1, stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: ["no_market_trigger"] };
+  }
+  const blocks = profileBlocks(input);
+  if (cooldownActive(input, best.symbol.symbol, best.side)) blocks.push("same_direction_cooldown");
+  if (blocks.length > 0) {
+    return {
+      action: "hold", asset: best.symbol.symbol,
+      reason: `watcher blocked ${best.symbol.symbol} ${best.side}: ${blocks.join(", ")}`,
+      marketTrigger: best.trigger, externalPressure: best.pressure, confidence: round(best.confidence),
+      cadence: cd, sizeUsd: 0, leverage: 1,
+      stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: blocks,
+    };
   }
   if (best.pressure === "contradicted" && best.confidence >= 0.58) {
     return { action: "call_swarm", asset: best.symbol.symbol, reason: "inside-market trigger contradicts external pressure; refresh outside-market read", marketTrigger: best.trigger, externalPressure: best.pressure, confidence: round(best.confidence), cadence: cd, sizeUsd: 0, leverage: 1, stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: [] };
@@ -159,7 +234,6 @@ export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
   if (best.confidence < 0.64 || best.levels.stop === null || best.levels.tp === null) {
     return { action: "hold", asset: best.symbol.symbol, reason: "best trigger did not clear confidence or level-quality gate", marketTrigger: best.trigger, externalPressure: best.pressure, confidence: round(best.confidence), cadence: cd, sizeUsd: 0, leverage: 1, stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: ["below_trade_gate"] };
   }
-  const rv = best.symbol.timeframes["1h"].realizedVolPct ?? 1;
   return {
     action: best.side === "long" ? "open_long" : "open_short",
     asset: best.symbol.symbol,
@@ -168,8 +242,8 @@ export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
     externalPressure: best.pressure,
     confidence: round(best.confidence),
     cadence: cd,
-    sizeUsd: 100,
-    leverage: rv >= 1.5 ? 1 : 2,
+    sizeUsd: SCALPER_SIZE_USD,
+    leverage: SCALPER_LEVERAGE,
     stopLossPriceUsd: best.levels.stop,
     takeProfitPriceUsd: best.levels.tp,
     blockedReasons: [],

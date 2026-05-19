@@ -6,7 +6,7 @@ import { backtestRuns, backtestTrades, dailyPlans, rebalanceCycles } from "@/lib
 import { fetchCandles, type Candle } from "@/lib/data-sources/hyperliquid";
 import { checkStopTpHit, closeAllAtEnd, computePnl, type OpenPos, STARTING_EQUITY_USD, writeBacktestClose } from "./simulate-helpers";
 import { evaluatePerpRisk } from "@/app/services/risk-engine.service";
-import { evaluateSelboTick, type SelboTickInput, type WatcherDecision } from "@/app/services/watcher/selbo-tick-engine";
+import { evaluateSelboTick, type SelboTickInput, type WatcherDecision, type WatcherExecutionState } from "@/app/services/watcher/selbo-tick-engine";
 import { atrPct, closes, ema, realizedVolPct, rsiWilder, type MarketFeatureSnapshot, type SymbolMarketFeatures, type TimeframeFeature } from "@/lib/market-features";
 import { computeVolumeProfile } from "@/lib/volume-profile";
 import { buildPerpMarketState } from "@/lib/perp-market-state";
@@ -14,6 +14,7 @@ import { buildPerpMarketState } from "@/lib/perp-market-state";
 export { summarizeBacktestTrades, type BacktestSummary } from "./summarize-trades";
 
 type PlanJson = { watchlist?: string[] };
+const STOP_COOLDOWN_MS = 6 * 3_600_000;
 
 function openFromDecision(decision: WatcherDecision, price: number, dayMs: number, equity: number): OpenPos | null {
   if (!decision.asset || (decision.action !== "open_long" && decision.action !== "open_short")) return null;
@@ -29,6 +30,10 @@ function openFromDecision(decision: WatcherDecision, price: number, dayMs: numbe
     setupType: decision.marketTrigger, invalidationSource: null,
     qualityReport: null, watcherDecision: decision as unknown as Record<string, unknown>,
   };
+}
+
+function cooldownKey(asset: string, side: "long" | "short"): string {
+  return `${asset.toUpperCase()}:${side}`;
 }
 
 function finiteClose(c: Candle | undefined): number | null {
@@ -123,10 +128,21 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
 
   let equity = STARTING_EQUITY_USD;
   let opened = 0, closed = 0;
+  let currentDayMs = Number.NaN;
+  let dailyTradeCount = 0;
+  let dailyLossCount = 0;
+  let dailyRealizedPnlUsd = 0;
+  const assetSideCooldownUntil: Record<string, string> = {};
   const positions = new Map<string, OpenPos>();
 
   for (let tickMs = startMs; tickMs <= Date.parse(`${run.endDate}T23:00:00Z`); tickMs += 3_600_000) {
     const dayMs = Date.UTC(new Date(tickMs).getUTCFullYear(), new Date(tickMs).getUTCMonth(), new Date(tickMs).getUTCDate());
+    if (dayMs !== currentDayMs) {
+      currentDayMs = dayMs;
+      dailyTradeCount = 0;
+      dailyLossCount = 0;
+      dailyRealizedPnlUsd = 0;
+    }
     if (!cycleDays.includes(dayMs)) continue;
     const plan = planByDay.get(dayMs);
     if (!plan) continue;
@@ -136,7 +152,12 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
       if (!hit) continue;
       const { pnlUsd } = computePnl(pos.side, pos.entryPrice, hit.price, pos.sizeUsd, pos.leverage);
       await writeBacktestClose({ runId, asset, pos, exitDate: new Date(tickMs), exitPrice: hit.price, reason: hit.reason });
+      if (hit.reason === "stop_loss") {
+        assetSideCooldownUntil[cooldownKey(asset, pos.side)] = new Date(tickMs + STOP_COOLDOWN_MS).toISOString();
+      }
       positions.delete(asset); equity += pnlUsd; closed++;
+      dailyRealizedPnlUsd += pnlUsd;
+      if (pnlUsd < 0) dailyLossCount++;
     }
 
     const marketFeatures = buildSnapshotAt(allAssets, candleCache, tickMs);
@@ -157,9 +178,16 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
         asset, side: pos.side, entryPrice: pos.entryPrice,
         markPrice: Number((candleCache.get(asset) ?? []).find((c) => c.t === tickMs)?.c),
         sizeUsd: pos.sizeUsd,
+        openedAt: pos.entryDate.toISOString(),
       })),
       risk,
       recentLessons: [],
+      executionState: {
+        dailyTradeCount,
+        dailyLossCount,
+        dailyRealizedPnlUsd,
+        assetSideCooldownUntil,
+      } satisfies WatcherExecutionState,
     };
     const decision = evaluateSelboTick(tickInput);
     if ((decision.action === "close" || decision.action === "risk_emergency") && decision.asset) {
@@ -170,13 +198,15 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
         const { pnlUsd } = computePnl(pos.side, pos.entryPrice, price, pos.sizeUsd, pos.leverage);
         await writeBacktestClose({ runId, asset, pos, exitDate: new Date(tickMs), exitPrice: price, reason: decision.action });
         positions.delete(asset); equity += pnlUsd; closed++;
+        dailyRealizedPnlUsd += pnlUsd;
+        if (pnlUsd < 0) dailyLossCount++;
       }
     }
     if ((decision.action === "open_long" || decision.action === "open_short") && decision.asset) {
       const asset = decision.asset.toUpperCase();
       const price = Number((candleCache.get(asset) ?? []).find((c) => c.t === tickMs)?.c);
       const pos = Number.isFinite(price) ? openFromDecision(decision, price, tickMs, equity) : null;
-      if (pos) { positions.set(asset, pos); opened++; }
+      if (pos) { positions.set(asset, pos); opened++; dailyTradeCount++; }
     }
   }
 
