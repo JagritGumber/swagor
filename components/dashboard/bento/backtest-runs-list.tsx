@@ -24,6 +24,14 @@ function statusTone(status: string): string {
   return "text-[var(--neon-cyan)]";
 }
 
+function logRunError(run: BacktestRunRow): void {
+  if (!run.errorMessage) return;
+  console.groupCollapsed(`[Selbo backtest error] ${run.startDate} to ${run.endDate} (${run.id.slice(0, 8)})`);
+  console.error(run.errorMessage);
+  console.info({ runId: run.id, status: run.status, cyclesCompleted: run.cyclesCompleted, cyclesRequested: run.cyclesRequested });
+  console.groupEnd();
+}
+
 export function BacktestRunsList({ runs, activeId, onSelect }: {
   runs: BacktestRunRow[];
   activeId: string | null;
@@ -46,7 +54,10 @@ export function BacktestRunsList({ runs, activeId, onSelect }: {
           return (
             <li key={r.id}>
               <button
-                onClick={() => onSelect(isActive ? null : r.id)}
+                onClick={() => {
+                  logRunError(r);
+                  onSelect(isActive ? null : r.id);
+                }}
                 className={`flex w-full flex-wrap items-center gap-x-4 gap-y-1 border px-3 py-2 text-left font-mono text-[10px] uppercase tracking-[0.14em] ${
                   isActive ? "border-[var(--neon-green)] bg-[var(--neon-green)]/10" : "border-[var(--neon-green)]/30 hover:border-[var(--neon-green)]"
                 }`}
@@ -55,7 +66,7 @@ export function BacktestRunsList({ runs, activeId, onSelect }: {
                 <span className="text-muted-foreground">{r.cyclesCompleted}/{r.cyclesRequested}</span>
                 <span className={statusTone(r.status)}>{r.status}</span>
                 {r.plannerPromptVersion && <span className="border border-[var(--neon-cyan)]/40 px-1.5 py-0.5 text-[var(--neon-cyan)]">{r.plannerPromptVersion}</span>}
-                {r.errorMessage && <span className="text-[var(--neon-red)]" title={r.errorMessage}>open error console</span>}
+                {r.errorMessage && <span className="text-[var(--neon-red)]" title={r.errorMessage}>click for console</span>}
               </button>
             </li>
           );

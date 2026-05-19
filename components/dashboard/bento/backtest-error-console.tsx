@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 type ErrorCycle = {
   id: string;
   asOf: string | null;
@@ -16,7 +18,20 @@ function formatError(raw: string): string {
 }
 
 export function BacktestErrorConsole({ cycles }: { cycles: ErrorCycle[] }) {
+  const logged = useRef(new Set<string>());
   const failed = cycles.filter((cycle) => cycle.errorMessage);
+  useEffect(() => {
+    for (const cycle of failed) {
+      const key = `${cycle.id}:${cycle.errorMessage}`;
+      if (!cycle.errorMessage || logged.current.has(key)) continue;
+      logged.current.add(key);
+      console.groupCollapsed(`[Selbo cycle error] ${cycle.asOf ? cycle.asOf.slice(0, 10) : cycle.id.slice(0, 8)}`);
+      console.error(formatError(cycle.errorMessage));
+      console.info({ cycleId: cycle.id, asOf: cycle.asOf, status: cycle.status });
+      console.groupEnd();
+    }
+  }, [failed]);
+
   if (failed.length === 0) return null;
 
   return (
