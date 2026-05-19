@@ -5,6 +5,7 @@ import { ArcTxLink } from "@/components/ui/arc-tx-link";
 
 export type BacktestPlan = {
   id: string;
+  cycleId: string;
   generatedAt: string;
   status: string;
   planMarkdown: string | null;
