@@ -196,7 +196,8 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
       const price = Number((candleCache.get(asset) ?? []).find((c) => c.t === tickMs)?.c);
       if (pos && Number.isFinite(price)) {
         const { pnlUsd } = computePnl(pos.side, pos.entryPrice, price, pos.sizeUsd, pos.leverage);
-        await writeBacktestClose({ runId, asset, pos, exitDate: new Date(tickMs), exitPrice: price, reason: decision.action });
+        const reason = decision.blockedReasons.includes("stale_position") ? "time_stop" : decision.action;
+        await writeBacktestClose({ runId, asset, pos, exitDate: new Date(tickMs), exitPrice: price, reason });
         positions.delete(asset); equity += pnlUsd; closed++;
         dailyRealizedPnlUsd += pnlUsd;
         if (pnlUsd < 0) dailyLossCount++;

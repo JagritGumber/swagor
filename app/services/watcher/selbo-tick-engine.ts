@@ -1,5 +1,6 @@
 import type { MarketFeatureSnapshot, SymbolMarketFeatures } from "@/lib/market-features";
 import type { RiskSnapshot } from "@/app/services/risk-engine.service";
+import type { PerpSetupCandidate } from "@/lib/perp-market-state";
 
 export type AssetPressure = {
   asset: string;
@@ -98,13 +99,11 @@ function alignment(side: "long" | "short", pressure: AssetPressure | null): Watc
   return "contradicted";
 }
 
-function triggerName(symbol: SymbolMarketFeatures, side: "long" | "short"): WatcherDecision["marketTrigger"] {
-  const state = symbol.perpMarketState;
-  if (state.structureState === "liquidity_sweep") return "sweep_reclaim";
-  if (state.structureState === "breakout" || state.structureState === "breakdown") return "range_break";
-  if (side === "long" && state.auctionState === "rejected_below_value") return "val_reclaim";
-  if (side === "short" && state.auctionState === "rejected_above_value") return "vah_rejection";
-  if (state.valueLocation === "at_poc") return "poc_acceptance";
+function triggerName(candidate: PerpSetupCandidate): WatcherDecision["marketTrigger"] {
+  if (candidate.setupType === "liquidity_sweep_reclaim") return "sweep_reclaim";
+  if (candidate.setupType === "failed_breakout" || candidate.setupType === "value_rejection") return "vah_rejection";
+  if (candidate.setupType === "failed_breakdown" || candidate.setupType === "value_reclaim") return "val_reclaim";
+  if (candidate.setupType === "accepted_breakout") return "range_break";
   return "none";
 }
 
@@ -125,29 +124,60 @@ function score(
   side: "long" | "short",
   pressure: WatcherDecision["externalPressure"],
   trigger: WatcherDecision["marketTrigger"],
+  candidate: PerpSetupCandidate,
 ): number {
-  let s = 0.45;
+  let s = 0.38;
   const state = symbol.perpMarketState;
-  if (trigger === "sweep_reclaim" || trigger === "vah_rejection" || trigger === "val_reclaim") s += 0.18;
-  else if (trigger === "range_break" || trigger === "poc_acceptance") s += 0.12;
+  if (candidate.setupType === "failed_breakout" || candidate.setupType === "failed_breakdown") s += 0.24;
+  else if (candidate.setupType === "liquidity_sweep_reclaim") s += 0.2;
+  else if (candidate.setupType === "value_rejection" || candidate.setupType === "value_reclaim") s += 0.16;
+  else if (trigger === "range_break") s += 0.08;
   if (state.dataQuality === "complete") s += 0.05;
   if (state.executionQuality === "good") s += 0.05;
   else if (state.executionQuality === "acceptable") s += 0.03;
-  if (state.setupCandidates.some((c) => c.side === side)) s += 0.06;
+  if (side === "long" && (state.valueLocation === "near_val" || state.auctionState === "rejected_below_value")) s += 0.06;
+  if (side === "short" && (state.valueLocation === "near_vah" || state.auctionState === "rejected_above_value")) s += 0.06;
+  if (state.valueLocation === "at_poc" || state.structureState === "compression") s -= 0.08;
+  if (state.regime === "chop") s -= 0.05;
   if (pressure === "aligned") s += 0.04;
   if (pressure === "contradicted") s -= 0.1;
   if (state.derivativesFlow.fundingCostWarning) s -= 0.04;
   return Math.max(0, Math.min(1, s));
 }
 
-function levels(symbol: SymbolMarketFeatures, side: "long" | "short"): { stop: number | null; tp: number | null } {
-  const candidate = symbol.perpMarketState.setupCandidates.find((c) => c.side === side);
+function levels(symbol: SymbolMarketFeatures, side: "long" | "short", candidate: PerpSetupCandidate): { stop: number | null; tp: number | null } {
   const price = symbol.mark ?? symbol.mid;
-  if (!candidate || price === null) return { stop: null, tp: null };
+  if (price === null) return { stop: null, tp: null };
   const stop = candidate.invalidationLevel;
   const risk = Math.abs(price - stop);
   if (!Number.isFinite(risk) || risk <= 0) return { stop: null, tp: null };
+  if (side === "long" && stop >= price) return { stop: null, tp: null };
+  if (side === "short" && stop <= price) return { stop: null, tp: null };
   return { stop, tp: side === "long" ? price + 2 * risk : price - 2 * risk };
+}
+
+function setupBlocks(symbol: SymbolMarketFeatures, candidate: PerpSetupCandidate): string[] {
+  const state = symbol.perpMarketState;
+  const blocks: string[] = [];
+  if (candidate.permission === "wait_for_retest") blocks.push("wait_for_retest");
+  if (candidate.setupType === "range_rotation") blocks.push("mid_value_no_edge");
+  if (state.valueLocation === "at_poc") blocks.push("mid_value_no_edge");
+  if (candidate.side === "long") {
+    const valueLowReclaim = candidate.setupType === "value_reclaim"
+      && (state.valueLocation === "near_val" || state.valueLocation === "below_value");
+    const clean = state.auctionState === "rejected_below_value"
+      || state.structureState === "failed_breakdown"
+      || valueLowReclaim;
+    if (!clean) blocks.push("direction_mismatch");
+  } else {
+    const valueHighReject = candidate.setupType === "value_rejection"
+      && (state.valueLocation === "near_vah" || state.valueLocation === "above_value");
+    const clean = state.auctionState === "rejected_above_value"
+      || state.structureState === "failed_breakout"
+      || valueHighReject;
+    if (!clean) blocks.push("direction_mismatch");
+  }
+  return blocks;
 }
 
 function cooldownKey(asset: string, side: "long" | "short"): string {
@@ -198,24 +228,36 @@ export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
     };
   }
 
-  const candidates = input.marketFeatures.symbols.flatMap((symbol) => {
+  const allCandidates = input.marketFeatures.symbols.flatMap((symbol) => {
     const price = symbol.mark ?? symbol.mid;
     if (price === null || symbol.perpMarketState.permission === "avoid_new_risk") return [];
     if (symbol.perpMarketState.permission === "hedge_only") return [];
     if (input.positions.some((p) => p.asset.toUpperCase() === symbol.symbol.toUpperCase())) return [];
     return symbol.perpMarketState.setupCandidates.map((c) => {
       const pressure = alignment(c.side, pressureFor(input, symbol.symbol));
-      const trigger = triggerName(symbol, c.side);
-      const confidence = score(symbol, c.side, pressure, trigger);
-      const lv = levels(symbol, c.side);
-      return { symbol, side: c.side, confidence, pressure, trigger, levels: lv };
+      const trigger = triggerName(c);
+      const blocks = setupBlocks(symbol, c);
+      const confidence = score(symbol, c.side, pressure, trigger, c);
+      const lv = levels(symbol, c.side, c);
+      return { symbol, side: c.side, confidence, pressure, trigger, levels: lv, blocks };
     }).filter((c) => c.trigger !== "none");
   }).sort((a, b) => b.confidence - a.confidence);
+  const candidates = allCandidates.filter((c) => c.blocks.length === 0);
 
-  const cd = cadence(input, candidates.length > 0);
+  const cd = cadence(input, allCandidates.length > 0);
   const best = candidates[0];
   if (!best) {
-    return { action: "hold", asset: null, reason: "no inside-market trigger passed watcher filters", marketTrigger: "none", externalPressure: "unknown", confidence: 0, cadence: cd, sizeUsd: 0, leverage: 1, stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: ["no_market_trigger"] };
+    const rejected = allCandidates[0];
+    return {
+      action: "hold", asset: rejected?.symbol.symbol ?? null,
+      reason: rejected ? `watcher blocked ${rejected.symbol.symbol} ${rejected.side}: ${rejected.blocks.join(", ")}` : "no inside-market trigger passed watcher filters",
+      marketTrigger: rejected?.trigger ?? "none",
+      externalPressure: rejected?.pressure ?? "unknown",
+      confidence: rejected ? round(rejected.confidence) : 0,
+      cadence: cd, sizeUsd: 0, leverage: 1,
+      stopLossPriceUsd: null, takeProfitPriceUsd: null,
+      blockedReasons: rejected?.blocks.length ? rejected.blocks : ["no_market_trigger"],
+    };
   }
   const blocks = profileBlocks(input);
   if (cooldownActive(input, best.symbol.symbol, best.side)) blocks.push("same_direction_cooldown");
