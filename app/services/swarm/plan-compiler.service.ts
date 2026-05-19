@@ -7,6 +7,7 @@ import { logLlmCall } from "@/lib/llm/log";
 import type { DailyAggregatorOutput } from "./daily-aggregator.service";
 import { COMPILER_SYSTEM_PROMPT, PlanCompilerSchema, type CompiledPlan } from "./plan-compiler-prompt";
 import { formatThesisMemoryForPrompt, type ThesisMemory } from "./build-thesis-memory";
+import { extractJson } from "@/lib/llm/extract-json";
 
 export type { CompiledPlan };
 
@@ -48,7 +49,7 @@ export async function compileDailyPlan(opts: {
   const durationMs = Date.now() - startedAt;
   const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("plan-compiler returned empty response");
-  const parsed = PlanCompilerSchema.parse(JSON.parse(raw));
+  const parsed = PlanCompilerSchema.parse(JSON.parse(extractJson(raw)));
 
   // Deterministic enrichment: fill realizedVolPct1h from features. The
   // model is NOT asked to emit this; risk math is the engine's job.

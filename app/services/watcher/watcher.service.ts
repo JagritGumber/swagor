@@ -18,6 +18,7 @@ import { tierSpec, type Tier } from "@/lib/tiers";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 import { anchorWatcherDecision, type AnchorJsonValue } from "@/lib/arc/anchor";
 import { logLlmCall } from "@/lib/llm/log";
+import { extractJson } from "@/lib/llm/extract-json";
 import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
 import { blendWatcherCadence } from "@/lib/cadence-blend";
 import { recordTickStages, type TickStageInput } from "@/app/services/tick-stages.service";
@@ -187,7 +188,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
             completionTokens: completion.usage?.completion_tokens,
             durationMs,
           };
-          return WATCHER_SCHEMA.parse(JSON.parse(raw));
+          return WATCHER_SCHEMA.parse(JSON.parse(extractJson(raw)));
         })();
 
   // Apply per-tier cadence plus deterministic realized-volatility blend.

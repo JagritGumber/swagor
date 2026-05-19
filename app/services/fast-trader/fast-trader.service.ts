@@ -13,6 +13,7 @@ import {
 } from "@/app/services/trades/paper-trade.service";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 import { logLlmCall } from "@/lib/llm/log";
+import { extractJson } from "@/lib/llm/extract-json";
 import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
 import { monitorTicks } from "@/lib/db/schema";
 import { evaluateSafetyRails, type SafetyBlock } from "@/app/services/safety-rails/safety-check";
@@ -198,7 +199,7 @@ export async function runFastTraderForInstance(
 
   const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("fast-trader returned empty response");
-  const decision = FAST_TRADER_SCHEMA.parse(JSON.parse(raw));
+  const decision = FAST_TRADER_SCHEMA.parse(JSON.parse(extractJson(raw)));
 
   await logLlmCall({
     selboInstanceId: instance.id,
