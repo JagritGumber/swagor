@@ -4,6 +4,7 @@ import { type SelboInstance } from "@/lib/db/schema";
 import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
 import { classifyNews } from "@/lib/news-sentiment";
 import { detectStrategyMode } from "@/lib/strategy-mode";
+import { buildTrendRegimeSnapshot } from "@/lib/trend-regime";
 import { fetchAllForDailyPlan } from "./daily-planner-fetchers";
 import type { DailyPlanContext } from "./daily-planner-types";
 
@@ -69,6 +70,7 @@ export async function buildDailyPlanContext(instance: SelboInstance): Promise<Da
     })),
     perps,
     marketFeatures,
+    trendRegime: buildTrendRegimeSnapshot(marketFeatures),
     recent_news,
     news_sentiment: classifyNews(fb.newsResults),
     recent_lessons: fb.recentLessons,
@@ -99,6 +101,7 @@ export function externalSwarmContext(context: DailyPlanContext): object {
     news_sentiment: context.news_sentiment,
     recent_lessons: context.recent_lessons,
     recent_pnl: context.recent_pnl,
+    trendRegime: context.trendRegime,
     yesterdayPlanSummary: context.yesterdayPlanSummary,
     _ingestion: context._ingestion,
   };

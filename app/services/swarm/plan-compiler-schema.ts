@@ -43,6 +43,17 @@ const coerceAssetPressureSource = (v: unknown): unknown => {
 export const PlanCompilerSchema = z.object({
   watchlist: z.array(z.string()).min(1).max(20),
   marketMood: z.enum(["risk_on", "risk_off", "neutral", "event_risk"]).optional(),
+  trendRegime: z.object({
+    generatedAt: z.string(),
+    assets: z.array(z.object({
+      asset: z.string(),
+      regime: z.string(),
+      trendDirection: z.enum(["up", "down", "range", "volatile", "unknown"]),
+      trendStrength: z.enum(["strong", "moderate", "weak", "unknown"]),
+      countertrendRisk: z.enum(["high", "medium", "low", "unknown"]),
+      summary: z.string(),
+    })),
+  }).optional(),
   assetPressure: z.array(z.object({
     asset: z.string(),
     pressure: z.enum(["bullish", "bearish", "neutral", "risk_warning"]),

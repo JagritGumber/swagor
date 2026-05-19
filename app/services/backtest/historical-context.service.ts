@@ -6,6 +6,7 @@ import { detectStrategyMode } from "@/lib/strategy-mode";
 import type { SelboInstance } from "@/lib/db/schema";
 import type { DailyPlanContext } from "@/app/services/swarm/daily-planner-types";
 import { buildHistoricalSymbolFeatures } from "./historical-symbol-features";
+import { buildTrendRegimeSnapshot } from "@/lib/trend-regime";
 
 /**
  * Build a DailyPlanContext as of a historical wall-clock. Candles +
@@ -31,6 +32,13 @@ export async function buildHistoricalContext(instance: SelboInstance, asOf: Date
     }))
     .catch(() => []);
 
+  const marketFeatures = {
+    source: "hyperliquid-testnet" as const,
+    generatedAt: asOf.toISOString(),
+    symbols: features,
+    skippedSymbols: [],
+  };
+
   return {
     mode: "daily_plan",
     strategy: instance.strategyText,
@@ -44,12 +52,8 @@ export async function buildHistoricalContext(instance: SelboInstance, asOf: Date
       funding_hourly: null,
       open_interest: null,
     })),
-    marketFeatures: {
-      source: "hyperliquid-testnet",
-      generatedAt: asOf.toISOString(),
-      symbols: features,
-      skippedSymbols: [],
-    },
+    marketFeatures,
+    trendRegime: buildTrendRegimeSnapshot(marketFeatures),
     recent_news: newsResults.slice(0, 6).map((n) => ({
       title: n.title, source: n.source,
       hoursAgo: n.publishedAt ? Math.floor((asOfMs - Date.parse(n.publishedAt)) / 3_600_000) : null,

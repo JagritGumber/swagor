@@ -1,4 +1,5 @@
 import type { MarketFeatureSnapshot } from "@/lib/market-features";
+import type { TrendRegimeSnapshot } from "@/lib/trend-regime";
 import type { SentimentCounts } from "@/lib/news-sentiment";
 import type { IngestionSource } from "./daily-planner-fetchers";
 
@@ -29,6 +30,7 @@ export type DailyPlanContext = {
     open_interest: string | null;
   }>;
   marketFeatures: MarketFeatureSnapshot;
+  trendRegime: TrendRegimeSnapshot;
   recent_news: Array<{ title: string; source: string; hoursAgo: number | null }>;
   news_sentiment: SentimentCounts;
   recent_lessons: string[];

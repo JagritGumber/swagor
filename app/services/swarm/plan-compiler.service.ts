@@ -50,6 +50,8 @@ export async function compileDailyPlan(opts: {
   const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("plan-compiler returned empty response");
   const parsed = PlanCompilerSchema.parse(JSON.parse(extractJson(raw)));
+  const trendRegime = (opts.swarmContext as { trendRegime?: CompiledPlan["trendRegime"] }).trendRegime;
+  if (trendRegime) parsed.trendRegime = trendRegime;
 
   // Architecture invariant: the external swarm never emits trades. Keep
   // legacy fields present for old UI code, but force them empty so no

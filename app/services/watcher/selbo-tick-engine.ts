@@ -1,6 +1,7 @@
 import type { MarketFeatureSnapshot, SymbolMarketFeatures } from "@/lib/market-features";
 import type { RiskSnapshot } from "@/app/services/risk-engine.service";
 import type { PerpSetupCandidate } from "@/lib/perp-market-state";
+import type { TrendRegimeSnapshot } from "@/lib/trend-regime";
 
 export type AssetPressure = {
   asset: string;
@@ -22,6 +23,7 @@ export type ExternalPressureSnapshot = {
   }>;
   watcherWarnings?: string[];
   memoryUsed?: string[];
+  trendRegime?: TrendRegimeSnapshot;
 };
 
 export type PositionSnapshot = {
@@ -80,7 +82,7 @@ const SCALPER_MAX_DAILY_LOSS_USD = -15;
 const SCALPER_MAX_HOLD_MS = 6 * 3_600_000;
 const SCALPER_SIZE_USD = 100;
 const SCALPER_LEVERAGE = 1;
-const SCALPER_TRADE_GATE = 0.7;
+const SCALPER_MIN_TRADE_GATE = 0.67;
 
 function round(n: number): number {
   return Number(n.toFixed(3));
@@ -89,6 +91,10 @@ function round(n: number): number {
 function pressureFor(input: SelboTickInput, asset: string): AssetPressure | null {
   const rows = input.externalSentiment?.assetPressure ?? [];
   return rows.find((r) => r.asset.toUpperCase() === asset.toUpperCase()) ?? null;
+}
+
+function trendFor(input: SelboTickInput, asset: string): TrendRegimeSnapshot["assets"][number] | null {
+  return input.externalSentiment?.trendRegime?.assets.find((r) => r.asset.toUpperCase() === asset.toUpperCase()) ?? null;
 }
 
 function alignment(side: "long" | "short", pressure: AssetPressure | null): WatcherDecision["externalPressure"] {
@@ -181,6 +187,30 @@ function setupBlocks(symbol: SymbolMarketFeatures, candidate: PerpSetupCandidate
   return blocks;
 }
 
+function countertrendBlocks(input: SelboTickInput, symbol: SymbolMarketFeatures, candidate: PerpSetupCandidate, pressure: AssetPressure | null): string[] {
+  const trend = trendFor(input, symbol.symbol);
+  const direction = trend?.trendDirection ?? (
+    symbol.perpMarketState.regime === "trend_up" ? "up"
+      : symbol.perpMarketState.regime === "trend_down" ? "down"
+        : "unknown"
+  );
+  if (candidate.side === "short" && direction === "up") {
+    if (pressure?.pressure === "bearish" || pressure?.pressure === "risk_warning") return [];
+    return ["countertrend_without_regime_support"];
+  }
+  if (candidate.side === "long" && direction === "down") {
+    if (pressure?.pressure === "bullish" || pressure?.pressure === "risk_warning") return [];
+    return ["countertrend_without_regime_support"];
+  }
+  return [];
+}
+
+function tradeGate(trigger: WatcherDecision["marketTrigger"]): number {
+  if (trigger === "vah_rejection") return 0.7;
+  if (trigger === "sweep_reclaim") return 0.67;
+  return SCALPER_MIN_TRADE_GATE;
+}
+
 function cooldownKey(asset: string, side: "long" | "short"): string {
   return `${asset.toUpperCase()}:${side}`;
 }
@@ -236,8 +266,9 @@ export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
     if (input.positions.some((p) => p.asset.toUpperCase() === symbol.symbol.toUpperCase())) return [];
     return symbol.perpMarketState.setupCandidates.map((c) => {
       const pressure = alignment(c.side, pressureFor(input, symbol.symbol));
+      const assetPressure = pressureFor(input, symbol.symbol);
       const trigger = triggerName(c);
-      const blocks = setupBlocks(symbol, c);
+      const blocks = [...setupBlocks(symbol, c), ...countertrendBlocks(input, symbol, c, assetPressure)];
       const confidence = score(symbol, c.side, pressure, trigger, c);
       const lv = levels(symbol, c.side, c);
       return { symbol, side: c.side, confidence, pressure, trigger, levels: lv, blocks };
@@ -274,7 +305,7 @@ export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
   if (best.pressure === "contradicted" && best.confidence >= 0.58) {
     return { action: "call_swarm", asset: best.symbol.symbol, reason: "inside-market trigger contradicts external pressure; refresh outside-market read", marketTrigger: best.trigger, externalPressure: best.pressure, confidence: round(best.confidence), cadence: cd, sizeUsd: 0, leverage: 1, stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: [] };
   }
-  if (best.confidence < SCALPER_TRADE_GATE || best.levels.stop === null || best.levels.tp === null) {
+  if (best.confidence < tradeGate(best.trigger) || best.levels.stop === null || best.levels.tp === null) {
     return { action: "hold", asset: best.symbol.symbol, reason: "best trigger did not clear confidence or level-quality gate", marketTrigger: best.trigger, externalPressure: best.pressure, confidence: round(best.confidence), cadence: cd, sizeUsd: 0, leverage: 1, stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: ["below_trade_gate"] };
   }
   return {
