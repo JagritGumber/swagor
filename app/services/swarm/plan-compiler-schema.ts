@@ -35,6 +35,11 @@ const coerceInvalidatesIf = (v: unknown): unknown => {
   return null;
 };
 
+const coerceAssetPressureSource = (v: unknown): unknown => {
+  if (v === "news" || v === "macro" || v === "regulatory" || v === "social" || v === "memory") return v;
+  return undefined;
+};
+
 export const PlanCompilerSchema = z.object({
   watchlist: z.array(z.string()).min(1).max(20),
   marketMood: z.enum(["risk_on", "risk_off", "neutral", "event_risk"]).optional(),
@@ -43,7 +48,7 @@ export const PlanCompilerSchema = z.object({
     pressure: z.enum(["bullish", "bearish", "neutral", "risk_warning"]),
     confidence: z.number().min(0).max(1),
     reason: z.string().min(1).max(280),
-    source: z.enum(["news", "macro", "regulatory", "social", "memory"]).optional(),
+    source: z.preprocess(coerceAssetPressureSource, z.enum(["news", "macro", "regulatory", "social", "memory"]).optional()),
   })).default([]),
   shockEvents: z.array(z.object({
     title: z.string().min(1).max(180),
