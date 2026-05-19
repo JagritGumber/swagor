@@ -37,6 +37,7 @@ export async function buildLiveThesisMemory(instanceId: string): Promise<ThesisM
       thesisId: `${t.asset.toUpperCase()}:${entryDate.toISOString()}:${t.side}`,
       asset: t.asset.toUpperCase(), side: t.side as "long" | "short",
       entryDate: entryDate.toISOString(), entryPrice: Number(t.entryPrice ?? 0),
+      sizeUsd: Number(t.amountUsd ?? 0),
       daysHeld: Math.max(0, Math.floor((Date.now() - entryDate.getTime()) / 86_400_000)),
       unrealizedPctFromEntry: 0, originalConfidence: 0,
       entryReason: "", invalidatesIf: null,
