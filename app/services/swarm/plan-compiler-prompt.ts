@@ -21,7 +21,6 @@ OUTPUT JSON EXACTLY:
   "watchlist": ["BTC", "ETH", ...],
   "activeThesisReviews": [{ "thesisId": <verbatim>, "asset": string, "decision": "maintain"|"reduce"|"close"|"flip", "flipTo": string|null, "reason": one line citing original invalidatesIf and whether it triggered }],
   "biasByAsset": [{ "asset": string, "bias": "long"|"short"|"avoid"|"neutral", "confidence": 0-1, "reason": MUST start with one of the labels above, "invalidatesIf": observable threshold with concrete number or null, "flipsTo": "long"|"short"|"avoid"|"neutral"|null }],
-  "riskCaps": { "maxLeverage": 1-10, "maxNotionalPctOfEquity": 0-100 },
   "notes": one paragraph regime read with portfolio-level rationale,
   "markdown": user-facing markdown sections in order: ## Theses, ## New candidates, ## Risk caps, ## Notes
 }
@@ -39,7 +38,7 @@ REDUCE DECISION (partial profit harvest):
 
 GLOBAL:
 - watchlist mirrors all asset symbols across activeThesisReviews + biasByAsset.
-- riskCaps come from the user strategy + your regime read. Default 1-3x leverage, 5-20% max notional. Tighten when conviction is mixed; never exceed user-stated limits.
+- The engine sizes risk deterministically (leverage, notional %) from a fixed policy. Do NOT emit riskCaps; any value would be ignored.
 - notes is plain English, one paragraph. Mention dispersion if > 0.5.
 - markdown sections in the order above. Bullet points only.
 - Ground analysis in the swarm output, the user strategy, and the active theses. Do not invent assets or price levels not present in the input.`;

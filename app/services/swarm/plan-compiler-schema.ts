@@ -67,7 +67,7 @@ export const PlanCompilerSchema = z.object({
   riskCaps: z.object({
     maxLeverage: z.number().min(1).max(20),
     maxNotionalPctOfEquity: z.number().min(0).max(100),
-  }),
+  }).optional(),
   notes: z.string().min(1).max(800),
   markdown: z.string().min(1).max(4000),
 });
