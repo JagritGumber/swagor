@@ -38,6 +38,7 @@ function pnlTone(s: string | null): string {
 function reasonLabel(r: string | null): string {
   if (r === "thesis_reduced") return "partial harvest";
   if (r === "thesis_closed") return "thesis closed";
+  if (r === "thesis_invalidated") return "thesis invalidated";
   if (r === "thesis_flipped") return "thesis flipped";
   if (r === "stop_loss") return "stop loss";
   if (r === "take_profit") return "take profit";

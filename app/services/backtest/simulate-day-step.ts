@@ -4,7 +4,7 @@ import { candleAt, checkStopTpHit, closeAt, computePnl, type OpenPos, utcDayMs }
 import { deterministicRiskPct, openPosition, openTopCandidate, tryReduce, type BacktestCloseEvent, type OpenCandidate } from "./simulate-day-helpers";
 import { DEFAULT_POLICY, notionalForConfidence } from "./strategy-policy";
 
-type BiasEntry = { asset: string; bias: string; confidence: number; reason?: string; invalidatesIf?: string | null; flipsTo?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number; setupType?: string; strategyMode?: "scalper" | "swing" };
+type BiasEntry = { asset: string; bias: string; confidence: number; reason?: string; invalidatesIf?: string | null; flipsTo?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number; setupType?: string; strategyMode?: "scalper" | "swing"; invalidationSource?: string | null };
 type ThesisReviewJson = { thesisId: string; asset: string; decision: "maintain" | "reduce" | "close" | "flip"; flipTo: "long" | "short" | "avoid" | "neutral" | null; reason: string };
 type PlanJson = { biasByAsset?: BiasEntry[]; riskCaps?: { maxLeverage?: number; maxNotionalPctOfEquity?: number }; activeThesisReviews?: ThesisReviewJson[] };
 export type { BacktestCloseEvent };

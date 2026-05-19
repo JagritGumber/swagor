@@ -1,11 +1,12 @@
 import { stopTpForSide, computePnl, type OpenPos } from "./simulate-helpers";
 import { notionalForConfidence, type StrategyPolicy } from "./strategy-policy";
 import type { StrategyMode } from "@/lib/strategy-mode";
+import { evaluateTradeQuality, type TradeQualityReport } from "@/app/services/trade-quality-engine";
 
 export type BacktestCloseEvent = { asset: string; pos: OpenPos; exitDate: Date; exitPrice: number; reason: string };
 
 export type OpenCandidate = {
-  b: { asset: string; confidence: number; reason?: string; invalidatesIf?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number; setupType?: string; strategyMode?: StrategyMode };
+  b: { asset: string; confidence: number; reason?: string; invalidatesIf?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number; setupType?: string; strategyMode?: StrategyMode; invalidationSource?: string | null };
   price: number; side: "long" | "short";
 };
 
@@ -22,14 +23,22 @@ export function clampOverride(model: number | undefined, deterministic: number):
   return Math.max(deterministic * 0.8, Math.min(deterministic * 1.2, model));
 }
 
-export function openPosition(asset: string, side: "long" | "short", price: number, dayMs: number, equity: number, notionalPct: number, leverage: number, confidence: number, reason: string, invalidatesIf: string | null, stopPct: number, tpPct: number, strategyMode: StrategyMode = "swing", setupType?: string): OpenPos {
+function numericInvalidation(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function openPosition(asset: string, side: "long" | "short", price: number, dayMs: number, equity: number, notionalPct: number, leverage: number, confidence: number, reason: string, invalidatesIf: string | null, stopPct: number, tpPct: number, strategyMode: StrategyMode = "swing", setupType?: string, invalidationSource?: string | null, qualityReport?: TradeQualityReport | null): OpenPos {
   const { stop, tp } = stopTpForSide(side, price, stopPct, tpPct);
   const entryDate = new Date(dayMs);
   return {
     side, entryDate, entryPrice: price, sizeUsd: equity * notionalPct / 100,
     leverage, confidence, stopPrice: stop, tpPrice: tp,
     thesisId: `${asset}:${entryDate.toISOString()}:${side}`, entryReason: reason, invalidatesIf,
-    strategyMode, setupType: setupType ?? null,
+    strategyMode, setupType: setupType ?? null, invalidationSource: invalidationSource ?? null,
+    invalidationLevel: qualityReport?.invalidationLevel ?? numericInvalidation(invalidatesIf),
+    llmConfidence: qualityReport?.llmConfidence ?? confidence, qualityReport: qualityReport ?? null,
   };
 }
 
@@ -64,18 +73,32 @@ export function tryReduce(asset: string, pos: OpenPos, price: number, dayMs: num
  */
 export function openTopCandidate(candidates: OpenCandidate[], policy: StrategyPolicy, dayMs: number, equity: number, positions: Map<string, OpenPos>, opens: Array<{ asset: string; pos: OpenPos }>): void {
   if (candidates.length === 0) return;
-  candidates.sort((a, b) => b.b.confidence - a.b.confidence);
-  if (candidates.length > 1) {
-    const skipped = candidates.slice(1).map((c) => `${c.b.asset}(${c.b.confidence.toFixed(2)})`).join(", ");
-    console.info(`[backtest-sim] cap=1 selected ${candidates[0].b.asset}, skipped ${skipped}`);
+  const scored = candidates.map((c) => ({
+    candidate: c,
+    quality: evaluateTradeQuality({
+      asset: c.b.asset, side: c.side, entryPrice: c.price, llmConfidence: c.b.confidence,
+      setupType: c.b.setupType, invalidationSource: c.b.invalidationSource,
+      invalidationLevel: numericInvalidation(c.b.invalidatesIf),
+      realizedVolPct1h: c.b.realizedVolPct1h, reason: c.b.reason,
+    }),
+  })).sort((a, b) => b.quality.engineConfidence - a.quality.engineConfidence);
+  for (const s of scored.filter((x) => x.quality.capitalGate !== "ALLOW_PAPER")) {
+    console.warn(`[backtest-sim] quality block ${s.candidate.b.asset} ${s.candidate.side}: gate=${s.quality.capitalGate} reasons=${s.quality.rejectReasons.join(",")}`);
   }
-  const top = candidates[0];
+  const selected = scored.find((s) => s.quality.capitalGate === "ALLOW_PAPER");
+  if (!selected) return;
+  if (scored.length > 1) {
+    const skipped = scored.filter((s) => s !== selected).map((s) => `${s.candidate.b.asset}(${s.quality.engineConfidence.toFixed(2)}/${s.quality.capitalGate})`).join(", ");
+    console.info(`[backtest-sim] cap=1 selected ${selected.candidate.b.asset}, skipped ${skipped}`);
+  }
+  const top = selected.candidate;
+  const quality = selected.quality;
   const det = deterministicRiskPct(top.b.realizedVolPct1h);
   const stopPct = clampOverride(top.b.stopLossPct, det.stopPct);
   const tpPct = clampOverride(top.b.takeProfitPct, det.tpPct);
   const asset = top.b.asset.toUpperCase();
-  const notionalPct = notionalForConfidence(policy, top.b.confidence);
-  const newPos = openPosition(asset, top.side, top.price, dayMs, equity, notionalPct, policy.maxLeverage, top.b.confidence, top.b.reason ?? "", top.b.invalidatesIf ?? null, stopPct, tpPct, top.b.strategyMode ?? "swing", top.b.setupType);
+  const notionalPct = notionalForConfidence(policy, quality.engineConfidence);
+  const newPos = openPosition(asset, top.side, top.price, dayMs, equity, notionalPct, policy.maxLeverage, quality.engineConfidence, top.b.reason ?? "", top.b.invalidatesIf ?? null, stopPct, tpPct, top.b.strategyMode ?? "swing", top.b.setupType, top.b.invalidationSource, quality);
   positions.set(asset, newPos);
   opens.push({ asset, pos: newPos });
 }
