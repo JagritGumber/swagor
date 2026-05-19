@@ -25,6 +25,16 @@ const stripInvalidReviews = (val: unknown): unknown => {
   });
 };
 
+// Coerce numeric invalidatesIf to its string form. The model is asked
+// for a descriptive threshold ("BTC below 78234") but sometimes emits
+// just the bare number. A numeric string is degraded but usable; other
+// shapes become null so the position simply has no invalidation rule.
+const coerceInvalidatesIf = (v: unknown): unknown => {
+  if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  if (typeof v === "string" || v === null || v === undefined) return v;
+  return null;
+};
+
 export const PlanCompilerSchema = z.object({
   watchlist: z.array(z.string()).min(1).max(20),
   // Reviews of currently-active multi-day theses. Maintain = position
@@ -41,7 +51,7 @@ export const PlanCompilerSchema = z.object({
     bias: z.enum(["long", "short", "avoid", "neutral"]),
     confidence: z.number().min(0).max(1),
     reason: z.string().min(1).max(280),
-    invalidatesIf: z.string().min(1).max(280).nullable().optional(),
+    invalidatesIf: z.preprocess(coerceInvalidatesIf, z.string().min(1).max(280).nullable().optional()),
     flipsTo: z.enum(["long", "short", "avoid", "neutral"]).nullable().optional(),
     // Filled deterministically by the compile service AFTER Zod parse,
     // from swarmContext.marketFeatures.symbols[i].timeframes["1h"].realizedVolPct.
