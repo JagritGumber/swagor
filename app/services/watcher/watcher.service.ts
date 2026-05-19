@@ -154,6 +154,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
         rawResponse: string;
         promptTokens: number | undefined;
         completionTokens: number | undefined;
+        durationMs: number;
       }
     | null = null;
 
@@ -166,6 +167,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
           watching,
         }
       : await (async () => {
+          const startedAt = Date.now();
           const completion = await watcherLlm.chat.completions.create({
             model: MODELS.WATCHER,
             messages: [
@@ -175,6 +177,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
             response_format: { type: "json_object" },
             temperature: 0.2,
           });
+          const durationMs = Date.now() - startedAt;
 
           const raw = completion.choices[0]?.message?.content;
           if (!raw) throw new Error("watcher returned empty response");
@@ -182,6 +185,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
             rawResponse: raw,
             promptTokens: completion.usage?.prompt_tokens,
             completionTokens: completion.usage?.completion_tokens,
+            durationMs,
           };
           return WATCHER_SCHEMA.parse(JSON.parse(raw));
         })();
@@ -282,6 +286,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       rawResponse: string;
       promptTokens: number | undefined;
       completionTokens: number | undefined;
+      durationMs: number;
     };
     await logLlmCall({
       selboInstanceId: instance.id,
@@ -294,6 +299,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       parsedOutput: parsed,
       promptTokens: trace.promptTokens,
       completionTokens: trace.completionTokens,
+      durationMs: trace.durationMs,
     });
   }
 

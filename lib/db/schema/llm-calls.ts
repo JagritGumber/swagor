@@ -27,6 +27,10 @@ export const llmCalls = pgTable("llm_calls", {
   // Per-call cost in USD, computed at log time using lib/llm/rates.ts.
   // NULL for legacy rows or models not registered in the rate table.
   costUsd: numeric("cost_usd", { precision: 20, scale: 8 }),
+  // Wall-clock duration of the LLM call in milliseconds. Caller-measured
+  // around the chat.completions.create call. NULL on rows written before
+  // this field was added (use createdAt as a rough proxy in queries).
+  durationMs: integer("duration_ms"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

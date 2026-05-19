@@ -35,6 +35,7 @@ export async function compileDailyPlan(opts: {
   // for sub-second TTFT. Earlier cycles spent 37s of 38s wall-clock
   // here on glm-4-32b; structured JSON output works fine on the faster
   // tier since the prompt + Zod schema constrain the shape tightly.
+  const startedAt = Date.now();
   const completion = await traderLlm.chat.completions.create({
     model: MODELS.TRADER,
     messages: [
@@ -44,6 +45,7 @@ export async function compileDailyPlan(opts: {
     response_format: { type: "json_object" },
     temperature: 0.3,
   });
+  const durationMs = Date.now() - startedAt;
   const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("plan-compiler returned empty response");
   const parsed = PlanCompilerSchema.parse(JSON.parse(raw));
@@ -76,6 +78,7 @@ export async function compileDailyPlan(opts: {
     parsedOutput: parsed,
     promptTokens: completion.usage?.prompt_tokens,
     completionTokens: completion.usage?.completion_tokens,
+    durationMs,
   });
 
   return parsed;
