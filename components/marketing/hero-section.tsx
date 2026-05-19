@@ -40,7 +40,7 @@ export function HeroSection() {
             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
               <CtaPrimary className="cta-glow group inline-flex items-center justify-center gap-3 border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-6 py-4 text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)] focus:ring-offset-2 focus:ring-offset-black sm:text-sm" />
               <Link
-                href="/selbo/jagrit"
+                href="/track-record"
                 style={{ willChange: "transform" }}
                 className="group inline-flex items-center justify-center gap-2 border border-[var(--hairline-strong)] bg-transparent px-6 py-4 text-xs font-bold uppercase tracking-[0.18em] text-foreground transition hover:border-foreground sm:text-sm"
               >

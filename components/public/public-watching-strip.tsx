@@ -60,9 +60,27 @@ export function PublicWatchingStrip({ username }: { username: string }) {
       </header>
 
       {ticks.length === 0 ? (
-        <p className="mt-4 border border-dashed border-[var(--hairline-strong)] bg-[#080808] p-4 text-sm text-muted-foreground">
-          No ticks yet. Selbo will start scanning shortly.
-        </p>
+        <div className="mt-4 border border-dashed border-[var(--hairline-strong)] bg-[#080808] p-4">
+          <div className="grid gap-2 sm:grid-cols-4">
+            {["market scan", "risk gate", "thesis check", "Arc receipt"].map((label, i) => (
+              <div
+                key={label}
+                className="border border-[var(--hairline)] bg-black p-3"
+                style={{ animation: `glow 1.8s ease-in-out ${i * 180}ms infinite` }}
+              >
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
+                  {String(i + 1).padStart(2, "0")}
+                </div>
+                <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-foreground">
+                  {label}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Selbo has no public ticks yet. The agent loop is ready: it scans markets, gates risk, checks theses, and records decisions once monitoring starts.
+          </p>
+        </div>
       ) : (
         <ol className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline)]">
           {ticks.map((t, i) => (

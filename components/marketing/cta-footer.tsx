@@ -30,7 +30,7 @@ export function CtaFooter() {
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <CtaPrimary className="cta-glow group inline-flex items-center gap-3 border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-8 py-5 text-sm font-bold uppercase tracking-[0.2em] text-black hover:bg-black hover:text-[var(--neon-cyan)]" />
             <Link
-              href="/selbo/jagrit"
+              href="/track-record"
               className="group inline-flex items-center gap-2 border border-[var(--hairline-strong)] px-8 py-5 text-sm font-bold uppercase tracking-[0.2em] text-foreground transition hover:border-foreground"
             >
               <span>Watch our flagship</span>
@@ -69,7 +69,7 @@ export function CtaFooter() {
               </div>
               <ul className="mt-3 space-y-2">
                 <li>
-                  <Link href="/selbo/jagrit" className="text-muted-foreground hover:text-foreground">
+                  <Link href="/track-record" className="text-muted-foreground hover:text-foreground">
                     Watch our flagship
                   </Link>
                 </li>
