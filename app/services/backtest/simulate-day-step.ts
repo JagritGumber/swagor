@@ -1,7 +1,7 @@
 import type { Candle } from "@/lib/data-sources/hyperliquid";
 import type { DailyPlan } from "@/lib/db/schema";
 import { candleAt, checkStopTpHit, closeAt, computePnl, type OpenPos, utcDayMs } from "./simulate-helpers";
-import { clampOverride, deterministicRiskPct, openPosition, tryReduce, type BacktestCloseEvent } from "./simulate-day-helpers";
+import { clampOverride, deterministicRiskPct, MIN_CONF_NEW_THESIS, openPosition, openTopCandidate, tryReduce, type BacktestCloseEvent, type OpenCandidate } from "./simulate-day-helpers";
 
 type BiasEntry = { asset: string; bias: string; confidence: number; reason?: string; invalidatesIf?: string | null; flipsTo?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number };
 type ThesisReviewJson = { thesisId: string; asset: string; decision: "maintain" | "reduce" | "close" | "flip"; flipTo: "long" | "short" | "avoid" | "neutral" | null; reason: string };
@@ -58,6 +58,7 @@ export function simulateOneBacktestDay(input: { plan: DailyPlan; positions: Map<
     }
   }
 
+  const candidates: OpenCandidate[] = [];
   for (const b of json.biasByAsset ?? []) {
     const asset = b.asset.toUpperCase();
     if (reviews !== undefined && reviewedAssets.has(asset)) continue;
@@ -80,14 +81,14 @@ export function simulateOneBacktestDay(input: { plan: DailyPlan; positions: Map<
     }
 
     if ((wantsLong || wantsShort) && !input.positions.has(asset)) {
-      const det = deterministicRiskPct(b.realizedVolPct1h);
-      const stopPct = clampOverride(b.stopLossPct, det.stopPct);
-      const tpPct = clampOverride(b.takeProfitPct, det.tpPct);
-      const newPos = openPosition(asset, wantsLong ? "long" : "short", price, dayMs, equity, notionalPct, leverage, b.confidence, b.reason ?? "", b.invalidatesIf ?? null, stopPct, tpPct);
-      input.positions.set(asset, newPos);
-      opens.push({ asset, pos: newPos });
+      if (b.confidence < MIN_CONF_NEW_THESIS) {
+        console.info(`[backtest-sim] skip ${asset}: conf ${b.confidence.toFixed(2)} < ${MIN_CONF_NEW_THESIS}`);
+        continue;
+      }
+      candidates.push({ b, price, side: wantsLong ? "long" : "short" });
     }
   }
+  openTopCandidate(candidates, dayMs, equity, notionalPct, leverage, input.positions, opens);
 
   return { closes, opens, newEquity: equity };
 }

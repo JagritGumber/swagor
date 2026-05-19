@@ -2,6 +2,13 @@ import { stopTpForSide, computePnl, type OpenPos } from "./simulate-helpers";
 
 export type BacktestCloseEvent = { asset: string; pos: OpenPos; exitDate: Date; exitPrice: number; reason: string };
 
+export const MIN_CONF_NEW_THESIS = 0.7;
+
+export type OpenCandidate = {
+  b: { asset: string; confidence: number; reason?: string; invalidatesIf?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number };
+  price: number; side: "long" | "short";
+};
+
 /** Vol-scaled stop/TP. Engine math; LLM doesn't touch this. */
 export function deterministicRiskPct(vol: number | undefined): { stopPct: number; tpPct: number } {
   if (vol === undefined) return { stopPct: 4, tpPct: 8 };
@@ -45,4 +52,27 @@ export function tryReduce(asset: string, pos: OpenPos, price: number, dayMs: num
   pos.sizeUsd = halfSize;
   pos.stopPrice = pos.entryPrice;
   return equity + pnlUsd;
+}
+
+/**
+ * Selectivity gate. Max one bias-driven new thesis per cycle: the
+ * highest-confidence candidate above MIN_CONF_NEW_THESIS opens; the
+ * rest are logged and skipped. Flips from thesis reviews go through
+ * their own path in the caller and are not capped here.
+ */
+export function openTopCandidate(candidates: OpenCandidate[], dayMs: number, equity: number, notionalPct: number, leverage: number, positions: Map<string, OpenPos>, opens: Array<{ asset: string; pos: OpenPos }>): void {
+  if (candidates.length === 0) return;
+  candidates.sort((a, b) => b.b.confidence - a.b.confidence);
+  if (candidates.length > 1) {
+    const skipped = candidates.slice(1).map((c) => `${c.b.asset}(${c.b.confidence.toFixed(2)})`).join(", ");
+    console.info(`[backtest-sim] cap=1 selected ${candidates[0].b.asset}, skipped ${skipped}`);
+  }
+  const top = candidates[0];
+  const det = deterministicRiskPct(top.b.realizedVolPct1h);
+  const stopPct = clampOverride(top.b.stopLossPct, det.stopPct);
+  const tpPct = clampOverride(top.b.takeProfitPct, det.tpPct);
+  const asset = top.b.asset.toUpperCase();
+  const newPos = openPosition(asset, top.side, top.price, dayMs, equity, notionalPct, leverage, top.b.confidence, top.b.reason ?? "", top.b.invalidatesIf ?? null, stopPct, tpPct);
+  positions.set(asset, newPos);
+  opens.push({ asset, pos: newPos });
 }
