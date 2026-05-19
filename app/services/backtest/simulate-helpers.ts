@@ -4,6 +4,7 @@ import type { Candle } from "@/lib/data-sources/hyperliquid";
 import type { TradeQualityReport } from "@/app/services/trade-quality-engine";
 
 export const STARTING_EQUITY_USD = 1000;
+const BACKTEST_ROUND_TRIP_COST_USD = 0.1;
 
 /** thesisId = `${asset}:${entryDateISO}:${side}` — stable across replays. entryReason + invalidatesIf carry the swarm's WHY for the position so future plans can recall it. */
 export type OpenPos = {
@@ -93,7 +94,9 @@ export async function writeBacktestClose(input: {
   runId: string; asset: string; pos: OpenPos;
   exitDate: Date; exitPrice: number; reason: string;
 }): Promise<number> {
-  const { pnlUsd, pnlPct } = computePnl(input.pos.side, input.pos.entryPrice, input.exitPrice, input.pos.sizeUsd, input.pos.leverage);
+  const { pnlUsd: grossPnlUsd } = computePnl(input.pos.side, input.pos.entryPrice, input.exitPrice, input.pos.sizeUsd, input.pos.leverage);
+  const pnlUsd = grossPnlUsd - BACKTEST_ROUND_TRIP_COST_USD;
+  const pnlPct = input.pos.sizeUsd > 0 ? (pnlUsd / input.pos.sizeUsd) * 100 : 0;
   await db.insert(backtestTrades).values({
     backtestRunId: input.runId, asset: input.asset, side: input.pos.side,
     entryDate: input.pos.entryDate, entryPrice: input.pos.entryPrice.toString(),

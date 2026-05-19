@@ -4,7 +4,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { backtestRuns, backtestTrades, dailyPlans, rebalanceCycles } from "@/lib/db/schema";
 import { fetchCandles, type Candle } from "@/lib/data-sources/hyperliquid";
-import { checkStopTpHit, closeAllAtEnd, computePnl, type OpenPos, STARTING_EQUITY_USD, writeBacktestClose } from "./simulate-helpers";
+import { checkStopTpHit, closeAllAtEnd, type OpenPos, STARTING_EQUITY_USD, writeBacktestClose } from "./simulate-helpers";
 import { evaluatePerpRisk } from "@/app/services/risk-engine.service";
 import { evaluateSelboTick, type SelboTickInput, type WatcherDecision, type WatcherExecutionState } from "@/app/services/watcher/selbo-tick-engine";
 import { atrPct, closes, ema, realizedVolPct, rsiWilder, type MarketFeatureSnapshot, type SymbolMarketFeatures, type TimeframeFeature } from "@/lib/market-features";
@@ -150,8 +150,7 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
       const candle = (candleCache.get(asset) ?? []).find((c) => c.t === tickMs) ?? null;
       const hit = candle ? checkStopTpHit(pos, candle) : null;
       if (!hit) continue;
-      const { pnlUsd } = computePnl(pos.side, pos.entryPrice, hit.price, pos.sizeUsd, pos.leverage);
-      await writeBacktestClose({ runId, asset, pos, exitDate: new Date(tickMs), exitPrice: hit.price, reason: hit.reason });
+      const pnlUsd = await writeBacktestClose({ runId, asset, pos, exitDate: new Date(tickMs), exitPrice: hit.price, reason: hit.reason });
       if (hit.reason === "stop_loss") {
         assetSideCooldownUntil[cooldownKey(asset, pos.side)] = new Date(tickMs + STOP_COOLDOWN_MS).toISOString();
       }
@@ -195,9 +194,8 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
       const pos = positions.get(asset);
       const price = Number((candleCache.get(asset) ?? []).find((c) => c.t === tickMs)?.c);
       if (pos && Number.isFinite(price)) {
-        const { pnlUsd } = computePnl(pos.side, pos.entryPrice, price, pos.sizeUsd, pos.leverage);
         const reason = decision.blockedReasons.includes("stale_position") ? "time_stop" : decision.action;
-        await writeBacktestClose({ runId, asset, pos, exitDate: new Date(tickMs), exitPrice: price, reason });
+        const pnlUsd = await writeBacktestClose({ runId, asset, pos, exitDate: new Date(tickMs), exitPrice: price, reason });
         positions.delete(asset); equity += pnlUsd; closed++;
         dailyRealizedPnlUsd += pnlUsd;
         if (pnlUsd < 0) dailyLossCount++;

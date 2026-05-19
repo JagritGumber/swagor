@@ -80,6 +80,7 @@ const SCALPER_MAX_DAILY_LOSS_USD = -15;
 const SCALPER_MAX_HOLD_MS = 6 * 3_600_000;
 const SCALPER_SIZE_USD = 100;
 const SCALPER_LEVERAGE = 1;
+const SCALPER_TRADE_GATE = 0.7;
 
 function round(n: number): number {
   return Number(n.toFixed(3));
@@ -273,7 +274,7 @@ export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
   if (best.pressure === "contradicted" && best.confidence >= 0.58) {
     return { action: "call_swarm", asset: best.symbol.symbol, reason: "inside-market trigger contradicts external pressure; refresh outside-market read", marketTrigger: best.trigger, externalPressure: best.pressure, confidence: round(best.confidence), cadence: cd, sizeUsd: 0, leverage: 1, stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: [] };
   }
-  if (best.confidence < 0.64 || best.levels.stop === null || best.levels.tp === null) {
+  if (best.confidence < SCALPER_TRADE_GATE || best.levels.stop === null || best.levels.tp === null) {
     return { action: "hold", asset: best.symbol.symbol, reason: "best trigger did not clear confidence or level-quality gate", marketTrigger: best.trigger, externalPressure: best.pressure, confidence: round(best.confidence), cadence: cd, sizeUsd: 0, leverage: 1, stopLossPriceUsd: null, takeProfitPriceUsd: null, blockedReasons: ["below_trade_gate"] };
   }
   return {
