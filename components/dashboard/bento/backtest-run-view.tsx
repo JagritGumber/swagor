@@ -71,6 +71,9 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
       {!detail && !error && <p className="p-4 font-mono text-xs text-muted-foreground">loading...</p>}
       {detail && (
         <div className="max-h-[600px] space-y-4 overflow-auto p-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+            Backtest uses historical candles + derived features. Historical funding, OI, and news may be unavailable. Live trading sees more context.
+          </p>
           <EquityCurve
             endpoint={`/api/admin/backtest/runs/${runId}/equity`}
             refreshKey={`${detail.run.status}:${detail.trades.length}`}

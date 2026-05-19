@@ -31,6 +31,11 @@ NEW-THESIS CANDIDATE RULES (biasByAsset):
 - invalidatesIf MUST cite a SPECIFIC observable threshold with a concrete number from THIS asset's marketFeatures. Available anchor types: volume profile (POC, VAH, VAL, VWAP), swing high/low, EMA (1h ema20/50, 5m ema20/50), funding rate flips, hourly RSI levels, OI delta thresholds. Pick a different anchor TYPE per asset; templated repetition fails review.
 - flipsTo paired with invalidatesIf; both null or both set, no half-states.
 - Examples of acceptable reasons: "conviction_long: BTC reclaimed POC 78234 with rising spot CVD, 4h higher low intact", "hedge_against_BTC: SOL short paired against BTC long; SOL beta to BTC is 1.4 and shows weakest relative strength", "conviction_short: ETH failed 1h ema50, funding flipped positive into weakness".
+- You MAY include optional advisory hints "stopLossPct" and "takeProfitPct" on a biasByAsset entry. The risk engine clamps these within +/- 20% of its own deterministic compute (which scales stops to the asset's realized volatility). You do not need to do stop math; that is the engine's job. The "realizedVolPct1h" field is filled by code; do not emit it.
+
+REDUCE DECISION (partial profit harvest):
+- decision = "reduce" means: the engine harvests half the position at today's close and tightens the remaining stop to break-even. Use when an active thesis is materially profitable (current unrealizedPctFromEntry at or past 75% of its TP target) AND the original invalidatesIf has not triggered AND 1h momentum is fading.
+- The engine guards reduce: if the position is not meaningfully profitable, reduce is silently ignored. Do NOT use reduce on a losing position; use close for that.
 
 GLOBAL:
 - watchlist mirrors all asset symbols across activeThesisReviews + biasByAsset.

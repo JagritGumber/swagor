@@ -29,6 +29,15 @@ export const PlanCompilerSchema = z.object({
     reason: z.string().min(1).max(280),
     invalidatesIf: z.string().min(1).max(280).nullable(),
     flipsTo: z.enum(["long", "short", "avoid", "neutral"]).nullable(),
+    // Filled deterministically by the compile service AFTER Zod parse,
+    // from swarmContext.marketFeatures.symbols[i].timeframes["1h"].realizedVolPct.
+    // The model is not asked to emit this; the engine owns risk math.
+    realizedVolPct1h: z.number().min(0).max(50).optional(),
+    // Advisory hints from the model. The simulator computes its own
+    // deterministic stop/TP and clamps any model-provided value within
+    // +/- 20% of that compute. Code is source of truth.
+    stopLossPct: z.number().min(1).max(15).optional(),
+    takeProfitPct: z.number().min(2).max(30).optional(),
   })).min(0).max(20),
   riskCaps: z.object({
     maxLeverage: z.number().min(1).max(20),

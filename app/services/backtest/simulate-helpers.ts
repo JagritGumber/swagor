@@ -28,9 +28,11 @@ export function candleAt(candles: Candle[], dayMs: number): Candle | null {
 const STOP_PCT = 0.04;
 const TP_PCT = 0.08;
 
-export function stopTpForSide(side: "long" | "short", entry: number): { stop: number; tp: number } {
-  if (side === "long") return { stop: entry * (1 - STOP_PCT), tp: entry * (1 + TP_PCT) };
-  return { stop: entry * (1 + STOP_PCT), tp: entry * (1 - TP_PCT) };
+export function stopTpForSide(side: "long" | "short", entry: number, stopPctOverride?: number, tpPctOverride?: number): { stop: number; tp: number } {
+  const sp = stopPctOverride !== undefined ? stopPctOverride / 100 : STOP_PCT;
+  const tp = tpPctOverride !== undefined ? tpPctOverride / 100 : TP_PCT;
+  if (side === "long") return { stop: entry * (1 - sp), tp: entry * (1 + tp) };
+  return { stop: entry * (1 + sp), tp: entry * (1 - tp) };
 }
 
 export async function closeAllAtEnd(input: {
