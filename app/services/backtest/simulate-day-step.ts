@@ -49,6 +49,8 @@ export function simulateOneBacktestDay(input: { plan: DailyPlan; positions: Map<
   const leverage = Math.max(1, json.riskCaps?.maxLeverage ?? 1);
   const reviews = json.activeThesisReviews;
 
+  const reviewedAssets = new Set((reviews ?? []).map((r) => r.asset.toUpperCase()));
+
   if (reviews !== undefined) {
     for (const r of reviews) {
       if (r.decision === "maintain" || r.decision === "reduce") continue;
@@ -69,6 +71,7 @@ export function simulateOneBacktestDay(input: { plan: DailyPlan; positions: Map<
 
   for (const b of json.biasByAsset ?? []) {
     const asset = b.asset.toUpperCase();
+    if (reviews !== undefined && reviewedAssets.has(asset)) continue;
     const candles = input.candleCache.get(asset);
     const price = candles ? closeAt(candles, dayMs) : null;
     if (price === null) continue;

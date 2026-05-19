@@ -6,12 +6,17 @@ import { selboInstances, trades } from "@/lib/db/schema";
 import type { ActiveThesis, RecentOutcome, ThesisMemory } from "./build-thesis-memory";
 
 /**
- * Live thesis memory pulled from the trades table. Per-trade thesis
- * context (reason, invalidatesIf) is not stored on live trades today,
- * so those fields come back empty. unrealizedPctFromEntry is 0 here
- * because we don't fetch live mids in this helper; the prompt can
- * still see entry price + days held. Future enhancement: persist
- * thesis context on live trades + compute live unrealized from mids.
+ * Live thesis memory pulled from the trades table.
+ *
+ * KNOWN GAP (codex review 2026-05-19): the trades table has no columns
+ * for entryReason or invalidatesIf, so live active theses come back
+ * with those fields empty. The compiler prompt asks reviews to cite the
+ * original invalidatesIf — for live theses today that citation can't be
+ * grounded in stored data. In practice this is moot because the live
+ * trader has not produced trades yet; when it does, the right fix is to
+ * persist entry thesis context on `trades` (new columns or an
+ * agentContext jsonb) and read them here. unrealizedPctFromEntry is
+ * also 0 because we don't fetch Hyperliquid mids in this helper.
  */
 export async function buildLiveThesisMemory(instanceId: string): Promise<ThesisMemory> {
   const [instance] = await db.select({ userId: selboInstances.userId })
