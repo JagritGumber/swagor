@@ -8,6 +8,7 @@ import { buildHistoricalContext } from "./historical-context.service";
 import { runSwarm } from "@/app/services/swarm/swarm-runner.service";
 import { aggregateDailyPlan } from "@/app/services/swarm/daily-aggregator.service";
 import { compileDailyPlan } from "@/app/services/swarm/plan-compiler.service";
+import { buildBacktestThesisMemory } from "@/app/services/swarm/build-thesis-memory";
 
 const SWARM_SIZE = 6;
 
@@ -36,9 +37,11 @@ export async function runBacktestDay(
   if (decisions.length === 0) throw new Error("swarm produced no usable decisions");
 
   const aggregator = await aggregateDailyPlan({ cycleId, decisions });
+  const thesisMemory = await buildBacktestThesisMemory(backtestRunId, asOf);
   const compiled = await compileDailyPlan({
     cycleId, aggregator, swarmContext: context,
     strategyText: instance.strategyText, yesterdayPlanSummary: context.yesterdayPlanSummary,
+    thesisMemory,
   });
 
   await db.update(rebalanceCycles).set({ status: "completed", completedAt: new Date() })

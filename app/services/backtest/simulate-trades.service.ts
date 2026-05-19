@@ -4,20 +4,20 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { backtestRuns, backtestTrades, dailyPlans } from "@/lib/db/schema";
 import { fetchCandles, type Candle } from "@/lib/data-sources/hyperliquid";
-import { candleAt, checkStopTpHit, closeAllAtEnd, closeAt, type OpenPos, STARTING_EQUITY_USD, stopTpForSide, utcDayMs, writeBacktestClose } from "./simulate-helpers";
+import { closeAllAtEnd, type OpenPos, STARTING_EQUITY_USD, writeBacktestClose } from "./simulate-helpers";
+import { simulateOneBacktestDay } from "./simulate-day-step";
 
 export { summarizeBacktestTrades, type BacktestSummary } from "./summarize-trades";
 
-type BiasEntry = { asset: string; bias: string; confidence: number };
-type PlanJson = {
-  biasByAsset?: BiasEntry[];
-  riskCaps?: { maxLeverage?: number; maxNotionalPctOfEquity?: number };
-};
+type BiasEntry = { asset: string };
+type PlanJson = { biasByAsset?: BiasEntry[] };
 
 /**
- * Replay agent decisions. Direction + size + leverage from plan riskCaps.
- * Exits: stop (-4%) / TP (+8%) checked vs daily candle high/low first;
- * then bias reversal or neutral. Equity compounds.
+ * Replay agent decisions across the run window. Per-day logic lives in
+ * simulateOneBacktestDay (shared with the thesis-memory replay). This
+ * service owns DB persistence: deletes prior backtest_trades for the
+ * run, then for each plan calls the shared step and writes the
+ * resulting closes via writeBacktestClose.
  */
 export async function simulateTradesForBacktest(runId: string): Promise<{ opened: number; closed: number }> {
   const [run] = await db.select().from(backtestRuns).where(eq(backtestRuns.id, runId)).limit(1);
@@ -40,57 +40,13 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
   const positions = new Map<string, OpenPos>();
 
   for (const plan of plans) {
-    const dayMs = utcDayMs(plan.generatedAt);
-
-    for (const [asset, pos] of [...positions]) {
-      const candle = (candleCache.get(asset) && candleAt(candleCache.get(asset)!, dayMs)) || null;
-      if (!candle) continue;
-      const hit = checkStopTpHit(pos, candle);
-      if (!hit) continue;
-      equity += await writeBacktestClose({ runId, asset, pos, exitDate: new Date(dayMs), exitPrice: hit.price, reason: hit.reason });
-      closed++;
-      positions.delete(asset);
+    const result = simulateOneBacktestDay({ plan, positions, candleCache, equity });
+    for (const c of result.closes) {
+      await writeBacktestClose({ runId, asset: c.asset, pos: c.pos, exitDate: c.exitDate, exitPrice: c.exitPrice, reason: c.reason });
     }
-
-    if (plan.status !== "complete") continue;
-    const json = plan.planJson as PlanJson | null;
-    if (!json?.biasByAsset) continue;
-    const notionalPct = json.riskCaps?.maxNotionalPctOfEquity ?? 15;
-    const leverage = Math.max(1, json.riskCaps?.maxLeverage ?? 1);
-
-    for (const b of json.biasByAsset) {
-      const asset = b.asset.toUpperCase();
-      const candles = candleCache.get(asset);
-      const price = candles ? closeAt(candles, dayMs) : null;
-      if (price === null) continue;
-      const current = positions.get(asset);
-      const wantsLong = b.bias === "long";
-      const wantsShort = b.bias === "short";
-      const reverse = current && ((current.side === "long" && wantsShort) || (current.side === "short" && wantsLong));
-      const neutralized = current && !wantsLong && !wantsShort;
-
-      if (current && (reverse || neutralized)) {
-        equity += await writeBacktestClose({
-          runId, asset, pos: current,
-          exitDate: new Date(dayMs), exitPrice: price,
-          reason: neutralized ? "agent_neutral" : "agent_reversed",
-        });
-        closed++;
-        positions.delete(asset);
-      }
-
-      if ((wantsLong || wantsShort) && !positions.has(asset)) {
-        const side = wantsLong ? "long" : "short";
-        const { stop, tp } = stopTpForSide(side, price);
-        positions.set(asset, {
-          side, entryDate: new Date(dayMs), entryPrice: price,
-          sizeUsd: equity * notionalPct / 100,
-          leverage, confidence: b.confidence,
-          stopPrice: stop, tpPrice: tp,
-        });
-        opened++;
-      }
-    }
+    opened += result.opens.length;
+    closed += result.closes.length;
+    equity = result.newEquity;
   }
 
   const end = await closeAllAtEnd({ runId, positions, candleCache, lastDayMs: Date.parse(`${run.endDate}T00:00:00Z`) });

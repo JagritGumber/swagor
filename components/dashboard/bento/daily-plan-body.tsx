@@ -5,20 +5,22 @@ import { MarkdownLite } from "@/components/ui/markdown-lite";
 export type BiasLabel = "long" | "short" | "avoid" | "neutral";
 
 export type BiasEntry = {
-  asset: string;
-  bias: BiasLabel;
-  confidence: number;
-  reason: string;
-  invalidatesIf?: string | null;
-  flipsTo?: BiasLabel | null;
+  asset: string; bias: BiasLabel; confidence: number; reason: string;
+  invalidatesIf?: string | null; flipsTo?: BiasLabel | null;
+};
+
+export type ThesisReviewEntry = {
+  thesisId: string; asset: string;
+  decision: "maintain" | "reduce" | "close" | "flip";
+  flipTo?: BiasLabel | null; reason: string;
 };
 
 export type PlanJson = {
   watchlist?: string[];
   biasByAsset?: BiasEntry[];
+  activeThesisReviews?: ThesisReviewEntry[];
   riskCaps?: { maxLeverage: number; maxNotionalPctOfEquity: number };
-  notes?: string;
-  markdown?: string;
+  notes?: string; markdown?: string;
 };
 
 function biasTone(b: BiasLabel): string {
@@ -28,9 +30,28 @@ function biasTone(b: BiasLabel): string {
   return "border-[var(--hairline-strong)] text-muted-foreground";
 }
 
+function decisionTone(d: ThesisReviewEntry["decision"]): string {
+  if (d === "maintain") return "border-[var(--neon-green)] text-[var(--neon-green)]";
+  if (d === "close") return "border-[var(--neon-red)] text-[var(--neon-red)]";
+  if (d === "flip") return "border-[var(--neon-cyan)] text-[var(--neon-cyan)]";
+  return "border-[var(--neon-yellow)] text-[var(--neon-yellow)]";
+}
+
 export function DailyPlanBody({ planJson, planMarkdown }: { planJson: PlanJson | null; planMarkdown: string | null }) {
   return (
     <div className="mt-4 space-y-4">
+      {planJson?.activeThesisReviews && planJson.activeThesisReviews.length > 0 && (
+        <div className="space-y-1">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Active theses</div>
+          {planJson.activeThesisReviews.map((r) => (
+            <div key={r.thesisId} className={`flex flex-wrap items-center gap-2 border bg-[#050505] p-2 font-mono text-[11px] ${decisionTone(r.decision)}`}>
+              <span className="text-foreground">{r.asset}</span>
+              <span className="uppercase">{r.decision}{r.decision === "flip" && r.flipTo ? ` -> ${r.flipTo}` : ""}</span>
+              <span className="opacity-70">{r.reason}</span>
+            </div>
+          ))}
+        </div>
+      )}
       {planJson?.biasByAsset && planJson.biasByAsset.length > 0 && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {planJson.biasByAsset.map((b) => (
@@ -42,9 +63,7 @@ export function DailyPlanBody({ planJson, planMarkdown }: { planJson: PlanJson |
               <p className="mt-2 line-clamp-2 text-xs text-foreground">{b.reason}</p>
               {b.invalidatesIf && b.flipsTo && (
                 <div className="mt-2 border-t border-current/30 pt-2">
-                  <div className="font-mono text-[9px] uppercase tracking-[0.16em] opacity-70">
-                    flips {b.flipsTo} if
-                  </div>
+                  <div className="font-mono text-[9px] uppercase tracking-[0.16em] opacity-70">flips {b.flipsTo} if</div>
                   <p className="mt-1 line-clamp-2 text-[11px] text-foreground">{b.invalidatesIf}</p>
                 </div>
               )}

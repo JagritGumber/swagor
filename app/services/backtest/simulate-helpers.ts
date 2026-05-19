@@ -4,15 +4,12 @@ import type { Candle } from "@/lib/data-sources/hyperliquid";
 
 export const STARTING_EQUITY_USD = 1000;
 
+/** thesisId = `${asset}:${entryDateISO}:${side}` — stable across replays. entryReason + invalidatesIf carry the swarm's WHY for the position so future plans can recall it. */
 export type OpenPos = {
   side: "long" | "short";
-  entryDate: Date;
-  entryPrice: number;
-  sizeUsd: number;
-  leverage: number;
-  confidence: number;
-  stopPrice: number;
-  tpPrice: number;
+  entryDate: Date; entryPrice: number; sizeUsd: number; leverage: number; confidence: number;
+  stopPrice: number; tpPrice: number;
+  thesisId: string; entryReason: string; invalidatesIf: string | null;
 };
 
 export function utcDayMs(d: Date): number {

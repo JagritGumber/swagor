@@ -9,6 +9,7 @@ import { buildDailyPlanContext } from "./daily-planner-context";
 import { runSwarm } from "./swarm-runner.service";
 import { aggregateDailyPlan } from "./daily-aggregator.service";
 import { compileDailyPlan } from "./plan-compiler.service";
+import { buildLiveThesisMemory } from "./build-thesis-memory";
 import { checkIngestionAbort, existingDailyPlan, rateLimitBlocked } from "./daily-planner-checks";
 
 const SWARM_SIZE = 6;
@@ -27,13 +28,7 @@ async function writeFailedCycle(cycleId: string, instance: SelboInstance, trigge
   }
 }
 
-/**
- * Run a daily-plan swarm cycle for one Selbo instance. `triggeredBy='daily'`
- * writes a daily_plans row; watcher-triggered cycles only write to
- * rebalance_cycles. `force: true` (admin only) bypasses idempotency +
- * ingestion abort; cost cap always applies. Completed daily plans are
- * anchored fire-and-forget on Arc; anchor failures are logged.
- */
+/** Run a daily-plan swarm cycle. `triggeredBy='daily'` writes a daily_plans row; watcher cycles only touch rebalance_cycles. Completed plans are anchored fire-and-forget. */
 export async function runDailyPlanForInstance(
   instance: SelboInstance,
   triggeredBy: "daily" | "watcher",
@@ -73,9 +68,11 @@ export async function runDailyPlanForInstance(
     if (decisions.length === 0) throw new Error("swarm produced no usable decisions");
 
     const aggregator = await aggregateDailyPlan({ cycleId, decisions });
+    const thesisMemory = await buildLiveThesisMemory(instance.id);
     const compiled = await compileDailyPlan({
       cycleId, aggregator, swarmContext: context,
       strategyText: instance.strategyText, yesterdayPlanSummary: context.yesterdayPlanSummary,
+      thesisMemory,
     });
 
     await db.update(rebalanceCycles).set({ status: "completed", completedAt: new Date() })
