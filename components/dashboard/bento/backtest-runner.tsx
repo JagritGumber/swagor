@@ -6,14 +6,11 @@ import { BacktestRunsList, type BacktestRunRow } from "./backtest-runs-list";
 import { BacktestRunView } from "./backtest-run-view";
 
 const STEP_POLL_MS = 1_500;
+const RUNS_POLL_MS = 5_000;
 
 type StartOpts = { days: number; startDate?: string; random?: boolean };
 
-/**
- * Admin widget: start a 30-day backtest from now, a custom UTC start
- * date, or a random month in the last year. Polls /step until done;
- * lists past runs; clicking a run opens its plans timeline.
- */
+/** Admin widget: start a 30-day backtest, poll /step until done, list past runs (auto-refreshing while one is active). */
 export function BacktestRunner() {
   const [runs, setRuns] = useState<BacktestRunRow[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -28,6 +25,13 @@ export function BacktestRunner() {
     } catch { /* swallow */ }
   }, []);
   useEffect(() => { void loadRuns(); }, [loadRuns]);
+
+  const hasActiveRun = !!runs?.some((r) => r.status === "running");
+  useEffect(() => {
+    if (!hasActiveRun) return;
+    const t = setInterval(() => { void loadRuns(); }, RUNS_POLL_MS);
+    return () => clearInterval(t);
+  }, [hasActiveRun, loadRuns]);
 
   async function pollSteps(runId: string) {
     while (true) {
@@ -82,6 +86,7 @@ export function BacktestRunner() {
           className="border border-[var(--neon-green)]/40 bg-black px-2 py-1 font-mono text-[11px] text-foreground disabled:opacity-60"
         />
         <button onClick={() => startDate && start({ days: 30, startDate })} disabled={busy || !startDate} className={btn}>from date</button>
+        <button onClick={() => { void loadRuns(); }} className="border border-[var(--neon-green)]/30 bg-black px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground hover:border-[var(--neon-green)] hover:text-[var(--neon-green)]">refresh list</button>
         {progress && (
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-foreground">
             {progress.completed}/{progress.total} cycles

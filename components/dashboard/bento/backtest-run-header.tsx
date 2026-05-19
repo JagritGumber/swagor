@@ -28,6 +28,7 @@ export function BacktestRunHeader({
   status,
   progress,
   controls,
+  onRefresh,
   onClose,
 }: {
   runId: string;
@@ -35,6 +36,7 @@ export function BacktestRunHeader({
   status: "running" | "completed" | "failed" | undefined;
   progress: { completed: number; total: number } | null;
   controls: ControlState;
+  onRefresh: () => void;
   onClose: () => void;
 }) {
   return (
@@ -71,6 +73,9 @@ export function BacktestRunHeader({
             {controls.resuming ? "resuming..." : "resume"}
           </button>
         )}
+        <button onClick={onRefresh} className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground hover:text-[var(--neon-green)] hover:underline">
+          refresh
+        </button>
         <button onClick={onClose} className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-green)] hover:underline">
           close
         </button>

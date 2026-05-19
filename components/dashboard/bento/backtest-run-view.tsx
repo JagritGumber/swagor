@@ -64,6 +64,7 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
         status={detail?.run.status}
         progress={detail ? { completed: detail.run.cyclesCompleted, total: detail.run.days } : null}
         controls={controls}
+        onRefresh={() => { void load(); }}
         onClose={onClose}
       />
       {error && <p className="p-4 font-mono text-xs text-[var(--neon-red)]">{error}</p>}
@@ -78,7 +79,7 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
           <BacktestSummaryHeader summary={detail.summary} />
           <BacktestTradesTable trades={detail.trades} />
           <BacktestPlansList plans={detail.plans} open={plansOpen} onOpenChange={setPlansOpen} />
-          <BacktestLlmCalls runId={runId} />
+          <BacktestLlmCalls runId={runId} isLive={isLive ?? false} />
         </div>
       )}
     </div>
