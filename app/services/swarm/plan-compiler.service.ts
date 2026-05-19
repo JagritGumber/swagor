@@ -48,6 +48,14 @@ export async function compileDailyPlan(opts: {
   if (!raw) throw new Error("plan-compiler returned empty response");
   const parsed = PlanCompilerSchema.parse(JSON.parse(raw));
 
+  if (opts.thesisMemory.active.length > 0) {
+    const reviewedIds = new Set(parsed.activeThesisReviews.map((r) => r.thesisId));
+    const missing = opts.thesisMemory.active.filter((a) => !reviewedIds.has(a.thesisId));
+    if (missing.length > 0) {
+      throw new Error(`plan-compiler omitted reviews for active theses: ${missing.map((m) => m.thesisId).join(", ")}`);
+    }
+  }
+
   await db.insert(agentReasoning).values({
     cycleId: opts.cycleId,
     agentName: "plan-compiler",
