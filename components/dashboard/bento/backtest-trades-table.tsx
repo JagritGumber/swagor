@@ -35,6 +35,16 @@ function pnlTone(s: string | null): string {
   return n > 0 ? "text-[var(--neon-green)]" : "text-[var(--neon-red)]";
 }
 
+function reasonLabel(r: string | null): string {
+  if (r === "thesis_reduced") return "partial harvest";
+  if (r === "thesis_closed") return "thesis closed";
+  if (r === "thesis_flipped") return "thesis flipped";
+  if (r === "stop_loss") return "stop loss";
+  if (r === "take_profit") return "take profit";
+  if (r === "end_of_backtest") return "end of backtest";
+  return r ?? "-";
+}
+
 export function BacktestTradesTable({ trades }: { trades: BacktestTradeRow[] }) {
   if (trades.length === 0) {
     return <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">No trades simulated yet. Click Simulate.</p>;
@@ -52,6 +62,7 @@ export function BacktestTradesTable({ trades }: { trades: BacktestTradeRow[] }) 
             <th className="px-2 py-1 text-right">Exit</th>
             <th className="px-2 py-1 text-right">PnL $</th>
             <th className="px-2 py-1 text-right">PnL %</th>
+            <th className="px-2 py-1">Exit reason</th>
           </tr>
         </thead>
         <tbody>
@@ -65,6 +76,7 @@ export function BacktestTradesTable({ trades }: { trades: BacktestTradeRow[] }) 
               <td className="px-2 py-1 text-right text-muted-foreground">{t.exitPrice ? Number(t.exitPrice).toFixed(2) : "-"}</td>
               <td className={`px-2 py-1 text-right ${pnlTone(t.pnlUsd)}`}>{fmtUsd(t.pnlUsd)}</td>
               <td className={`px-2 py-1 text-right ${pnlTone(t.pnlPct)}`}>{fmtPct(t.pnlPct)}</td>
+              <td className={`px-2 py-1 ${t.exitReason === "thesis_reduced" ? "text-[var(--neon-cyan)]" : "text-muted-foreground"}`}>{reasonLabel(t.exitReason)}</td>
             </tr>
           ))}
         </tbody>

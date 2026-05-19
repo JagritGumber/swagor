@@ -50,6 +50,16 @@ export async function compileDailyPlan(opts: {
   if (!raw) throw new Error("plan-compiler returned empty response");
   const parsed = PlanCompilerSchema.parse(JSON.parse(raw));
 
+  // Deterministic enrichment: fill realizedVolPct1h from features. The
+  // model is NOT asked to emit this; risk math is the engine's job.
+  type SymFeature = { symbol: string; timeframes?: { "1h"?: { realizedVolPct?: number } } };
+  const features = (opts.swarmContext as { marketFeatures?: { symbols?: SymFeature[] } }).marketFeatures?.symbols ?? [];
+  const volMap = new Map<string, number | undefined>();
+  for (const s of features) volMap.set(s.symbol.toUpperCase(), s.timeframes?.["1h"]?.realizedVolPct);
+  parsed.biasByAsset = parsed.biasByAsset.map((b) => ({
+    ...b, realizedVolPct1h: volMap.get(b.asset.toUpperCase()) ?? b.realizedVolPct1h,
+  }));
+
   if (opts.thesisMemory.active.length > 0) {
     const reviewedIds = new Set(parsed.activeThesisReviews.map((r) => r.thesisId));
     const missing = opts.thesisMemory.active.filter((a) => !reviewedIds.has(a.thesisId));
