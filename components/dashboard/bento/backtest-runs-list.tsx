@@ -55,7 +55,7 @@ export function BacktestRunsList({ runs, activeId, onSelect }: {
                 <span className="text-muted-foreground">{r.cyclesCompleted}/{r.cyclesRequested}</span>
                 <span className={statusTone(r.status)}>{r.status}</span>
                 {r.plannerPromptVersion && <span className="border border-[var(--neon-cyan)]/40 px-1.5 py-0.5 text-[var(--neon-cyan)]">{r.plannerPromptVersion}</span>}
-                {r.errorMessage && <span className="text-[var(--neon-red)]">{r.errorMessage.slice(0, 60)}</span>}
+                {r.errorMessage && <span className="text-[var(--neon-red)]" title={r.errorMessage}>open error console</span>}
               </button>
             </li>
           );

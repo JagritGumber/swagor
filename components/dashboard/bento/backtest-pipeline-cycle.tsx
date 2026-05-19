@@ -17,6 +17,14 @@ function fmtMs(ms: number | null): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+function formatError(raw: string): string {
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    return raw;
+  }
+}
+
 function deriveStages(cycle: CycleRow, calls: CallRow[], plan: PlanRow): Stage[] {
   const sorted = [...calls].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
   const personas = sorted.filter((c) => c.agentName.startsWith("swarm:"));
@@ -82,7 +90,7 @@ export function BacktestPipelineCycle({ cycle, calls, plan, isCurrent }: { cycle
         <span className="opacity-80">{cycle.status} / {fmtMs(totalMs)}</span>
       </button>
       {cycle.errorMessage && (
-        <p className="px-3 pb-2 font-mono text-[10px] text-[var(--neon-red)]">{cycle.errorMessage.slice(0, 140)}</p>
+        <pre className="mx-3 mb-2 max-h-40 overflow-auto whitespace-pre-wrap break-words border border-[var(--neon-red)]/25 bg-black/50 p-2 font-mono text-[10px] normal-case tracking-normal text-[var(--neon-red)]">{formatError(cycle.errorMessage)}</pre>
       )}
       {open && (
         <ul className="border-t border-current/20 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em]">

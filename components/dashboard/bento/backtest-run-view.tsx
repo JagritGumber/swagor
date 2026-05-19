@@ -7,6 +7,7 @@ import { BacktestRunHeader } from "./backtest-run-header";
 import { BacktestPlansList, type BacktestPlan } from "./backtest-plans-list";
 import { BacktestLlmCalls } from "./backtest-llm-calls";
 import { BacktestPipeline, type PipelineCycle } from "./backtest-pipeline";
+import { BacktestErrorConsole } from "./backtest-error-console";
 import { EquityCurve } from "./equity-curve";
 import { useBacktestControls } from "./use-backtest-controls";
 
@@ -76,6 +77,7 @@ export function BacktestRunView({ runId, onClose }: { runId: string; onClose: ()
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             Backtest uses historical candles + derived features. Historical funding, OI, and news may be unavailable. Live trading sees more context.
           </p>
+          <BacktestErrorConsole cycles={detail.cycles} />
           <EquityCurve
             endpoint={`/api/admin/backtest/runs/${runId}/equity`}
             refreshKey={`${detail.run.status}:${detail.trades.length}`}

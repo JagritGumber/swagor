@@ -41,7 +41,6 @@ OUTPUT JSON EXACTLY:
     }
   ],
   "watcherWarnings": ["plain-English warnings for the watcher"],
-  "trendRegime": { "generatedAt": "...", "assets": [] },
   "memoryUsed": ["memory lessons that influenced this outside-market read"],
   "activeThesisReviews": [],
   "biasByAsset": [],
@@ -52,7 +51,7 @@ OUTPUT JSON EXACTLY:
 Rules:
 - activeThesisReviews is always [].
 - biasByAsset is always [].
-- If trendRegime is present, you may summarize regime pressure in watcherWarnings, but do not invent price levels or trades.
+- Use input trendRegime only to summarize regime pressure in watcherWarnings. Do not echo trendRegime in output.
 - Do not invent exact price levels.
 - If the input has no useful external/news/memory context, output neutral pressure and say so.
 - A bullish/bearish pressure is NOT a trade recommendation. Say only what the outside world implies.`;
