@@ -5,14 +5,15 @@ import { db } from "@/lib/db/client";
 import { dailyPlans, rebalanceCycles, type SelboInstance } from "@/lib/db/schema";
 import { fireDailyPlanAnchor } from "@/lib/arc/anchor-analysis";
 import { isLlmBudgetExhausted } from "./cost-cap.service";
-import { buildDailyPlanContext } from "./daily-planner-context";
+import { buildDailyPlanContext, externalSwarmContext } from "./daily-planner-context";
 import { runSwarm } from "./swarm-runner.service";
 import { aggregateDailyPlan } from "./daily-aggregator.service";
 import { compileDailyPlan } from "./plan-compiler.service";
-import { buildLiveThesisMemory } from "./build-thesis-memory";
+import type { ThesisMemory } from "./build-thesis-memory";
 import { checkIngestionAbort, existingDailyPlan, rateLimitBlocked } from "./daily-planner-checks";
 
 const SWARM_SIZE = 6;
+const EMPTY_THESIS_MEMORY: ThesisMemory = { active: [], recent: [] };
 
 type RunResult = { cycleId: string; status: "complete" | "failed" | "skipped"; reason?: string };
 
@@ -64,15 +65,15 @@ export async function runDailyPlanForInstance(
       }
     }
 
-    const decisions = await runSwarm({ cycleId, context, size: SWARM_SIZE, mode: "daily_plan" });
+    const externalContext = externalSwarmContext(context);
+    const decisions = await runSwarm({ cycleId, context: externalContext, size: SWARM_SIZE, mode: "daily_plan" });
     if (decisions.length === 0) throw new Error("swarm produced no usable decisions");
 
     const aggregator = await aggregateDailyPlan({ cycleId, decisions });
-    const thesisMemory = await buildLiveThesisMemory(instance.id);
     const compiled = await compileDailyPlan({
-      cycleId, aggregator, swarmContext: context,
+      cycleId, aggregator, swarmContext: externalContext,
       strategyText: instance.strategyText, yesterdayPlanSummary: context.yesterdayPlanSummary,
-      thesisMemory,
+      thesisMemory: EMPTY_THESIS_MEMORY,
     });
 
     await db.update(rebalanceCycles).set({ status: "completed", completedAt: new Date() })

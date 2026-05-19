@@ -37,6 +37,22 @@ const coerceInvalidatesIf = (v: unknown): unknown => {
 
 export const PlanCompilerSchema = z.object({
   watchlist: z.array(z.string()).min(1).max(20),
+  marketMood: z.enum(["risk_on", "risk_off", "neutral", "event_risk"]).optional(),
+  assetPressure: z.array(z.object({
+    asset: z.string(),
+    pressure: z.enum(["bullish", "bearish", "neutral", "risk_warning"]),
+    confidence: z.number().min(0).max(1),
+    reason: z.string().min(1).max(280),
+    source: z.enum(["news", "macro", "regulatory", "social", "memory"]).optional(),
+  })).default([]),
+  shockEvents: z.array(z.object({
+    title: z.string().min(1).max(180),
+    affectedAssets: z.array(z.string()).max(10),
+    impact: z.enum(["bullish", "bearish", "risk_warning", "ignore"]),
+    reason: z.string().min(1).max(280),
+  })).default([]),
+  watcherWarnings: z.array(z.string().min(1).max(220)).default([]),
+  memoryUsed: z.array(z.string().min(1).max(220)).default([]),
   // Reviews of currently-active multi-day theses. Maintain = position
   // held, reduce = future size cut (no-op today), close = exit at the
   // day's close, flip = exit then open opposite (requires flipTo).
@@ -57,9 +73,8 @@ export const PlanCompilerSchema = z.object({
     invalidationSource: z.enum(["vwap", "poc", "vah", "val", "range_high", "range_low", "swing_high", "swing_low", "liquidation_cluster", "funding_oi_shift"]).optional(),
     invalidatesIf: z.preprocess(coerceInvalidatesIf, z.string().min(1).max(280).nullable().optional()),
     flipsTo: z.enum(["long", "short", "avoid", "neutral"]).nullable().optional(),
-    // Filled deterministically by the compile service AFTER Zod parse,
-    // from swarmContext.marketFeatures.symbols[i].timeframes["1h"].realizedVolPct.
-    // No bounds: code overwrites whatever the model emits.
+    // Legacy field kept so old UI/code paths can parse old plan rows.
+    // External swarm snapshots force biasByAsset empty at compile time.
     realizedVolPct1h: z.number().optional(),
     // Advisory hints. NO bounds at the schema layer: the engine clamps
     // every model value within +/- 20% of its deterministic compute.

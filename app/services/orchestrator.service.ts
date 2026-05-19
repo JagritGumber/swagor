@@ -39,7 +39,7 @@ function previousMarketFeatures(row: { context: unknown } | undefined): MarketFe
  * On a critic-approved actionable verdict (open_long / open_short / close)
  * the panel-execution path opens or closes a paper trade through the same
  * helpers Fast Trader uses, so panel-driven trades show up in trade
- * history with on-chain anchors just like fast-trader-driven ones.
+ * history with on-chain anchors just like watcher-driven ones.
  */
 export async function runCycle(cycleId: string): Promise<void> {
   try {

@@ -24,7 +24,7 @@ export type OpenPaperTradeInput = {
   entryPriceUsd: number | null;
   stopLossPriceUsd?: number | null;
   takeProfitPriceUsd?: number | null;
-  source: "fast-trader" | "panel";
+  source: "watcher" | "fast-trader" | "panel";
   rationale: string;
   decisionReport?: TradeQualityReport | null;
   // Full agent context the deciding LLM saw. Hashed into the Arc open
@@ -42,7 +42,7 @@ export type ClosePaperTradeInput = {
   asset: string;
   markPriceUsd: number | null;
   rationale: string;
-  source: "fast-trader" | "panel" | "safety" | "user-pause";
+  source: "watcher" | "fast-trader" | "panel" | "safety" | "user-pause";
   safetyTrigger?: "stop_loss" | "take_profit";
 };
 

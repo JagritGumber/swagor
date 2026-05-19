@@ -33,7 +33,7 @@ export const TIERS: Record<Tier, TierSpec> = {
     watcherMinCadenceSeconds: 120,    // match schema floor; let the watcher pick fast when needed
     watcherMaxCadenceSeconds: 600,    // 10 min ceiling; funnel/demo tier should feel alive
     maxSelbos: 1,
-    panelDeliberations: false,        // free tier skips the swarm, just fast-trader
+    panelDeliberations: false,        // free tier skips expensive mid-day swarm refreshes
     publicProfile: false,
     prioritySwarmQueue: false,
     description: "Paper mode, slow cadence, no public profile. Funnel tier.",

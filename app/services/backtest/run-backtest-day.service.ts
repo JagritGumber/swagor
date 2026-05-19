@@ -5,12 +5,14 @@ import { db } from "@/lib/db/client";
 import { dailyPlans, rebalanceCycles, type SelboInstance } from "@/lib/db/schema";
 import { fireDailyPlanAnchor } from "@/lib/arc/anchor-analysis";
 import { buildHistoricalContext } from "./historical-context.service";
+import { externalSwarmContext } from "@/app/services/swarm/daily-planner-context";
 import { runSwarm } from "@/app/services/swarm/swarm-runner.service";
 import { aggregateDailyPlan } from "@/app/services/swarm/daily-aggregator.service";
 import { compileDailyPlan } from "@/app/services/swarm/plan-compiler.service";
-import { buildBacktestThesisMemory } from "@/app/services/swarm/build-thesis-memory";
+import type { ThesisMemory } from "@/app/services/swarm/build-thesis-memory";
 
 const SWARM_SIZE = 6;
+const EMPTY_THESIS_MEMORY: ThesisMemory = { active: [], recent: [] };
 
 /**
  * Execute one backtest day end-to-end: insert cycle row tagged with
@@ -33,15 +35,15 @@ export async function runBacktestDay(
   await db.update(rebalanceCycles).set({ cycleState: context as object })
     .where(eq(rebalanceCycles.id, cycleId));
 
-  const decisions = await runSwarm({ cycleId, context, size: SWARM_SIZE, mode: "daily_plan" });
+  const externalContext = externalSwarmContext(context);
+  const decisions = await runSwarm({ cycleId, context: externalContext, size: SWARM_SIZE, mode: "daily_plan" });
   if (decisions.length === 0) throw new Error("swarm produced no usable decisions");
 
   const aggregator = await aggregateDailyPlan({ cycleId, decisions });
-  const thesisMemory = await buildBacktestThesisMemory(backtestRunId, asOf);
   const compiled = await compileDailyPlan({
-    cycleId, aggregator, swarmContext: context,
+    cycleId, aggregator, swarmContext: externalContext,
     strategyText: instance.strategyText, yesterdayPlanSummary: context.yesterdayPlanSummary,
-    thesisMemory,
+    thesisMemory: EMPTY_THESIS_MEMORY,
   });
 
   await db.update(rebalanceCycles).set({ status: "completed", completedAt: new Date() })

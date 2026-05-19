@@ -11,7 +11,7 @@ const cache = new Map<string, CacheEntry>();
 
 /**
  * 5-minute in-memory cache for the latest daily_plan row per user. Used by
- * the watcher + fast-trader so per-tick reads don't hit the DB every minute.
+ * the watcher so per-tick reads don't hit the DB every minute.
  * Module-scoped Map -- this is fine on Fluid Compute because the same warm
  * function instance handles many requests, and cold starts naturally
  * invalidate the cache.

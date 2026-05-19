@@ -3,7 +3,7 @@ import "server-only";
 import { db } from "@/lib/db/client";
 import { monitorTicks, selboInstances, equitySnapshots, type SelboInstance } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { watcherLlm, MODELS } from "@/lib/llm-client";
+import { MODELS } from "@/lib/llm-client";
 import { getCachedDailyPlan } from "@/lib/utils/daily-plan-cache";
 import { runDailyPlanForInstance } from "@/app/services/swarm/daily-planner.service";
 import {
@@ -12,17 +12,17 @@ import {
   fetchClearinghouse,
 } from "@/lib/data-sources/hyperliquid";
 import { searchNews } from "@/lib/data-sources/news";
-import { WATCHER_SCHEMA, WATCHER_SYSTEM_PROMPT, type WatcherOutput } from "./prompt";
-import { runFastTraderForInstance } from "@/app/services/fast-trader/fast-trader.service";
+import { WATCHER_SYSTEM_PROMPT, type WatcherOutput } from "./prompt";
 import { tierSpec, type Tier } from "@/lib/tiers";
 import { evaluatePerpRisk, riskNumber } from "@/app/services/risk-engine.service";
 import { anchorWatcherDecision, type AnchorJsonValue } from "@/lib/arc/anchor";
 import { logLlmCall } from "@/lib/llm/log";
-import { extractJson } from "@/lib/llm/extract-json";
 import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
 import { detectStrategyMode } from "@/lib/strategy-mode";
 import { blendWatcherCadence } from "@/lib/cadence-blend";
 import { recordTickStages, type TickStageInput } from "@/app/services/tick-stages.service";
+import { evaluateSelboTick, type SelboTickInput } from "./selbo-tick-engine";
+import { executeWatcherDecision } from "./execute-watcher-decision";
 
 function previousMarketFeatures(lastTick: { context: unknown } | undefined): MarketFeatureSnapshot | null {
   const context = lastTick?.context as { marketFeatures?: MarketFeatureSnapshot } | null | undefined;
@@ -162,37 +162,37 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       }
     | null = null;
 
-  const parsed: WatcherOutput =
-    risk.status === "critical"
-      ? {
-          verdict: "risk_emergency",
-          rationale: risk.summary,
-          nextCheckSeconds: 120,
-          watching,
-        }
-      : await (async () => {
-          const startedAt = Date.now();
-          const completion = await watcherLlm.chat.completions.create({
-            model: MODELS.WATCHER,
-            messages: [
-              { role: "system", content: WATCHER_SYSTEM_PROMPT },
-              { role: "user", content: userPayload },
-            ],
-            response_format: { type: "json_object" },
-            temperature: 0.2,
-          });
-          const durationMs = Date.now() - startedAt;
-
-          const raw = completion.choices[0]?.message?.content;
-          if (!raw) throw new Error("watcher returned empty response");
-          llmCallTrace = {
-            rawResponse: raw,
-            promptTokens: completion.usage?.prompt_tokens,
-            completionTokens: completion.usage?.completion_tokens,
-            durationMs,
-          };
-          return WATCHER_SCHEMA.parse(JSON.parse(extractJson(raw)));
-        })();
+  const markByAsset = new Map(perps.map((p) => [p.symbol, riskNumber(p.mark ?? p.mid)]));
+  const tickInput: SelboTickInput = {
+    mode: "live",
+    asOf: new Date().toISOString(),
+    strategyText: instance.strategyText,
+    externalSentiment: currentDailyPlan?.planJson as SelboTickInput["externalSentiment"] ?? null,
+    marketFeatures,
+    positions: [
+      ...positions.map((p) => ({
+        asset: p.coin.toUpperCase(),
+        side: riskNumber(p.size) === null ? "unknown" as const : riskNumber(p.size)! >= 0 ? "long" as const : "short" as const,
+        entryPrice: riskNumber(p.entry),
+        markPrice: riskNumber(mids[p.coin.toUpperCase()]),
+      })),
+    ],
+    risk,
+    recentLessons: [],
+  };
+  const watcherDecision = evaluateSelboTick(tickInput);
+  const parsed: WatcherOutput = {
+    verdict: watcherDecision.action === "risk_emergency"
+      ? "risk_emergency"
+      : watcherDecision.action === "call_swarm"
+        ? "deliberate"
+        : watcherDecision.action === "open_long" || watcherDecision.action === "open_short" || watcherDecision.action === "close"
+          ? "execute"
+          : "hold",
+    rationale: watcherDecision.reason,
+    nextCheckSeconds: watcherDecision.cadence.nextCheckSeconds,
+    watching,
+  };
 
   // Apply per-tier cadence plus deterministic realized-volatility blend.
   const spec = tierSpec(instance.subscriptionTier as Tier);
@@ -219,6 +219,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       positionCount: positions.length,
       newsCount: (newsRes.results ?? []).length,
       tier: spec.id,
+      watcherDecision,
     },
   }).returning({ id: monitorTicks.id });
 
@@ -254,7 +255,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
         stage: "watcher",
         status: "completed",
         summary: `${parsed.verdict}: ${parsed.rationale}`,
-        metadata: parsed as AnchorJsonValue,
+        metadata: { parsed, watcherDecision } as AnchorJsonValue,
       },
       {
         selboInstanceId: instance.id,
@@ -283,8 +284,9 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     currentlyWatching: parsed.watching,
   }).where(eq(selboInstances.id, instance.id));
 
-  // Log the watcher LLM call (audit, admin-only surface). Skipped when the
-  // verdict came from the deterministic risk-critical shortcut (no LLM ran).
+  // Log legacy watcher LLM calls if re-enabled later. The current trade
+  // path is deterministic `evaluateSelboTick`; no independent watcher LLM
+  // can create trades.
   if (tickRow && llmCallTrace) {
     const trace = llmCallTrace as {
       rawResponse: string;
@@ -312,21 +314,20 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
   // Fast Trader / cycle trigger has already kicked off; the anchor await
   // below just keeps the worker alive long enough for both to land via
   // Cloudflare's scheduled() waitUntil envelope.
-  if (parsed.verdict === "deliberate" && spec.panelDeliberations) {
+  if (watcherDecision.action === "call_swarm" && spec.panelDeliberations) {
     // Daily-planning phase: deliberate now triggers a daily-plan-mode
     // cycle (watcher-triggered, rate-limited inside the orchestrator).
     // Does NOT overwrite the user-facing daily_plans row; only the
     // scheduled cron path writes that.
     void runDailyPlanForInstance(instance as SelboInstance, "watcher")
       .catch((e) => console.error("[watcher] daily-plan (watcher) failed:", e));
-  } else if (parsed.verdict === "deliberate") {
-    // Free tier: route deliberate to the cheap Fast Trader instead of the
-    // expensive swarm. Better than dropping the signal entirely.
-    runFastTraderForInstance(instance as SelboInstance, `[free-tier downgrade] ${parsed.rationale}`, tickRow?.id)
-      .catch((e) => console.error("[watcher] fast-trader (downgrade) failed:", e));
-  } else if (parsed.verdict === "execute" || parsed.verdict === "risk_emergency") {
-    runFastTraderForInstance(instance as SelboInstance, parsed.rationale, tickRow?.id)
-      .catch((e) => console.error("[watcher] fast-trader failed:", e));
+  } else if (watcherDecision.action === "open_long" || watcherDecision.action === "open_short" || watcherDecision.action === "close" || watcherDecision.action === "risk_emergency") {
+    executeWatcherDecision({
+      instance: instance as SelboInstance,
+      decision: watcherDecision,
+      tickInput,
+      markByAsset,
+    }).catch((e) => console.error("[watcher] executeWatcherDecision failed:", e));
   }
 
   // Arc anchor for execute / risk_emergency verdicts (M5). Runs LAST so
@@ -335,7 +336,7 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
   // path in orchestrator. Awaited so arcAnchorTx is saved before this
   // function returns -- on Cloudflare the cron handler's waitUntil keeps
   // the worker alive while we wait, which also lets the fire-and-forget
-  // fast-trader / cycle dispatch above run to completion.
+  // watcher-executor / cycle dispatch above run to completion.
   if (
     tickRow &&
     (parsed.verdict === "execute" || parsed.verdict === "risk_emergency")

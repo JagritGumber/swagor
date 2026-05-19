@@ -89,3 +89,17 @@ export async function buildDailyPlanContext(instance: SelboInstance): Promise<Da
     _ingestion: fb.ingestion,
   };
 }
+
+export function externalSwarmContext(context: DailyPlanContext): object {
+  return {
+    mode: context.mode,
+    strategy: context.strategy,
+    watching: context.watching,
+    recent_news: context.recent_news,
+    news_sentiment: context.news_sentiment,
+    recent_lessons: context.recent_lessons,
+    recent_pnl: context.recent_pnl,
+    yesterdayPlanSummary: context.yesterdayPlanSummary,
+    _ingestion: context._ingestion,
+  };
+}

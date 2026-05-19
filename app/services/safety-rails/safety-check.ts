@@ -1,4 +1,3 @@
-import type { FastTraderDecision } from "@/app/services/fast-trader/prompt";
 import type { MarketFeatureSnapshot, SymbolMarketFeatures } from "@/lib/market-features";
 import {
   RSI_OVERBOUGHT,
@@ -27,6 +26,7 @@ export type SafetyBlock = {
 export type SafetyCheckResult =
   | { allow: true }
   | { allow: false; block: SafetyBlock };
+type SafetyDecision = { action: "open_long" | "open_short" | "close" | "hold" | string; asset: string };
 
 function finiteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -55,7 +55,7 @@ function primaryOiDeltaPct(feature: SymbolMarketFeatures): number | null {
 }
 
 export function evaluateSafetyRails(
-  decision: FastTraderDecision,
+  decision: SafetyDecision,
   marketFeatures: MarketFeatureSnapshot,
 ): SafetyCheckResult {
   if (decision.action !== "open_long" && decision.action !== "open_short") {

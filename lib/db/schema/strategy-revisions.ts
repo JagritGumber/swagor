@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
  * paraphrase reply. Effective strategy = latest role='user' message.
  *
  * `selboInstances.strategyText` is a denormalized cache for fast agent
- * reads (watcher / fast-trader). The chat handler keeps it in sync on
+ * reads (watcher). The chat handler keeps it in sync on
  * every user-message send.
  *
  * userId is text because Better Auth issues nanoid-format IDs.

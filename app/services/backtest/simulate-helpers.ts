@@ -17,6 +17,7 @@ export type OpenPos = {
   invalidationLevel?: number | null;
   llmConfidence?: number;
   qualityReport?: TradeQualityReport | null;
+  watcherDecision?: Record<string, unknown> | null;
 };
 
 export function utcDayMs(d: Date): number {
@@ -108,7 +109,7 @@ export async function writeBacktestClose(input: {
     invalidationSource: input.pos.invalidationSource ?? null,
     invalidationLevel: input.pos.invalidationLevel?.toString() ?? null,
     rejectReasons: input.pos.qualityReport?.rejectReasons ?? [],
-    decisionReport: input.pos.qualityReport ? input.pos.qualityReport as unknown as Record<string, unknown> : null,
+    decisionReport: input.pos.watcherDecision ?? (input.pos.qualityReport ? input.pos.qualityReport as unknown as Record<string, unknown> : null),
     status: "closed", exitReason: input.reason,
   });
   return pnlUsd;

@@ -74,7 +74,7 @@ Rules:
 
 This is YOUR vote. Don't compromise to consensus; bring your persona's bias.`;
 
-const DAILY_PLAN_PROMPT = `You are a single participant in a swarm producing a DAILY TRADING PLAN. From your specific persona's perspective, output a bias for EACH asset in the watchlist for the next 24 hours.
+const DAILY_PLAN_PROMPT = `You are a single participant in Selbo's EXTERNAL INTELLIGENCE SWARM. From your specific persona's perspective, read only outside-market context: news, macro, regulatory/social narrative, memory, and recent outcomes. Do not use candles, volume profile, realized volatility, POC/VAH/VAL/VWAP, or trade triggers.
 
 Output JSON EXACTLY in this shape:
 {
@@ -88,11 +88,10 @@ Output JSON EXACTLY in this shape:
 }
 
 Rules:
-- One entry per asset in the watchlist. No specific entry/exit prices; this is a daily bias plan, not a trade order.
-- bias: 'long' wants to be long today, 'short' wants to be short, 'avoid' says don't take new risk on this asset, 'neutral' has no strong view.
-- oneLineReason ties the bias to perpMarketState first: volume profile location, auction state, structure state, OI/funding flow, setup candidates, recent memory, and yesterday's plan. EMA/RSI are helper context only; never use them as the primary reason.
-- If perpMarketState.permission is avoid_new_risk, vote avoid/neutral unless you are explicitly proposing a hedge. In scalper strategies, wait_for_retest can still be a valid range/value setup when setupCandidates contains a concrete candidate.
-- The user strategy text is the north star; do not contradict it without a concrete reason.
+- One entry per watched asset. No specific entry/exit prices; this is outside-world pressure, not a trade order.
+- bias maps to external pressure only: 'long' = outside world leans bullish, 'short' = outside world leans bearish, 'avoid' = outside risk warning, 'neutral' = no strong outside read.
+- oneLineReason must cite news/macro/social/regulatory/memory/recent-outcome context. Never cite chart levels, candles, RV, volume profile, EMA/RSI, OI, funding, or marketFeatures.
+- The watcher owns inside-market confirmation and cadence. You only describe outside pressure.
 - This is YOUR vote. Don't average to consensus; the aggregator reconciles across personas.`;
 
 async function runSwarmMember(opts: {
@@ -104,7 +103,7 @@ async function runSwarmMember(opts: {
 }): Promise<SwarmDecision | null> {
   const taskPrompt = opts.mode === "daily_plan" ? DAILY_PLAN_PROMPT : TACTICAL_PROMPT;
   const systemPrompt = `${opts.persona.system_prompt}\n\n${taskPrompt}`;
-  const userMessage = `Portfolio + market state:\n${JSON.stringify(opts.context, null, 2)}\n\nFrom your persona's viewpoint, output your JSON decision.`;
+  const userMessage = `${opts.mode === "daily_plan" ? "Outside-market context" : "Portfolio + market state"}:\n${JSON.stringify(opts.context, null, 2)}\n\nFrom your persona's viewpoint, output your JSON decision.`;
 
   try {
     const startedAt = Date.now();
