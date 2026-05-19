@@ -1,8 +1,7 @@
 import { stopTpForSide, computePnl, type OpenPos } from "./simulate-helpers";
+import { notionalForConfidence, type StrategyPolicy } from "./strategy-policy";
 
 export type BacktestCloseEvent = { asset: string; pos: OpenPos; exitDate: Date; exitPrice: number; reason: string };
-
-export const MIN_CONF_NEW_THESIS = 0.7;
 
 export type OpenCandidate = {
   b: { asset: string; confidence: number; reason?: string; invalidatesIf?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number };
@@ -56,11 +55,12 @@ export function tryReduce(asset: string, pos: OpenPos, price: number, dayMs: num
 
 /**
  * Selectivity gate. Max one bias-driven new thesis per cycle: the
- * highest-confidence candidate above MIN_CONF_NEW_THESIS opens; the
- * rest are logged and skipped. Flips from thesis reviews go through
- * their own path in the caller and are not capped here.
+ * highest-confidence candidate opens; the rest are logged and skipped.
+ * Sizing (notional %, leverage) comes from the policy; the swarm's
+ * `riskCaps` are ignored entirely. Flips from thesis reviews go
+ * through their own path in the caller and are not capped here.
  */
-export function openTopCandidate(candidates: OpenCandidate[], dayMs: number, equity: number, notionalPct: number, leverage: number, positions: Map<string, OpenPos>, opens: Array<{ asset: string; pos: OpenPos }>): void {
+export function openTopCandidate(candidates: OpenCandidate[], policy: StrategyPolicy, dayMs: number, equity: number, positions: Map<string, OpenPos>, opens: Array<{ asset: string; pos: OpenPos }>): void {
   if (candidates.length === 0) return;
   candidates.sort((a, b) => b.b.confidence - a.b.confidence);
   if (candidates.length > 1) {
@@ -72,7 +72,8 @@ export function openTopCandidate(candidates: OpenCandidate[], dayMs: number, equ
   const stopPct = clampOverride(top.b.stopLossPct, det.stopPct);
   const tpPct = clampOverride(top.b.takeProfitPct, det.tpPct);
   const asset = top.b.asset.toUpperCase();
-  const newPos = openPosition(asset, top.side, top.price, dayMs, equity, notionalPct, leverage, top.b.confidence, top.b.reason ?? "", top.b.invalidatesIf ?? null, stopPct, tpPct);
+  const notionalPct = notionalForConfidence(policy, top.b.confidence);
+  const newPos = openPosition(asset, top.side, top.price, dayMs, equity, notionalPct, policy.maxLeverage, top.b.confidence, top.b.reason ?? "", top.b.invalidatesIf ?? null, stopPct, tpPct);
   positions.set(asset, newPos);
   opens.push({ asset, pos: newPos });
 }

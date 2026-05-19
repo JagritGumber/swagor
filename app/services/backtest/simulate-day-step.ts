@@ -1,7 +1,8 @@
 import type { Candle } from "@/lib/data-sources/hyperliquid";
 import type { DailyPlan } from "@/lib/db/schema";
 import { candleAt, checkStopTpHit, closeAt, computePnl, type OpenPos, utcDayMs } from "./simulate-helpers";
-import { clampOverride, deterministicRiskPct, MIN_CONF_NEW_THESIS, openPosition, openTopCandidate, tryReduce, type BacktestCloseEvent, type OpenCandidate } from "./simulate-day-helpers";
+import { deterministicRiskPct, openPosition, openTopCandidate, tryReduce, type BacktestCloseEvent, type OpenCandidate } from "./simulate-day-helpers";
+import { DEFAULT_POLICY, notionalForConfidence } from "./strategy-policy";
 
 type BiasEntry = { asset: string; bias: string; confidence: number; reason?: string; invalidatesIf?: string | null; flipsTo?: string | null; realizedVolPct1h?: number; stopLossPct?: number; takeProfitPct?: number };
 type ThesisReviewJson = { thesisId: string; asset: string; decision: "maintain" | "reduce" | "close" | "flip"; flipTo: "long" | "short" | "avoid" | "neutral" | null; reason: string };
@@ -10,12 +11,13 @@ export type { BacktestCloseEvent };
 export type BacktestOpenEvent = { asset: string; pos: OpenPos };
 export type BacktestDayResult = { closes: BacktestCloseEvent[]; opens: BacktestOpenEvent[]; newEquity: number };
 
-/** Pure per-day step shared by the simulator and the thesis-memory replay. Order: stops/TPs, thesis reviews (close/flip/reduce), then opens for assets without an active position. */
+/** Pure per-day step shared by the simulator and the thesis-memory replay. Order: stops/TPs, thesis reviews (close/flip/reduce), then opens for assets without an active position. Sizing is deterministic from DEFAULT_POLICY; the model's `riskCaps` are ignored. */
 export function simulateOneBacktestDay(input: { plan: DailyPlan; positions: Map<string, OpenPos>; candleCache: Map<string, Candle[]>; equity: number }): BacktestDayResult {
   const dayMs = utcDayMs(input.plan.generatedAt);
   let equity = input.equity;
   const closes: BacktestCloseEvent[] = [];
   const opens: BacktestOpenEvent[] = [];
+  console.info("[backtest-sim] policy: DEFAULT");
 
   for (const [asset, pos] of [...input.positions]) {
     const candle = (input.candleCache.get(asset) && candleAt(input.candleCache.get(asset)!, dayMs)) || null;
@@ -31,8 +33,6 @@ export function simulateOneBacktestDay(input: { plan: DailyPlan; positions: Map<
   if (input.plan.status !== "complete") return { closes, opens, newEquity: equity };
   const json = input.plan.planJson as PlanJson | null;
   if (!json) return { closes, opens, newEquity: equity };
-  const notionalPct = json.riskCaps?.maxNotionalPctOfEquity ?? 15;
-  const leverage = Math.max(1, json.riskCaps?.maxLeverage ?? 1);
   const reviews = json.activeThesisReviews;
   const reviewedAssets = new Set((reviews ?? []).map((r) => r.asset.toUpperCase()));
 
@@ -51,7 +51,8 @@ export function simulateOneBacktestDay(input: { plan: DailyPlan; positions: Map<
       input.positions.delete(asset);
       if (r.decision === "flip" && r.flipTo && (r.flipTo === "long" || r.flipTo === "short")) {
         const det = deterministicRiskPct(undefined);
-        const newPos = openPosition(asset, r.flipTo, price, dayMs, equity, notionalPct, leverage, 0.5, r.reason, null, det.stopPct, det.tpPct);
+        const flipNotional = notionalForConfidence(DEFAULT_POLICY, 0.5);
+        const newPos = openPosition(asset, r.flipTo, price, dayMs, equity, flipNotional, DEFAULT_POLICY.maxLeverage, 0.5, r.reason, null, det.stopPct, det.tpPct);
         input.positions.set(asset, newPos);
         opens.push({ asset, pos: newPos });
       }
@@ -81,14 +82,14 @@ export function simulateOneBacktestDay(input: { plan: DailyPlan; positions: Map<
     }
 
     if ((wantsLong || wantsShort) && !input.positions.has(asset)) {
-      if (b.confidence < MIN_CONF_NEW_THESIS) {
-        console.info(`[backtest-sim] skip ${asset}: conf ${b.confidence.toFixed(2)} < ${MIN_CONF_NEW_THESIS}`);
+      if (b.confidence < DEFAULT_POLICY.minConfidenceToOpen) {
+        console.info(`[backtest-sim] skip ${asset}: conf ${b.confidence.toFixed(2)} < ${DEFAULT_POLICY.minConfidenceToOpen}`);
         continue;
       }
       candidates.push({ b, price, side: wantsLong ? "long" : "short" });
     }
   }
-  openTopCandidate(candidates, dayMs, equity, notionalPct, leverage, input.positions, opens);
+  openTopCandidate(candidates, DEFAULT_POLICY, dayMs, equity, input.positions, opens);
 
   return { closes, opens, newEquity: equity };
 }
