@@ -84,11 +84,6 @@ const SCALPER_MAX_HOLD_MS = 6 * 3_600_000;
 const SCALPER_SIZE_USD = 100;
 const SCALPER_LEVERAGE = 1;
 const SCALPER_MIN_TRADE_GATE = 0.67;
-// Minimum stop distance as % of entry. A stop closer than this sits
-// inside normal candle noise and gets hit before the setup can play
-// out (this was ~all of the backtest loss). Matches the
-// invalidation_too_close guard in trade-quality-engine.ts.
-const MIN_STOP_PCT = 0.35;
 
 function round(n: number): number {
   return Number(n.toFixed(3));
@@ -273,8 +268,6 @@ export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
       const pressure = alignment(c.side, pressureFor(input, symbol.symbol));
       const assetPressure = pressureFor(input, symbol.symbol);
       const trigger = triggerName(c);
-      const lv = levels(symbol, c.side, c);
-      const tooClose = lv.stop !== null && Math.abs((price - lv.stop) / price) * 100 < MIN_STOP_PCT;
       const blocks = [
         ...setupBlocks(symbol, c),
         ...countertrendBlocks(symbol, c, assetPressure),
@@ -283,9 +276,9 @@ export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
           side: c.side, trigger, regime: symbol.perpMarketState.regime,
           pressure: assetPressure?.pressure ?? null,
         }),
-        ...(tooClose ? ["invalidation_too_close"] : []),
       ];
       const confidence = score(symbol, c.side, pressure, trigger, c);
+      const lv = levels(symbol, c.side, c);
       return { symbol, side: c.side, confidence, pressure, trigger, levels: lv, blocks };
     }).filter((c) => c.trigger !== "none");
   }).sort((a, b) => b.confidence - a.confidence);
