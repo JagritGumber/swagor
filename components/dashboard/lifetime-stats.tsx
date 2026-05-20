@@ -36,10 +36,10 @@ export function LifetimeStats({ stats }: { stats: LifetimeStats }) {
     <section className="border border-[var(--hairline-strong)] bg-black p-6">
       <header className="flex items-baseline justify-between gap-4">
         <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-          Lifetime
+          Paper-mode performance
         </h2>
         <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          {stats.closedTrades} closed · {stats.anchored} on Arc
+          paper mode · {stats.closedTrades} closed · {stats.anchored} on Arc
         </span>
       </header>
 

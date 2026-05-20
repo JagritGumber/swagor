@@ -54,10 +54,11 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
         position={positions[0] ? { side: positions[0].side, asset: positions[0].asset } : null}
       />
 
-      {/* Hero: price chart with Selbo's real entry/exit markers, served
-          from the public (publicProfile-gated) chart-data endpoint.
-          Markers are not click-interactive publicly (reasoning lives in
-          the on-chain tape below). */}
+      {/* Product proof, up top: every decision anchored on Arc, Arcscan links. */}
+      <PublicArcActivity username={username} />
+
+      {/* What it traded: price chart with Selbo's real entry/exit markers
+          (public, publicProfile-gated endpoint). Activity, not a profit claim. */}
       <MarketChartCard
         watching={watching}
         endpoint={`/api/public/selbo/${encodeURIComponent(username)}/chart-data`}
@@ -66,9 +67,14 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
         defaultLookbackMs={2_592_000_000}
       />
 
-      {/* On-chain trade tape: every decision anchored on Arc, Arcscan links. */}
-      <PublicArcActivity username={username} />
+      {/* How it thinks: live reasoning / decision feed. */}
+      <PublicWatchingStrip username={username} />
 
+      {/* Paper-mode performance lives at the bottom, clearly labelled as
+          research track record, not the product. */}
+      <p className="pt-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+        Paper-mode performance · research track record, not the product
+      </p>
       {featured ? (
         <FeaturedBacktestSections
           username={username}
@@ -82,10 +88,7 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
           <PublicEquityCurve username={username} />
         </>
       )}
-
-      <PublicWatchingStrip username={username} />
       <PositionsTable positions={positions} />
-
       {!featured && <TradeHistory trades={closedTrades} />}
     </div>
   );
