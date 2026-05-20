@@ -17,10 +17,13 @@ const DEFAULT_CHART_TYPE: ChartType = "candles";
  * around it), then an optional hint + decision drawer below. Drops the
  * old diagnostic line ('ETH · 5m · 208 candles · 0 markers').
  */
-export function MarketChartShell({ watching, admin = false }: { watching: string[]; admin?: boolean }) {
+export function MarketChartShell({
+  watching, admin = false, endpoint = "/api/chart-data", interactiveMarkers = true,
+  defaultInterval = DEFAULT_INTERVAL, defaultLookbackMs = DEFAULT_LOOKBACK_MS,
+}: { watching: string[]; admin?: boolean; endpoint?: string; interactiveMarkers?: boolean; defaultInterval?: Interval; defaultLookbackMs?: number }) {
   const [asset, setAsset] = useState(watching[0] ?? "ETH");
-  const [interval, setInterval_] = useState<Interval>(DEFAULT_INTERVAL);
-  const [lookbackMs, setLookbackMs] = useState<number>(DEFAULT_LOOKBACK_MS);
+  const [interval, setInterval_] = useState<Interval>(defaultInterval);
+  const [lookbackMs, setLookbackMs] = useState<number>(defaultLookbackMs);
   const [chartType, setChartType] = useState<ChartType>(DEFAULT_CHART_TYPE);
   const [candles, setCandles] = useState<ChartCandle[]>([]);
   const [markers, setMarkers] = useState<TradeMarker[]>([]);
@@ -36,7 +39,7 @@ export function MarketChartShell({ watching, admin = false }: { watching: string
     let cancelled = false;
     setLoading(true);
     const qs = new URLSearchParams({ asset, interval, lookbackMs: String(lookbackMs) });
-    fetch(`/api/chart-data?${qs}`, { cache: "no-store", signal: ac.signal })
+    fetch(`${endpoint}?${qs}`, { cache: "no-store", signal: ac.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as {
@@ -55,7 +58,7 @@ export function MarketChartShell({ watching, admin = false }: { watching: string
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; ac.abort(); };
-  }, [asset, interval, lookbackMs]);
+  }, [asset, interval, lookbackMs, endpoint]);
 
   return (
     <>
@@ -88,7 +91,7 @@ export function MarketChartShell({ watching, admin = false }: { watching: string
             candles={candles}
             markers={markers}
             chartType={chartType}
-            onMarkerClick={handleMarkerClick}
+            onMarkerClick={interactiveMarkers ? handleMarkerClick : undefined}
           />
         </div>
         {loading && (
@@ -110,10 +113,10 @@ export function MarketChartShell({ watching, admin = false }: { watching: string
 
       {markers.length > 0 && !selectedTradeId && (
         <p className="border-t border-[var(--hairline)] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-          Click any marker to see why Selbo took the trade
+          {interactiveMarkers ? "Click any marker to see why Selbo took the trade" : "Selbo's entries and exits, each anchored on-chain below"}
         </p>
       )}
-      {selectedTradeId && (
+      {interactiveMarkers && selectedTradeId && (
         <div className="border-t border-[var(--hairline)] px-6 pb-6 pt-2">
           <TradeDecisionDrawer
             tradeId={selectedTradeId}
