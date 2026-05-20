@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { SwarmCycleHeader } from "./swarm-cycle-header";
 import { CycleSections, type LlmCall, type Reasoning, type Round } from "./swarm-cycle-sections";
+import { CycleWorkflow } from "./cycle-workflow";
+import { deriveStages } from "./cycle-stages";
 
 type Trace = {
   cycle: { id: string; status: string; triggeredBy: string | null; errorMessage: string | null; startedAt: string; completedAt: string | null };
@@ -50,6 +52,13 @@ export function SwarmCycleTrace({ cycleId, onClose }: { cycleId: string; onClose
       {trace && (
         <>
           <SwarmCycleHeader cost={trace.summary.cost} latency={trace.summary.latency} warnings={trace.summary.warnings} />
+          <CycleWorkflow
+            stages={deriveStages(
+              { id: trace.cycle.id, asOf: null, status: trace.cycle.status, createdAt: trace.cycle.startedAt, completedAt: trace.cycle.completedAt, errorMessage: trace.cycle.errorMessage },
+              trace.llmCalls.map((c) => ({ id: c.id, agentName: c.agentName, durationMs: null, createdAt: c.createdAt })),
+              null,
+            )}
+          />
           <div className="px-4 pt-3">
             <input
               type="text"
