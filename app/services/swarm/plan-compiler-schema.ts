@@ -40,6 +40,11 @@ const coerceAssetPressureSource = (v: unknown): unknown => {
   return undefined;
 };
 
+const compactString = (max: number) => (v: unknown): unknown => {
+  if (typeof v !== "string") return v;
+  return v.length > max ? v.slice(0, max) : v;
+};
+
 const TrendRegimeSchema = z.object({
   generatedAt: z.string(),
   assets: z.array(z.object({
@@ -72,8 +77,8 @@ export const PlanCompilerSchema = z.object({
     impact: z.enum(["bullish", "bearish", "risk_warning", "ignore"]),
     reason: z.string().min(1).max(280),
   })).default([]),
-  watcherWarnings: z.array(z.string().min(1).max(220)).default([]),
-  memoryUsed: z.array(z.string().min(1).max(220)).default([]),
+  watcherWarnings: z.array(z.preprocess(compactString(220), z.string().min(1).max(220))).default([]),
+  memoryUsed: z.array(z.preprocess(compactString(220), z.string().min(1).max(220))).default([]),
   // Reviews of currently-active multi-day theses. Maintain = position
   // held, reduce = future size cut (no-op today), close = exit at the
   // day's close, flip = exit then open opposite (requires flipTo).

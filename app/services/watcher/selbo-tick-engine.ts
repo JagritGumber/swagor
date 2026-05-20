@@ -93,10 +93,6 @@ function pressureFor(input: SelboTickInput, asset: string): AssetPressure | null
   return rows.find((r) => r.asset.toUpperCase() === asset.toUpperCase()) ?? null;
 }
 
-function trendFor(input: SelboTickInput, asset: string): TrendRegimeSnapshot["assets"][number] | null {
-  return input.externalSentiment?.trendRegime?.assets.find((r) => r.asset.toUpperCase() === asset.toUpperCase()) ?? null;
-}
-
 function alignment(side: "long" | "short", pressure: AssetPressure | null): WatcherDecision["externalPressure"] {
   if (!pressure) return "unknown";
   if (pressure.pressure === "neutral") return "neutral";
@@ -193,13 +189,10 @@ function setupBlocks(symbol: SymbolMarketFeatures, candidate: PerpSetupCandidate
   return blocks;
 }
 
-function countertrendBlocks(input: SelboTickInput, symbol: SymbolMarketFeatures, candidate: PerpSetupCandidate, pressure: AssetPressure | null): string[] {
-  const trend = trendFor(input, symbol.symbol);
-  const direction = trend?.trendDirection ?? (
-    symbol.perpMarketState.regime === "trend_up" ? "up"
-      : symbol.perpMarketState.regime === "trend_down" ? "down"
-        : "unknown"
-  );
+function countertrendBlocks(symbol: SymbolMarketFeatures, candidate: PerpSetupCandidate, pressure: AssetPressure | null): string[] {
+  const direction = symbol.perpMarketState.regime === "trend_up" ? "up"
+    : symbol.perpMarketState.regime === "trend_down" ? "down"
+      : "unknown";
   if (candidate.side === "short" && direction === "up") {
     if (pressure?.pressure === "bearish" || pressure?.pressure === "risk_warning") return [];
     return ["countertrend_without_regime_support"];
@@ -274,7 +267,7 @@ export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
       const pressure = alignment(c.side, pressureFor(input, symbol.symbol));
       const assetPressure = pressureFor(input, symbol.symbol);
       const trigger = triggerName(c);
-      const blocks = [...setupBlocks(symbol, c), ...countertrendBlocks(input, symbol, c, assetPressure)];
+      const blocks = [...setupBlocks(symbol, c), ...countertrendBlocks(symbol, c, assetPressure)];
       const confidence = score(symbol, c.side, pressure, trigger, c);
       const lv = levels(symbol, c.side, c);
       return { symbol, side: c.side, confidence, pressure, trigger, levels: lv, blocks };
