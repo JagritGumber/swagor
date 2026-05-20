@@ -10,6 +10,7 @@
     "check": "bun run typecheck && bun run build",
     "backtest:local": "bun --conditions react-server scripts/backtest-local.ts",
     "test:logic": "bun --conditions react-server scripts/test-logic.ts",
+    "arc:verify": "bun scripts/arc-verify.ts",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio"
