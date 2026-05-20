@@ -10,11 +10,11 @@ import { PositionsTable } from "@/components/dashboard/positions-table";
 import { TradeHistory } from "@/components/dashboard/trade-history";
 import { LifetimeStats } from "@/components/dashboard/lifetime-stats";
 import { PublicWatchingStrip } from "@/components/public/public-watching-strip";
-import { PublicDecisions } from "@/components/public/public-decisions";
 import { PublicArcActivity } from "@/components/public/public-arc-activity";
 import { PublicEquityCurve } from "@/components/public/public-equity-curve";
 import { PublicSelboHeader } from "@/components/public/public-selbo-header";
 import { FeaturedBacktestSections } from "@/components/public/featured-backtest-sections";
+import { LiveStatusBar } from "@/components/public/live-status-bar";
 
 type Params = Promise<{ username: string }>;
 
@@ -47,10 +47,26 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
     <div className="mx-auto max-w-4xl space-y-6 pb-24">
       <PublicSelboHeader username={username} instance={instance} />
 
-      {/* Lead with the on-chain track record: real decisions anchored on
-          Arc and verifiable on Arcscan. This is the differentiator, so it
-          sits above the (clearly-labelled, unanchored) backtest. Renders
-          nothing until the profile has anchored events. */}
+      {/* Live heartbeat: pulsing status, flat/scanning-or-in-position,
+          next-scan countdown. Conveys an actively-trading agent. */}
+      <LiveStatusBar
+        username={username}
+        position={positions[0] ? { side: positions[0].side, asset: positions[0].asset } : null}
+      />
+
+      {/* Hero: price chart with Selbo's real entry/exit markers, served
+          from the public (publicProfile-gated) chart-data endpoint.
+          Markers are not click-interactive publicly (reasoning lives in
+          the on-chain tape below). */}
+      <MarketChartCard
+        watching={watching}
+        endpoint={`/api/public/selbo/${encodeURIComponent(username)}/chart-data`}
+        interactiveMarkers={false}
+        defaultInterval="1h"
+        defaultLookbackMs={2_592_000_000}
+      />
+
+      {/* On-chain trade tape: every decision anchored on Arc, Arcscan links. */}
       <PublicArcActivity username={username} />
 
       {featured ? (
@@ -68,15 +84,9 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
       )}
 
       <PublicWatchingStrip username={username} />
-      <MarketChartCard watching={watching} />
       <PositionsTable positions={positions} />
 
-      {!featured && (
-        <>
-          <TradeHistory trades={closedTrades} />
-          <PublicDecisions username={username} />
-        </>
-      )}
+      {!featured && <TradeHistory trades={closedTrades} />}
     </div>
   );
 }
