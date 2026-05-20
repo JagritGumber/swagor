@@ -5,7 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 
 type ArcEvent = {
   id: string;
-  type: "trade_open" | "trade_close" | "watcher_execute" | "watcher_risk_emergency";
+  type: "trade_open" | "trade_close" | "watcher_execute" | "watcher_risk_emergency" | "analysis";
   label: string;
   status: "pending" | "confirmed" | "failed";
   txId: string | null;
@@ -19,6 +19,7 @@ const TYPE_LABEL: Record<ArcEvent["type"], string> = {
   trade_close: "close",
   watcher_execute: "execute",
   watcher_risk_emergency: "risk",
+  analysis: "analysis",
 };
 
 const TYPE_TONE: Record<ArcEvent["type"], string> = {
@@ -26,6 +27,7 @@ const TYPE_TONE: Record<ArcEvent["type"], string> = {
   trade_close: "text-[var(--neon-cyan)]",
   watcher_execute: "text-foreground",
   watcher_risk_emergency: "text-[var(--neon-red)]",
+  analysis: "text-foreground",
 };
 
 const STATUS_TONE: Record<ArcEvent["status"], string> = {
