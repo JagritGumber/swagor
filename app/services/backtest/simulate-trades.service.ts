@@ -2,7 +2,7 @@ import "server-only";
 
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { backtestRuns, backtestTrades, dailyPlans, rebalanceCycles } from "@/lib/db/schema";
+import { backtestRuns, backtestTrades, dailyPlans, rebalanceCycles, selboInstances } from "@/lib/db/schema";
 import { fetchCandles, type Candle } from "@/lib/data-sources/hyperliquid";
 import { checkStopTpHit, closeAllAtEnd, type OpenPos, STARTING_EQUITY_USD, writeBacktestClose } from "./simulate-helpers";
 import { evaluatePerpRisk } from "@/app/services/risk-engine.service";
@@ -10,10 +10,10 @@ import { evaluateSelboTick, type SelboTickInput, type WatcherDecision, type Watc
 import { atrPct, closes, ema, realizedVolPct, rsiWilder, type MarketFeatureSnapshot, type SymbolMarketFeatures, type TimeframeFeature } from "@/lib/market-features";
 import { computeVolumeProfile } from "@/lib/volume-profile";
 import { buildPerpMarketState } from "@/lib/perp-market-state";
+import { deterministicPressureSnapshot } from "./deterministic-pressure";
 
 export { summarizeBacktestTrades, type BacktestSummary } from "./summarize-trades";
 
-type PlanJson = { watchlist?: string[] };
 const STOP_COOLDOWN_MS = 6 * 3_600_000;
 
 function openFromDecision(decision: WatcherDecision, price: number, dayMs: number, equity: number): OpenPos | null {
@@ -122,7 +122,12 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
 
   const startMs = Date.parse(`${run.startDate}T00:00:00Z`);
   const endMs = Date.parse(`${run.endDate}T00:00:00Z`) + 2 * 86_400_000;
-  const allAssets = Array.from(new Set(plans.flatMap((p) => (p.planJson as PlanJson | null)?.watchlist?.map((a) => a.toUpperCase()) ?? ["BTC", "ETH", "SOL"])));
+  // Asset universe is the instance watch set, NOT the LLM-chosen
+  // watchlist: the latter varies between runs and silently changes
+  // which symbols get evaluated. Deterministic universe -> deterministic trades.
+  const [instance] = await db.select({ currentlyWatching: selboInstances.currentlyWatching })
+    .from(selboInstances).where(eq(selboInstances.id, run.selboInstanceId)).limit(1);
+  const allAssets = (instance?.currentlyWatching ?? ["BTC", "ETH", "SOL"]).map((a) => a.toUpperCase());
   const candleCache = new Map<string, Candle[]>();
   for (const a of allAssets) candleCache.set(a, await fetchCandles(a, "1h", startMs - 7 * 86_400_000, endMs));
 
@@ -171,7 +176,7 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
       mode: "backtest",
       asOf: new Date(tickMs).toISOString(),
       strategyText: "",
-      externalSentiment: plan.planJson as SelboTickInput["externalSentiment"] ?? null,
+      externalSentiment: deterministicPressureSnapshot(marketFeatures),
       marketFeatures,
       positions: [...positions].map(([asset, pos]) => ({
         asset, side: pos.side, entryPrice: pos.entryPrice,
