@@ -47,6 +47,12 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
     <div className="mx-auto max-w-4xl space-y-6 pb-24">
       <PublicSelboHeader username={username} instance={instance} />
 
+      {/* Lead with the on-chain track record: real decisions anchored on
+          Arc and verifiable on Arcscan. This is the differentiator, so it
+          sits above the (clearly-labelled, unanchored) backtest. Renders
+          nothing until the profile has anchored events. */}
+      <PublicArcActivity username={username} />
+
       {featured ? (
         <FeaturedBacktestSections
           username={username}
@@ -62,7 +68,6 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
       )}
 
       <PublicWatchingStrip username={username} />
-      <PublicArcActivity username={username} />
       <MarketChartCard watching={watching} />
       <PositionsTable positions={positions} />
 
