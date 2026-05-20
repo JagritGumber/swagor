@@ -72,7 +72,7 @@ export function ArcActivityCard({
       inFlight?.abort();
       inFlight = new AbortController();
       try {
-        const res = await fetch(`${endpoint}?limit=20`, { cache: "no-store", signal: inFlight.signal });
+        const res = await fetch(`${endpoint}?limit=50`, { cache: "no-store", signal: inFlight.signal });
         if (res.ok && !cancelled) {
           const data = (await res.json()) as { events?: ArcEvent[] };
           setEvents(data.events ?? []);
@@ -101,6 +101,8 @@ export function ArcActivityCard({
 
   if (!loaded || events.length === 0) return null;
 
+  const confirmed = events.filter((e) => e.status === "confirmed").length;
+
   return (
     <section className="border border-[var(--hairline-strong)] bg-black p-6">
       <header className="flex items-baseline justify-between gap-4">
@@ -110,8 +112,8 @@ export function ArcActivityCard({
             Arc activity
           </h2>
         </div>
-        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          anchored on arc testnet
+        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
+          {confirmed > 0 ? `${confirmed} verified on-chain` : "anchored on arc testnet"}
         </span>
       </header>
 
