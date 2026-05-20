@@ -8,6 +8,7 @@
     "emails:build": "cd emails && maizzle build production && cd .. && node emails/bake.mjs",
     "typecheck": "tsgo --noEmit",
     "check": "bun run typecheck && bun run build",
+    "backtest:local": "bun --conditions react-server scripts/backtest-local.ts",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio"

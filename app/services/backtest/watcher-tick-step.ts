@@ -1,5 +1,5 @@
 import type { Candle } from "@/lib/data-sources/hyperliquid";
-import { checkStopTpHit, type OpenPos, writeBacktestClose } from "./simulate-helpers";
+import { checkStopTpHit, type CloseSink, type OpenPos } from "./simulate-helpers";
 import { evaluatePerpRisk } from "@/app/services/risk-engine.service";
 import { evaluateSelboTick, type SelboTickInput, type WatcherDecision, type WatcherExecutionState } from "@/app/services/watcher/selbo-tick-engine";
 import { deterministicPressureSnapshot } from "./deterministic-pressure";
@@ -12,7 +12,7 @@ export type ReplayCtx = {
   runId: string; assets: string[]; candleCache: Map<string, Candle[]>;
   positions: Map<string, OpenPos>; equity: number; opened: number; closed: number;
   currentDayMs: number; dailyTradeCount: number; dailyLossCount: number; dailyRealizedPnlUsd: number;
-  cooldownUntil: Record<string, string>;
+  cooldownUntil: Record<string, string>; writeClose: CloseSink;
 };
 
 function openFromDecision(d: WatcherDecision, price: number, dayMs: number, equity: number): OpenPos | null {
@@ -54,7 +54,7 @@ export async function stepWatcherTick(ctx: ReplayCtx, tickMs: number, canTrade: 
     const candle = (ctx.candleCache.get(asset) ?? []).find((c) => c.t === tickMs) ?? null;
     const hit = candle ? checkStopTpHit(pos, candle) : null;
     if (!hit) continue;
-    const pnlUsd = await writeBacktestClose({ runId: ctx.runId, asset, pos, exitDate: new Date(tickMs), exitPrice: hit.price, reason: hit.reason });
+    const pnlUsd = await ctx.writeClose({ asset, pos, exitDate: new Date(tickMs), exitPrice: hit.price, reason: hit.reason });
     if (hit.reason === "stop_loss") ctx.cooldownUntil[`${asset.toUpperCase()}:${pos.side}`] = new Date(tickMs + STOP_COOLDOWN_MS).toISOString();
     bookClose(ctx, asset, pnlUsd);
   }
@@ -87,7 +87,7 @@ export async function stepWatcherTick(ctx: ReplayCtx, tickMs: number, canTrade: 
     const price = priceAt(ctx, asset, tickMs);
     if (pos && Number.isFinite(price)) {
       const reason = decision.blockedReasons.includes("stale_position") ? "time_stop" : decision.action;
-      const pnlUsd = await writeBacktestClose({ runId: ctx.runId, asset, pos, exitDate: new Date(tickMs), exitPrice: price, reason });
+      const pnlUsd = await ctx.writeClose({ asset, pos, exitDate: new Date(tickMs), exitPrice: price, reason });
       bookClose(ctx, asset, pnlUsd);
     }
   }

@@ -4,7 +4,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { backtestRuns, backtestTrades, dailyPlans, rebalanceCycles, selboInstances } from "@/lib/db/schema";
 import { fetchCandles, type Candle } from "@/lib/data-sources/hyperliquid";
-import { closeAllAtEnd, STARTING_EQUITY_USD } from "./simulate-helpers";
+import { closeAllAtEnd, type CloseSink, STARTING_EQUITY_USD, writeBacktestClose } from "./simulate-helpers";
 import { stepWatcherTick, type ReplayCtx } from "./watcher-tick-step";
 
 export { summarizeBacktestTrades, type BacktestSummary } from "./summarize-trades";
@@ -41,10 +41,11 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
   const candleCache = new Map<string, Candle[]>();
   for (const a of allAssets) candleCache.set(a, await fetchCandles(a, "1h", startMs - 7 * 86_400_000, endMs));
 
+  const writeClose: CloseSink = (a) => writeBacktestClose({ runId, ...a });
   const ctx: ReplayCtx = {
     runId, assets: allAssets, candleCache, positions: new Map(), equity: STARTING_EQUITY_USD,
     opened: 0, closed: 0, currentDayMs: Number.NaN, dailyTradeCount: 0, dailyLossCount: 0,
-    dailyRealizedPnlUsd: 0, cooldownUntil: {},
+    dailyRealizedPnlUsd: 0, cooldownUntil: {}, writeClose,
   };
   const lastTick = Date.parse(`${run.endDate}T23:00:00Z`);
   for (let tickMs = startMs; tickMs <= lastTick; tickMs += HOUR_MS) {
@@ -52,6 +53,6 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
     await stepWatcherTick(ctx, tickMs, cycleDays.has(dayMs) && planDays.has(dayMs));
   }
 
-  const end = await closeAllAtEnd({ runId, positions: ctx.positions, candleCache, lastDayMs: lastTick });
+  const end = await closeAllAtEnd({ writeClose, positions: ctx.positions, candleCache, lastDayMs: lastTick });
   return { opened: ctx.opened, closed: ctx.closed + end.closed };
 }

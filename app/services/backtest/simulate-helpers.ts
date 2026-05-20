@@ -6,6 +6,11 @@ import type { TradeQualityReport } from "@/app/services/trade-quality-engine";
 export const STARTING_EQUITY_USD = 1000;
 const BACKTEST_ROUND_TRIP_COST_USD = 0.1;
 
+/** A close-sink records one closed trade and returns its realized PnL.
+ * The app injects a DB writer; the local harness injects an in-memory
+ * collector. Single shape so both share the trade loop. */
+export type CloseSink = (args: { asset: string; pos: OpenPos; exitDate: Date; exitPrice: number; reason: string }) => Promise<number>;
+
 /** thesisId = `${asset}:${entryDateISO}:${side}` — stable across replays. entryReason + invalidatesIf carry the swarm's WHY for the position so future plans can recall it. */
 export type OpenPos = {
   side: "long" | "short";
@@ -45,7 +50,7 @@ export function stopTpForSide(side: "long" | "short", entry: number, stopPctOver
 }
 
 export async function closeAllAtEnd(input: {
-  runId: string;
+  writeClose: CloseSink;
   positions: Map<string, OpenPos>;
   candleCache: Map<string, Candle[]>;
   lastDayMs: number;
@@ -56,9 +61,8 @@ export async function closeAllAtEnd(input: {
     const candles = input.candleCache.get(asset);
     const price = candles ? closeAt(candles, input.lastDayMs) : null;
     if (price === null) continue;
-    equityDelta += await writeBacktestClose({
-      runId: input.runId, asset, pos,
-      exitDate: new Date(input.lastDayMs), exitPrice: price, reason: "end_of_backtest",
+    equityDelta += await input.writeClose({
+      asset, pos, exitDate: new Date(input.lastDayMs), exitPrice: price, reason: "end_of_backtest",
     });
     closed++;
   }
@@ -89,13 +93,20 @@ export function computePnl(
   return { pnlUsd: sizeUsd * leverage * move, pnlPct: leverage * move * 100 };
 }
 
+/** Single source of realized close PnL: gross move minus the round-trip
+ * cost. Both writeBacktestClose (DB) and the local in-memory sink call
+ * this so deployed and local runs book identical numbers. */
+export function closeRealizedPnl(pos: OpenPos, exitPrice: number): number {
+  const { pnlUsd } = computePnl(pos.side, pos.entryPrice, exitPrice, pos.sizeUsd, pos.leverage);
+  return pnlUsd - BACKTEST_ROUND_TRIP_COST_USD;
+}
+
 /** Persist a closed simulated trade; returns realized PnL for the caller's compounding counter. */
 export async function writeBacktestClose(input: {
   runId: string; asset: string; pos: OpenPos;
   exitDate: Date; exitPrice: number; reason: string;
 }): Promise<number> {
-  const { pnlUsd: grossPnlUsd } = computePnl(input.pos.side, input.pos.entryPrice, input.exitPrice, input.pos.sizeUsd, input.pos.leverage);
-  const pnlUsd = grossPnlUsd - BACKTEST_ROUND_TRIP_COST_USD;
+  const pnlUsd = closeRealizedPnl(input.pos, input.exitPrice);
   const pnlPct = input.pos.sizeUsd > 0 ? (pnlUsd / input.pos.sizeUsd) * 100 : 0;
   await db.insert(backtestTrades).values({
     backtestRunId: input.runId, asset: input.asset, side: input.pos.side,
