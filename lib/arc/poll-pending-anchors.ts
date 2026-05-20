@@ -13,8 +13,10 @@ type ResolveOutcome =
 
 async function resolveCircleTx(circleTxId: string): Promise<ResolveOutcome> {
   const resp = await getSdk().getTransaction({ id: circleTxId });
-  const body = resp.data as { data?: { transaction?: { state?: string; txHash?: string } } } | undefined;
-  const tx = body?.data?.transaction;
+  // Circle SDK returns { data: { transaction: {...} } }, so resp.data.transaction.
+  // (Was previously read as resp.data.data.transaction, one level too deep,
+  // which meant the poller never resolved any anchor to its on-chain hash.)
+  const tx = (resp.data as { transaction?: { state?: string; txHash?: string } } | undefined)?.transaction;
   const state = tx?.state;
   if (state === "COMPLETE" && tx?.txHash) return { outcome: "confirmed", onchainHash: tx.txHash };
   if (state && TERMINAL_FAIL_STATES.has(state)) return { outcome: "failed", sentinel: `failed:${state}` };
