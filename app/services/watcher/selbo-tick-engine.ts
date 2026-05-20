@@ -2,6 +2,7 @@ import type { MarketFeatureSnapshot, SymbolMarketFeatures } from "@/lib/market-f
 import type { RiskSnapshot } from "@/app/services/risk-engine.service";
 import type { PerpSetupCandidate } from "@/lib/perp-market-state";
 import type { TrendRegimeSnapshot } from "@/lib/trend-regime";
+import { scalperLongBlocks } from "./scalper-long-discipline";
 
 export type AssetPressure = {
   asset: string;
@@ -267,7 +268,15 @@ export function evaluateSelboTick(input: SelboTickInput): WatcherDecision {
       const pressure = alignment(c.side, pressureFor(input, symbol.symbol));
       const assetPressure = pressureFor(input, symbol.symbol);
       const trigger = triggerName(c);
-      const blocks = [...setupBlocks(symbol, c), ...countertrendBlocks(symbol, c, assetPressure)];
+      const blocks = [
+        ...setupBlocks(symbol, c),
+        ...countertrendBlocks(symbol, c, assetPressure),
+        ...scalperLongBlocks({
+          strategyMode: symbol.perpMarketState.strategyMode,
+          side: c.side, trigger, regime: symbol.perpMarketState.regime,
+          pressure: assetPressure?.pressure ?? null,
+        }),
+      ];
       const confidence = score(symbol, c.side, pressure, trigger, c);
       const lv = levels(symbol, c.side, c);
       return { symbol, side: c.side, confidence, pressure, trigger, levels: lv, blocks };
