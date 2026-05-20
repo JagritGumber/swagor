@@ -117,8 +117,15 @@ function choosePermission(s: Pick<PerpMarketState, "strategyMode" | "dataQuality
   if (s.regime === "volatile" && s.strategyMode !== "scalper") return "avoid_new_risk";
   if (s.regime === "volatile" && s.strategyMode === "scalper") return "wait_for_retest";
   if (s.strategyMode === "scalper") {
-    if (s.auctionState === "accepted_above_value" || s.auctionState === "rejected_below_value" || s.structureState === "failed_breakdown" || s.valueLocation === "near_val") return "allow_long";
-    if (s.auctionState === "accepted_below_value" || s.auctionState === "rejected_above_value" || s.structureState === "failed_breakout" || s.valueLocation === "near_vah") return "allow_short";
+    // Explicit auction/structure direction wins. near_val/near_vah are
+    // only FALLBACK location signals: a bare "price is near value low"
+    // must not force allow_long when the auction/structure read is
+    // bearish (e.g. rejected_above_value + failed_breakout). Buying a
+    // failed breakout just because price sits near VAL is incoherent.
+    if (s.auctionState === "accepted_above_value" || s.auctionState === "rejected_below_value" || s.structureState === "failed_breakdown") return "allow_long";
+    if (s.auctionState === "accepted_below_value" || s.auctionState === "rejected_above_value" || s.structureState === "failed_breakout") return "allow_short";
+    if (s.valueLocation === "near_val") return "allow_long";
+    if (s.valueLocation === "near_vah") return "allow_short";
     if (s.valueLocation === "inside_value" || s.valueLocation === "at_poc") return "wait_for_retest";
   }
   if (s.auctionState === "accepted_above_value" || s.auctionState === "rejected_below_value" || s.structureState === "failed_breakdown") return "allow_long";
