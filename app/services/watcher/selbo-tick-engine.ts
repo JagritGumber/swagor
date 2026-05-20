@@ -206,7 +206,7 @@ function countertrendBlocks(symbol: SymbolMarketFeatures, candidate: PerpSetupCa
 }
 
 function tradeGate(trigger: WatcherDecision["marketTrigger"]): number {
-  if (trigger === "vah_rejection") return 0.7;
+  if (trigger === "vah_rejection") return 0.74;
   if (trigger === "sweep_reclaim") return 0.67;
   return SCALPER_MIN_TRADE_GATE;
 }
