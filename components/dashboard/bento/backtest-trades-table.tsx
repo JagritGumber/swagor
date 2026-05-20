@@ -1,5 +1,8 @@
 "use client";
 
+import { Fragment, useState } from "react";
+import { TradeReasonDetail } from "./trade-reason-detail";
+
 export type BacktestTradeRow = {
   id: string;
   asset: string;
@@ -15,6 +18,7 @@ export type BacktestTradeRow = {
   qualityScore?: string | null;
   status: string;
   exitReason: string | null;
+  decisionReport?: Record<string, unknown> | null;
 };
 
 function fmtUsd(s: string | null): string {
@@ -36,18 +40,16 @@ function pnlTone(s: string | null): string {
   return n > 0 ? "text-[var(--neon-green)]" : "text-[var(--neon-red)]";
 }
 
+const REASON_LABELS: Record<string, string> = {
+  thesis_reduced: "partial harvest", thesis_closed: "thesis closed", thesis_invalidated: "thesis invalidated",
+  thesis_flipped: "thesis flipped", stop_loss: "stop loss", take_profit: "take profit", end_of_backtest: "end of backtest",
+};
 function reasonLabel(r: string | null): string {
-  if (r === "thesis_reduced") return "partial harvest";
-  if (r === "thesis_closed") return "thesis closed";
-  if (r === "thesis_invalidated") return "thesis invalidated";
-  if (r === "thesis_flipped") return "thesis flipped";
-  if (r === "stop_loss") return "stop loss";
-  if (r === "take_profit") return "take profit";
-  if (r === "end_of_backtest") return "end of backtest";
-  return r ?? "-";
+  return r ? (REASON_LABELS[r] ?? r) : "-";
 }
 
 export function BacktestTradesTable({ trades }: { trades: BacktestTradeRow[] }) {
+  const [openId, setOpenId] = useState<string | null>(null);
   if (trades.length === 0) {
     return <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">No trades simulated yet. Click Simulate.</p>;
   }
@@ -69,17 +71,27 @@ export function BacktestTradesTable({ trades }: { trades: BacktestTradeRow[] }) 
         </thead>
         <tbody>
           {trades.map((t) => (
-            <tr key={t.id} className="border-b border-[var(--neon-green)]/15">
-              <td className="px-2 py-1 text-foreground">{t.entryDate.slice(0, 10)}</td>
-              <td className="px-2 py-1 text-foreground">{t.asset}</td>
-              <td className={`px-2 py-1 ${t.side === "long" ? "text-[var(--neon-green)]" : "text-[var(--neon-red)]"}`}>{t.side}</td>
-              <td className="px-2 py-1 text-muted-foreground" title="Engine quality score">{Number(t.qualityScore ?? t.biasConfidence).toFixed(2)}</td>
-              <td className="px-2 py-1 text-right text-muted-foreground">{Number(t.entryPrice).toFixed(2)}</td>
-              <td className="px-2 py-1 text-right text-muted-foreground">{t.exitPrice ? Number(t.exitPrice).toFixed(2) : "-"}</td>
-              <td className={`px-2 py-1 text-right ${pnlTone(t.pnlUsd)}`}>{fmtUsd(t.pnlUsd)}</td>
-              <td className={`px-2 py-1 text-right ${pnlTone(t.pnlPct)}`}>{fmtPct(t.pnlPct)}</td>
-              <td className={`px-2 py-1 ${t.exitReason === "thesis_reduced" ? "text-[var(--neon-cyan)]" : "text-muted-foreground"}`}>{reasonLabel(t.exitReason)}</td>
-            </tr>
+            <Fragment key={t.id}>
+              <tr
+                className="cursor-pointer border-b border-[var(--neon-green)]/15 hover:bg-[var(--neon-green)]/5"
+                onClick={() => setOpenId((id) => (id === t.id ? null : t.id))}
+              >
+                <td className="px-2 py-1 text-foreground">{t.entryDate.slice(0, 10)}</td>
+                <td className="px-2 py-1 text-foreground">{t.asset}</td>
+                <td className={`px-2 py-1 ${t.side === "long" ? "text-[var(--neon-green)]" : "text-[var(--neon-red)]"}`}>{t.side}</td>
+                <td className="px-2 py-1 text-muted-foreground" title="Engine quality score">{Number(t.qualityScore ?? t.biasConfidence).toFixed(2)}</td>
+                <td className="px-2 py-1 text-right text-muted-foreground">{Number(t.entryPrice).toFixed(2)}</td>
+                <td className="px-2 py-1 text-right text-muted-foreground">{t.exitPrice ? Number(t.exitPrice).toFixed(2) : "-"}</td>
+                <td className={`px-2 py-1 text-right ${pnlTone(t.pnlUsd)}`}>{fmtUsd(t.pnlUsd)}</td>
+                <td className={`px-2 py-1 text-right ${pnlTone(t.pnlPct)}`}>{fmtPct(t.pnlPct)}</td>
+                <td className={`px-2 py-1 ${t.exitReason === "thesis_reduced" ? "text-[var(--neon-cyan)]" : "text-muted-foreground"}`}>{reasonLabel(t.exitReason)}</td>
+              </tr>
+              {openId === t.id && (
+                <tr className="border-b border-[var(--neon-green)]/15 bg-black/40">
+                  <td colSpan={9} className="px-3 py-2"><TradeReasonDetail report={t.decisionReport} /></td>
+                </tr>
+              )}
+            </Fragment>
           ))}
         </tbody>
       </table>
