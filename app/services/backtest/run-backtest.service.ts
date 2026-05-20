@@ -45,7 +45,7 @@ export async function createBacktestRun(
     days,
     status: "running",
     cyclesRequested: days,
-    plannerPromptVersion: "thesis_v1",
+    plannerPromptVersion: "watcher_v2",
   }).returning();
   if (!row) throw new Error("backtest_runs insert returned no row");
   return row;
