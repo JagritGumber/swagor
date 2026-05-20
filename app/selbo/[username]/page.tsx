@@ -15,6 +15,7 @@ import { PublicEquityCurve } from "@/components/public/public-equity-curve";
 import { PublicSelboHeader } from "@/components/public/public-selbo-header";
 import { FeaturedBacktestSections } from "@/components/public/featured-backtest-sections";
 import { LiveStatusBar } from "@/components/public/live-status-bar";
+import { AgentVitals } from "@/components/public/agent-vitals";
 
 type Params = Promise<{ username: string }>;
 
@@ -47,8 +48,12 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
     <div className="mx-auto max-w-4xl space-y-6 pb-24">
       <PublicSelboHeader username={username} instance={instance} />
 
+      {/* KPI instruments: verified-on-chain, decisions, win-rate gauge,
+          paper P/L. Big scannable numbers instead of prose. */}
+      <AgentVitals stats={lifetime} />
+
       {/* Live heartbeat: pulsing status, flat/scanning-or-in-position,
-          next-scan countdown. Conveys an actively-trading agent. */}
+          next-scan countdown + depleting bar. Conveys an actively-trading agent. */}
       <LiveStatusBar
         username={username}
         position={positions[0] ? { side: positions[0].side, asset: positions[0].asset } : null}
