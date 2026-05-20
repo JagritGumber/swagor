@@ -3,7 +3,6 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { dailyPlans, rebalanceCycles, type SelboInstance } from "@/lib/db/schema";
-import { fireDailyPlanAnchor } from "@/lib/arc/anchor-analysis";
 import { buildHistoricalContext } from "./historical-context.service";
 import { externalSwarmContext } from "@/app/services/swarm/daily-planner-context";
 import { runSwarm } from "@/app/services/swarm/swarm-runner.service";
@@ -50,15 +49,15 @@ export async function runBacktestDay(
     await db.update(rebalanceCycles).set({ status: "completed", completedAt: new Date() })
       .where(eq(rebalanceCycles.id, cycleId));
 
-    const [plan] = await db.insert(dailyPlans).values({
+    await db.insert(dailyPlans).values({
       userId: instance.userId, selboInstanceId: instance.id, cycleId,
       status: "complete", planMarkdown: compiled.markdown, planJson: compiled as object,
       backtestRunId, generatedAt: asOf,
-    }).returning({ id: dailyPlans.id });
-    fireDailyPlanAnchor({
-      walletId: instance.circleWalletId, planId: plan.id, generatedAt: asOf,
-      compiled, kind: "backtest", backtestRunId,
-    }).catch((err) => console.error("[backtest-day] anchor:", err));
+    });
+    // Backtests are deterministic replays over historical data, not
+    // real-time decisions, so they are intentionally NOT anchored
+    // on-chain: anchoring would spend gas on simulation noise and
+    // pollute the track record. Only live cycles and live trades anchor.
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     await db.update(rebalanceCycles).set({
