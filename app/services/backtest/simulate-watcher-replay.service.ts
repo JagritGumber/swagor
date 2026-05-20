@@ -5,7 +5,7 @@ import { db } from "@/lib/db/client";
 import { backtestRuns, type SelboInstance } from "@/lib/db/schema";
 import { fetchCandlesPaginated } from "@/lib/data-sources/hyperliquid-candles";
 import type { Candle } from "@/lib/data-sources/hyperliquid";
-import { closeAllAtEnd, STARTING_EQUITY_USD } from "./simulate-helpers";
+import { closeAllAtEnd, type CloseSink, STARTING_EQUITY_USD, writeBacktestClose } from "./simulate-helpers";
 import { stepWatcherTick, type ReplayCtx } from "./watcher-tick-step";
 
 const HOUR_MS = 3_600_000;
@@ -37,15 +37,16 @@ export async function runWatcherReplay(params: {
     for (const a of assets) {
       candleCache.set(a, await fetchCandlesPaginated(a, "1h", startMs - 7 * 86_400_000, endMs + 86_400_000));
     }
+    const writeClose: CloseSink = (a) => writeBacktestClose({ runId: run.id, ...a });
     const ctx: ReplayCtx = {
       runId: run.id, assets, candleCache, positions: new Map(), equity: STARTING_EQUITY_USD,
       opened: 0, closed: 0, currentDayMs: Number.NaN, dailyTradeCount: 0, dailyLossCount: 0,
-      dailyRealizedPnlUsd: 0, cooldownUntil: {},
+      dailyRealizedPnlUsd: 0, cooldownUntil: {}, writeClose,
     };
     for (let tickMs = startMs; tickMs <= endMs; tickMs += HOUR_MS) {
       await stepWatcherTick(ctx, tickMs, true);
     }
-    const end = await closeAllAtEnd({ runId: run.id, positions: ctx.positions, candleCache, lastDayMs: endMs });
+    const end = await closeAllAtEnd({ writeClose, positions: ctx.positions, candleCache, lastDayMs: endMs });
     await db.update(backtestRuns).set({ status: "completed", cyclesCompleted: days, completedAt: new Date() }).where(eq(backtestRuns.id, run.id));
     return { runId: run.id, opened: ctx.opened, closed: ctx.closed + end.closed };
   } catch (err) {
