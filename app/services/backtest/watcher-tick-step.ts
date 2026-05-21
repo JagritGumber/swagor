@@ -1,10 +1,9 @@
 import type { Candle } from "@/lib/data-sources/hyperliquid";
 import { checkStopTpHit, type CloseSink, type OpenPos } from "./simulate-helpers";
-import { evaluatePerpRisk } from "@/app/services/risk-engine.service";
-import type { SelboTickInput, WatcherDecision, WatcherExecutionState } from "@/app/services/watcher/selbo-tick-types";
+import { nextCandleAfter, entryFill, exitFill } from "./backtest-fills";
+import type { WatcherDecision } from "@/app/services/watcher/selbo-tick-types";
 import { decideSelboTick } from "@/app/services/watcher/selbo-agent-decision";
-import { deterministicPressureSnapshot } from "./deterministic-pressure";
-import { buildSnapshotAt } from "./backtest-snapshot";
+import { backtestTickInput } from "./backtest-tick-input";
 
 export const STOP_COOLDOWN_MS = 6 * 3_600_000;
 
@@ -14,8 +13,6 @@ export type ReplayCtx = {
   positions: Map<string, OpenPos>; equity: number; opened: number; closed: number;
   currentDayMs: number; dailyTradeCount: number; dailyLossCount: number; dailyRealizedPnlUsd: number;
   cooldownUntil: Record<string, string>; writeClose: CloseSink;
-  // The user's verbatim strategy + accumulated lessons, so the backtest agent
-  // reasons with the same context the live agent gets. Default "" / [].
   strategyText?: string; recentLessons?: string[];
 };
 
@@ -32,10 +29,6 @@ function openFromDecision(d: WatcherDecision, price: number, dayMs: number, equi
   };
 }
 
-function priceAt(ctx: ReplayCtx, asset: string, tickMs: number): number {
-  return Number((ctx.candleCache.get(asset) ?? []).find((c) => c.t === tickMs)?.c);
-}
-
 function bookClose(ctx: ReplayCtx, asset: string, pnlUsd: number): void {
   ctx.positions.delete(asset); ctx.equity += pnlUsd; ctx.closed++;
   ctx.dailyRealizedPnlUsd += pnlUsd;
@@ -43,9 +36,10 @@ function bookClose(ctx: ReplayCtx, asset: string, pnlUsd: number): void {
 }
 
 /**
- * One hourly tick, shared by the swarm-gated backtest and the
- * continuous long replay. canTrade=false replicates the old per-tick
- * `continue` (still resets daily counters at the UTC day boundary).
+ * One hourly replay tick. Realistic fills: a decision seen on this candle's
+ * close fills at the NEXT candle's open with adverse slippage (backtest-fills),
+ * never the same candle it was decided on. canTrade=false still resets the
+ * daily counters at the UTC day boundary.
  */
 export async function stepWatcherTick(ctx: ReplayCtx, tickMs: number, canTrade: boolean): Promise<void> {
   const dayMs = Date.UTC(new Date(tickMs).getUTCFullYear(), new Date(tickMs).getUTCMonth(), new Date(tickMs).getUTCDate());
@@ -55,50 +49,33 @@ export async function stepWatcherTick(ctx: ReplayCtx, tickMs: number, canTrade: 
   if (!canTrade) return;
 
   for (const [asset, pos] of [...ctx.positions]) {
-    const candle = (ctx.candleCache.get(asset) ?? []).find((c) => c.t === tickMs) ?? null;
+    const candles = ctx.candleCache.get(asset) ?? [];
+    const candle = candles.find((c) => c.t === tickMs) ?? null;
     const hit = candle ? checkStopTpHit(pos, candle) : null;
     if (!hit) continue;
-    const pnlUsd = await ctx.writeClose({ asset, pos, exitDate: new Date(tickMs), exitPrice: hit.price, reason: hit.reason });
+    const next = nextCandleAfter(candles, tickMs);
+    const exitPrice = next ? exitFill(pos.side, Number(next.o)) : hit.price;
+    const pnlUsd = await ctx.writeClose({ asset, pos, exitDate: new Date(next ? next.t : tickMs), exitPrice, reason: hit.reason });
     if (hit.reason === "stop_loss") ctx.cooldownUntil[`${asset.toUpperCase()}:${pos.side}`] = new Date(tickMs + STOP_COOLDOWN_MS).toISOString();
     bookClose(ctx, asset, pnlUsd);
   }
 
-  const marketFeatures = buildSnapshotAt(ctx.assets, ctx.candleCache, tickMs);
-  const risk = evaluatePerpRisk({
-    account: { equityUsd: ctx.equity, withdrawableUsd: ctx.equity },
-    positions: [...ctx.positions].map(([asset, pos]) => {
-      const price = priceAt(ctx, asset, tickMs);
-      return { source: "paper" as const, asset, side: pos.side, sizeUsd: pos.sizeUsd, entryPrice: pos.entryPrice, markPrice: Number.isFinite(price) ? price : null };
-    }),
-  });
-  const tickInput: SelboTickInput = {
-    mode: "backtest", asOf: new Date(tickMs).toISOString(), strategyText: ctx.strategyText ?? "",
-    externalSentiment: deterministicPressureSnapshot(marketFeatures), marketFeatures,
-    positions: [...ctx.positions].map(([asset, pos]) => ({
-      asset, side: pos.side, entryPrice: pos.entryPrice, markPrice: priceAt(ctx, asset, tickMs),
-      sizeUsd: pos.sizeUsd, openedAt: pos.entryDate.toISOString(),
-    })),
-    risk, recentLessons: ctx.recentLessons ?? [],
-    executionState: {
-      dailyTradeCount: ctx.dailyTradeCount, dailyLossCount: ctx.dailyLossCount,
-      dailyRealizedPnlUsd: ctx.dailyRealizedPnlUsd, assetSideCooldownUntil: ctx.cooldownUntil,
-    } satisfies WatcherExecutionState,
-  };
-  const decision = await decideSelboTick(tickInput);
+  const decision = await decideSelboTick(backtestTickInput(ctx, tickMs));
   if ((decision.action === "close" || decision.action === "risk_emergency") && decision.asset) {
     const asset = decision.asset.toUpperCase();
     const pos = ctx.positions.get(asset);
-    const price = priceAt(ctx, asset, tickMs);
-    if (pos && Number.isFinite(price)) {
+    const next = nextCandleAfter(ctx.candleCache.get(asset) ?? [], tickMs);
+    if (pos && next) {
       const reason = decision.blockedReasons.includes("stale_position") ? "time_stop" : decision.action;
-      const pnlUsd = await ctx.writeClose({ asset, pos, exitDate: new Date(tickMs), exitPrice: price, reason });
+      const pnlUsd = await ctx.writeClose({ asset, pos, exitDate: new Date(next.t), exitPrice: exitFill(pos.side, Number(next.o)), reason });
       bookClose(ctx, asset, pnlUsd);
     }
   }
   if ((decision.action === "open_long" || decision.action === "open_short") && decision.asset) {
     const asset = decision.asset.toUpperCase();
-    const price = priceAt(ctx, asset, tickMs);
-    const pos = Number.isFinite(price) ? openFromDecision(decision, price, tickMs, ctx.equity) : null;
+    const next = nextCandleAfter(ctx.candleCache.get(asset) ?? [], tickMs);
+    const side = decision.action === "open_long" ? "long" : "short";
+    const pos = next ? openFromDecision(decision, entryFill(side, Number(next.o)), next.t, ctx.equity) : null;
     if (pos) { ctx.positions.set(asset, pos); ctx.opened++; ctx.dailyTradeCount++; }
   }
 }
