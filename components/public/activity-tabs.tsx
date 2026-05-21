@@ -49,17 +49,17 @@ export function ActivityTabs({ username, tradeRows, closedTrades, positions, arc
           </button>
         ))}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {tab === "trades" &&
           (tradeRows.length > 0 ? (
             <BacktestTradesTable trades={tradeRows} />
           ) : closedTrades.length > 0 ? (
-            <TradeHistory trades={closedTrades} />
+            <TradeHistory trades={closedTrades} bare />
           ) : (
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">No trades yet.</p>
+            <p className="p-4 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">No trades yet.</p>
           ))}
-        {tab === "activity" && <ArcActivityCard endpoint={arcEndpoint ?? `/api/selbo/${encodeURIComponent(username)}/arc`} />}
-        {tab === "positions" && <PositionsTable positions={positions} />}
+        {tab === "activity" && <ArcActivityCard endpoint={arcEndpoint ?? `/api/selbo/${encodeURIComponent(username)}/arc`} bare />}
+        {tab === "positions" && <PositionsTable positions={positions} bare />}
       </div>
     </div>
   );

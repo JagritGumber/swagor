@@ -6,15 +6,17 @@ import type { PositionView } from "@/app/services/positions.service";
  * message when there are no open positions yet so the user sees the
  * surface and knows what will appear when Selbo opens a trade.
  */
-export function PositionsTable({ positions }: { positions: PositionView[] }) {
+export function PositionsTable({ positions, bare = false }: { positions: PositionView[]; bare?: boolean }) {
   if (positions.length === 0) {
     return (
-      <section className="border border-[var(--hairline-strong)] bg-black">
-        <header className="border-b border-[var(--hairline)] px-6 py-3">
-          <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-            Open trades
-          </h2>
-        </header>
+      <section className={bare ? "" : "border border-[var(--hairline-strong)] bg-black"}>
+        {!bare && (
+          <header className="border-b border-[var(--hairline)] px-6 py-3">
+            <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
+              Open trades
+            </h2>
+          </header>
+        )}
         <div className="px-6 py-10 text-center">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
             No open trades yet
@@ -29,12 +31,14 @@ export function PositionsTable({ positions }: { positions: PositionView[] }) {
   }
 
   return (
-    <section className="border border-[var(--hairline-strong)] bg-black">
-      <header className="border-b border-[var(--hairline)] px-6 py-3">
-        <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-          Open trades
-        </h2>
-      </header>
+    <section className={bare ? "" : "border border-[var(--hairline-strong)] bg-black"}>
+      {!bare && (
+        <header className="border-b border-[var(--hairline)] px-6 py-3">
+          <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
+            Open trades
+          </h2>
+        </header>
+      )}
 
       <div className="overflow-x-auto px-6 py-4">
         <table className="w-full border-collapse text-sm">
