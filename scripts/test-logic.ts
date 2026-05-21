@@ -1,6 +1,5 @@
 import type { Candle } from "@/lib/data-sources/hyperliquid";
 import { checkStopTpHit, closeRealizedPnl, computePnl, type OpenPos } from "@/app/services/backtest/simulate-helpers";
-import { scalperLongBlocks } from "@/app/services/watcher/scalper-long-discipline";
 import { summarizeBacktestTrades } from "@/app/services/backtest/summarize-trades";
 
 let pass = 0;
@@ -36,12 +35,9 @@ check("short tp on close<=tp", checkStopTpHit(short, candle(89))?.reason === "ta
 const thesis = pos({ side: "long", entryPrice: 100, stopPrice: 90, tpPrice: 120, invalidationLevel: 96 });
 check("thesis invalidation precedes stop", checkStopTpHit(thesis, candle(95))?.reason === "thesis_invalidated");
 
-// --- scalperLongBlocks ---
-check("sweep long disabled", scalperLongBlocks({ strategyMode: "scalper", side: "long", trigger: "sweep_reclaim", regime: "range", pressure: null }).includes("scalper_long_sweep_disabled"));
-check("val_reclaim long ok in uptrend+bullish", scalperLongBlocks({ strategyMode: "scalper", side: "long", trigger: "val_reclaim", regime: "trend_up", pressure: "bullish" }).length === 0);
-check("val_reclaim long blocked in range/neutral", scalperLongBlocks({ strategyMode: "scalper", side: "long", trigger: "val_reclaim", regime: "range", pressure: "neutral" }).length === 1);
-check("shorts not gated by long discipline", scalperLongBlocks({ strategyMode: "scalper", side: "short", trigger: "vah_rejection", regime: "trend_down", pressure: "bearish" }).length === 0);
-check("swing mode untouched", scalperLongBlocks({ strategyMode: "swing", side: "long", trigger: "sweep_reclaim", regime: "range", pressure: null }).length === 0);
+// Discipline gates removed: the agent decides direction/size/stops now, so
+// there is no scalperLongBlocks to assert. The surviving deterministic logic
+// below is the no-blowup math (pnl, stop/tp, summary) - that still holds.
 
 // --- summarizeBacktestTrades ---
 const sum = summarizeBacktestTrades([{ pnlUsd: "5" }, { pnlUsd: "-3" }, { pnlUsd: "0" }, { pnlUsd: null }]);

@@ -1,8 +1,8 @@
 import "server-only";
 
 import { db } from "@/lib/db/client";
-import { monitorTicks, selboInstances, equitySnapshots, trades, type SelboInstance } from "@/lib/db/schema";
-import { and, eq, desc, gte, or } from "drizzle-orm";
+import { monitorTicks, selboInstances, equitySnapshots, trades, memoryEntries, type SelboInstance } from "@/lib/db/schema";
+import { and, eq, desc, gte, or, isNull } from "drizzle-orm";
 import { MODELS } from "@/lib/llm-client";
 import { getCachedDailyPlan } from "@/lib/utils/daily-plan-cache";
 import { runDailyPlanForInstance } from "@/app/services/swarm/daily-planner.service";
@@ -21,7 +21,8 @@ import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/ma
 import { detectStrategyMode } from "@/lib/strategy-mode";
 import { blendWatcherCadence } from "@/lib/cadence-blend";
 import { recordTickStages, type TickStageInput } from "@/app/services/tick-stages.service";
-import { evaluateSelboTick, type SelboTickInput, type WatcherExecutionState } from "./selbo-tick-engine";
+import type { SelboTickInput, WatcherExecutionState } from "./selbo-tick-types";
+import { decideSelboTick } from "./selbo-agent-decision";
 import { executeWatcherDecision } from "./execute-watcher-decision";
 
 function previousMarketFeatures(lastTick: { context: unknown } | undefined): MarketFeatureSnapshot | null {
@@ -219,6 +220,16 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     sizeUsd: riskNumber(t.amountUsd),
     openedAt: t.openedAt?.toISOString() ?? null,
   }));
+  // In-context learning: feed the agent lessons from its own past trades
+  // (drop user-flagged-bad and deleted). This is the evolution loop.
+  const lessonRows = await db.select({ lessons: memoryEntries.lessons, feedback: memoryEntries.userFeedback })
+    .from(memoryEntries)
+    .where(and(eq(memoryEntries.userId, instance.userId), isNull(memoryEntries.deletedAt)))
+    .orderBy(desc(memoryEntries.createdAt)).limit(20);
+  const recentLessons = lessonRows
+    .filter((r) => r.feedback !== "bad")
+    .flatMap((r) => r.lessons ?? []).slice(0, 12);
+
   const tickInput: SelboTickInput = {
     mode: "live",
     asOf: new Date().toISOString(),
@@ -235,10 +246,10 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       })),
     ],
     risk,
-    recentLessons: [],
+    recentLessons,
     executionState: liveExecutionState(todayTrades),
   };
-  const watcherDecision = evaluateSelboTick(tickInput);
+  const watcherDecision = await decideSelboTick(tickInput);
   const parsed: WatcherOutput = {
     verdict: watcherDecision.action === "risk_emergency"
       ? "risk_emergency"

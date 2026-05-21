@@ -1,7 +1,8 @@
 import type { Candle } from "@/lib/data-sources/hyperliquid";
 import { checkStopTpHit, type CloseSink, type OpenPos } from "./simulate-helpers";
 import { evaluatePerpRisk } from "@/app/services/risk-engine.service";
-import { evaluateSelboTick, type SelboTickInput, type WatcherDecision, type WatcherExecutionState } from "@/app/services/watcher/selbo-tick-engine";
+import type { SelboTickInput, WatcherDecision, WatcherExecutionState } from "@/app/services/watcher/selbo-tick-types";
+import { decideSelboTick } from "@/app/services/watcher/selbo-agent-decision";
 import { deterministicPressureSnapshot } from "./deterministic-pressure";
 import { buildSnapshotAt } from "./backtest-snapshot";
 
@@ -13,6 +14,9 @@ export type ReplayCtx = {
   positions: Map<string, OpenPos>; equity: number; opened: number; closed: number;
   currentDayMs: number; dailyTradeCount: number; dailyLossCount: number; dailyRealizedPnlUsd: number;
   cooldownUntil: Record<string, string>; writeClose: CloseSink;
+  // The user's verbatim strategy + accumulated lessons, so the backtest agent
+  // reasons with the same context the live agent gets. Default "" / [].
+  strategyText?: string; recentLessons?: string[];
 };
 
 function openFromDecision(d: WatcherDecision, price: number, dayMs: number, equity: number): OpenPos | null {
@@ -68,19 +72,19 @@ export async function stepWatcherTick(ctx: ReplayCtx, tickMs: number, canTrade: 
     }),
   });
   const tickInput: SelboTickInput = {
-    mode: "backtest", asOf: new Date(tickMs).toISOString(), strategyText: "",
+    mode: "backtest", asOf: new Date(tickMs).toISOString(), strategyText: ctx.strategyText ?? "",
     externalSentiment: deterministicPressureSnapshot(marketFeatures), marketFeatures,
     positions: [...ctx.positions].map(([asset, pos]) => ({
       asset, side: pos.side, entryPrice: pos.entryPrice, markPrice: priceAt(ctx, asset, tickMs),
       sizeUsd: pos.sizeUsd, openedAt: pos.entryDate.toISOString(),
     })),
-    risk, recentLessons: [],
+    risk, recentLessons: ctx.recentLessons ?? [],
     executionState: {
       dailyTradeCount: ctx.dailyTradeCount, dailyLossCount: ctx.dailyLossCount,
       dailyRealizedPnlUsd: ctx.dailyRealizedPnlUsd, assetSideCooldownUntil: ctx.cooldownUntil,
     } satisfies WatcherExecutionState,
   };
-  const decision = evaluateSelboTick(tickInput);
+  const decision = await decideSelboTick(tickInput);
   if ((decision.action === "close" || decision.action === "risk_emergency") && decision.asset) {
     const asset = decision.asset.toUpperCase();
     const pos = ctx.positions.get(asset);
