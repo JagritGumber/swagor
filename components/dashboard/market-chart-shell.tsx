@@ -81,9 +81,11 @@ export function MarketChartShell({
         />
       </header>
 
-      <div className="relative min-h-80 bg-[#131722]">
+      {/* Shorter by default and drag-resizable (grip at bottom-right). The
+          chart fills this box via a ResizeObserver, so dragging resizes it. */}
+      <div className="relative h-[280px] min-h-[160px] resize-y overflow-hidden bg-[#131722]">
         <div
-          className={`transition-[filter,opacity] duration-300 ${
+          className={`h-full transition-[filter,opacity] duration-300 ${
             loading ? "pointer-events-none opacity-60 blur-[2px]" : ""
           }`}
         >

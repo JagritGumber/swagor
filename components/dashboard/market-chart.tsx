@@ -83,7 +83,7 @@ export function MarketChart({
     if (!container) return;
 
     const chart = createChart(container, {
-      width: container.clientWidth, height: 320,
+      width: container.clientWidth, height: Math.max(160, container.clientHeight),
       layout: { background: { color: CHART_BG }, textColor: "#737373", fontFamily: "ui-monospace, monospace" },
       grid: { vertLines: { color: GRID }, horzLines: { color: GRID } },
       timeScale: { borderColor: HAIRLINE, timeVisible: true, secondsVisible: false },
@@ -114,10 +114,14 @@ export function MarketChart({
     };
     chart.subscribeClick(onClick);
 
-    const onResize = () => chart.applyOptions({ width: container.clientWidth });
-    window.addEventListener("resize", onResize);
+    // Observe the container for BOTH window resizes and user drag-resize
+    // (the wrapper is resize-y), and match the chart to its box.
+    const ro = new ResizeObserver(() => {
+      chart.applyOptions({ width: container.clientWidth, height: Math.max(160, container.clientHeight) });
+    });
+    ro.observe(container);
     return () => {
-      window.removeEventListener("resize", onResize);
+      ro.disconnect();
       chart.unsubscribeClick(onClick);
       chart.remove();
       chartRef.current = null;
@@ -176,5 +180,5 @@ export function MarketChart({
     }
   }, [markers]);
 
-  return <div ref={containerRef} className="w-full" />;
+  return <div ref={containerRef} className="h-full w-full" />;
 }
