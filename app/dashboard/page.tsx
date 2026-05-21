@@ -18,7 +18,8 @@ function toRow(t: BacktestTrade): BacktestTradeRow {
     entryDate: t.entryDate.toISOString(), entryPrice: t.entryPrice,
     exitDate: t.exitDate ? t.exitDate.toISOString() : null, exitPrice: t.exitPrice,
     sizeUsd: t.sizeUsd, pnlUsd: t.pnlUsd, pnlPct: t.pnlPct,
-    biasConfidence: t.biasConfidence, status: t.status, exitReason: t.exitReason,
+    biasConfidence: t.biasConfidence, qualityScore: t.qualityScore, status: t.status, exitReason: t.exitReason,
+    decisionReport: t.decisionReport,
   };
 }
 
