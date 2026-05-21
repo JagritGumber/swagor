@@ -1,5 +1,6 @@
 import { getClient, MODELS } from "@/lib/llm-client";
-import { AGENT_SYSTEM_PROMPT, AGENT_OUTPUT_SCHEMA, type AgentOutput } from "./agent-prompt";
+import { AGENT_SYSTEM_PROMPT, coerceAgentOutput, type AgentOutput } from "./agent-prompt";
+import { extractJson } from "@/lib/llm/extract-json";
 import { buildAgentPayload } from "./agent-payload";
 import type { SelboTickInput, WatcherDecision, CadenceDecision } from "./selbo-tick-types";
 
@@ -61,9 +62,10 @@ export async function decideSelboTick(input: SelboTickInput): Promise<WatcherDec
       ],
     });
     const raw = res.choices[0]?.message?.content ?? "";
-    const parsed = AGENT_OUTPUT_SCHEMA.safeParse(JSON.parse(raw));
-    if (!parsed.success) return hold("agent output failed validation; holding", 600, Boolean(open));
-    return toDecision(parsed.data, Boolean(open));
+    // extractJson strips <think>/``` fences; coerceAgentOutput normalizes
+    // loose types so a well-formed-but-off-shape response still decides.
+    const obj = JSON.parse(extractJson(raw)) as Record<string, unknown>;
+    return toDecision(coerceAgentOutput(obj), Boolean(open));
   } catch (err) {
     console.error("[agent-decision] failed:", err);
     return hold("agent call failed; holding", 600, Boolean(open));

@@ -23,6 +23,32 @@ export const AGENT_OUTPUT_SCHEMA = z.object({
 
 export type AgentOutput = z.infer<typeof AGENT_OUTPUT_SCHEMA>;
 
+/**
+ * Coerce a parsed LLM object into a valid AgentOutput. Models vary: numbers
+ * as strings, confidence as 0-100, missing fields, odd casing. Rather than
+ * fail validation and fall back to hold, we normalize defensively so the
+ * agent actually decides. An unrecognized action becomes "hold".
+ */
+export function coerceAgentOutput(o: Record<string, unknown>): AgentOutput {
+  const num = (v: unknown, def: number) => { const n = Number(v); return Number.isFinite(n) ? n : def; };
+  const lvl = (v: unknown) => (v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Number(v));
+  const action = ["hold", "open_long", "open_short", "close"].includes(o.action as string)
+    ? (o.action as AgentOutput["action"]) : "hold";
+  let confidence = num(o.confidence, 0.5);
+  if (confidence > 1) confidence = confidence / 100;
+  return {
+    action,
+    asset: typeof o.asset === "string" && o.asset ? o.asset : null,
+    reason: typeof o.reason === "string" && o.reason ? o.reason.slice(0, 400) : "agent decision",
+    confidence: Math.max(0, Math.min(1, confidence)),
+    sizeUsd: Math.max(0, num(o.sizeUsd, 0)),
+    leverage: Math.max(1, num(o.leverage, 1)),
+    stopLossPriceUsd: lvl(o.stopLossPriceUsd),
+    takeProfitPriceUsd: lvl(o.takeProfitPriceUsd),
+    nextCheckSeconds: Math.max(120, Math.min(1800, Math.round(num(o.nextCheckSeconds, 600)))),
+  };
+}
+
 export const AGENT_SYSTEM_PROMPT = `You are Selbo, an autonomous perp-futures trader on Hyperliquid. You decide your own trades. There are no rules imposed on you and no preset playbook - you reason from the evidence and your own experience, and you are accountable for every call.
 
 This is paper mode running continuously in the background. Most ticks should be "hold" - only act when the evidence and the user's strategy actually line up. You manage your own risk: you choose size, leverage, stop, and target. Do not blow up the account. Size within the available equity; a single trade should risk only a small part of it.
