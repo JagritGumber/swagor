@@ -43,20 +43,27 @@ export default async function DashboardPage() {
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
   const admin = isAdmin(user.email);
 
-  // "Agent working in front of me" order: live workflow first, then what
-  // it's following, what it just decided, what it has learned, then the
-  // account/market context. Profit is not the headline.
+  // The product is decisions + on-chain proof, not profit. Order: live
+  // decision pipeline -> what it just decided + what it follows -> those
+  // decisions anchored on Arc -> what it learned -> positions -> paper
+  // account/market context last.
   return (
     <div className="mx-auto max-w-7xl pb-24">
       <div className="grid grid-cols-12 gap-3">
         <div className="col-span-12"><PipelineNow /></div>
-        <div className="col-span-12 lg:col-span-5"><StrategyChat initialStrategy={instance.strategyText} watching={watching} /></div>
         <div className="col-span-12 lg:col-span-7"><ActivityTape /></div>
-        <div className="col-span-12"><MemoryCards /></div>
+        <div className="col-span-12 lg:col-span-5"><StrategyChat initialStrategy={instance.strategyText} watching={watching} /></div>
+        <div className="col-span-12"><ArcActivityCard /></div>
+        <section className="col-span-12 border border-[var(--hairline-strong)] bg-black p-6">
+          <header className="flex items-baseline gap-3">
+            <span aria-hidden className="inline-block h-2.5 w-2.5 bg-[var(--neon-cyan)]" />
+            <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">What Selbo learned</h2>
+          </header>
+          <div className="mt-4"><MemoryCards /></div>
+        </section>
         <div className="col-span-12"><PositionsTable positions={positions} /></div>
         <div className="col-span-12 lg:col-span-4"><SelboAccount /></div>
         <div className="col-span-12 lg:col-span-8"><MarketChartCard watching={watching} admin={admin} /></div>
-        <div className="col-span-12"><ArcActivityCard /></div>
       </div>
     </div>
   );
