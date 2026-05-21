@@ -3,18 +3,31 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ensureSelboInstance } from "@/app/services/selbo-instance.service";
 import { listOpenPositions } from "@/app/services/positions.service";
-import { MarketChartCard } from "@/components/dashboard/market-chart-card";
-import { PositionsTable } from "@/components/dashboard/positions-table";
-import { SelboAccount } from "@/components/dashboard/bento/selbo-account";
-import { PipelineNow } from "@/components/dashboard/bento/pipeline-now";
-import { StrategyChat } from "@/components/dashboard/bento/strategy-chat";
-import { ActivityTape } from "@/components/dashboard/activity-tape";
-import { MemoryCards } from "@/components/dashboard/bento/memory-cards";
-import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
+import { listClosedTrades, getLifetimeStats } from "@/app/services/trades.service";
+import { getFeaturedBacktest } from "@/app/services/featured-backtest.service";
+import { summarizeBacktestTrades } from "@/app/services/backtest/summarize-trades";
+import { FlagshipDashboard } from "@/components/public/flagship-dashboard";
+import type { BacktestTradeRow } from "@/components/dashboard/bento/backtest-trades-table";
+import type { BacktestTrade } from "@/lib/db/schema";
 import { BetaGate } from "@/components/dashboard/beta-gate";
 import { TosGate } from "@/components/legal/tos-gate";
-import { isAdmin } from "@/lib/auth/admin";
 
+function toRow(t: BacktestTrade): BacktestTradeRow {
+  return {
+    id: t.id, asset: t.asset, side: t.side,
+    entryDate: t.entryDate.toISOString(), entryPrice: t.entryPrice,
+    exitDate: t.exitDate ? t.exitDate.toISOString() : null, exitPrice: t.exitPrice,
+    sizeUsd: t.sizeUsd, pnlUsd: t.pnlUsd, pnlPct: t.pnlPct,
+    biasConfidence: t.biasConfidence, status: t.status, exitReason: t.exitReason,
+  };
+}
+
+/**
+ * The owner's dashboard IS the flagship terminal, pointed at the authed
+ * session endpoints (same response shapes as the public ones): live
+ * workflow stepper, watchlist, chart with markers, and one compact tabbed
+ * panel. No text-wall pipeline, no duplicate growing activity lists.
+ */
 export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
@@ -22,49 +35,43 @@ export default async function DashboardPage() {
 
   const instance = await ensureSelboInstance(user.id);
   if (!instance.externalWalletAddress) redirect("/verify-wallet");
-
   if (!instance.tosAcceptedAt) {
-    return (
-      <div className="mx-auto max-w-3xl space-y-6 pb-24">
-        <TosGate />
-      </div>
-    );
+    return <div className="mx-auto max-w-3xl space-y-6 pb-24"><TosGate /></div>;
   }
-
   if (!instance.betaAccessGranted) {
-    return (
-      <div className="mx-auto max-w-3xl space-y-6 pb-24">
-        <BetaGate />
-      </div>
-    );
+    return <div className="mx-auto max-w-3xl space-y-6 pb-24"><BetaGate /></div>;
   }
 
-  const positions = await listOpenPositions(user.id);
+  const [positions, closedTrades, lifetime, featured] = await Promise.all([
+    listOpenPositions(user.id),
+    listClosedTrades(user.id, 50),
+    getLifetimeStats(user.id),
+    getFeaturedBacktest(instance.id),
+  ]);
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
-  const admin = isAdmin(user.email);
+  const summary = featured ? summarizeBacktestTrades(featured.trades) : null;
+  const tradeRows = featured ? featured.trades.map(toRow) : [];
+  const headline = summary
+    ? { trades: summary.totalTrades, winRate: summary.totalTrades > 0 ? summary.winRate : null, pnlUsd: summary.totalPnlUsd }
+    : { trades: lifetime.closedTrades, winRate: lifetime.winRate, pnlUsd: lifetime.realizedPnlUsd };
 
-  // The product is decisions + on-chain proof, not profit. Order: live
-  // decision pipeline -> what it just decided + what it follows -> those
-  // decisions anchored on Arc -> what it learned -> positions -> paper
-  // account/market context last.
   return (
-    <div className="mx-auto max-w-7xl pb-24">
-      <div className="grid grid-cols-12 gap-3">
-        <div className="col-span-12"><PipelineNow /></div>
-        <div className="col-span-12 lg:col-span-7"><ActivityTape /></div>
-        <div className="col-span-12 lg:col-span-5"><StrategyChat initialStrategy={instance.strategyText} watching={watching} /></div>
-        <div className="col-span-12"><ArcActivityCard /></div>
-        <section className="col-span-12 border border-[var(--hairline-strong)] bg-black p-6">
-          <header className="flex items-baseline gap-3">
-            <span aria-hidden className="inline-block h-2.5 w-2.5 bg-[var(--neon-cyan)]" />
-            <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">What Selbo learned</h2>
-          </header>
-          <div className="mt-4"><MemoryCards /></div>
-        </section>
-        <div className="col-span-12"><PositionsTable positions={positions} /></div>
-        <div className="col-span-12 lg:col-span-4"><SelboAccount /></div>
-        <div className="col-span-12 lg:col-span-8"><MarketChartCard watching={watching} admin={admin} /></div>
-      </div>
-    </div>
+    <FlagshipDashboard
+      username={instance.username ?? user.id.slice(0, 8)}
+      identity={{
+        walletAddress: instance.circleWalletAddress,
+        erc8004TokenId: instance.erc8004TokenId,
+        erc8004RegistrationTxHash: instance.erc8004RegistrationTxHash,
+        balanceUsd: Number(instance.simulatedBalanceUsd),
+      }}
+      watching={watching}
+      chartEndpoint="/api/chart-data"
+      recentUrl="/api/watcher/recent"
+      arcEndpoint="/api/arc/recent"
+      tradeRows={tradeRows}
+      closedTrades={closedTrades}
+      positions={positions}
+      headline={headline}
+    />
   );
 }

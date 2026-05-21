@@ -19,8 +19,8 @@ export type FlagshipIdentity = {
  * compact identity footer (paper-mode marker, ERC-8004 agent chip, wallet on
  * Arcscan, paper balance). Replaces the old prose header card.
  */
-export function FlagshipWatchlist({ username, identity, watching: initial }: { username: string; identity: FlagshipIdentity; watching: string[] }) {
-  const data = useWatcherPoll({ url: `/api/selbo/${encodeURIComponent(username)}/recent`, limit: 1 });
+export function FlagshipWatchlist({ username, identity, watching: initial, recentUrl }: { username: string; identity: FlagshipIdentity; watching: string[]; recentUrl?: string }) {
+  const data = useWatcherPoll({ url: recentUrl ?? `/api/selbo/${encodeURIComponent(username)}/recent`, limit: 1 });
   const watching = data?.currentlyWatching ?? initial;
 
   return (

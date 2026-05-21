@@ -21,8 +21,8 @@ function activeStep(verdict: string | undefined, position: Pos): { idx: number; 
   return { idx: 0, headline: "Watching", sub: "no clear edge yet, holding cash" };
 }
 
-export function WorkflowViewer({ username, position }: { username: string; position: Pos }) {
-  const data = useWatcherPoll({ url: `/api/selbo/${encodeURIComponent(username)}/recent`, limit: 1 });
+export function WorkflowViewer({ username, position, recentUrl }: { username: string; position: Pos; recentUrl?: string }) {
+  const data = useWatcherPoll({ url: recentUrl ?? `/api/selbo/${encodeURIComponent(username)}/recent`, limit: 1 });
   const watching = data?.currentlyWatching ?? [];
   const { idx, headline, sub } = activeStep(data?.ticks?.[0]?.verdict, position);
 
