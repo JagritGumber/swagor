@@ -38,15 +38,17 @@ export function HeroSection() {
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <CtaPrimary className="cta-glow group inline-flex items-center justify-center gap-3 border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-6 py-4 text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)] focus:ring-offset-2 focus:ring-offset-black sm:text-sm" />
+              {/* Flagship is what most visitors should see (public), so it is
+                  the primary action; beta is invite-only and secondary. */}
               <Link
-                href="/track-record"
+                href="/selbo/flagship"
                 style={{ willChange: "transform" }}
-                className="group inline-flex items-center justify-center gap-2 border border-[var(--hairline-strong)] bg-transparent px-6 py-4 text-xs font-bold uppercase tracking-[0.18em] text-foreground transition hover:border-foreground sm:text-sm"
+                className="cta-glow group inline-flex items-center justify-center gap-3 border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-6 py-4 text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)] focus:ring-offset-2 focus:ring-offset-black sm:text-sm"
               >
                 <span>Watch our flagship</span>
-                <ArrowRight aria-hidden className="h-4 w-4 opacity-60 transition-transform group-hover:translate-x-1" />
+                <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
+              <CtaPrimary className="group inline-flex items-center justify-center gap-2 border border-[var(--hairline-strong)] bg-transparent px-6 py-4 text-xs font-bold uppercase tracking-[0.18em] text-foreground transition hover:border-foreground sm:text-sm" />
             </div>
           </div>
 
