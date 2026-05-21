@@ -54,7 +54,7 @@ export function FlagshipDashboard({ username, identity, watching, chartEndpoint,
   const pos0 = positions[0] ? { side: positions[0].side, asset: positions[0].asset } : null;
 
   return (
-    <div className="grid grid-cols-1 gap-px bg-[var(--hairline)] lg:h-[calc(100dvh-7rem)] lg:grid-cols-[20%_minmax(0,1fr)_22%]">
+    <div className="-mx-4 -mt-8 grid grid-cols-1 gap-px bg-[var(--hairline)] lg:h-[calc(100dvh-7.5rem)] lg:grid-cols-[20%_minmax(0,1fr)_22%]">
       <aside className="min-h-[220px] lg:min-h-0 lg:overflow-hidden">
         <FlagshipWatchlist username={username} identity={identity} watching={watching} recentUrl={recentUrl} />
       </aside>
