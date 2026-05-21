@@ -1,68 +1,76 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CycleWorkflow } from "@/components/dashboard/bento/cycle-workflow";
-import { deriveStages, type CallRow, type PlanRow } from "@/components/dashboard/bento/cycle-stages";
+import { useWatcherPoll } from "@/lib/utils/use-watcher-poll";
 
-type Resp = {
-  cycle: { id: string; status: string; createdAt: string; completedAt: string | null; errorMessage: string | null } | null;
-  calls: CallRow[];
-  plan: PlanRow;
-};
+type Pos = { side: string; asset: string } | null;
 
-function ago(iso: string): string {
-  const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-}
+const STEPS = ["Watching the markets", "Analyzing the setup", "Taking a decision", "Acting on it"];
 
 /**
- * The brain: Selbo's most recent decision cycle rendered as a workflow
- * pipeline (start -> context -> swarm/6 personas -> aggregate -> compile ->
- * anchor on Arc) via the shared CycleWorkflow. Polls the public workflow
- * endpoint and derives stages client-side. No reasoning corpus -- structure,
- * persona count, timing, and anchor status only.
+ * Selbo's loop as a human-readable vertical stepper: one connected line
+ * walking down four plain-language steps, with the step Selbo is in right
+ * now lit and pulsing. Driven purely off the live watcher state (verdict +
+ * open position). Deliberately no engine internals -- no pipeline stage
+ * names, no block codes, no on-chain jargon.
  */
-export function WorkflowViewer({ username }: { username: string }) {
-  const [data, setData] = useState<Resp | null>(null);
+function activeStep(verdict: string | undefined, position: Pos): { idx: number; headline: string; sub: string } {
+  if (verdict === "risk_emergency") return { idx: 3, headline: "Managing risk", sub: "protecting the open position" };
+  if (position) return { idx: 3, headline: `Holding ${position.side} ${position.asset}`, sub: "managing the open trade" };
+  if (verdict === "execute") return { idx: 3, headline: "Placing a trade", sub: "opening a position" };
+  if (verdict === "deliberate" || verdict === "escalate") return { idx: 2, headline: "Taking a decision", sub: "weighing the trade" };
+  return { idx: 0, headline: "Watching", sub: "no clear edge yet, holding cash" };
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    const pull = async () => {
-      try {
-        const res = await fetch(`/api/public/selbo/${encodeURIComponent(username)}/workflow`, { cache: "no-store" });
-        if (res.ok && !cancelled) setData((await res.json()) as Resp);
-      } catch {
-        /* transient; next interval retries */
-      }
-    };
-    pull();
-    const id = setInterval(pull, 60_000);
-    return () => { cancelled = true; clearInterval(id); };
-  }, [username]);
+export function WorkflowViewer({ username, position }: { username: string; position: Pos }) {
+  const data = useWatcherPoll({ url: `/api/selbo/${encodeURIComponent(username)}/recent`, limit: 1 });
+  const watching = data?.currentlyWatching ?? [];
+  const { idx, headline, sub } = activeStep(data?.ticks?.[0]?.verdict, position);
 
-  const cycle = data?.cycle;
   return (
-    <section className="bg-black">
-      <header className="flex items-baseline justify-between gap-3 px-4 pt-4 font-mono text-[10px] uppercase tracking-[0.18em]">
-        <span className="text-[var(--neon-cyan)]">Workflow</span>
-        <span className="text-muted-foreground">{cycle ? `last decision ${ago(cycle.createdAt)}` : ""}</span>
-      </header>
-      {!cycle ? (
-        <p className="px-4 py-4 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-          No analysis cycle yet. Selbo convenes its panel when the market warrants it.
+    <section className="flex h-full flex-col bg-black">
+      <header className="shrink-0 border-b border-[var(--hairline-strong)] px-4 py-4">
+        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--neon-green)]">
+          <span aria-hidden className="inline-block h-2 w-2 animate-pulse bg-[var(--neon-green)]" />
+          {data ? "live" : "connecting"}
+        </div>
+        <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Selbo is</div>
+        <div className="mt-0.5 text-xl font-bold leading-tight text-[var(--neon-cyan)]">{headline}</div>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/70">
+          {sub}{watching.length ? ` · ${watching.join(" / ")}` : ""}
         </p>
-      ) : (
-        <CycleWorkflow
-          stages={deriveStages(
-            { id: cycle.id, asOf: null, status: cycle.status, createdAt: cycle.createdAt, completedAt: cycle.completedAt, errorMessage: cycle.errorMessage },
-            data!.calls,
-            data!.plan,
-          )}
-        />
-      )}
+      </header>
+
+      <ol className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
+        {STEPS.map((label, i) => {
+          const state = i < idx ? "done" : i === idx ? "active" : "pending";
+          const last = i === STEPS.length - 1;
+          return (
+            <li key={label} className="relative grid grid-cols-[20px_1fr] gap-3 pb-6 last:pb-0">
+              {!last && (
+                <span aria-hidden className={`absolute left-[9px] top-5 h-[calc(100%-1.25rem)] w-px ${i < idx ? "bg-[var(--neon-cyan)]" : "bg-[var(--hairline)]"}`} />
+              )}
+              <span
+                aria-hidden
+                className={`relative z-10 mt-0.5 inline-flex h-[18px] w-[18px] items-center justify-center border ${
+                  state === "done"
+                    ? "border-[var(--neon-cyan)] bg-[var(--neon-cyan)]"
+                    : state === "active"
+                      ? "animate-pulse border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/25"
+                      : "border-[var(--hairline-strong)] bg-black"
+                }`}
+              >
+                <span className={`h-1.5 w-1.5 ${state === "done" ? "bg-black" : state === "active" ? "bg-[var(--neon-cyan)]" : "bg-[var(--hairline-strong)]"}`} />
+              </span>
+              <div className={state === "pending" ? "text-muted-foreground" : "text-foreground"}>
+                <div className="text-[14px] leading-tight">{label}</div>
+                {state === "active" && (
+                  <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--neon-cyan)]">in progress</div>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
     </section>
   );
 }
