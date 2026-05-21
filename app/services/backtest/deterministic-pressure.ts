@@ -1,6 +1,6 @@
 import type { MarketFeatureSnapshot } from "@/lib/market-features";
 import { buildTrendRegimeSnapshot } from "@/lib/trend-regime";
-import type { AssetPressure, ExternalPressureSnapshot } from "@/app/services/watcher/selbo-tick-engine";
+import type { AssetPressure, ExternalPressureSnapshot } from "@/app/services/watcher/selbo-tick-types";
 
 /**
  * Deterministic external-pressure snapshot for backtest replay. Live

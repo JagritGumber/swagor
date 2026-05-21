@@ -36,7 +36,7 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
   const endMs = Date.parse(`${run.endDate}T00:00:00Z`) + 2 * 86_400_000;
   // Asset universe is the instance watch set, NOT the LLM watchlist:
   // the latter varies between runs. Deterministic universe -> deterministic trades.
-  const [instance] = await db.select({ currentlyWatching: selboInstances.currentlyWatching })
+  const [instance] = await db.select({ currentlyWatching: selboInstances.currentlyWatching, strategyText: selboInstances.strategyText })
     .from(selboInstances).where(eq(selboInstances.id, run.selboInstanceId)).limit(1);
   const allAssets = (instance?.currentlyWatching ?? ["BTC", "ETH", "SOL"]).map((a) => a.toUpperCase());
   const candleCache = new Map<string, Candle[]>();
@@ -50,6 +50,7 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
     runId, assets: allAssets, candleCache, positions: new Map(), equity: STARTING_EQUITY_USD,
     opened: 0, closed: 0, currentDayMs: Number.NaN, dailyTradeCount: 0, dailyLossCount: 0,
     dailyRealizedPnlUsd: 0, cooldownUntil: {}, writeClose,
+    strategyText: instance?.strategyText ?? "",
   };
   const lastTick = Date.parse(`${run.endDate}T23:00:00Z`);
   for (let tickMs = startMs; tickMs <= lastTick; tickMs += HOUR_MS) {

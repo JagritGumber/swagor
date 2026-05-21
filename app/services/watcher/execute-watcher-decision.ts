@@ -3,7 +3,7 @@ import "server-only";
 import type { SelboInstance } from "@/lib/db/schema/selbo-instances";
 import { openPaperTrade, closePaperTrade } from "@/app/services/trades/paper-trade.service";
 import type { AnchorJsonValue } from "@/lib/arc/anchor";
-import type { WatcherDecision, SelboTickInput } from "./selbo-tick-engine";
+import type { WatcherDecision, SelboTickInput } from "./selbo-tick-types";
 import { evaluateSafetyRails } from "@/app/services/safety-rails/safety-check";
 
 export async function executeWatcherDecision(input: {

@@ -54,6 +54,7 @@ async function main(): Promise<void> {
     runId: run.id, assets, candleCache, positions: new Map(), equity: STARTING_EQUITY_USD,
     opened: 0, closed: 0, currentDayMs: Number.NaN, dailyTradeCount: 0, dailyLossCount: 0,
     dailyRealizedPnlUsd: 0, cooldownUntil: {}, writeClose,
+    strategyText: instance.strategyText,
   };
   for (let t = startMs; t <= lastTickMs; t += HOUR_MS) await stepWatcherTick(ctx, t, true);
   const tail = await closeAllAtEnd({ writeClose, positions: ctx.positions, candleCache, lastDayMs: lastTickMs });
