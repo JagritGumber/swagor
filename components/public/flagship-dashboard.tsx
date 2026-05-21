@@ -3,7 +3,6 @@
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { FlagshipWatchlist, type FlagshipIdentity } from "./flagship-watchlist";
 import { ActivityTabs } from "./activity-tabs";
-import { AgentLiveState } from "./agent-live-state";
 import { WorkflowViewer } from "./workflow-viewer";
 import type { BacktestTradeRow } from "@/components/dashboard/bento/backtest-trades-table";
 import type { ClosedTradeView } from "@/app/services/trades.service";
@@ -66,9 +65,8 @@ export function FlagshipDashboard({ username, identity, watching, chartEndpoint,
       </div>
 
       <aside className="flex flex-col gap-px bg-black lg:min-h-0 lg:overflow-hidden">
-        <AgentLiveState username={username} position={pos0} />
-        <div className="min-h-[260px] lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
-          <WorkflowViewer username={username} />
+        <div className="min-h-[340px] lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+          <WorkflowViewer username={username} position={pos0} />
         </div>
         <StatReadout headline={headline} />
       </aside>
