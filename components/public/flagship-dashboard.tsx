@@ -37,7 +37,7 @@ function StatReadout({ headline }: { headline: Headline }) {
  * workflow viewer (live state + cycle pipeline) + a neutral paper-mode
  * readout. Only the inner panels scroll; the page itself does not.
  */
-export function FlagshipDashboard({ username, identity, watching, chartEndpoint, tradeRows, closedTrades, positions, headline }: {
+export function FlagshipDashboard({ username, identity, watching, chartEndpoint, tradeRows, closedTrades, positions, headline, recentUrl, arcEndpoint }: {
   username: string;
   identity: FlagshipIdentity;
   watching: string[];
@@ -46,13 +46,17 @@ export function FlagshipDashboard({ username, identity, watching, chartEndpoint,
   closedTrades: ClosedTradeView[];
   positions: PositionView[];
   headline: Headline;
+  // Authed dashboard reuses this exact terminal but points at the session
+  // endpoints (same response shapes). Default = public flagship endpoints.
+  recentUrl?: string;
+  arcEndpoint?: string;
 }) {
   const pos0 = positions[0] ? { side: positions[0].side, asset: positions[0].asset } : null;
 
   return (
     <div className="grid grid-cols-1 gap-px bg-[var(--hairline)] lg:h-[calc(100dvh-7rem)] lg:grid-cols-[20%_minmax(0,1fr)_22%]">
       <aside className="min-h-[220px] lg:min-h-0 lg:overflow-hidden">
-        <FlagshipWatchlist username={username} identity={identity} watching={watching} />
+        <FlagshipWatchlist username={username} identity={identity} watching={watching} recentUrl={recentUrl} />
       </aside>
 
       <div className="flex flex-col gap-px lg:min-h-0 lg:overflow-hidden">
@@ -60,13 +64,13 @@ export function FlagshipDashboard({ username, identity, watching, chartEndpoint,
           <MarketChartCard watching={watching} endpoint={chartEndpoint} interactiveMarkers={false} defaultInterval="4h" defaultLookbackMs={7_776_000_000} />
         </div>
         <div className="h-[440px] lg:h-auto lg:min-h-0 lg:flex-1">
-          <ActivityTabs username={username} tradeRows={tradeRows} closedTrades={closedTrades} positions={positions} />
+          <ActivityTabs username={username} tradeRows={tradeRows} closedTrades={closedTrades} positions={positions} arcEndpoint={arcEndpoint} />
         </div>
       </div>
 
       <aside className="flex flex-col gap-px bg-black lg:min-h-0 lg:overflow-hidden">
         <div className="min-h-[340px] lg:min-h-0 lg:flex-1 lg:overflow-hidden">
-          <WorkflowViewer username={username} position={pos0} />
+          <WorkflowViewer username={username} position={pos0} recentUrl={recentUrl} />
         </div>
         <StatReadout headline={headline} />
       </aside>

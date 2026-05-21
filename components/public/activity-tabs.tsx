@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { TradeHistory } from "@/components/dashboard/trade-history";
 import { PositionsTable } from "@/components/dashboard/positions-table";
-import { PublicArcActivity } from "./public-arc-activity";
+import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
 import { BacktestTradesTable, type BacktestTradeRow } from "@/components/dashboard/bento/backtest-trades-table";
 import type { ClosedTradeView } from "@/app/services/trades.service";
 import type { PositionView } from "@/app/services/positions.service";
@@ -22,11 +22,12 @@ const TABS: Array<[TabKey, string]> = [
  * itself never grows. Trades show the featured backtest rows when present,
  * otherwise live closed trades.
  */
-export function ActivityTabs({ username, tradeRows, closedTrades, positions }: {
+export function ActivityTabs({ username, tradeRows, closedTrades, positions, arcEndpoint }: {
   username: string;
   tradeRows: BacktestTradeRow[];
   closedTrades: ClosedTradeView[];
   positions: PositionView[];
+  arcEndpoint?: string;
 }) {
   const [tab, setTab] = useState<TabKey>("trades");
 
@@ -57,7 +58,7 @@ export function ActivityTabs({ username, tradeRows, closedTrades, positions }: {
           ) : (
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">No trades yet.</p>
           ))}
-        {tab === "activity" && <PublicArcActivity username={username} />}
+        {tab === "activity" && <ArcActivityCard endpoint={arcEndpoint ?? `/api/selbo/${encodeURIComponent(username)}/arc`} />}
         {tab === "positions" && <PositionsTable positions={positions} />}
       </div>
     </div>
