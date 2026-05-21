@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, eq, ne, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { trades, type Trade } from "@/lib/db/schema";
+import { trades, type Trade, type BacktestTrade } from "@/lib/db/schema";
 import { fetchCandles, type Candle } from "@/lib/data-sources/hyperliquid";
 
 export const VALID_INTERVALS = new Set(["1m", "5m", "15m", "1h", "4h", "1d"]);
@@ -44,5 +44,28 @@ export async function buildChartData(opts: { userId: string; asset: string; inte
   });
   const otherAssets = Array.from(new Set(otherAssetRows.map((r) => r.asset)));
 
+  return { candles, markers, otherAssets };
+}
+
+/**
+ * Candles + markers from a featured BACKTEST's trades (not the live trades
+ * table). The public flagship uses this so the chart matches the Trades tab
+ * and never shows stale live trades from a deprecated engine.
+ */
+export async function buildBacktestChartData(opts: { asset: string; interval: string; lookbackMs: number; trades: BacktestTrade[] }): Promise<ChartData> {
+  const now = Date.now();
+  const clamped = Math.min(opts.lookbackMs, INTERVAL_MS[opts.interval] * MAX_CANDLES);
+  const rawCandles = await fetchCandles(opts.asset, opts.interval, now - clamped, now).catch(() => [] as Candle[]);
+  const candles = rawCandles.map((c) => ({ t: c.t, o: c.o, h: c.h, l: c.l, c: c.c }));
+  const markers: ChartMarker[] = opts.trades
+    .filter((t) => t.asset.toUpperCase() === opts.asset)
+    .flatMap((t) => {
+      const sd = t.side === "short" ? "short" : "long";
+      const pnl = t.pnlUsd === null ? null : Number(t.pnlUsd);
+      const out: ChartMarker[] = [{ time: Math.floor(t.entryDate.getTime() / 1000), side: sd, isExit: false, tradeId: t.id, pnlUsd: pnl, text: `${sd} $${Number(t.sizeUsd).toFixed(0)}` }];
+      if (t.exitDate) out.push({ time: Math.floor(t.exitDate.getTime() / 1000), side: sd, isExit: true, tradeId: t.id, pnlUsd: pnl, text: pnl !== null ? `close ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}` : "close" });
+      return out;
+    });
+  const otherAssets = Array.from(new Set(opts.trades.map((t) => t.asset.toUpperCase()).filter((a) => a !== opts.asset)));
   return { candles, markers, otherAssets };
 }
