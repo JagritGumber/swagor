@@ -156,6 +156,11 @@ export function MarketChart({
       }));
       (seriesRef.current as ISeriesApi<"Line"> | ISeriesApi<"Area">).setData(data);
     }
+    // Re-center BOTH axes on data change (e.g. symbol switch ETH->BTC):
+    // fitContent handles time; re-asserting autoScale forces the price
+    // scale to recompute for the new symbol's price range instead of
+    // keeping the previous one.
+    seriesRef.current?.priceScale().applyOptions({ autoScale: true });
     chart.timeScale().fitContent();
   }, [candles, chartType]);
 
