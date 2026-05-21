@@ -10,10 +10,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Cron heartbeat endpoint. Called by Cloudflare Cron Triggers (configured
- * in wrangler.toml) every 60 seconds in production. Locally there's no
- * automatic cron — fire ticks manually via /api/watcher/force-tick or
- * the dev strip's Force tick button.
+ * Cron heartbeat endpoint. Called by an external scheduler (cron-job.org)
+ * in production; point a job at this URL every few minutes. Locally there
+ * is no automatic cron, so fire ticks manually via /api/watcher/force-tick
+ * or the dev strip's Force tick button. (Do NOT add a Vercel cron: the
+ * Hobby plan only allows daily Vercel crons, and scheduling already runs
+ * through cron-job.org.)
  *
  * Body of work: find Selbo instances whose `next_watcher_at <= now()` and
  * whose kill switch is off, run a watcher tick for each. The watcher
@@ -21,7 +23,8 @@ export const dynamic = "force-dynamic";
  * this endpoint stays state-free.
  *
  * Auth: shared secret in `Authorization: Bearer ${CRON_SECRET}` header,
- * set in production via `wrangler secret put CRON_SECRET`.
+ * set as CRON_SECRET in the Vercel project env and as the bearer header on
+ * the cron-job.org job.
  */
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET;
