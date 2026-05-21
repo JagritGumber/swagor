@@ -31,6 +31,7 @@ async function main(): Promise<void> {
   }
   const assets = (arg("assets") ?? "BTC,ETH,SOL").split(",").map((a) => a.trim().toUpperCase());
   const out = arg("out") ?? "run_result.json";
+  const strategy = arg("strategy") ?? "Trade BTC, ETH and SOL perps. Buy strong dips that reclaim value, short clear rejections at value highs. Be decisive on clean setups, cut losers fast, no more than 3x leverage.";
   const startMs = Date.parse(`${start}T00:00:00Z`);
   const endMs = Date.parse(`${end}T23:00:00Z`);
   const days = Math.round((endMs - startMs) / 86_400_000) + 1;
