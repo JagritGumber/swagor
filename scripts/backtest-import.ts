@@ -59,4 +59,4 @@ async function main(): Promise<void> {
   console.log(`[import] run ${run.id}: ${data.trades.length} trades imported for ${username} (${data.run.startDate}->${data.run.endDate}). Now featured.`);
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().then(() => process.exit(0)).catch((err) => { console.error(err); process.exit(1); });
