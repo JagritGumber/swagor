@@ -81,9 +81,10 @@ export function MarketChartShell({
         />
       </header>
 
-      {/* Shorter by default and drag-resizable (grip at bottom-right). The
-          chart fills this box via a ResizeObserver, so dragging resizes it. */}
-      <div className="relative h-[280px] min-h-[160px] resize-y overflow-hidden bg-[#131722]">
+      {/* Fill the column (parent controls the proportion) so the candles get
+          the height instead of a fixed box. The chart matches this via a
+          ResizeObserver. */}
+      <div className="relative min-h-[200px] flex-1 overflow-hidden bg-[#131722]">
         <div
           className={`h-full transition-[filter,opacity] duration-300 ${
             loading ? "pointer-events-none opacity-60 blur-[2px]" : ""
