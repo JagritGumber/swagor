@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   }
   const assets = (arg("assets") ?? "BTC,ETH,SOL").split(",").map((a) => a.trim().toUpperCase());
   const out = arg("out") ?? "run_result.json";
-  const strategy = arg("strategy") ?? "Trade BTC, ETH and SOL perps. Buy strong dips that reclaim value, short clear rejections at value highs. Be decisive on clean setups, cut losers fast, no more than 3x leverage.";
+  const strategy = arg("strategy") ?? "Swing-trade BTC, ETH and SOL perps off the 4h/1d structure. Buy dips that reclaim value in an uptrend, short rejections at value highs in a downtrend, and hold positions for days while the thesis holds. Use wide, structure-based stops (not tight intraday stops) and multi-day targets. Prefer a few high-conviction positions over frequent trades. Max 3x leverage.";
   const startMs = Date.parse(`${start}T00:00:00Z`);
   const endMs = Date.parse(`${end}T23:00:00Z`);
   const days = Math.round((endMs - startMs) / 86_400_000) + 1;
