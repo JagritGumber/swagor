@@ -28,16 +28,18 @@ function fmtTime(d: Date | null): string {
  * anchors. Arc anchor links inside the row stop propagation so they
  * still navigate to Arcscan instead of opening the modal.
  */
-export function TradeHistory({ trades, admin = false }: { trades: ClosedTradeView[]; admin?: boolean }) {
+export function TradeHistory({ trades, admin = false, bare = false }: { trades: ClosedTradeView[]; admin?: boolean; bare?: boolean }) {
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
   if (trades.length === 0) return null;
 
   return (
-    <section className="border border-[var(--hairline-strong)] bg-black p-6">
-      <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-        Trade history
-      </h2>
-      <div className="mt-4 overflow-x-auto">
+    <section className={bare ? "" : "border border-[var(--hairline-strong)] bg-black p-6"}>
+      {!bare && (
+        <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
+          Trade history
+        </h2>
+      )}
+      <div className={`overflow-x-auto ${bare ? "" : "mt-4"}`}>
         <table className="w-full min-w-[640px] border-y border-[var(--hairline-strong)]">
           <thead>
             <tr className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -108,9 +110,11 @@ export function TradeHistory({ trades, admin = false }: { trades: ClosedTradeVie
           </tbody>
         </table>
       </div>
-      <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-        Click any row to see why Selbo opened and closed the trade.
-      </p>
+      {!bare && (
+        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+          Click any row to see why Selbo opened and closed the trade.
+        </p>
+      )}
       {selectedTradeId && (
         <TradeDecisionDrawer
           tradeId={selectedTradeId}

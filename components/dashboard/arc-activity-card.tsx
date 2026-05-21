@@ -55,7 +55,8 @@ function agoString(when: Date): string {
  */
 export function ArcActivityCard({
   endpoint = "/api/arc/recent",
-}: { endpoint?: string }) {
+  bare = false,
+}: { endpoint?: string; bare?: boolean }) {
   const [events, setEvents] = useState<ArcEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -104,20 +105,22 @@ export function ArcActivityCard({
   const confirmed = events.filter((e) => e.status === "confirmed").length;
 
   return (
-    <section className="border border-[var(--hairline-strong)] bg-black p-6">
-      <header className="flex items-baseline justify-between gap-4">
-        <div className="flex items-baseline gap-3">
-          <span aria-hidden className="inline-block h-2.5 w-2.5 bg-[var(--neon-cyan)]" />
-          <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-            Arc activity
-          </h2>
-        </div>
-        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
-          {confirmed > 0 ? `${confirmed} verified on-chain` : "anchored on arc testnet"}
-        </span>
-      </header>
+    <section className={bare ? "" : "border border-[var(--hairline-strong)] bg-black p-6"}>
+      {!bare && (
+        <header className="flex items-baseline justify-between gap-4">
+          <div className="flex items-baseline gap-3">
+            <span aria-hidden className="inline-block h-2.5 w-2.5 bg-[var(--neon-cyan)]" />
+            <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
+              Arc activity
+            </h2>
+          </div>
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
+            {confirmed > 0 ? `${confirmed} verified on-chain` : "anchored on arc testnet"}
+          </span>
+        </header>
+      )}
 
-      <ol className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline)]">
+      <ol className={`divide-y divide-[var(--hairline)] border-y border-[var(--hairline)] ${bare ? "" : "mt-4"}`}>
         {events.map((e) => (
           <li key={e.id} className="grid grid-cols-[60px_1fr_auto_auto] items-baseline gap-4 py-3">
             <span className={`font-mono text-[10px] font-bold uppercase tracking-[0.18em] ${TYPE_TONE[e.type]}`}>
