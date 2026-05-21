@@ -6,6 +6,11 @@ import { listOpenPositions } from "@/app/services/positions.service";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { PositionsTable } from "@/components/dashboard/positions-table";
 import { SelboAccount } from "@/components/dashboard/bento/selbo-account";
+import { PipelineNow } from "@/components/dashboard/bento/pipeline-now";
+import { StrategyChat } from "@/components/dashboard/bento/strategy-chat";
+import { ActivityTape } from "@/components/dashboard/activity-tape";
+import { MemoryCards } from "@/components/dashboard/bento/memory-cards";
+import { ArcActivityCard } from "@/components/dashboard/arc-activity-card";
 import { BetaGate } from "@/components/dashboard/beta-gate";
 import { TosGate } from "@/components/legal/tos-gate";
 import { isAdmin } from "@/lib/auth/admin";
@@ -38,17 +43,20 @@ export default async function DashboardPage() {
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
   const admin = isAdmin(user.email);
 
-  // Layout per user direction:
-  //   Top row: Selbo's account (4) | Market chart (8)
-  //   Below:   Positions (12)
-  // Strategy chat + Memory have been removed from this page; planned to
-  // live in a separate tab. See user note 2026-05-16.
+  // "Agent working in front of me" order: live workflow first, then what
+  // it's following, what it just decided, what it has learned, then the
+  // account/market context. Profit is not the headline.
   return (
     <div className="mx-auto max-w-7xl pb-24">
       <div className="grid grid-cols-12 gap-3">
+        <div className="col-span-12"><PipelineNow /></div>
+        <div className="col-span-12 lg:col-span-5"><StrategyChat initialStrategy={instance.strategyText} watching={watching} /></div>
+        <div className="col-span-12 lg:col-span-7"><ActivityTape /></div>
+        <div className="col-span-12"><MemoryCards /></div>
+        <div className="col-span-12"><PositionsTable positions={positions} /></div>
         <div className="col-span-12 lg:col-span-4"><SelboAccount /></div>
         <div className="col-span-12 lg:col-span-8"><MarketChartCard watching={watching} admin={admin} /></div>
-        <div className="col-span-12"><PositionsTable positions={positions} /></div>
+        <div className="col-span-12"><ArcActivityCard /></div>
       </div>
     </div>
   );
