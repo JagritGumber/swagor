@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { selboInstances } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
-import { buildChartData, VALID_INTERVALS } from "@/app/services/chart-data.service";
+import { buildChartData, buildBacktestChartData, VALID_INTERVALS } from "@/app/services/chart-data.service";
+import { getFeaturedBacktest } from "@/app/services/featured-backtest.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,11 +30,17 @@ export async function GET(
   }
 
   const [instance] = await db
-    .select({ userId: selboInstances.userId })
+    .select({ id: selboInstances.id, userId: selboInstances.userId })
     .from(selboInstances)
     .where(and(eq(selboInstances.username, username), eq(selboInstances.publicProfile, true)))
     .limit(1);
   if (!instance) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Prefer the featured backtest's trades so the chart matches the Trades tab.
+  // Fall back to live trades only when there is no featured backtest.
+  const featured = await getFeaturedBacktest(instance.id);
+  if (featured) {
+    return NextResponse.json(await buildBacktestChartData({ asset, interval, lookbackMs, trades: featured.trades }));
+  }
   return NextResponse.json(await buildChartData({ userId: instance.userId, asset, interval, lookbackMs }));
 }
