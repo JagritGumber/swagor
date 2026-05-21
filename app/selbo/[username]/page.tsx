@@ -6,10 +6,15 @@ import { listOpenPositions } from "@/app/services/positions.service";
 import { listClosedTrades, getLifetimeStats } from "@/app/services/trades.service";
 import { getFeaturedBacktest } from "@/app/services/featured-backtest.service";
 import { summarizeBacktestTrades } from "@/app/services/backtest/summarize-trades";
+import { STARTING_EQUITY_USD } from "@/app/services/backtest/simulate-helpers";
 import { FlagshipDashboard } from "@/components/public/flagship-dashboard";
 import type { BacktestTradeRow } from "@/components/dashboard/bento/backtest-trades-table";
 
 type Params = Promise<{ username: string }>;
+
+// Always render fresh: the featured backtest + live state come from the DB,
+// so a cached page would show a stale run (e.g. after a new import).
+export const dynamic = "force-dynamic";
 
 function toRow(t: BacktestTrade): BacktestTradeRow {
   return {
@@ -57,7 +62,10 @@ export default async function PublicSelboPage({ params }: { params: Params }) {
         walletAddress: instance.circleWalletAddress,
         erc8004TokenId: instance.erc8004TokenId,
         erc8004RegistrationTxHash: instance.erc8004RegistrationTxHash,
-        balanceUsd: Number(instance.simulatedBalanceUsd),
+        // When featuring a backtest, the balance must be the backtest's ending
+        // equity (start + realized P/L) so it reconciles with the P/L shown -
+        // NOT the unrelated live paper-account balance.
+        balanceUsd: summary ? STARTING_EQUITY_USD + summary.totalPnlUsd : Number(instance.simulatedBalanceUsd),
       }}
       watching={instance.currentlyWatching ?? ["ETH", "BTC", "SOL"]}
       chartEndpoint={`/api/public/selbo/${encodeURIComponent(username)}/chart-data`}
