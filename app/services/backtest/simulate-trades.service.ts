@@ -3,7 +3,8 @@ import "server-only";
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { backtestRuns, backtestTrades, dailyPlans, rebalanceCycles, selboInstances } from "@/lib/db/schema";
-import { fetchCandles, type Candle } from "@/lib/data-sources/hyperliquid";
+import { type Candle } from "@/lib/data-sources/hyperliquid";
+import { fetchCandlesPaginated } from "@/lib/data-sources/hyperliquid-candles";
 import { closeAllAtEnd, type CloseSink, STARTING_EQUITY_USD, writeBacktestClose } from "./simulate-helpers";
 import { stepWatcherTick, type ReplayCtx } from "./watcher-tick-step";
 
@@ -39,7 +40,10 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
     .from(selboInstances).where(eq(selboInstances.id, run.selboInstanceId)).limit(1);
   const allAssets = (instance?.currentlyWatching ?? ["BTC", "ETH", "SOL"]).map((a) => a.toUpperCase());
   const candleCache = new Map<string, Candle[]>();
-  for (const a of allAssets) candleCache.set(a, await fetchCandles(a, "1h", startMs - 7 * 86_400_000, endMs));
+  // Paginated: a single fetchCandles caps at ~5000 candles (~7 months of
+  // 1h), silently truncating longer windows. Paginate so the full window
+  // is covered.
+  for (const a of allAssets) candleCache.set(a, await fetchCandlesPaginated(a, "1h", startMs - 7 * 86_400_000, endMs));
 
   const writeClose: CloseSink = (a) => writeBacktestClose({ runId, ...a });
   const ctx: ReplayCtx = {
