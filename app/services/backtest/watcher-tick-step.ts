@@ -1,5 +1,5 @@
 import type { Candle } from "@/lib/data-sources/hyperliquid";
-import { checkStopTpHit, type CloseSink, type OpenPos } from "./simulate-helpers";
+import { checkStopTpHit, trailingStopHit, type CloseSink, type OpenPos } from "./simulate-helpers";
 import { nextCandleAfter, entryFill, exitFill } from "./backtest-fills";
 import type { WatcherDecision } from "@/app/services/watcher/selbo-tick-types";
 import { decideSelboTick } from "@/app/services/watcher/selbo-agent-decision";
@@ -51,7 +51,12 @@ export async function stepWatcherTick(ctx: ReplayCtx, tickMs: number, canTrade: 
   for (const [asset, pos] of [...ctx.positions]) {
     const candles = ctx.candleCache.get(asset) ?? [];
     const candle = candles.find((c) => c.t === tickMs) ?? null;
-    const hit = candle ? checkStopTpHit(pos, candle) : null;
+    if (!candle) continue;
+    const close = Number(candle.c);
+    pos.peakPrice = pos.side === "long"
+      ? Math.max(pos.peakPrice ?? pos.entryPrice, close)
+      : Math.min(pos.peakPrice ?? pos.entryPrice, close);
+    const hit = checkStopTpHit(pos, candle) ?? (trailingStopHit(pos, close) ? { price: close, reason: "trailing_stop" } : null);
     if (!hit) continue;
     const next = nextCandleAfter(candles, tickMs);
     const exitPrice = next ? exitFill(pos.side, Number(next.o)) : hit.price;
