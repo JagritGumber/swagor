@@ -19,7 +19,7 @@ export type FlagshipIdentity = {
  * compact identity footer (paper-mode marker, ERC-8004 agent chip, wallet on
  * Arcscan, paper balance). Replaces the old prose header card.
  */
-export function FlagshipWatchlist({ username, identity, watching: initial, recentUrl }: { username: string; identity: FlagshipIdentity; watching: string[]; recentUrl?: string }) {
+export function FlagshipWatchlist({ username, identity, watching: initial, recentUrl, selected, onSelect }: { username: string; identity: FlagshipIdentity; watching: string[]; recentUrl?: string; selected?: string; onSelect?: (a: string) => void }) {
   const data = useWatcherPoll({ url: recentUrl ?? `/api/selbo/${encodeURIComponent(username)}/recent`, limit: 1 });
   const watching = data?.currentlyWatching ?? initial;
 
@@ -29,12 +29,22 @@ export function FlagshipWatchlist({ username, identity, watching: initial, recen
         Watchlist
       </header>
       <ul className="min-h-0 flex-1 divide-y divide-[var(--hairline)] overflow-y-auto">
-        {watching.map((s) => (
-          <li key={s} className="flex items-center justify-between px-3 py-2.5 font-mono text-sm tracking-[0.06em] text-foreground">
-            <span>{s}</span>
-            <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse bg-[var(--neon-cyan)]" />
-          </li>
-        ))}
+        {watching.map((s) => {
+          const active = s === selected;
+          return (
+            <li key={s}>
+              <button
+                type="button"
+                onClick={() => onSelect?.(s)}
+                aria-pressed={active}
+                className={`flex w-full items-center justify-between px-3 py-2.5 text-left font-mono text-sm tracking-[0.06em] transition ${active ? "bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]" : "text-foreground hover:bg-white/5"}`}
+              >
+                <span>{s}</span>
+                <span aria-hidden className={`inline-block h-1.5 w-1.5 ${active ? "animate-pulse bg-[var(--neon-cyan)]" : "bg-[var(--hairline-strong)]"}`} />
+              </button>
+            </li>
+          );
+        })}
         {watching.length === 0 && (
           <li className="px-3 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">no watchlist yet</li>
         )}

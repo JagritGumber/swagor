@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { MarketChartCard } from "@/components/dashboard/market-chart-card";
 import { FlagshipWatchlist, type FlagshipIdentity } from "./flagship-watchlist";
 import { ActivityTabs } from "./activity-tabs";
@@ -52,16 +53,17 @@ export function FlagshipDashboard({ username, identity, watching, chartEndpoint,
   arcEndpoint?: string;
 }) {
   const pos0 = positions[0] ? { side: positions[0].side, asset: positions[0].asset } : null;
+  const [chartAsset, setChartAsset] = useState(watching[0] ?? "ETH");
 
   return (
     <div className="-mx-4 -mt-8 grid grid-cols-1 gap-px bg-[var(--hairline)] lg:h-[calc(100dvh-7.5rem)] lg:grid-cols-[20%_minmax(0,1fr)_22%]">
       <aside className="min-h-[220px] lg:min-h-0 lg:overflow-hidden">
-        <FlagshipWatchlist username={username} identity={identity} watching={watching} recentUrl={recentUrl} />
+        <FlagshipWatchlist username={username} identity={identity} watching={watching} recentUrl={recentUrl} selected={chartAsset} onSelect={setChartAsset} />
       </aside>
 
       <div className="flex flex-col gap-px lg:min-h-0 lg:overflow-hidden">
         <div className="h-[420px] lg:h-[62%] lg:min-h-0">
-          <MarketChartCard watching={watching} endpoint={chartEndpoint} interactiveMarkers={false} defaultInterval="1h" defaultLookbackMs={7_776_000_000} />
+          <MarketChartCard watching={watching} endpoint={chartEndpoint} interactiveMarkers={false} defaultInterval="1h" defaultLookbackMs={7_776_000_000} asset={chartAsset} onAsset={setChartAsset} />
         </div>
         <div className="h-[300px] lg:h-auto lg:min-h-0 lg:flex-1">
           <ActivityTabs username={username} tradeRows={tradeRows} closedTrades={closedTrades} positions={positions} arcEndpoint={arcEndpoint} />
