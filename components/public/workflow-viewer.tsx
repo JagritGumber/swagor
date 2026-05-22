@@ -5,7 +5,7 @@ import { useWatcherPoll } from "@/lib/utils/use-watcher-poll";
 
 type Pos = { side: string; asset: string } | null;
 
-const STEPS = ["Watching the markets", "Analyzing the setup", "Taking a decision", "Acting on it"];
+const STEPS = ["Watching the markets", "Analyzing the setup", "Taking a decision", "Acting on it", "Recording the proof on-chain"];
 
 /**
  * Selbo's loop as a human-readable vertical stepper: one connected line
@@ -33,8 +33,11 @@ export function WorkflowViewer({ username, position, recentUrl }: { username: st
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
   const tick = data?.ticks?.[0];
+  const verdict = tick?.verdict;
   const watching = data?.currentlyWatching ?? [];
-  const { idx, headline, sub } = activeStep(tick?.verdict, position);
+  const { idx, headline, sub } = activeStep(verdict, position);
+  // On-chain step: a made move is already recorded (done); one being placed now is recording.
+  const recordState = position ? "done" : verdict === "execute" || verdict === "risk_emergency" ? "active" : "pending";
   const thinking = tick?.rationale && !tick.rationale.includes("failed validation") ? tick.rationale : null;
 
   return (
@@ -64,29 +67,23 @@ export function WorkflowViewer({ username, position, recentUrl }: { username: st
 
       <ol className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
         {STEPS.map((label, i) => {
-          const state = i < idx ? "done" : i === idx ? "active" : "pending";
           const last = i === STEPS.length - 1;
+          const state = last ? recordState : i < idx ? "done" : i === idx ? "active" : "pending";
+          const dotShell = state === "done" ? "border-[var(--neon-cyan)] bg-[var(--neon-cyan)]" : state === "active" ? "animate-pulse border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/25" : "border-[var(--hairline-strong)] bg-black";
+          const dotCore = state === "done" ? "bg-black" : state === "active" ? "bg-[var(--neon-cyan)]" : "bg-[var(--hairline-strong)]";
+          const subLabel = state === "active" ? (last ? "recording..." : "in progress") : last && state === "done" ? "recorded on Arc" : null;
           return (
             <li key={label} className="relative grid grid-cols-[20px_1fr] gap-3 pb-6 last:pb-0">
               {!last && (
-                <span aria-hidden className={`absolute left-[9px] top-5 h-[calc(100%-1.25rem)] w-px ${i < idx ? "bg-[var(--neon-cyan)]" : "bg-[var(--hairline)]"}`} />
+                <span aria-hidden className={`absolute left-[9px] top-5 h-[calc(100%-1.25rem)] w-px ${i < idx || (i === STEPS.length - 2 && recordState !== "pending") ? "bg-[var(--neon-cyan)]" : "bg-[var(--hairline)]"}`} />
               )}
-              <span
-                aria-hidden
-                className={`relative z-10 mt-0.5 inline-flex h-[18px] w-[18px] items-center justify-center border ${
-                  state === "done"
-                    ? "border-[var(--neon-cyan)] bg-[var(--neon-cyan)]"
-                    : state === "active"
-                      ? "animate-pulse border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/25"
-                      : "border-[var(--hairline-strong)] bg-black"
-                }`}
-              >
-                <span className={`h-1.5 w-1.5 ${state === "done" ? "bg-black" : state === "active" ? "bg-[var(--neon-cyan)]" : "bg-[var(--hairline-strong)]"}`} />
+              <span aria-hidden className={`relative z-10 mt-0.5 inline-flex h-[18px] w-[18px] items-center justify-center border ${dotShell}`}>
+                <span className={`h-1.5 w-1.5 ${dotCore}`} />
               </span>
               <div className={state === "pending" ? "text-muted-foreground" : "text-foreground"}>
                 <div className="text-[14px] leading-tight">{label}</div>
-                {state === "active" && (
-                  <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--neon-cyan)]">in progress</div>
+                {subLabel && (
+                  <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--neon-cyan)]/80">{subLabel}</div>
                 )}
               </div>
             </li>

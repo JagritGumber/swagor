@@ -32,10 +32,18 @@ export function HeroSection() {
             </h1>
 
             <p className="max-w-2xl text-balance text-base text-muted-foreground sm:text-lg">
-              Three specialist AI agents debate every trade. A cross-model auditor
-              reviews the debate. <span className="text-foreground">Every trade and the dissent behind it</span> lands on Arc.
-              You can read all of it.
+              An autonomous agent that manages USDC on Arc. It watches the market,
+              decides each move, signs it with a Circle wallet, and records the proof
+              on-chain. <span className="text-foreground">Every decision is yours to read and verify.</span>
             </p>
+
+            <ul className="mt-6 flex flex-wrap gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+              {["Circle Wallets", "USDC on Arc", "ERC-8004 identity", "On-chain proof"].map((chip) => (
+                <li key={chip} className="border border-[var(--hairline-strong)] px-2.5 py-1 text-[var(--neon-cyan)]/80">
+                  {chip}
+                </li>
+              ))}
+            </ul>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
               {/* Flagship is what most visitors should see (public), so it is
