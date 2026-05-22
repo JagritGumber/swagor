@@ -67,11 +67,6 @@ export function MarketChartShell({
           <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
             Market
           </h2>
-          {otherAssets.length > 0 && (
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
-              +{otherAssets.length} on {otherAssets.join(", ")}
-            </span>
-          )}
         </div>
         <MarketChartControls
           watching={watching}
@@ -114,9 +109,9 @@ export function MarketChartShell({
         )}
       </div>
 
-      {markers.length > 0 && !selectedTradeId && (
+      {interactiveMarkers && markers.length > 0 && !selectedTradeId && (
         <p className="border-t border-[var(--hairline)] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-          {interactiveMarkers ? "Click any marker to see why Selbo took the trade" : "Selbo's entries and exits, each anchored on-chain below"}
+          Click any marker to see why Selbo took the trade
         </p>
       )}
       {interactiveMarkers && selectedTradeId && (

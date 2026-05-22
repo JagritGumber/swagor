@@ -50,15 +50,26 @@ export function ActivityTabs({ username, tradeRows, closedTrades, positions, arc
         ))}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {tab === "trades" &&
-          (tradeRows.length > 0 ? (
-            <BacktestTradesTable trades={tradeRows} />
-          ) : closedTrades.length > 0 ? (
-            <TradeHistory trades={closedTrades} bare />
-          ) : (
-            <p className="p-4 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">No trades yet.</p>
-          ))}
-        {tab === "activity" && <ArcActivityCard endpoint={arcEndpoint ?? `/api/selbo/${encodeURIComponent(username)}/arc`} bare />}
+        {tab === "trades" && (
+          <>
+            {(tradeRows.length > 0 || closedTrades.length > 0) && (
+              <p className="px-4 pt-3 pb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--neon-cyan)]">Click any trade to see Selbo&apos;s reasoning</p>
+            )}
+            {tradeRows.length > 0 ? (
+              <BacktestTradesTable trades={tradeRows} />
+            ) : closedTrades.length > 0 ? (
+              <TradeHistory trades={closedTrades} bare />
+            ) : (
+              <p className="p-4 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">No trades yet - Selbo opens one when a setup matches its thesis.</p>
+            )}
+          </>
+        )}
+        {tab === "activity" && (
+          <div>
+            <p className="px-4 pt-3 pb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Every decision Selbo makes is anchored on Arc - confirmations appear here.</p>
+            <ArcActivityCard endpoint={arcEndpoint ?? `/api/selbo/${encodeURIComponent(username)}/arc`} bare />
+          </div>
+        )}
         {tab === "positions" && <PositionsTable positions={positions} bare />}
       </div>
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useWatcherPoll } from "@/lib/utils/use-watcher-poll";
 
 type Pos = { side: string; asset: string } | null;
@@ -21,23 +22,44 @@ function activeStep(verdict: string | undefined, position: Pos): { idx: number; 
   return { idx: 0, headline: "Watching", sub: "no clear edge yet, holding cash" };
 }
 
+function ago(iso: string | undefined, now: number): string {
+  if (!iso) return "";
+  const s = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 1000));
+  return s < 60 ? `${s}s ago` : `${Math.floor(s / 60)}m ago`;
+}
+
 export function WorkflowViewer({ username, position, recentUrl }: { username: string; position: Pos; recentUrl?: string }) {
   const data = useWatcherPoll({ url: recentUrl ?? `/api/selbo/${encodeURIComponent(username)}/recent`, limit: 1 });
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
+  const tick = data?.ticks?.[0];
   const watching = data?.currentlyWatching ?? [];
-  const { idx, headline, sub } = activeStep(data?.ticks?.[0]?.verdict, position);
+  const { idx, headline, sub } = activeStep(tick?.verdict, position);
+  const thinking = tick?.rationale && !tick.rationale.includes("failed validation") ? tick.rationale : null;
 
   return (
     <section className="flex h-full flex-col bg-black">
       <header className="shrink-0 border-b border-[var(--hairline-strong)] px-4 py-4">
-        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--neon-green)]">
-          <span aria-hidden className="inline-block h-2 w-2 animate-pulse bg-[var(--neon-green)]" />
-          {data ? "live" : "connecting"}
+        <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.18em]">
+          <span className="flex items-center gap-2 text-[var(--neon-green)]">
+            <span aria-hidden className="inline-block h-2 w-2 animate-pulse bg-[var(--neon-green)]" />
+            {data ? "live" : "connecting"}
+          </span>
+          {tick && <span className="text-muted-foreground">{ago(tick.createdAt, now)}</span>}
         </div>
-        <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Selbo is</div>
-        <div className="mt-0.5 text-xl font-bold leading-tight text-[var(--neon-cyan)]">{headline}</div>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/70">
-          {sub}{watching.length ? ` · ${watching.join(" / ")}` : ""}
+        <p className="mt-2 leading-snug">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Selbo is </span>
+          <span className="text-lg font-bold text-[var(--neon-cyan)]">{headline}</span>
+          <span className="text-[13px] text-foreground/60"> · {sub}</span>
         </p>
+        {watching.length > 0 && (
+          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{watching.join(" / ")}</p>
+        )}
+        {thinking && (
+          <p className="mt-2 line-clamp-3 border-l-2 border-[var(--neon-cyan)]/40 pl-2 text-[12px] leading-relaxed text-foreground/60">
+            {thinking}
+          </p>
+        )}
       </header>
 
       <ol className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
