@@ -19,6 +19,7 @@ import { anchorWatcherDecision, type AnchorJsonValue } from "@/lib/arc/anchor";
 import { logLlmCall } from "@/lib/llm/log";
 import { buildMarketFeatureSnapshot, type MarketFeatureSnapshot } from "@/lib/market-features";
 import { detectStrategyMode } from "@/lib/strategy-mode";
+import { resolveCoinUniverse } from "@/selbo.config";
 import { blendWatcherCadence } from "@/lib/cadence-blend";
 import { recordTickStages, type TickStageInput } from "@/app/services/tick-stages.service";
 import type { SelboTickInput, WatcherExecutionState } from "./selbo-tick-types";
@@ -77,14 +78,19 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
   if (!instance) throw new Error(`selbo_instances ${instanceId} not found`);
   if (instance.killSwitchActive) throw new Error("kill switch active, refusing to tick");
 
-  const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
   const strategyMode = detectStrategyMode(instance.strategyText);
   const todayStart = new Date();
   todayStart.setUTCHours(0, 0, 0, 0);
 
-  const [mids, meta, clearing, newsRes, lastTick, currentDailyPlan, openPaperTrades, todayTrades] = await Promise.all([
+  // Coin universe from the committed selbo.config.ts (all / include / exclude),
+  // resolved against the live Hyperliquid perp list. Meta is fetched first so
+  // "all"/"exclude" can see every listed coin; falls back to the instance's
+  // saved watchlist if the metadata fetch fails.
+  const meta = await fetchMetaAndCtxs().catch(() => ({ universe: [], ctxs: [] }));
+  const watching = resolveCoinUniverse(meta.universe.map((u) => u.name), instance.currentlyWatching ?? ["ETH", "BTC", "SOL"]);
+
+  const [mids, clearing, newsRes, lastTick, currentDailyPlan, openPaperTrades, todayTrades] = await Promise.all([
     fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
-    fetchMetaAndCtxs().catch(() => ({ universe: [], ctxs: [] })),
     fetchClearinghouse(instance.circleWalletAddress).catch(() => null),
     searchNews(`${watching.join(" OR ")} OR "perp futures" OR "funding rate" OR cryptocurrency`)
       .catch(() => ({ results: [] as Array<{ title: string; source: string; publishedAt: string }> })),
