@@ -50,8 +50,10 @@ export function FlagshipWatchlist({ username, identity, watching: initial, recen
         )}
       </ul>
       <footer className="shrink-0 space-y-2 border-t border-[var(--hairline-strong)] px-3 py-3">
-        <span className="inline-block border border-[var(--hairline-strong)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">paper mode</span>
-        <div><Erc8004Badge tokenId={identity.erc8004TokenId} registrationTxHash={identity.erc8004RegistrationTxHash} /></div>
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Circle wallet · Arc</span>
+          <span className="border border-[var(--hairline-strong)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">paper mode</span>
+        </div>
         <a
           href={`${ARCSCAN}${identity.walletAddress}`}
           target="_blank" rel="noreferrer"
@@ -61,8 +63,9 @@ export function FlagshipWatchlist({ username, identity, watching: initial, recen
           <ArrowUpRight aria-hidden className="h-3.5 w-3.5 opacity-70" />
         </a>
         <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-          paper balance <span className="tabular-nums text-foreground/80">${identity.balanceUsd.toFixed(2)}</span>
+          managing <span className="tabular-nums text-foreground/80">${identity.balanceUsd.toFixed(2)}</span> · signs every move on-chain
         </div>
+        <div><Erc8004Badge tokenId={identity.erc8004TokenId} registrationTxHash={identity.erc8004RegistrationTxHash} /></div>
       </footer>
     </div>
   );
