@@ -4,6 +4,7 @@ import { nextCandleAfter, entryFill, exitFill } from "./backtest-fills";
 import type { WatcherDecision } from "@/app/services/watcher/selbo-tick-types";
 import { decideSelboTick } from "@/app/services/watcher/selbo-agent-decision";
 import { backtestTickInput } from "./backtest-tick-input";
+import { appendReplayLesson } from "./replay-lessons";
 
 export const STOP_COOLDOWN_MS = 6 * 3_600_000;
 
@@ -63,6 +64,7 @@ export async function stepWatcherTick(ctx: ReplayCtx, tickMs: number, canTrade: 
     const pnlUsd = await ctx.writeClose({ asset, pos, exitDate: new Date(next ? next.t : tickMs), exitPrice, reason: hit.reason });
     if (hit.reason === "stop_loss") ctx.cooldownUntil[`${asset.toUpperCase()}:${pos.side}`] = new Date(tickMs + STOP_COOLDOWN_MS).toISOString();
     bookClose(ctx, asset, pnlUsd);
+    await appendReplayLesson(ctx, asset, pos, exitPrice, pnlUsd, hit.reason);
   }
 
   const decision = await decideSelboTick(backtestTickInput(ctx, tickMs));
@@ -72,8 +74,10 @@ export async function stepWatcherTick(ctx: ReplayCtx, tickMs: number, canTrade: 
     const next = nextCandleAfter(ctx.candleCache.get(asset) ?? [], tickMs);
     if (pos && next) {
       const reason = decision.blockedReasons.includes("stale_position") ? "time_stop" : decision.action;
-      const pnlUsd = await ctx.writeClose({ asset, pos, exitDate: new Date(next.t), exitPrice: exitFill(pos.side, Number(next.o)), reason });
+      const exitPrice = exitFill(pos.side, Number(next.o));
+      const pnlUsd = await ctx.writeClose({ asset, pos, exitDate: new Date(next.t), exitPrice, reason });
       bookClose(ctx, asset, pnlUsd);
+      await appendReplayLesson(ctx, asset, pos, exitPrice, pnlUsd, reason);
     }
   }
   if ((decision.action === "open_long" || decision.action === "open_short") && decision.asset) {
