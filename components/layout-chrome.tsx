@@ -67,23 +67,20 @@ export function NavInner() {
       </div>
     );
   }
-  // Marketing / legal / public / landing -- ORIGINAL layout verbatim,
-  // plus the SelboStatusPill in the right cluster so logged-in users
-  // can pause/resume from anywhere. The pill renders null when there
-  // is no session, keeping the logged-out landing page unchanged.
+  // Marketing / legal / landing / public flagship. Owner controls
+  // (admin toggle, status pill) belong on the dashboard, not here, so the
+  // public nav is just brand + auth. The flagship (/selbo/*) is a full-bleed
+  // terminal, so its nav spans the full width to align with the content.
+  const fullBleed = path?.startsWith("/selbo/") ?? false;
   return (
-    <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6 text-sm">
+    <div className={`mx-auto flex h-full items-center justify-between text-sm ${fullBleed ? "max-w-screen-2xl px-4" : "max-w-6xl px-6"}`}>
       <div className="flex items-baseline gap-4">
         <NavBrand />
         <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
           testnet
         </span>
       </div>
-      <div className="flex items-center gap-3">
-        <AdminTogglePill />
-        <SelboStatusPill />
-        <HeaderAuth />
-      </div>
+      <HeaderAuth />
     </div>
   );
 }
@@ -100,9 +97,11 @@ export function FooterInner() {
       </div>
     );
   }
-  // Marketing / legal / public / landing -- ORIGINAL footer verbatim.
+  // Marketing / legal / landing / public flagship. Flagship spans full width
+  // (edge-aligned) to match its terminal; others keep the centered column.
+  const fullBleed = path?.startsWith("/selbo/") ?? false;
   return (
-    <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+    <div className={`mx-auto flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground ${fullBleed ? "max-w-screen-2xl px-4" : "max-w-6xl px-6"}`}>
       <span>Selbo · paper mode · testnet</span>
       <a href="/legal/disclaimer" className="hover:text-[var(--neon-cyan)]">
         Disclaimer

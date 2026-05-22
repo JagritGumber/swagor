@@ -61,7 +61,7 @@ export function FlagshipDashboard({ username, identity, watching, chartEndpoint,
 
       <div className="flex flex-col gap-px lg:min-h-0 lg:overflow-hidden">
         <div className="h-[420px] lg:h-[62%] lg:min-h-0">
-          <MarketChartCard watching={watching} endpoint={chartEndpoint} interactiveMarkers={false} defaultInterval="4h" defaultLookbackMs={7_776_000_000} />
+          <MarketChartCard watching={watching} endpoint={chartEndpoint} interactiveMarkers={false} defaultInterval="1h" defaultLookbackMs={7_776_000_000} />
         </div>
         <div className="h-[300px] lg:h-auto lg:min-h-0 lg:flex-1">
           <ActivityTabs username={username} tradeRows={tradeRows} closedTrades={closedTrades} positions={positions} arcEndpoint={arcEndpoint} />
