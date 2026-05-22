@@ -20,8 +20,11 @@ const DEFAULT_CHART_TYPE: ChartType = "candles";
 export function MarketChartShell({
   watching, admin = false, endpoint = "/api/chart-data", interactiveMarkers = true,
   defaultInterval = DEFAULT_INTERVAL, defaultLookbackMs = DEFAULT_LOOKBACK_MS,
-}: { watching: string[]; admin?: boolean; endpoint?: string; interactiveMarkers?: boolean; defaultInterval?: Interval; defaultLookbackMs?: number }) {
-  const [asset, setAsset] = useState(watching[0] ?? "ETH");
+  asset: assetProp, onAsset: onAssetProp,
+}: { watching: string[]; admin?: boolean; endpoint?: string; interactiveMarkers?: boolean; defaultInterval?: Interval; defaultLookbackMs?: number; asset?: string; onAsset?: (a: string) => void }) {
+  const [internalAsset, setInternalAsset] = useState(watching[0] ?? "ETH");
+  const asset = assetProp ?? internalAsset;
+  const setAsset = onAssetProp ?? setInternalAsset;
   const [interval, setInterval_] = useState<Interval>(defaultInterval);
   const [lookbackMs, setLookbackMs] = useState<number>(defaultLookbackMs);
   const [chartType, setChartType] = useState<ChartType>(DEFAULT_CHART_TYPE);
