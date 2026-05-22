@@ -50,18 +50,21 @@ export function WorkflowViewer({ username, position, recentUrl }: { username: st
           </span>
           {tick && <span className="text-muted-foreground">{ago(tick.createdAt, now)}</span>}
         </div>
-        <p className="mt-2 leading-snug">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Selbo is </span>
-          <span className="text-lg font-bold text-[var(--neon-cyan)]">{headline}</span>
-          <span className="text-[13px] text-foreground/60"> · {sub}</span>
-        </p>
+        <div className="mt-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Right now</p>
+          <p className="mt-0.5 text-lg font-bold leading-tight text-[var(--neon-cyan)]">{headline}</p>
+          <p className="text-[13px] leading-snug text-foreground/55">{sub}</p>
+        </div>
         {watching.length > 0 && (
-          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{watching.join(" / ")}</p>
+          <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+            Scanning <span className="text-foreground/80">{watching.length} markets</span>
+          </p>
         )}
         {thinking && (
-          <p className="mt-2 line-clamp-3 border-l-2 border-[var(--neon-cyan)]/40 pl-2 text-[12px] leading-relaxed text-foreground/60">
-            {thinking}
-          </p>
+          <div className="mt-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Selbo&apos;s read</p>
+            <p className="mt-1 line-clamp-4 border-l-2 border-[var(--neon-cyan)]/40 pl-2 text-[12px] leading-relaxed text-foreground/70">{thinking}</p>
+          </div>
         )}
       </header>
 
