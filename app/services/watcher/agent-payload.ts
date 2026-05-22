@@ -7,6 +7,10 @@ import type { SymbolMarketFeatures } from "@/lib/market-features";
  * a short candle tail) as context, never as commands. Same builder for live
  * and backtest so the agent sees the same shape in both.
  */
+function trendOf(tf: SymbolMarketFeatures["timeframes"]["4h"]) {
+  return { trend: tf?.emaTrend ?? null, rsi: tf?.rsi14 ?? null, regime: tf?.marketRegime ?? null };
+}
+
 function symbolView(s: SymbolMarketFeatures) {
   const ps = s.perpMarketState;
   const tf = s.timeframes["1h"];
@@ -14,6 +18,7 @@ function symbolView(s: SymbolMarketFeatures) {
     symbol: s.symbol,
     price: s.mark ?? s.mid,
     regime: ps.regime,
+    htfTrend: { "1d": trendOf(s.timeframes["1d"]), "4h": trendOf(s.timeframes["4h"]) },
     valueLocation: ps.valueLocation,
     valueArea: { vwap: ps.levels.vwap, poc: ps.levels.poc, vah: ps.levels.vah, val: ps.levels.val },
     structure: ps.structureState,
