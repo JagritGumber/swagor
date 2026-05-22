@@ -29,8 +29,8 @@ export function TradeReasonDetail({ report }: { report: Record<string, unknown> 
   const tp = num(r.takeProfitPriceUsd);
   const conf = num(r.confidence);
   const chips = [
-    r.marketTrigger && `setup: ${r.marketTrigger}`,
-    r.externalPressure && `pressure: ${r.externalPressure}`,
+    r.marketTrigger && r.marketTrigger !== "none" && `setup: ${r.marketTrigger}`,
+    r.externalPressure && r.externalPressure !== "unknown" && `pressure: ${r.externalPressure}`,
     conf && `conf: ${conf}`,
     stop && `stop: ${stop}`,
     tp && `tp: ${tp}`,

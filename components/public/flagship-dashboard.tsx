@@ -24,7 +24,7 @@ function StatReadout({ headline }: { headline: Headline }) {
         <div className="h-full bg-[var(--neon-cyan)]" style={{ width: `${wr ?? 0}%` }} aria-hidden />
       </div>
       <div className="mt-2 flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-        <span>Paper P/L · {headline.trades} trades</span>
+        <span>P/L · {headline.trades} trades</span>
         <span className={`tabular-nums ${pnlTone}`}>{`${pnl >= 0 ? "+" : "-"}$${Math.abs(pnl).toFixed(2)}`}</span>
       </div>
     </div>
