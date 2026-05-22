@@ -24,6 +24,8 @@ export type OpenPos = {
   llmConfidence?: number;
   qualityReport?: TradeQualityReport | null;
   watcherDecision?: Record<string, unknown> | null;
+  // Best favorable price seen since entry; drives the trailing stop.
+  peakPrice?: number;
 };
 
 export function utcDayMs(d: Date): number {
@@ -83,6 +85,20 @@ export function checkStopTpHit(pos: OpenPos, candle: Candle): { price: number; r
   const tpHit = pos.side === "long" ? close >= pos.tpPrice : close <= pos.tpPrice;
   if (tpHit) return { price: close, reason: "take_profit" };
   return null;
+}
+
+// Trailing stop: once a position has run TRIGGER past entry, lock profit and
+// exit if price gives back GIVEBACK from the best price seen. Critical in
+// choppy markets where a good call reverses before the fixed target.
+const TRAIL_TRIGGER = 0.025;
+const TRAIL_GIVEBACK = 0.02;
+export function trailingStopHit(pos: OpenPos, closePx: number): boolean {
+  if (!Number.isFinite(closePx)) return false;
+  const peak = pos.peakPrice ?? pos.entryPrice;
+  if (pos.side === "long") {
+    return peak >= pos.entryPrice * (1 + TRAIL_TRIGGER) && closePx <= peak * (1 - TRAIL_GIVEBACK);
+  }
+  return peak <= pos.entryPrice * (1 - TRAIL_TRIGGER) && closePx >= peak * (1 + TRAIL_GIVEBACK);
 }
 
 export function computePnl(

@@ -1,5 +1,5 @@
 import type { Candle } from "@/lib/data-sources/hyperliquid";
-import { checkStopTpHit, closeRealizedPnl, computePnl, type OpenPos } from "@/app/services/backtest/simulate-helpers";
+import { checkStopTpHit, trailingStopHit, closeRealizedPnl, computePnl, type OpenPos } from "@/app/services/backtest/simulate-helpers";
 import { summarizeBacktestTrades } from "@/app/services/backtest/summarize-trades";
 
 let pass = 0;
@@ -34,6 +34,13 @@ check("short stop on close>=stop", checkStopTpHit(short, candle(106))?.reason ==
 check("short tp on close<=tp", checkStopTpHit(short, candle(89))?.reason === "take_profit");
 const thesis = pos({ side: "long", entryPrice: 100, stopPrice: 90, tpPrice: 120, invalidationLevel: 96 });
 check("thesis invalidation precedes stop", checkStopTpHit(thesis, candle(95))?.reason === "thesis_invalidated");
+
+// --- trailingStopHit (lock profit, exit on giveback from peak) ---
+const tLong = pos({ side: "long", entryPrice: 100, stopPrice: 90, tpPrice: 130, peakPrice: 103 });
+check("trail long fires on giveback from peak", trailingStopHit(tLong, 100.9) === true);
+check("trail long holds near peak", trailingStopHit(tLong, 102.5) === false);
+check("trail not armed before trigger", trailingStopHit(pos({ side: "long", entryPrice: 100, stopPrice: 90, tpPrice: 130, peakPrice: 101 }), 99.5) === false);
+check("trail short fires on giveback", trailingStopHit(pos({ side: "short", entryPrice: 100, stopPrice: 110, tpPrice: 70, peakPrice: 96 }), 98.1) === true);
 
 // Discipline gates removed: the agent decides direction/size/stops now, so
 // there is no scalperLongBlocks to assert. The surviving deterministic logic
