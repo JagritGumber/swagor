@@ -13,6 +13,7 @@
     "backtest:import": "bun --conditions react-server scripts/backtest-import.ts",
     "test:logic": "bun --conditions react-server scripts/test-logic.ts",
     "arc:verify": "bun scripts/arc-verify.ts",
+    "arc:deploy": "bun --conditions react-server scripts/deploy-anchor-contract.ts",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio"
