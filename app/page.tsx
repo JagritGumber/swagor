@@ -1,6 +1,7 @@
 import { HeroSection } from "@/components/marketing/hero-section";
 import { LiveTradeCard } from "@/components/marketing/live-trade-card";
 import { HowItWorks } from "@/components/marketing/how-it-works";
+import { HowItLearns } from "@/components/marketing/how-it-learns";
 import { Faq } from "@/components/marketing/faq";
 import { CtaFooter } from "@/components/marketing/cta-footer";
 
@@ -10,6 +11,7 @@ export default function LandingPage() {
       <HeroSection />
       <LiveTradeCard />
       <HowItWorks />
+      <HowItLearns />
       <Faq />
       <CtaFooter />
     </div>
