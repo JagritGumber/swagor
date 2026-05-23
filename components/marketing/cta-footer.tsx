@@ -8,12 +8,14 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 // ArrowUpRight remains for the genuinely-external Arc Testnet explorer link.
 import { LEGAL_DISCLOSURE_LONG } from "@/lib/marketing-data";
+import { SectionShader } from "./shaders/section-shader";
 import { CtaPrimary } from "./cta-primary";
 
 export function CtaFooter() {
   return (
     <>
-      <section className="scanlines relative border-b border-[var(--hairline-strong)] bg-black">
+      <section className="relative isolate overflow-hidden border-b border-[var(--hairline-strong)] bg-black">
+        <SectionShader variant="dot-grid-twinkle" opacity={0.35} scrim={0.45} />
         <div className="relative z-10 mx-auto max-w-6xl px-6 py-16 text-center sm:py-20">
           <span aria-hidden className="pointer-events-none absolute left-6 top-6 h-6 w-6 border-l border-t border-[var(--neon-cyan)]" />
           <span aria-hidden className="pointer-events-none absolute right-6 top-6 h-6 w-6 border-r border-t border-[var(--neon-cyan)]" />
