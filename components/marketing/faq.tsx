@@ -24,7 +24,7 @@ const QAS: QA[] = [
     q: "What happens when it loses?",
     a: (
       <>
-        Nothing dramatic. The deliberation gets recorded the same way, the losing reasoning goes on Arc, and the analysts whose call was wrong have their track record updated. The next cycle reads the lesson before it starts. Selbo is allowed to be wrong. That is where the most useful signal lives.
+        Nothing dramatic. A losing decision is recorded the same way as a winning one. The reasoning goes on Arc, and the agent extracts a one-sentence lesson from what went wrong and feeds it into the next decision. Selbo is allowed to be wrong - the useful signal is in what it learns from being wrong.
       </>
     ),
   },
@@ -40,7 +40,7 @@ const QAS: QA[] = [
     q: "How is this different from a copy-trading bot?",
     a: (
       <>
-        A copy-trading bot mirrors a leader without reading. Selbo writes its own memo, has three specialists debate it, and gates execution behind a separate AI audit. You are reading the argument, not following anyone blindly.
+        A copy-trading bot mirrors someone else without reading. Selbo writes its own thesis from the market structure, picks side and size and stop and target on its own, and anchors the reasoning on Arc so you can read exactly why before deciding to trust it. You are reading an autonomous decision, not following anyone blindly.
       </>
     ),
   },
@@ -48,7 +48,7 @@ const QAS: QA[] = [
     q: "Where does my reasoning go?",
     a: (
       <>
-        Every trade&apos;s reasoning and the panel&apos;s dissent get recorded on Arc Testnet as on-chain events. The full deliberation lives in your dashboard. If you opt in, your Selbo also has a public page anyone can read.
+        Every decision gets recorded on Arc Testnet as an on-chain event with the reasoning hash, the verdict, and the Circle wallet that signed it. The full plain-English thinking lives in your dashboard. If you opt in, your Selbo also has a public page anyone can read.
       </>
     ),
   },
@@ -56,7 +56,7 @@ const QAS: QA[] = [
     q: "What does it cost?",
     a: (
       <>
-        Free during the trial. Wallets, simulated capital, every deliberation, all free. A paid tier comes later for users who want more frequent cycles or premium analysts. You will not be charged anything you did not explicitly sign up for.
+        Free during the trial. Wallet, simulated capital, every decision, all free. A paid tier comes later for users who want higher cadence, multi-asset coverage, or the personal-agent flow. You will not be charged anything you did not explicitly sign up for.
       </>
     ),
   },

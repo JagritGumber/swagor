@@ -1,8 +1,11 @@
 /**
- * How a deliberation works. Tighter stage titles + smaller vertical gaps.
+ * How a Selbo decision happens. Five stages, the same ones the live
+ * workflow viewer renders on the flagship - so what someone reads on
+ * the landing matches the loop they see running on the dashboard.
+ * Single agent, no panel, no auditor.
  */
 
-import { Anchor, Bell, PenLine, Scan, ShieldCheck, Users, type LucideIcon } from "lucide-react";
+import { Activity, Anchor, PenLine, Scan, Telescope, type LucideIcon } from "lucide-react";
 
 type Stage = {
   title: string;
@@ -12,33 +15,28 @@ type Stage = {
 
 const STAGES: Stage[] = [
   {
-    title: "Selbo scans",
-    body: "Selbo glances at the perp markets on an adaptive cadence it picks for itself, anywhere from a couple of minutes to half an hour. Mark prices, funding, open positions, recent news. One light call. Almost always it sees nothing worth doing, logs it, and goes back to waiting.",
+    title: "Watches the markets",
+    body: "Selbo polls the perps it cares about on a cadence it picks for itself, anywhere from a couple of minutes to half an hour. Mark prices, funding, open interest, recent candles, where price sits relative to value. Most ticks find nothing worth doing and it logs them as such.",
     Icon: Scan,
   },
   {
-    title: "Something shifts",
-    body: "Most of the time nothing happens. When it does, a tactical signal at a strategy-relevant level, a funding flip, a position near its liquidation, or a regime shift, Selbo routes the tick to the right tier instead of waking the whole panel for noise.",
-    Icon: Bell,
+    title: "Reads the setup",
+    body: "When something looks real, Selbo reads the structure: value area, regime, recent candle shape, and lessons extracted from its own past closed trades. No hardcoded playbook, no preset rules. The agent forms its own thesis from what it sees.",
+    Icon: Telescope,
   },
   {
-    title: "Selbo proposes",
-    body: "Selbo drafts a single trade. What to do, on which venue, at what size, with what to watch for as it plays out. Nothing executes yet.",
+    title: "Takes the decision",
+    body: "One LLM call writes the entire move. Direction, size, leverage, stop, target, the plain-English reasoning, and how confident it is. The agent can also decide to do nothing - and most of the time that is exactly what it does.",
     Icon: PenLine,
   },
   {
-    title: "Three analysts argue",
-    body: "The Economist reads the macro. The Analyst reads the venue. The Skeptic reads the worst case. Two rounds. The second is adversarial. Each must attack the loudest dissent before voting again.",
-    Icon: Users,
+    title: "Acts on it",
+    body: "If it decides to trade, the order simulates against the live Hyperliquid testnet mark price. Paper mode for now, no real capital at risk. But the action and the Circle wallet that signs it are both real on-chain.",
+    Icon: Activity,
   },
   {
-    title: "A separate AI audits",
-    body: "A reviewer on a different model lineage reads the whole debate. Its job is to catch arguments that sound right but are not. It can approve, ask for a fix, or block.",
-    Icon: ShieldCheck,
-  },
-  {
-    title: "The call goes on Arc",
-    body: "If the audit clears it, the trade simulates against live Hyperliquid mark prices. The reasoning, the dissent, and the outcome are recorded on Arc forever. You read all of it on your dashboard.",
+    title: "Records the proof on-chain",
+    body: "The decision plus a hash of the full reasoning is anchored on Arc from your Circle wallet, on a source-verified contract anyone can read. Open the transaction on Arcscan and the agent's own words are bound to the on-chain record. It cannot revise what it did after the fact.",
     Icon: Anchor,
   },
 ];
@@ -58,7 +56,7 @@ export function HowItWorks() {
             From a quiet scan, <span className="text-[var(--neon-cyan)]">to a permanent record.</span>
           </h2>
           <p className="mt-6 text-base leading-relaxed text-muted-foreground">
-            Most cycles do nothing. That is the point. The full panel only fires when there is something real to debate.
+            Most ticks do nothing. That is the point. When the agent finds a setup worth taking, the whole loop runs in seconds and the proof ends up on-chain forever.
           </p>
         </header>
 

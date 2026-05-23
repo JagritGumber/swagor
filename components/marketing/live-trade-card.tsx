@@ -50,7 +50,7 @@ export function LiveTradeCard() {
             What we <span className="text-[var(--neon-cyan)]">aim for</span> when a trade goes through.
           </h2>
           <p className="mt-6 text-base leading-relaxed text-muted-foreground">
-            One deliberation, taken apart. The signal, the call, the dissent, the recording on Arc. Numbers shown are illustrative. The structure is the point.
+            One decision, end to end. The setup, the call, the trade, the proof on Arc. Numbers shown are illustrative. The structure is the point.
           </p>
         </header>
 
@@ -66,7 +66,7 @@ export function LiveTradeCard() {
             </div>
             <div className="flex flex-col items-end gap-1">
               <span className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-[var(--neon-green)]">
-                Panel approved · 2 to 1
+                Anchored on Arc · verified
               </span>
               <span className="font-mono text-sm uppercase tracking-[0.16em] text-muted-foreground">
                 {SAMPLE_CYCLE.duration}
