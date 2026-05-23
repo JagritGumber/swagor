@@ -4,12 +4,16 @@
  * No em-dashes. Plain English.
  */
 
+// Numbers reflect what the live agent actually does: paper mode, no leverage,
+// modest single-digit moves. The chart shape (~+5.2% from $3214 to $3382)
+// matches the +$5.20 figure on a $100 size. Do not inflate to look impressive
+// - the entire product position is "we do not fake numbers."
 export const SAMPLE_CYCLE = {
   pair: "ETH-USD perp",
-  venue: "Hyperliquid testnet . 3x leverage long",
+  venue: "Hyperliquid testnet . long, no leverage",
   duration: "held 14h 22m",
-  pnlUsd: "+$67.50",
-  pnlPctPlain: "+16.9%",
+  pnlUsd: "+$5.20",
+  pnlPctPlain: "+5.2%",
   arcTx: "0x09da...0818",
 };
 
