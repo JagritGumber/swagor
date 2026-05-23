@@ -63,7 +63,7 @@ export function FlagshipWatchlist({ username, identity, watching: initial, recen
           <ArrowUpRight aria-hidden className="h-3.5 w-3.5 opacity-70" />
         </a>
         <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-          managing <span className="tabular-nums text-foreground/80">${identity.balanceUsd.toFixed(2)}</span> · signs every move on-chain
+          balance <span className="tabular-nums text-foreground/80">${identity.balanceUsd.toFixed(2)}</span>
         </div>
         <div><Erc8004Badge tokenId={identity.erc8004TokenId} registrationTxHash={identity.erc8004RegistrationTxHash} /></div>
       </footer>
