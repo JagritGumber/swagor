@@ -6,6 +6,7 @@ import { listOpenPositions } from "@/app/services/positions.service";
 import { listClosedTrades, getLifetimeStats } from "@/app/services/trades.service";
 import { getFeaturedBacktest } from "@/app/services/featured-backtest.service";
 import { summarizeBacktestTrades } from "@/app/services/backtest/summarize-trades";
+import { STARTING_EQUITY_USD } from "@/app/services/backtest/simulate-helpers";
 import { FlagshipDashboard } from "@/components/public/flagship-dashboard";
 import type { BacktestTradeRow } from "@/components/dashboard/bento/backtest-trades-table";
 import type { BacktestTrade } from "@/lib/db/schema";
@@ -63,7 +64,11 @@ export default async function DashboardPage() {
         walletAddress: instance.circleWalletAddress,
         erc8004TokenId: instance.erc8004TokenId,
         erc8004RegistrationTxHash: instance.erc8004RegistrationTxHash,
-        balanceUsd: Number(instance.simulatedBalanceUsd),
+        // Match the public profile's logic: when a featured backtest exists,
+        // show the ending equity (start + realized PnL) instead of the raw
+        // simulatedBalanceUsd default. Same instance must render the same
+        // balance on both surfaces.
+        balanceUsd: summary ? STARTING_EQUITY_USD + summary.totalPnlUsd : Number(instance.simulatedBalanceUsd),
       }}
       watching={watching}
       chartEndpoint="/api/chart-data"
