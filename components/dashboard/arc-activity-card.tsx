@@ -120,32 +120,36 @@ export function ArcActivityCard({
         </header>
       )}
 
-      <ol className={`divide-y divide-[var(--hairline)] border-y border-[var(--hairline)] ${bare ? "" : "mt-4"}`}>
-        {events.map((e) => (
-          <li key={e.id} className="grid grid-cols-[60px_1fr_auto_auto] items-baseline gap-4 py-3">
-            <span className={`font-mono text-[10px] font-bold uppercase tracking-[0.18em] ${TYPE_TONE[e.type]}`}>
-              {TYPE_LABEL[e.type]}
-            </span>
-            <span className="truncate text-sm text-foreground">{e.label}</span>
-            <span className={`font-mono text-[10px] uppercase tracking-[0.16em] ${STATUS_TONE[e.status]}`}>
-              {e.status}
-            </span>
-            <span className="flex items-baseline gap-2 font-mono text-[11px] text-muted-foreground">
-              {e.arcscanUrl ? (
-                <a
-                  href={e.arcscanUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-[var(--neon-cyan)] hover:underline"
-                >
-                  arcscan <ArrowUpRight aria-hidden className="h-3 w-3 opacity-70" />
-                </a>
-              ) : null}
-              <span>{agoString(new Date(e.createdAt))}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
+      <div className={`overflow-x-auto ${bare ? "" : "mt-4"}`}>
+        <table className="w-full font-mono text-[10px] uppercase tracking-[0.14em]">
+          <thead>
+            <tr className="border-b border-[var(--neon-cyan)]/30 text-left text-muted-foreground">
+              <th className="px-2 py-1">Time</th>
+              <th className="px-2 py-1">Type</th>
+              <th className="px-2 py-1">Detail</th>
+              <th className="px-2 py-1">Status</th>
+              <th className="px-2 py-1 text-right">Tx</th>
+            </tr>
+          </thead>
+          <tbody>
+            {events.map((e) => (
+              <tr key={e.id} className="border-b border-[var(--neon-cyan)]/15">
+                <td className="px-2 py-1 text-muted-foreground">{agoString(new Date(e.createdAt))}</td>
+                <td className={`px-2 py-1 ${TYPE_TONE[e.type]}`}>{TYPE_LABEL[e.type]}</td>
+                <td className="px-2 py-1 max-w-[260px] truncate text-foreground">{e.label}</td>
+                <td className={`px-2 py-1 ${STATUS_TONE[e.status]}`}>{e.status}</td>
+                <td className="px-2 py-1 text-right">
+                  {e.arcscanUrl ? (
+                    <a href={e.arcscanUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[var(--neon-cyan)] hover:underline">
+                      arcscan <ArrowUpRight aria-hidden className="h-3 w-3 opacity-70" />
+                    </a>
+                  ) : <span className="text-muted-foreground">-</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
