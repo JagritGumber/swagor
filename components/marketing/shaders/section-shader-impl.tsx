@@ -41,17 +41,20 @@ export default function ShaderImpl({ variant }: { variant: Variant }) {
         />
       );
     case "dot-grid":
+      // Minimalist static grid. White fill keeps it neutral against the cyan
+      // headlines so it reads as atmospheric texture, not competing accent.
+      // No size or opacity variance - dead-still grid is the look.
       return (
         <DotGrid
           colorBack="#000000"
-          colorFill="#0088aa"
-          colorStroke="#003a4a"
-          size={4}
+          colorFill="#ffffff"
+          colorStroke="#000000"
+          size={2}
           gapX={32}
           gapY={32}
           strokeWidth={0}
-          sizeRange={0.5}
-          opacityRange={0.6}
+          sizeRange={0}
+          opacityRange={0}
           shape="circle"
           style={FILL}
         />
