@@ -27,7 +27,7 @@ const ANCHOR_FIELDS: Array<{ label: string; value: ReactNode }> = [
   { label: "anchoredAt", value: <span className="text-foreground/85">2026-05-23 14:21:08 UTC</span> },
 ];
 
-const CONTRACT_ADDRESS = "0x12a93ad9a7d3d9ad3d51aa4c38953742c9e1eff2";
+const CONTRACT_ADDRESS = "0xa92913539d7fbed157974a08293b2620ac0d0277";
 const ARCSCAN = `https://testnet.arcscan.app/address/${CONTRACT_ADDRESS}?tab=contract`;
 
 function CornerBrackets() {
