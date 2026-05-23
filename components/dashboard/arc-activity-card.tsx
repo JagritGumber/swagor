@@ -15,26 +15,33 @@ type ArcEvent = {
 };
 
 const TYPE_LABEL: Record<ArcEvent["type"], string> = {
-  trade_open: "open",
-  trade_close: "close",
-  watcher_execute: "execute",
-  watcher_risk_emergency: "risk",
-  analysis: "analysis",
+  trade_open: "open", trade_close: "close",
+  watcher_execute: "execute", watcher_risk_emergency: "risk", analysis: "analysis",
 };
-
 const TYPE_TONE: Record<ArcEvent["type"], string> = {
-  trade_open: "text-[var(--neon-green)]",
-  trade_close: "text-[var(--neon-cyan)]",
-  watcher_execute: "text-foreground",
-  watcher_risk_emergency: "text-[var(--neon-red)]",
-  analysis: "text-foreground",
+  trade_open: "text-[var(--neon-green)]", trade_close: "text-[var(--neon-cyan)]",
+  watcher_execute: "text-foreground", watcher_risk_emergency: "text-[var(--neon-red)]", analysis: "text-foreground",
+};
+const STATUS_TONE: Record<ArcEvent["status"], string> = {
+  pending: "text-[var(--neon-cyan)]/70", confirmed: "text-[var(--neon-cyan)]", failed: "text-[var(--neon-red)]",
 };
 
-const STATUS_TONE: Record<ArcEvent["status"], string> = {
-  pending: "text-[var(--neon-cyan)]/70",
-  confirmed: "text-[var(--neon-cyan)]",
-  failed: "text-[var(--neon-red)]",
-};
+// Stale-while-revalidate cache so the panel never blanks between navigations.
+// 50-event cap keeps the payload trivially small in localStorage.
+const CACHE_PREFIX = "arc-activity:";
+function readCache(endpoint: string): ArcEvent[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + endpoint);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed as ArcEvent[] : null;
+  } catch { return null; }
+}
+function writeCache(endpoint: string, events: ArcEvent[]): void {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(CACHE_PREFIX + endpoint, JSON.stringify(events.slice(0, 50))); } catch { /* quota */ }
+}
 
 function agoString(when: Date): string {
   const s = Math.max(0, Math.floor((Date.now() - when.getTime()) / 1000));
@@ -45,13 +52,11 @@ function agoString(when: Date): string {
 }
 
 /**
- * Arc-anchored decision feed. Pulls every type of Arc anchor (trade opens,
- * trade closes, watcher execute / risk_emergency) into one polled list with
- * Arcscan deep links. Hidden until the first event lands; once it does the
- * card stays mounted across refreshes.
- *
- * Drives off `/api/arc/recent` for the dashboard view; the public flagship
- * profile mounts the public variant via `components/public/public-arc-activity.tsx`.
+ * Arc-anchored decision feed. Hydrates instantly from localStorage so the
+ * panel doesn't blank between navigations, then refreshes in the background
+ * every 60s. Shows a 4-row skeleton on the first-ever load, an empty state
+ * once we know the feed is empty, otherwise a table matching the trades
+ * panel styling exactly.
  */
 export function ArcActivityCard({
   endpoint = "/api/arc/recent",
@@ -61,6 +66,9 @@ export function ArcActivityCard({
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    const cached = readCache(endpoint);
+    if (cached) { setEvents(cached); setLoaded(true); }
+
     let timer: ReturnType<typeof setTimeout> | null = null;
     let inFlight: AbortController | null = null;
     let cancelled = false;
@@ -76,7 +84,9 @@ export function ArcActivityCard({
         const res = await fetch(`${endpoint}?limit=50`, { cache: "no-store", signal: inFlight.signal });
         if (res.ok && !cancelled) {
           const data = (await res.json()) as { events?: ArcEvent[] };
-          setEvents(data.events ?? []);
+          const next = data.events ?? [];
+          setEvents(next);
+          writeCache(endpoint, next);
         }
       } catch (err) {
         if ((err as { name?: string })?.name === "AbortError") return;
@@ -100,9 +110,9 @@ export function ArcActivityCard({
     };
   }, [endpoint]);
 
-  if (!loaded || events.length === 0) return null;
-
   const confirmed = events.filter((e) => e.status === "confirmed").length;
+  const showSkeleton = !loaded && events.length === 0;
+  const showEmpty = loaded && events.length === 0;
 
   return (
     <section className={bare ? "" : "border border-[var(--hairline-strong)] bg-black p-6"}>
@@ -110,16 +120,13 @@ export function ArcActivityCard({
         <header className="flex items-baseline justify-between gap-4">
           <div className="flex items-baseline gap-3">
             <span aria-hidden className="inline-block h-2.5 w-2.5 bg-[var(--neon-cyan)]" />
-            <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">
-              Arc activity
-            </h2>
+            <h2 className="text-2xl font-bold uppercase leading-tight text-foreground">Arc activity</h2>
           </div>
           <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--neon-cyan)]">
-            {confirmed > 0 ? `${confirmed} verified on-chain` : "anchored on arc testnet"}
+            {confirmed > 0 ? `${confirmed} verified on-chain` : loaded ? "anchored on arc testnet" : "loading"}
           </span>
         </header>
       )}
-
       <div className={`overflow-x-auto ${bare ? "" : "mt-4"}`}>
         <table className="w-full font-mono text-[10px] uppercase tracking-[0.14em]">
           <thead>
@@ -132,6 +139,18 @@ export function ArcActivityCard({
             </tr>
           </thead>
           <tbody>
+            {showSkeleton && [0, 1, 2, 3].map((i) => (
+              <tr key={`s${i}`} className="border-b border-[var(--neon-cyan)]/15">
+                {[48, 40, 160, 48, 48].map((w, j) => (
+                  <td key={j} className={`px-2 py-1 ${j === 4 ? "text-right" : ""}`}>
+                    <span className="inline-block h-2 animate-pulse bg-[var(--hairline)]" style={{ width: w }} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+            {showEmpty && (
+              <tr><td colSpan={5} className="px-2 py-3 text-muted-foreground">no on-chain activity yet</td></tr>
+            )}
             {events.map((e) => (
               <tr key={e.id} className="border-b border-[var(--neon-cyan)]/15">
                 <td className="px-2 py-1 text-muted-foreground">{agoString(new Date(e.createdAt))}</td>
