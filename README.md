@@ -1,6 +1,10 @@
 # Selbo
 
-Selbo is an autonomous perpetual futures trading agent. It runs 24/7 per user on Hyperliquid testnet, reads market state and risk continuously, and asks AI agents to decide when to open, close, hedge, or hold positions. Every decision is recorded, every trade is anchored on Arc, and the user can read the full reasoning behind any action Selbo takes.
+> **Selbo V2 (in-progress)**: a standalone RL agent. V2 does NOT touch this Next.js watcher/trader flow. V2 is greenfield: separate directory/service, scheduled by **cron-job.org** (NOT Vercel cron, NOT Inngest). "Selbo IS the model" - the RL agent itself is the product, not a wrapper around the existing V1 system.
+>
+> **Branch strategy**: `main` (this branch) deploys to selbo.app and is the stable submitted version. All V2 work happens on `dev`, which deploys to dev.selbo.app. Until V2 is ready to replace V1, expect main to stay roughly as-is.
+
+Selbo (V1) is an autonomous perpetual futures trading agent. It runs 24/7 per user on Hyperliquid testnet, reads market state and risk continuously, and asks AI agents to decide when to open, close, hedge, or hold positions. Every decision is recorded, every trade is anchored on Arc, and the user can read the full reasoning behind any action Selbo takes.
 
 Built for the Agora Agents hackathon (Canteen x Circle x Arc, 2026-05-11 to 2026-05-25) against **RFB 01: Perpetual Futures Trading Agent**. The submission target is paper-mode autonomy with transparent risk + reasoning logs, simulated PnL and drawdown, and Arc-anchored decision records.
 
