@@ -1,6 +1,26 @@
 import type { MarketFeatureSnapshot } from "@/lib/market-features";
 import type { RiskSnapshot } from "@/app/services/risk-engine.service";
 import type { TrendRegimeSnapshot } from "@/lib/trend-regime";
+import type { SetupRecordView } from "@/app/services/setup-fingerprint";
+
+/**
+ * Per-(asset, side) lookup for the agent's structured learning record. Returns
+ * null leaves until trades>=MIN_TRADES_TO_EXPOSE; the agent then decides on
+ * structure alone. The `fingerprint` slot is the exact-setup record; the
+ * `assetSide` slot is coarser (just asset+side) and fills in faster.
+ */
+export type SetupRecordLookup = (asset: string, side: "long" | "short") => {
+  fingerprint: SetupRecordView | null;
+  assetSide: SetupRecordView | null;
+};
+
+/**
+ * Pre-computed fingerprint strings per symbol per side. Built once per tick
+ * by the watcher (agent-payload time) so the executor reads the SAME string
+ * the agent saw -- no re-derive at execution time. Map key is the asset
+ * symbol (uppercased); value is { long, short }.
+ */
+export type SymbolFingerprints = Map<string, { long: string; short: string }>;
 
 /**
  * Shared decision types for Selbo's trade loop. The decision itself is made
@@ -76,6 +96,7 @@ export type SelboTickInput = {
   marketFeatures: MarketFeatureSnapshot;
   positions: PositionSnapshot[];
   risk: RiskSnapshot;
-  recentLessons: string[];
+  setupRecordLookup?: SetupRecordLookup;
+  symbolFingerprints?: SymbolFingerprints;
   executionState: WatcherExecutionState;
 };

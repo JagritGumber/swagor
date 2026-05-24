@@ -33,7 +33,6 @@ export type DailyPlanContext = {
   trendRegime: TrendRegimeSnapshot;
   recent_news: Array<{ title: string; source: string; hoursAgo: number | null }>;
   news_sentiment: SentimentCounts;
-  recent_lessons: string[];
   recent_pnl: RecentPnlEntry[];
   yesterdayPlanSummary: { generatedAt: string; biasByAsset: unknown; notes: string } | null;
   _ingestion: IngestionSource[];

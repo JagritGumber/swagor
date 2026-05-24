@@ -24,6 +24,12 @@ export type OpenPos = {
   llmConfidence?: number;
   qualityReport?: TradeQualityReport | null;
   watcherDecision?: Record<string, unknown> | null;
+  // Setup-fingerprint stash trio. Computed at open from the same tick
+  // marketFeatures the agent saw; read at close to drive recordOutcome
+  // against the in-memory store on ReplayCtx.
+  fingerprint?: string | null;
+  initialRiskUsd?: number | null;
+  entryStateSnapshot?: import("@/app/services/setup-fingerprint").EntryStateSnapshot | null;
   // Best favorable price seen since entry; drives the trailing stop.
   peakPrice?: number;
 };

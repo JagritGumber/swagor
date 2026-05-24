@@ -16,7 +16,6 @@ import { searchNews } from "@/lib/data-sources/news";
 import { db } from "@/lib/db/client";
 import { selboInstances, trades, monitorTicks } from "@/lib/db/schema";
 import { and, desc, eq } from "drizzle-orm";
-import { getRecentLessons } from "@/app/services/memory.service";
 import {
   openPaperTrade,
   closePaperTrade,
@@ -66,7 +65,7 @@ export async function runCycle(cycleId: string): Promise<void> {
     const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
     const strategyMode = detectStrategyMode(instance.strategyText);
 
-    const [mids, meta, clearing, paperOpen, lastTick, newsRes, recentLessons] = await Promise.all([
+    const [mids, meta, clearing, paperOpen, lastTick, newsRes] = await Promise.all([
       fetchAllMids().catch(() => ({} as Awaited<ReturnType<typeof fetchAllMids>>)),
       fetchMetaAndCtxs().catch(() => ({ universe: [], ctxs: [] })),
       fetchClearinghouse(instance.circleWalletAddress).catch(() => null),
@@ -81,7 +80,6 @@ export async function runCycle(cycleId: string): Promise<void> {
       searchNews(
         `${watching.join(" OR ")} OR perp futures OR funding rate OR crypto market`,
       ).catch(() => ({ results: [] as Array<{ title: string; source: string; publishedAt: string }> })),
-      getRecentLessons(instance.userId, 8).catch(() => [] as string[]),
     ]);
 
     const ctxByCoin = new Map(meta.universe.map((u, i) => [u.name.toUpperCase(), meta.ctxs[i]]));
@@ -194,7 +192,6 @@ export async function runCycle(cycleId: string): Promise<void> {
           ? Math.floor((Date.now() - new Date(n.publishedAt).getTime()) / 3_600_000)
           : null,
       })),
-      recent_lessons: recentLessons,
     };
 
     const swarmDecisions = await runSwarm({ cycleId, context, size: 10 });

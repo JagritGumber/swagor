@@ -6,6 +6,7 @@ import type { Candle } from "@/lib/data-sources/hyperliquid";
 import { closeAllAtEnd, writeBacktestClose, STARTING_EQUITY_USD, type CloseSink } from "@/app/services/backtest/simulate-helpers";
 import { stepWatcherTick, type ReplayCtx } from "@/app/services/backtest/watcher-tick-step";
 import { createBacktestRun } from "@/app/services/backtest/run-backtest.service";
+import { createInMemoryStore } from "@/app/services/setup-fingerprint/in-memory";
 
 const HOUR_MS = 3_600_000;
 
@@ -57,6 +58,7 @@ async function main(): Promise<void> {
     // --strategy overrides the instance's saved strategy for THIS run only
     // (does not mutate the live instance); falls back to the saved one.
     strategyText: arg("strategy") ?? instance.strategyText,
+    fpStore: createInMemoryStore(),
   };
   for (let t = startMs; t <= lastTickMs; t += HOUR_MS) await stepWatcherTick(ctx, t, true);
   const tail = await closeAllAtEnd({ writeClose, positions: ctx.positions, candleCache, lastDayMs: lastTickMs });

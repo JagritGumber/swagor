@@ -1,8 +1,9 @@
 import "server-only";
 
 import { db } from "@/lib/db/client";
-import { monitorTicks, selboInstances, equitySnapshots, trades, memoryEntries, type SelboInstance } from "@/lib/db/schema";
-import { and, eq, desc, gte, or, isNull } from "drizzle-orm";
+import { monitorTicks, selboInstances, equitySnapshots, trades, type SelboInstance } from "@/lib/db/schema";
+import { and, eq, desc, gte, or } from "drizzle-orm";
+import { loadUserRecords, computeFingerprintFromMarketState, computeAssetSideKey } from "@/app/services/setup-fingerprint";
 import { MODELS } from "@/lib/llm-client";
 import { getCachedDailyPlan } from "@/lib/utils/daily-plan-cache";
 import { runDailyPlanForInstance } from "@/app/services/swarm/daily-planner.service";
@@ -22,7 +23,7 @@ import { detectStrategyMode } from "@/lib/strategy-mode";
 import { resolveCoinUniverse } from "@/selbo.config";
 import { blendWatcherCadence } from "@/lib/cadence-blend";
 import { recordTickStages, type TickStageInput } from "@/app/services/tick-stages.service";
-import type { SelboTickInput, WatcherExecutionState } from "./selbo-tick-types";
+import type { SelboTickInput, WatcherExecutionState, SetupRecordLookup, SymbolFingerprints } from "./selbo-tick-types";
 import { decideSelboTick } from "./selbo-agent-decision";
 import { executeWatcherDecision } from "./execute-watcher-decision";
 
@@ -226,15 +227,26 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
     sizeUsd: riskNumber(t.amountUsd),
     openedAt: t.openedAt?.toISOString() ?? null,
   }));
-  // In-context learning: feed the agent lessons from its own past trades
-  // (drop user-flagged-bad and deleted). This is the evolution loop.
-  const lessonRows = await db.select({ lessons: memoryEntries.lessons, feedback: memoryEntries.userFeedback })
-    .from(memoryEntries)
-    .where(and(eq(memoryEntries.userId, instance.userId), isNull(memoryEntries.deletedAt)))
-    .orderBy(desc(memoryEntries.createdAt)).limit(20);
-  const recentLessons = lessonRows
-    .filter((r) => r.feedback !== "bad")
-    .flatMap((r) => r.lessons ?? []).slice(0, 12);
+  // In-context learning: pre-fetch the agent's structured setup-fingerprint
+  // records. Returns null leaves until trades>=MIN_TRADES_TO_EXPOSE -- the
+  // agent decides on structure alone below threshold. Fingerprints are
+  // computed ONCE here and reused at executor time (no re-derive drift).
+  const { fpMap, asMap } = await loadUserRecords(instance.userId);
+  const symbolFingerprints: SymbolFingerprints = new Map();
+  for (const s of marketFeatures.symbols) {
+    symbolFingerprints.set(s.symbol, {
+      long: computeFingerprintFromMarketState({ asset: s.symbol, side: "long", perp: s.perpMarketState, recentCandles: s.recentCandles }),
+      short: computeFingerprintFromMarketState({ asset: s.symbol, side: "short", perp: s.perpMarketState, recentCandles: s.recentCandles }),
+    });
+  }
+  const setupRecordLookup: SetupRecordLookup = (asset, side) => {
+    const fps = symbolFingerprints.get(asset.toUpperCase());
+    const fp = fps ? fps[side] : null;
+    return {
+      fingerprint: fp ? (fpMap.get(fp) ?? null) : null,
+      assetSide: asMap.get(computeAssetSideKey(asset, side)) ?? null,
+    };
+  };
 
   const tickInput: SelboTickInput = {
     mode: "live",
@@ -252,7 +264,8 @@ export async function runWatcherForInstance(instanceId: string): Promise<Watcher
       })),
     ],
     risk,
-    recentLessons,
+    setupRecordLookup,
+    symbolFingerprints,
     executionState: liveExecutionState(todayTrades),
   };
   const watcherDecision = await decideSelboTick(tickInput);

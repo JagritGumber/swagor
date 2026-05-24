@@ -7,6 +7,7 @@ import { fetchCandlesPaginated } from "@/lib/data-sources/hyperliquid-candles";
 import type { Candle } from "@/lib/data-sources/hyperliquid";
 import { closeAllAtEnd, type CloseSink, STARTING_EQUITY_USD, writeBacktestClose } from "./simulate-helpers";
 import { stepWatcherTick, type ReplayCtx } from "./watcher-tick-step";
+import { createInMemoryStore } from "@/app/services/setup-fingerprint/in-memory";
 
 const HOUR_MS = 3_600_000;
 
@@ -42,6 +43,7 @@ export async function runWatcherReplay(params: {
       runId: run.id, assets, candleCache, positions: new Map(), equity: STARTING_EQUITY_USD,
       opened: 0, closed: 0, currentDayMs: Number.NaN, dailyTradeCount: 0, dailyLossCount: 0,
       dailyRealizedPnlUsd: 0, cooldownUntil: {}, writeClose,
+      fpStore: createInMemoryStore(),
     };
     for (let tickMs = startMs; tickMs <= endMs; tickMs += HOUR_MS) {
       await stepWatcherTick(ctx, tickMs, true);

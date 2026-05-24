@@ -3,7 +3,6 @@ import "server-only";
 import { db } from "@/lib/db/client";
 import { trades, selboInstances, type Trade } from "@/lib/db/schema";
 import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
-import { recordTradeMemory } from "@/app/services/memory.service";
 import {
   anchorClosedTrade,
   anchorOpenedTrade,
@@ -12,6 +11,12 @@ import {
 import { chargeBrokerFee } from "@/app/services/brokerage/charge-fee.service";
 import { fetchAllMids } from "@/lib/data-sources/hyperliquid";
 import type { TradeQualityReport } from "@/app/services/trade-quality-engine";
+import {
+  recordOutcome,
+  deriveStateShifted,
+  computeAssetSideKey,
+  type EntryStateSnapshot,
+} from "@/app/services/setup-fingerprint";
 
 export type OpenPaperTradeInput = {
   userId: string;
@@ -31,6 +36,13 @@ export type OpenPaperTradeInput = {
   // anchor trace; never stored plain on-chain. Optional so paths without
   // it still open trades; the anchor just hashes rationale + safety.
   agentContext?: AnchorJsonValue;
+  // Setup-fingerprint stash trio. The agent reads its own track record on
+  // these dimensions at decision time; we record outcomes against them at
+  // close. Optional so non-watcher paths (panel, fast-trader) can still open
+  // trades; those just skip aggregation on close.
+  fingerprint?: string | null;
+  initialRiskUsd?: number | null;
+  entryStateSnapshot?: EntryStateSnapshot | null;
 };
 
 export type ClosePaperTradeInput = {
@@ -44,7 +56,25 @@ export type ClosePaperTradeInput = {
   rationale: string;
   source: "watcher" | "fast-trader" | "panel" | "safety" | "user-pause";
   safetyTrigger?: "stop_loss" | "take_profit";
+  // Close-time state snapshot for the asset. Used to derive stateShifted vs
+  // the stashed entryStateSnapshot. Optional: paths without market context
+  // (safety enforcer cron) pass null and the aggregator treats stateShifted
+  // as false for that close -- minority bias acknowledged in plan.
+  closeStateSnapshot?: EntryStateSnapshot | null;
 };
+
+/**
+ * Merge setup-fingerprint stash trio into the trade's decisionReport jsonb.
+ * Persists alongside the existing quality report (if any) so the close path
+ * can read everything from one column.
+ */
+function buildDecisionReportForOpen(input: OpenPaperTradeInput): Record<string, unknown> | null {
+  const merged: Record<string, unknown> = input.decisionReport ? { ...(input.decisionReport as unknown as Record<string, unknown>) } : {};
+  if (input.fingerprint) merged.fingerprint = input.fingerprint;
+  if (input.initialRiskUsd !== undefined && input.initialRiskUsd !== null) merged.initialRiskUsd = input.initialRiskUsd;
+  if (input.entryStateSnapshot) merged.entryStateSnapshot = input.entryStateSnapshot;
+  return Object.keys(merged).length > 0 ? merged : null;
+}
 
 /**
  * Compute realized PnL for a closed long/short paper position at the given exit price.
@@ -107,7 +137,7 @@ export async function openPaperTrade(input: OpenPaperTradeInput): Promise<{ trad
       entryPrice: input.entryPriceUsd ? input.entryPriceUsd.toString() : null,
       stopLossPriceUsd: stop !== null ? stop.toString() : null,
       takeProfitPriceUsd: takeProfit !== null ? takeProfit.toString() : null,
-      decisionReport: input.decisionReport ? input.decisionReport as unknown as Record<string, unknown> : null,
+      decisionReport: buildDecisionReportForOpen(input),
       status: "open",
       mode: "simulation",
       openedAt: new Date(),
@@ -209,14 +239,26 @@ export async function closePaperTrade(
     sizeUsd: Number(target.amountUsd), pnlUsd: pnl,
   }).catch((err) => console.error("[paper-trade] broker fee:", err));
 
-  const closedTrade = {
-    ...target,
-    status: "closed",
-    closedAt,
-    exitPrice: input.markPriceUsd.toString(),
-    pnlUsd: pnl !== null ? pnl.toString() : null,
-  };
-  void recordTradeMemory(closedTrade);
+  // Setup-fingerprint aggregation: read the stash trio from decisionReport
+  // and increment both records (fingerprint + asset_side). Pre-deploy trades
+  // without a stashed fingerprint skip aggregation silently.
+  if (pnl !== null) {
+    const dr = (target.decisionReport ?? {}) as {
+      fingerprint?: string; initialRiskUsd?: number | null; entryStateSnapshot?: EntryStateSnapshot;
+    };
+    if (dr.fingerprint && (target.side === "long" || target.side === "short")) {
+      const entry = dr.entryStateSnapshot ?? null;
+      const stateShifted = (input.closeStateSnapshot && entry) ? deriveStateShifted(entry, input.closeStateSnapshot) : false;
+      const args = {
+        userId: input.userId, pnlUsd: pnl,
+        initialRiskUsd: dr.initialRiskUsd ?? null,
+        exitReason: input.safetyTrigger ?? null,
+        stateShifted,
+      };
+      await recordOutcome({ ...args, recordKind: "fingerprint", recordKey: dr.fingerprint });
+      await recordOutcome({ ...args, recordKind: "asset_side", recordKey: computeAssetSideKey(target.asset, target.side) });
+    }
+  }
   // Awaited (same reasoning as open-anchor above): Workers cancel
   // post-handler async work without waitUntil, so fire-and-forget would
   // sometimes leave arcAnchorTx null even when Circle queued a tx.

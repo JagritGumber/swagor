@@ -82,10 +82,10 @@ CI runs typecheck on every push and pull request via `.github/workflows/typechec
 - `app/services/fast-trader`: tactical short-term decision path for urgent watcher signals.
 - `app/services/swarm`: strategic multi-agent decision path for slower portfolio decisions.
 - `app/services/trades/paper-trade.service.ts`: paper execution, safety-trigger enforcement, memory, and Arc anchor handoff.
-- `app/services/memory.service.ts`: per-trade lesson extraction; honors user thumbs-down + soft-delete.
-- `app/api/`: REST routes for activity, equity, memory, strategy chat, admin LLM-call audit, and reasoning bundles.
+- `app/services/setup-fingerprint/`: structured learning primitive. Per (asset, side, value_location, volume_state, oi_flow, funding_state) records the agent's empirical EV (W/L, avg R, lossesByReason, state-shift counts). Replaces the prose lessons system the agent rationalized around.
+- `app/api/`: REST routes for activity, equity, strategy chat, admin LLM-call audit, and reasoning bundles.
 - `app/legal/disclaimer/page.tsx`: paper-mode + no-advice copy.
-- `lib/db/schema/`: Drizzle schema modules (selbo_instances, monitor_ticks, trades, llm_calls, equity_snapshots, memory_entries, strategy_revisions, ...).
+- `lib/db/schema/`: Drizzle schema modules (selbo_instances, monitor_ticks, trades, llm_calls, equity_snapshots, setup_records, strategy_revisions, ...).
 - `lib/arc/`: Arc anchoring integration.
 - `lib/market-features.ts`: deterministic indicator + regime snapshot (RSI, EMA, ATR, volatility, candidate bias, cadence hint).
 - `components/dashboard/`: dashboard widgets.
