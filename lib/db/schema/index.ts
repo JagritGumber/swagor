@@ -8,7 +8,7 @@ export * from "./selbo-instances";
 export * from "./monitor-ticks";
 export * from "./trade-proposals";
 export * from "./trades";
-export * from "./memory";
+export * from "./setup-records";
 export * from "./tweet-drafts";
 export * from "./llm-calls";
 export * from "./equity-snapshots";

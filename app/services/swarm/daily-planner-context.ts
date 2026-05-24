@@ -73,7 +73,6 @@ export async function buildDailyPlanContext(instance: SelboInstance): Promise<Da
     trendRegime: buildTrendRegimeSnapshot(marketFeatures),
     recent_news,
     news_sentiment: classifyNews(fb.newsResults),
-    recent_lessons: fb.recentLessons,
     recent_pnl: fb.recentClosedTrades.map((t) => {
       const amountUsd = Number(t.amountUsd);
       const pnlUsd = t.pnlUsd === null ? null : Number(t.pnlUsd);
@@ -99,7 +98,6 @@ export function externalSwarmContext(context: DailyPlanContext): object {
     watching: context.watching,
     recent_news: context.recent_news,
     news_sentiment: context.news_sentiment,
-    recent_lessons: context.recent_lessons,
     recent_pnl: context.recent_pnl,
     trendRegime: context.trendRegime,
     yesterdayPlanSummary: context.yesterdayPlanSummary,

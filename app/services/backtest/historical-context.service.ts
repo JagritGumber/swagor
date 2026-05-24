@@ -59,7 +59,6 @@ export async function buildHistoricalContext(instance: SelboInstance, asOf: Date
       hoursAgo: n.publishedAt ? Math.floor((asOfMs - Date.parse(n.publishedAt)) / 3_600_000) : null,
     })),
     news_sentiment: classifyNews(newsResults),
-    recent_lessons: [],
     recent_pnl: [],
     yesterdayPlanSummary: null,
     _ingestion: [{ name: "backtest:historical", status: "ok", count: features.length, latencyMs: 0 }],

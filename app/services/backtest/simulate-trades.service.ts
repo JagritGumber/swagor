@@ -7,6 +7,7 @@ import { type Candle } from "@/lib/data-sources/hyperliquid";
 import { fetchCandlesPaginated } from "@/lib/data-sources/hyperliquid-candles";
 import { closeAllAtEnd, type CloseSink, STARTING_EQUITY_USD, writeBacktestClose } from "./simulate-helpers";
 import { stepWatcherTick, type ReplayCtx } from "./watcher-tick-step";
+import { createInMemoryStore } from "@/app/services/setup-fingerprint/in-memory";
 
 export { summarizeBacktestTrades, type BacktestSummary } from "./summarize-trades";
 
@@ -51,6 +52,7 @@ export async function simulateTradesForBacktest(runId: string): Promise<{ opened
     opened: 0, closed: 0, currentDayMs: Number.NaN, dailyTradeCount: 0, dailyLossCount: 0,
     dailyRealizedPnlUsd: 0, cooldownUntil: {}, writeClose,
     strategyText: instance?.strategyText ?? "",
+    fpStore: createInMemoryStore(),
   };
   const lastTick = Date.parse(`${run.endDate}T23:00:00Z`);
   for (let tickMs = startMs; tickMs <= lastTick; tickMs += HOUR_MS) {

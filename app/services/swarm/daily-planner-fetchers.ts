@@ -5,7 +5,6 @@ import { db } from "@/lib/db/client";
 import { dailyPlans, monitorTicks, trades, type DailyPlan, type SelboInstance, type Trade } from "@/lib/db/schema";
 import { fetchAllMids, fetchMetaAndCtxs } from "@/lib/data-sources/hyperliquid";
 import { searchNews } from "@/lib/data-sources/news";
-import { getRecentLessons } from "@/app/services/memory.service";
 
 export type IngestionSource = {
   name: string;
@@ -40,7 +39,7 @@ type News = { results: Array<{ title: string; source: string; publishedAt: strin
 export async function fetchAllForDailyPlan(instance: SelboInstance) {
   const watching = instance.currentlyWatching ?? ["ETH", "BTC", "SOL"];
 
-  const [midsR, metaR, paperOpenR, lastTickR, newsR, lessonsR, yesterdayR, closedR] = await Promise.all([
+  const [midsR, metaR, paperOpenR, lastTickR, newsR, yesterdayR, closedR] = await Promise.all([
     timed("hyperliquid:mids", fetchAllMids, {} as Awaited<ReturnType<typeof fetchAllMids>>, (v) => Object.keys(v).length),
     timed("hyperliquid:meta", fetchMetaAndCtxs, { universe: [], ctxs: [] }, (v) => v.universe.length),
     timed("db:open-paper-trades",
@@ -53,7 +52,6 @@ export async function fetchAllForDailyPlan(instance: SelboInstance) {
     timed("news:gdelt",
       () => searchNews(`${watching.join(" OR ")} OR "perp futures" OR "funding rate" OR cryptocurrency`),
       { results: [] } as News, (v) => v.results.length),
-    timed("db:lessons", () => getRecentLessons(instance.userId, 5), [] as string[], (v) => v.length),
     timed("db:yesterday-plan",
       () => db.select().from(dailyPlans).where(eq(dailyPlans.selboInstanceId, instance.id))
         .orderBy(desc(dailyPlans.generatedAt)).limit(1).then((r) => r[0]),
@@ -68,8 +66,8 @@ export async function fetchAllForDailyPlan(instance: SelboInstance) {
   return {
     watching,
     mids: midsR.value, meta: metaR.value, paperOpen: paperOpenR.value, lastTick: lastTickR.value,
-    newsResults: newsR.value.results, recentLessons: lessonsR.value,
+    newsResults: newsR.value.results,
     yesterdayPlan: yesterdayR.value, recentClosedTrades: closedR.value,
-    ingestion: [midsR, metaR, paperOpenR, lastTickR, newsR, lessonsR, yesterdayR, closedR].map((r) => r.source),
+    ingestion: [midsR, metaR, paperOpenR, lastTickR, newsR, yesterdayR, closedR].map((r) => r.source),
   };
 }
