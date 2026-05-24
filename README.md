@@ -16,14 +16,15 @@ The Agora Agents rubric scores four dimensions. This section maps each one to sp
 
 ### Agentic Sophistication
 
-**Claim:** Selbo is fully autonomous. Every trade decision is the agent's. No hardcoded discipline gates, no preset playbook, no multi-choice scoring.
+**Selbo is the agent. Not a wrapper around the agent. Not the agent with discipline guardrails bolted on. The agent decides every trade, in full, by itself.**
 
-**Evidence:**
-- Single LLM call writes the entire decision per tick: direction, size, leverage, stop, take-profit, plain-English reasoning, confidence, next-check cadence. See `app/services/watcher/selbo-agent-decision.ts` (the `decideSelboTick` function) and `app/services/watcher/agent-prompt.ts` (the trader prompt + output schema).
-- The discipline-gate stack was deliberately removed. Prior versions had `SCALPER_MAX_*` constants, `setupBlocks`, `countertrendBlocks`, confidence floors, and a `scalper-long-discipline.ts` rule engine. All deleted in the agentic-Selbo pivot (see git history for `app/services/watcher/scalper-long-discipline.ts` deletion). The watcher engine that wrapped them was also stripped, leaving only the agent-decides path.
-- The agent prompt invites free reasoning over structural inputs (volume profile, value area, regime, recent candles, open-interest flow, funding state) and returns JSON-validated freeform thinking — not a multi-choice classification.
-- The agent self-evolves via the setup-fingerprint primitive: every closed trade increments a per-(asset, side, value_location, volume_state, oi_flow, funding_state) record. After three trades on the same setup, the agent reads its own empirical W/L, avg R-multiple, lossesByReason breakdown, and state-shift counts before the next decision. See `app/services/setup-fingerprint/` and `lib/db/schema/setup-records.ts`.
-- Backtest demonstrated the agent's behavior shifts in response to the record: BTC|short win rate improved from 33% pre-gate to 44% post-gate over 12 trades in the 8-week 2026-03-01 to 2026-04-30 backtest, with avg loss size dropping from -$2.15 to -$0.52.
+The single LLM call per tick writes the entire decision: direction, asset, size, leverage, stop, take-profit, plain-English reasoning, confidence, next-check cadence. There are no hardcoded discipline gates. There is no rule engine vetting the agent's output. There is no second LLM auditing the first. We had all of these in earlier versions and stripped them. When the agent was wrapped in rules, the agent became performative theatre on top of the rules. When the rules came off and the agent had to own its own risk, the trading behavior became coherent.
+
+The agent reads structured perp-tape inputs (volume profile, value area, regime, OI flow, funding state, recent candles) plus its own historical performance ledger on the exact configuration it is considering, gated until that ledger has enough samples to mean something. Strategy text passes through raw end-to-end; the agent is not given pre-extracted classifications, it reads the user's strategy in their own words. Critical risk (margin / liquidation) bypasses the LLM and routes to deterministic safety rails. The agent has full freedom on entries and sizing, it just cannot ignore liquidation. Same separation pattern as nof1 Alpha Arena.
+
+Behavioral evidence from the 8-week backtest (2026-03-01 to 2026-04-30, BTC + ETH + SOL): the agent took 19 trades over 60 days, 99% of ticks correctly identified as "do nothing" and held. On the BTC|short configuration which crossed the learning ledger's 3-trade gate, win rate improved from 33% pre-gate to 44% post-gate over 12 trades. Avg loss size dropped from -$2.15 to -$0.52. The agent's behavior measurably shifted in response to its own empirical evidence.
+
+Code: `app/services/watcher/selbo-agent-decision.ts`, `app/services/watcher/agent-prompt.ts`, `app/services/setup-fingerprint/`.
 
 ### Traction
 
@@ -31,21 +32,28 @@ Submitted via the Agora Google Form. The public flagship dashboard at [selbo.app
 
 ### Circle Tool Usage
 
-**Claim:** Two distinct creative uses of Circle's developer platform.
+**Three creative uses of Circle's developer platform, each load-bearing for the autonomous agent flow rather than tacked-on for credit.**
 
-**Evidence:**
-- **Developer-Controlled Wallets per user, via the entity-secret pattern.** Each Selbo user is auto-provisioned a Circle Dev Wallet on signup. The agent signs every trade anchor and trade-open anchor from the user's own wallet, not a service account, with no per-transaction human approval required. This is non-trivial for autonomous agent flows: standard wagmi-style approval-per-tx would break the loop. See `app/services/selbo-instance.service.ts` for wallet provisioning and `lib/arc/anchor.ts` for signing.
-- **Smart Contract Platform for the anchor contract.** The PortfolioDecisions contract on Arc Testnet was deployed via Circle's Smart Contract Platform tooling and is source-verified on Arcscan. Address: `0xa92913539d7fbed157974a08293b2620ac0d0277`. See `contracts/yield_routing/PortfolioDecisions.sol` and `lib/arc/anchor.ts` for the event emission path.
-- **USDC on Arc as the brokerage-fee settlement asset.** A min($0.10, sizeUsd * 2%) USDC fee per closed trade routes from the user's Circle wallet to the Selbo treasury wallet (also Circle-Dev-Wallet-backed), idempotent via a unique index on `broker_fees.trade_id`. See `app/services/brokerage/charge-fee.service.ts`.
+- **Developer-Controlled Wallets per user, via the entity-secret pattern.** Each Selbo user is auto-provisioned a Circle Dev Wallet on signup. The agent signs every trade anchor from the user's own wallet, not a service account, with no per-transaction human approval required. This is non-trivial for autonomous AI flows. Standard wagmi-style approval-per-tx would break the loop entirely because the user is not in the loop.
+- **Smart Contract Platform for the anchor contract.** The PortfolioDecisions contract on Arc Testnet was deployed via Circle's Smart Contract Platform and is source-verified on Arcscan at `0xa92913539d7fbed157974a08293b2620ac0d0277`. Anyone can read every line of the Solidity that produces the on-chain record of an agent decision.
+- **USDC on Arc as the brokerage-fee settlement asset.** A min($0.10, sizeUsd * 2%) USDC fee per closed trade routes from the user's Circle wallet to the Selbo treasury wallet (also Circle-backed), idempotent via a unique index on `broker_fees.trade_id`. Real economic plumbing, not just a demo of moving stablecoins.
+
+Code: `app/services/selbo-instance.service.ts`, `lib/arc/anchor.ts`, `contracts/yield_routing/PortfolioDecisions.sol`, `app/services/brokerage/charge-fee.service.ts`.
 
 ### Innovation
 
-**Claim:** Three concrete research/engineering contributions, each shipped and verifiable.
+**Three contributions we think advance how AI agents can be deployed and trusted on-chain. Each shipped, each verifiable.**
 
-**Evidence:**
-- **Setup-fingerprint primitive replacing prose lessons.** Earlier iterations had a LIGHT LLM extracting one-sentence "lessons" after each closed trade that the agent then rationalized around. Replaced with a structured ledger keyed on the exact perp-tape configuration (asset, side, value location, volume state, open-interest flow, funding regime). Records gate at N>=3 trades before being exposed to the agent, so the agent never reads low-sample noise. Real R-multiples (sumR / rTrades, not pnl/notional). Both `winsAfterStateShift` and `lossesAfterStateShift` tracked, no selection bias. Backtest behavioral validation in `scripts/test-logic.ts` (66 parity assertions covering the in-memory mirror against live SQL upsert semantics). See `app/services/setup-fingerprint/index.ts`, `lib/db/schema/setup-records.ts`, and PR #176.
-- **Hash-bound on-chain reasoning.** Every Selbo decision SHA-256 hashes the full agent context (market features, positions, risk snapshot, agent rationale) and anchors that hash on Arc via the PortfolioDecisions contract. The full off-chain reasoning is stored in Postgres; the hash binds it to the on-chain record forever. The agent cannot revise what it did after the fact. See `lib/arc/anchor.ts::sha256Hex` and the `swarmTraceHash` parameter of `anchorWatcherDecision`.
-- **Identical-logic backtest.** The same `decideSelboTick` function drives both live trading and historical replay. Backtest cost (~$0.15 per 60-day run via Mistral-Small on DeepInfra) is accepted as the price of fidelity. No fake-faster backtest with cheaper logic. See `app/services/backtest/watcher-tick-step.ts` calling the same agent function, and `scripts/test-logic.ts` parity assertions on the fingerprint aggregation between SQL and in-memory paths.
+**1. Quantitative learning where prose lessons fail.**
+We built a "lessons" system the way most agent products do. Extract one-sentence takeaways after each closed trade. Feed them back as context. The agent rationalized around every single one. "Do not repeat this setup" was read, and immediately ignored, because each new tick LOOKED different. The narrative the agent generated about its own past was a permission slip, not a constraint. We ripped it out and replaced it with a structured ledger keyed on the exact perp-tape configuration the trade was taken in. The agent now reads numbers, not stories. Empirical W/L and avg R-multiple on the specific configuration it is about to take, gated until enough trades have accumulated to be meaningful. We think this is the right primitive for in-context agent learning: anything that lets the agent generate its own narrative about its past is something it can talk itself out of. Backtest confirmed the behavioral shift (33 to 44 percent win rate on BTC|short after the ledger crossed its gate).
+
+**2. Reasoning bound to the on-chain record.**
+Every Selbo decision SHA-256 hashes its full agent context (market state, positions, risk read, rationale) and anchors that hash on Arc. The full reasoning lives off-chain in Postgres; the hash binds it forever. The agent literally cannot revise what it said after the outcome is known. We think this is the verifiability primitive AI agents need to be trusted. Not "trust the agent's behavior," but "you can prove the rationale was not edited after the result was in." Combined with Circle Dev Wallet signing, the on-chain record is bound to the user's wallet AND to the immutable hash AND to the source-verified contract.
+
+**3. A backtest that is actually the live agent.**
+We deliberately rejected the cheaper-backtest pattern (deterministic engine wearing an agent costume, identical numbers across runs, none of them representative). Our public 8-week backtest runs the IDENTICAL `decideSelboTick` function as live, calling the same LLM with the same prompt and same payload shape. Cost roughly $0.15 per 60-day run via Mistral-Small. We accept the cost as the price of fidelity. What you see in our public track record is what you would see if you deployed Selbo today. A parity test of 66 assertions enforces that the in-memory backtest fingerprint mirror produces byte-identical state to the live SQL upsert path, so the same agent reads the same shape of evidence in both worlds.
+
+Code: `app/services/setup-fingerprint/`, `lib/arc/anchor.ts`, `app/services/backtest/watcher-tick-step.ts`, `scripts/test-logic.ts`.
 
 ### RFB 01 architecture alignment
 
