@@ -8,6 +8,8 @@ Selbo (V1) is an autonomous perpetual futures trading agent. It runs 24/7 per us
 
 Built for the Agora Agents hackathon (Canteen x Circle x Arc, 2026-05-11 to 2026-05-25) against **RFB 01: Perpetual Futures Trading Agent**. The submission target is paper-mode autonomy with transparent risk + reasoning logs, simulated PnL and drawdown, and Arc-anchored decision records.
 
+> **Sister submission — Arc OSS.** Same author also submitted [arc-perp-reference](https://github.com/JagritGumber/arc-perp-reference) to the Arc Open Source Showcase: a forkable, MIT-licensed open-source perpetual-futures DEX reference for Arc Testnet, built because Selbo hit the Shapeshifter / CMDT ClearingHouse wall during this hackathon and the gap is real. Independent repos, independent submissions, complementary tracks: Selbo is the consumer-facing autonomous agent, arc-perp-reference is the missing on-chain infrastructure primitive any future Arc agent builder would target.
+
 > **Paper mode only.** No real funds at risk. No financial advice. Selbo is a hackathon experiment, not a regulated product. See the in-app ToS gate and `/legal/disclaimer`.
 
 ## How Selbo maps to RFB 01 judging criteria
