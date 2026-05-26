@@ -13,6 +13,7 @@
     "backtest:import": "bun --conditions react-server scripts/backtest-import.ts",
     "test:logic": "bun --conditions react-server scripts/test-logic.ts",
     "strategy:smoke": "bun scripts/strategy-lab-smoke.ts",
+    "strategy:perry:compile": "perry compile scripts/strategy-lab-perry-smoke.ts -o strategy-lab-perry-smoke",
     "arc:verify": "bun scripts/arc-verify.ts",
     "arc:deploy": "bun --conditions react-server scripts/deploy-anchor-contract.ts",
     "db:push": "drizzle-kit push",
@@ -67,6 +68,7 @@
   },
   "devDependencies": {
     "@maizzle/framework": "^5.5.0",
+    "@perryts/perry": "^0.5.1025",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "20.10.6",
     "@types/react": "18.2.46",

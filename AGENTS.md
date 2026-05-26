@@ -25,5 +25,7 @@
 ## Validation
 
 - Use `bun run strategy:smoke` for the current strategy-lab smoke check.
+- Use `bun run strategy:perry:compile` to verify the strategy lab still
+  compiles through Perry. The generated binary is ignored.
 - Use `tsgo`, not `tsc`, for typechecking.
 - Do not read `.env.local` or production env files.

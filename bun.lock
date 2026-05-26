@@ -51,6 +51,7 @@
       },
       "devDependencies": {
         "@maizzle/framework": "^5.5.0",
+        "@perryts/perry": "^0.5.1025",
         "@tailwindcss/postcss": "^4.0.0",
         "@types/node": "20.10.6",
         "@types/react": "18.2.46",
@@ -511,6 +512,22 @@
     "@paper-design/shaders-react": ["@paper-design/shaders-react@0.0.76", "", { "dependencies": { "@paper-design/shaders": "0.0.76" }, "peerDependencies": { "@types/react": "^18 || ^19", "react": "^18 || ^19" }, "optionalPeers": ["@types/react"] }, "sha512-uPJWrYRf6cJdO2H+fuXlahaqz0QjYglNAyUTaRfIInpzCa/d6guxBIK003soAZQFuQ035yg9FhtfFzKNWm+a5A=="],
 
     "@paulmillr/qr": ["@paulmillr/qr@0.2.1", "", {}, "sha512-IHnV6A+zxU7XwmKFinmYjUcwlyK9+xkG3/s9KcQhI9BjQKycrJ1JRO+FbNYPwZiPKW3je/DR0k7w8/gLa5eaxQ=="],
+
+    "@perryts/perry": ["@perryts/perry@0.5.1025", "", { "optionalDependencies": { "@perryts/perry-darwin-arm64": "0.5.1025", "@perryts/perry-darwin-x64": "0.5.1025", "@perryts/perry-linux-arm64": "0.5.1025", "@perryts/perry-linux-arm64-musl": "0.5.1025", "@perryts/perry-linux-x64": "0.5.1025", "@perryts/perry-linux-x64-musl": "0.5.1025", "@perryts/perry-win32-x64": "0.5.1025" }, "bin": { "perry": "bin/perry.js" } }, "sha512-ZREOKeZ4sYYA1vlWgwvgwfqcbdTJ2pJk8tPnp4Hff6+MIC/Q8kdVX9JXFM54fI6XTXTYRSC6zQ2XDvG5DZaTqQ=="],
+
+    "@perryts/perry-darwin-arm64": ["@perryts/perry-darwin-arm64@0.5.1025", "", { "os": "darwin", "cpu": "arm64" }, "sha512-3JwjBjX4qujeGAmg/6yKBnyAa9VR8cjys1Fta6FReKodNVl9mvetosvIZprO/OOX5S3Q336ldvJse5jqLwIwJw=="],
+
+    "@perryts/perry-darwin-x64": ["@perryts/perry-darwin-x64@0.5.1025", "", { "os": "darwin", "cpu": "x64" }, "sha512-ny8T5IJ7pq3Wt2LCqSLDEWhfRGJIT5Ae/Qrb8n7T08CqPf8A/eH9yMXdKA6fNLu4V8ZPIuHKQffJ2MWX3fB/CA=="],
+
+    "@perryts/perry-linux-arm64": ["@perryts/perry-linux-arm64@0.5.1025", "", { "os": "linux", "cpu": "arm64" }, "sha512-xWpL4eWwWqpKli33SlsuhzDgTXylq766DJp1Kk8zoVZyybCyJIUPcfq8OTEQIZNnNKXy6efJ/cNSRb0jFei09A=="],
+
+    "@perryts/perry-linux-arm64-musl": ["@perryts/perry-linux-arm64-musl@0.5.1025", "", { "os": "linux", "cpu": "arm64" }, "sha512-gtPebl6sYdWA7VA8gITq3oAf+Wl9MLsyN60nYkS38YQ8wJ2GGYF6mgyaIuXKMNzp8omkqfk6x1VDggKpQu6zJg=="],
+
+    "@perryts/perry-linux-x64": ["@perryts/perry-linux-x64@0.5.1025", "", { "os": "linux", "cpu": "x64" }, "sha512-X2GidmcTMmMlJwcDqDGZDBmvNfh+LZvJ13HEPT9i+9x2PvK6AnVxUWWO+/jqTd4dm1pvK/9Q+vQj5r3yEeqjrQ=="],
+
+    "@perryts/perry-linux-x64-musl": ["@perryts/perry-linux-x64-musl@0.5.1025", "", { "os": "linux", "cpu": "x64" }, "sha512-nBEW8DGVnL3znncBh5ZYtCy95kQ1XJTdLuqV/IFIc1CEFpPOtIv4N+z6StCOtMfBKsL+yyfzpv5OqSSu2RSJEA=="],
+
+    "@perryts/perry-win32-x64": ["@perryts/perry-win32-x64@0.5.1025", "", { "os": "win32", "cpu": "x64" }, "sha512-c9CxggqRcjc5AN2t9vwzWYm320nju3jLqiyGR4NANfr691J4bMs7c9+lC4W/rWObkZ3xD1bHkH9NRS53EM8vHw=="],
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 
