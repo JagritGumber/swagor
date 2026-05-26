@@ -16,7 +16,8 @@ export function runBacktest(input: {
     const candle = input.candles[i];
     const ctx: MarketContext = {
       symbol: input.symbol,
-      candles: input.candles.slice(0, i + 1),
+      candles: input.candles,
+      index: i,
       costs: input.costs,
     };
 

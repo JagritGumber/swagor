@@ -17,6 +17,8 @@
   - `indicators`
   - `signals`
   - `strategies`
+- Backtest hot paths should be cursor-based. Prefer `ctx.candles` plus
+  `ctx.index` and `*At` indicators over slicing arrays per tick.
 - Prefer explicit strategy definitions and deterministic backtests before adding UI, workers, or deployment.
 - Every backtest must model costs before results are treated as meaningful.
 

@@ -15,6 +15,7 @@ export type MarketCosts = {
 export type MarketContext = {
   symbol: string;
   candles: Candle[];
+  index: number;
   costs: MarketCosts;
 };
 

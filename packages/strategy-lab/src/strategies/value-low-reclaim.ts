@@ -1,9 +1,9 @@
-import { atr } from "../indicators/atr";
-import { closes } from "../indicators/closes";
-import { crossedAbove } from "../indicators/crossed-above";
+import { atrAt } from "../indicators/atr-at";
+import { closeAt } from "../indicators/close-at";
+import { crossedAboveAt } from "../indicators/crossed-above-at";
 import { enterLong } from "../signals/enter-long";
 import { hold } from "../signals/hold";
-import { rollingLow } from "../indicators/rolling-low";
+import { rollingLowAt } from "../indicators/rolling-low-at";
 import type { Strategy } from "../types";
 
 export const valueLowReclaim: Strategy = {
@@ -12,13 +12,12 @@ export const valueLowReclaim: Strategy = {
   timeframe: "5m",
   warmupCandles: 24,
   evaluate(ctx) {
-    const recent = ctx.candles.slice(-24);
-    const valueLow = rollingLow(recent, 20);
-    const currentAtr = atr(ctx.candles, 14);
-    if (valueLow === null || currentAtr === null) return hold("not enough structure");
-    if (!crossedAbove(closes(ctx.candles), valueLow)) return hold("no value-low reclaim");
+    const valueLow = rollingLowAt(ctx.candles, ctx.index, 20);
+    const currentAtr = atrAt(ctx.candles, ctx.index, 14);
+    const last = closeAt(ctx.candles, ctx.index);
+    if (valueLow === null || currentAtr === null || last === null) return hold("not enough structure");
+    if (!crossedAboveAt(ctx.candles, ctx.index, valueLow)) return hold("no value-low reclaim");
 
-    const last = ctx.candles[ctx.candles.length - 1].c;
     return enterLong({
       reason: "value low reclaim",
       riskPct: 0.35,

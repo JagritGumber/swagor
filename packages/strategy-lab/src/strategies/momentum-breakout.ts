@@ -1,8 +1,8 @@
-import { closes } from "../indicators/closes";
+import { closeAt } from "../indicators/close-at";
 import { enterLong } from "../signals/enter-long";
 import { hold } from "../signals/hold";
-import { rollingHigh } from "../indicators/rolling-high";
-import { sma } from "../indicators/sma";
+import { rollingHighAt } from "../indicators/rolling-high-at";
+import { smaAt } from "../indicators/sma-at";
 import type { Strategy } from "../types";
 
 export const momentumBreakout: Strategy = {
@@ -11,13 +11,12 @@ export const momentumBreakout: Strategy = {
   timeframe: "1h",
   warmupCandles: 60,
   evaluate(ctx) {
-    const closeValues = closes(ctx.candles);
-    const fast = sma(closeValues, 12);
-    const slow = sma(closeValues, 48);
-    const priorHigh = rollingHigh(ctx.candles.slice(0, -1), 24);
-    if (fast === null || slow === null || priorHigh === null) return hold("not enough trend data");
+    const fast = smaAt(ctx.candles, ctx.index, 12);
+    const slow = smaAt(ctx.candles, ctx.index, 48);
+    const priorHigh = rollingHighAt(ctx.candles, ctx.index - 1, 24);
+    const last = closeAt(ctx.candles, ctx.index);
+    if (fast === null || slow === null || priorHigh === null || last === null) return hold("not enough trend data");
 
-    const last = closeValues[closeValues.length - 1];
     if (fast <= slow || last <= priorHigh) return hold("no trend breakout");
 
     const risk = Math.max(last - slow, last * 0.004);
