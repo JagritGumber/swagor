@@ -4,6 +4,7 @@ export function createOrderflowWindow(windowMs: number): OrderflowWindow {
   return {
     windowMs,
     trades: [],
+    startIndex: 0,
     bbo: null,
   };
 }

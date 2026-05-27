@@ -10,10 +10,13 @@ export function readOrderflowWindow(input: {
   let largestTrade: OrderflowTrade | null = null;
   let lastPrice: number | null = null;
 
-  for (const trade of input.window.trades) {
+  let tradeCount = 0;
+  for (let i = input.window.startIndex; i < input.window.trades.length; i++) {
+    const trade = input.window.trades[i];
     if (trade.side === "buy") buyVolume += trade.size;
     else sellVolume += trade.size;
     totalSize += trade.size;
+    tradeCount += 1;
     lastPrice = trade.price;
     if (!largestTrade || trade.size > largestTrade.size) largestTrade = trade;
   }
@@ -21,7 +24,8 @@ export function readOrderflowWindow(input: {
   const delta = buyVolume - sellVolume;
   const dominantSide = dominantSideFor(buyVolume, sellVolume);
   const pressure = pressureFor(delta, buyVolume + sellVolume);
-  const events = eventLabels({ window: input.window, delta, largestTrade, lastPrice });
+  const averageTradeSize = tradeCount === 0 ? 0 : totalSize / tradeCount;
+  const events = eventLabels({ window: input.window, delta, largestTrade, lastPrice, averageTradeSize, tradeCount });
   return {
     asset: input.asset,
     windowSeconds: input.window.windowMs / 1000,
@@ -29,8 +33,8 @@ export function readOrderflowWindow(input: {
     buyVolume,
     sellVolume,
     delta,
-    tradeCount: input.window.trades.length,
-    averageTradeSize: input.window.trades.length === 0 ? 0 : totalSize / input.window.trades.length,
+    tradeCount,
+    averageTradeSize,
     largestTrade,
     dominantSide,
     pressure,
@@ -57,11 +61,11 @@ function eventLabels(input: {
   delta: number;
   largestTrade: OrderflowTrade | null;
   lastPrice: number | null;
+  averageTradeSize: number;
+  tradeCount: number;
 }): string[] {
   const labels: string[] = [];
-  const totalVolume = input.window.trades.reduce((sum, trade) => sum + trade.size, 0);
-  const averageSize = input.window.trades.length === 0 ? 0 : totalVolume / input.window.trades.length;
-  if (input.largestTrade && averageSize > 0 && input.largestTrade.size >= averageSize * 4) {
+  if (input.largestTrade && input.averageTradeSize > 0 && input.largestTrade.size >= input.averageTradeSize * 4) {
     labels.push("large-print");
   }
   if (input.window.bbo && input.lastPrice !== null) {
@@ -71,7 +75,7 @@ function eventLabels(input: {
     if (bbo.askPrice !== null && input.lastPrice < bbo.askPrice && input.delta > 0) labels.push("stalled-buying");
     if (bbo.bidPrice !== null && input.lastPrice > bbo.bidPrice && input.delta < 0) labels.push("stalled-selling");
   }
-  if (labels.length === 0 && input.window.trades.length > 0) labels.push("thin-follow-through");
+  if (labels.length === 0 && input.tradeCount > 0) labels.push("thin-follow-through");
   return labels;
 }
 

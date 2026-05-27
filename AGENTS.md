@@ -27,6 +27,8 @@
 - `packages/market-data` owns ingestion and storage adapters. Keep network,
   VictoriaMetrics, filesystem, and DB APIs out of the Perry-compatible strategy
   package.
+- `packages/live-reader` owns whole-flow live reader orchestration that combines
+  market-data feeds/storage with strategy-lab reads. Keep CLI scripts thin.
 - `packages/market-data` uses human-sortable folders with grep-first file
   names:
   - `shared`

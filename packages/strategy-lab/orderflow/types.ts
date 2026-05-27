@@ -25,6 +25,7 @@ export type OrderflowEvent =
 export type OrderflowWindow = {
   windowMs: number;
   trades: OrderflowTrade[];
+  startIndex: number;
   bbo: OrderflowBbo | null;
 };
 

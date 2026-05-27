@@ -17,5 +17,5 @@ export * from "./orderflow/normalize-hyperliquid-orderflow-message";
 export * from "./orderflow/hyperliquid-orderflow-records";
 export * from "./orderflow/connect-hyperliquid-orderflow";
 export * from "./orderflow/orderflow-file-path";
-export * from "./orderflow/append-orderflow-event";
+export * from "./orderflow/create-orderflow-ndjson-writer";
 export * from "./orderflow/read-orderflow-events";
