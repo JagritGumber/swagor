@@ -15,6 +15,7 @@
 - Current folders:
   - `backtest`
   - `indicators`
+  - `read`
   - `signals`
   - `strategies`
 - Backtest hot paths should be cursor-based. Prefer `ctx.candles` plus
@@ -33,6 +34,8 @@
 - Use `bun run strategy:smoke` for the current strategy-lab smoke check.
 - Use `bun run strategy:vm:smoke` to run starter strategies against candles
   stored in local VictoriaMetrics.
+- Use `bun run strategy:read:smoke` to inspect the first constrained
+  support/resistance plus local volume profile reader.
 - Use `bun run market:smoke` for market-data adapter smoke checks.
 - Use `bun run market:vm:smoke` when local VictoriaMetrics is running at
   `http://localhost:8428`.
