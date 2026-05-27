@@ -19,6 +19,8 @@
     "market:smoke": "bun scripts/market-data-smoke.ts",
     "market:vm:smoke": "bun scripts/market-vm-smoke.ts",
     "market:ingest:candles": "bun scripts/market-ingest-candles.ts",
+    "orderflow:smoke": "bun scripts/orderflow-smoke.ts",
+    "orderflow:replay": "bun scripts/orderflow-replay.ts",
     "arc:verify": "bun scripts/arc-verify.ts",
     "arc:deploy": "bun --conditions react-server scripts/deploy-anchor-contract.ts",
     "db:push": "drizzle-kit push",

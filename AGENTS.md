@@ -15,6 +15,7 @@
 - Current folders:
   - `backtest`
   - `indicators`
+  - `orderflow`
   - `read`
   - `signals`
   - `strategies`
@@ -29,8 +30,12 @@
   names:
   - `shared`
   - `hyperliquid`
+  - `orderflow`
   - `victoria-metrics`
   - `ingest`
+- Raw orderflow feed files are written under `orderflow-data/` as local NDJSON
+  and are ignored by git. Keep raw trades/BBO out of VictoriaMetrics; use
+  VictoriaMetrics for candle data and later summaries.
 - For multi-month local backfills, start VictoriaMetrics with an explicit
   retention flag such as `-retentionPeriod=12`, otherwise the default is about
   one month.
@@ -45,6 +50,10 @@
 - Use `bun run market:smoke` for market-data adapter smoke checks.
 - Use `bun run market:vm:smoke` when local VictoriaMetrics is running at
   `http://localhost:8428`.
+- Use `bun run orderflow:smoke --assets BTC --seconds 60` to inspect live
+  Hyperliquid trades+BBO and persist raw orderflow NDJSON.
+- Use `bun run orderflow:replay --asset BTC --date YYYY-MM-DD` to rebuild an
+  orderflow read from saved NDJSON.
 - Use `bun run strategy:perry:compile` to verify the strategy lab still
   compiles through Perry. The generated binary is ignored.
 - Use `tsgo`, not `tsc`, for typechecking.
