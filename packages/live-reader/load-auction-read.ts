@@ -1,5 +1,6 @@
-import { readVmCandles, type CandleInterval, type HyperliquidNetwork } from "../market-data";
+import type { CandleInterval, HyperliquidNetwork } from "../market-data";
 import { readMarketAuction, type AuctionRead } from "../strategy-lab";
+import { loadAuctionCandles } from "./load-auction-candles";
 
 export async function loadAuctionRead(input: {
   vmUrl: string;
@@ -8,15 +9,6 @@ export async function loadAuctionRead(input: {
   interval: CandleInterval;
   days: number;
 }): Promise<AuctionRead> {
-  const endMs = Date.now();
-  const startMs = endMs - input.days * 86_400_000;
-  const candles = await readVmCandles({
-    vmUrl: input.vmUrl,
-    network: input.network,
-    asset: input.asset,
-    interval: input.interval,
-    startMs,
-    endMs,
-  });
+  const candles = await loadAuctionCandles(input);
   return readMarketAuction({ asset: input.asset, interval: input.interval, candles });
 }

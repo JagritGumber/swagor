@@ -28,6 +28,7 @@ export * from "./read/cluster-price-levels";
 export * from "./read/nearest-price-level";
 export * from "./read/build-local-volume-profile";
 export * from "./read/classify-auction-location";
+export * from "./read/read-auction-at-price";
 export * from "./read/read-auction-at-level";
 export * from "./read/read-market-auction";
 export * from "./orderflow/types";

@@ -18,6 +18,7 @@ export function readMarketAuction(input: {
   profileCandles?: number;
   profileRadiusPct?: number;
   profileBins?: number;
+  price?: number;
 }): AuctionRead {
   const last = input.candles[input.candles.length - 1];
   if (!last) {
@@ -34,6 +35,7 @@ export function readMarketAuction(input: {
     };
   }
 
+  const price = input.price ?? last.c;
   const swingLeft = input.swingLeft ?? 3;
   const swingRight = input.swingRight ?? 3;
   const supports = findSwingLows({ candles: input.candles, left: swingLeft, right: swingRight });
@@ -46,7 +48,7 @@ export function readMarketAuction(input: {
   });
   const level = nearestPriceLevel({
     levels,
-    price: last.c,
+    price,
     maxDistancePct: input.maxLevelDistancePct ?? 0.012,
   });
 
@@ -58,5 +60,6 @@ export function readMarketAuction(input: {
     profileCandles: input.profileCandles ?? 120,
     radiusPct: input.profileRadiusPct ?? 0.015,
     binCount: input.profileBins ?? 24,
+    price,
   });
 }

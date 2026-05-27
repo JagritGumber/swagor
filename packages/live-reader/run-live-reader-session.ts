@@ -3,16 +3,18 @@ import {
   combineAuctionOrderflow,
   buildReaderTradePlan,
   createOrderflowWindow,
+  readMarketAuction,
   readOrderflowWindow,
   updateOrderflowWindow,
 } from "../strategy-lab";
 import { sleep } from "../shared";
-import { loadAuctionRead } from "./load-auction-read";
+import { loadAuctionCandles } from "./load-auction-candles";
 import type { LiveReaderSessionInput } from "./types";
 
 export async function runLiveReaderSession(input: LiveReaderSessionInput): Promise<void> {
   const asset = input.asset.toUpperCase();
-  let auction = await loadAuctionRead({ ...input, asset });
+  let auctionCandles = await loadAuctionCandles({ ...input, asset });
+  let auction = readMarketAuction({ asset, interval: input.interval, candles: auctionCandles });
   let auctionLoadedAt = Date.now();
   let auctionRefresh: Promise<void> | null = null;
   const auctionRefreshMs = input.auctionRefreshMs ?? intervalMs(input.interval);
@@ -27,7 +29,10 @@ export async function runLiveReaderSession(input: LiveReaderSessionInput): Promi
   const connection = connectHyperliquidOrderflow({
     network: input.network,
     assets: [asset],
-    onStatus: input.onStatus,
+    onStatus: (status) => {
+      input.onStatus?.(status);
+      input.onSessionEvent?.({ type: "orderflow-status", status, at: Date.now() });
+    },
     onError: input.onError,
     onRecord: (record) => writer.append(record),
     onEvent: (event) => {
@@ -50,9 +55,14 @@ export async function runLiveReaderSession(input: LiveReaderSessionInput): Promi
     lastReadAt = now;
     refreshAuctionIfDue(now);
     const orderflow = readOrderflowWindow({ asset, window });
-    const read = combineAuctionOrderflow({ auction, orderflow });
+    const liveAuction = orderflow.lastPrice === null
+      ? auction
+      : readMarketAuction({ asset, interval: input.interval, candles: auctionCandles, price: orderflow.lastPrice });
+    const read = combineAuctionOrderflow({ auction: liveAuction, orderflow });
+    const plan = buildReaderTradePlan(read, input.tradePlanConfig);
     input.onRead(read);
-    if (input.onPlan) input.onPlan(read, buildReaderTradePlan(read, input.tradePlanConfig));
+    input.onPlan?.(read, plan);
+    input.onSessionEvent?.({ type: "read-emitted", asset, stance: read.stance, planStatus: plan.status, at: now });
   }
 
   function refreshAuctionIfDue(now: number): void {
@@ -61,14 +71,22 @@ export async function runLiveReaderSession(input: LiveReaderSessionInput): Promi
   }
 
   async function refreshAuction(): Promise<void> {
+    input.onSessionEvent?.({ type: "auction-refresh-started", asset, at: Date.now() });
     try {
-      auction = await loadAuctionRead({ ...input, asset });
+      auctionCandles = await loadAuctionCandles({ ...input, asset });
+      auction = readMarketAuction({ asset, interval: input.interval, candles: auctionCandles });
       auctionLoadedAt = Date.now();
+      input.onSessionEvent?.({ type: "auction-refresh-completed", asset, candleCount: auctionCandles.length, at: auctionLoadedAt });
     } catch (error: unknown) {
       auctionLoadedAt = Date.now();
+      input.onSessionEvent?.({ type: "auction-refresh-failed", asset, message: errorMessage(error), at: auctionLoadedAt });
       input.onError?.(error);
     } finally {
       auctionRefresh = null;
     }
   }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
