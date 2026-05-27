@@ -35,6 +35,8 @@ export * from "./orderflow/create-orderflow-window";
 export * from "./orderflow/expire-orderflow-window";
 export * from "./orderflow/update-orderflow-window";
 export * from "./orderflow/read-orderflow-window";
+export * from "./reader-live/types";
+export * from "./reader-live/combine-auction-orderflow";
 export * from "./strategies/value-low-reclaim";
 export * from "./strategies/momentum-breakout";
 export * from "./strategies/starter-strategies";

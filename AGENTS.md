@@ -17,6 +17,7 @@
   - `indicators`
   - `orderflow`
   - `read`
+  - `reader-live`
   - `signals`
   - `strategies`
 - Backtest hot paths should be cursor-based. Prefer `ctx.candles` plus
@@ -47,6 +48,8 @@
   stored in local VictoriaMetrics.
 - Use `bun run strategy:read:smoke` to inspect the first constrained
   support/resistance plus local volume profile reader.
+- Use `bun run reader:live:smoke --asset BTC --seconds 60` to combine
+  VictoriaMetrics auction context with live Hyperliquid orderflow.
 - Use `bun run market:smoke` for market-data adapter smoke checks.
 - Use `bun run market:vm:smoke` when local VictoriaMetrics is running at
   `http://localhost:8428`.

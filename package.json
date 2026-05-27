@@ -16,6 +16,7 @@
     "strategy:vm:smoke": "bun scripts/strategy-vm-smoke.ts",
     "strategy:read:smoke": "bun scripts/strategy-read-smoke.ts",
     "strategy:perry:compile": "perry compile scripts/strategy-lab-perry-smoke.ts -o strategy-lab-perry-smoke",
+    "reader:live:smoke": "bun scripts/reader-live-smoke.ts",
     "market:smoke": "bun scripts/market-data-smoke.ts",
     "market:vm:smoke": "bun scripts/market-vm-smoke.ts",
     "market:ingest:candles": "bun scripts/market-ingest-candles.ts",
