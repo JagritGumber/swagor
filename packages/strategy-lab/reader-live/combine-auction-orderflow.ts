@@ -21,13 +21,21 @@ export function combineAuctionOrderflow(input: {
 function stanceFor(auction: AuctionRead, orderflow: OrderflowRead): LiveReaderStance {
   if (!auction.level || !auction.profile) return "wait";
   if (auction.location === "near-poc") return "avoid-balanced-auction";
-  if (auction.level.kind === "resistance" && orderflow.events.includes("stalled-buying")) return "possible-short";
-  if (auction.level.kind === "support" && orderflow.events.includes("stalled-selling")) return "possible-long";
-  if (auction.level.kind === "resistance" && orderflow.pressure === "buy-pressure") return "watch-short-confirmation";
-  if (auction.level.kind === "support" && orderflow.pressure === "sell-pressure") return "watch-long-confirmation";
+  if (isResistanceEdge(auction) && orderflow.events.includes("stalled-buying")) return "possible-short";
+  if (isSupportEdge(auction) && orderflow.events.includes("stalled-selling")) return "possible-long";
+  if (isResistanceEdge(auction) && orderflow.pressure === "buy-pressure") return "watch-short-confirmation";
+  if (isSupportEdge(auction) && orderflow.pressure === "sell-pressure") return "watch-long-confirmation";
   if (auction.bias === "short") return "watch-short-confirmation";
   if (auction.bias === "long") return "watch-long-confirmation";
   return "wait";
+}
+
+function isResistanceEdge(auction: AuctionRead): boolean {
+  return auction.level?.kind === "resistance" && (auction.location === "value-high" || auction.location === "above-value");
+}
+
+function isSupportEdge(auction: AuctionRead): boolean {
+  return auction.level?.kind === "support" && (auction.location === "value-low" || auction.location === "below-value");
 }
 
 function narrativeFor(auction: AuctionRead, orderflow: OrderflowRead, stance: LiveReaderStance): string {

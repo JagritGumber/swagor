@@ -43,21 +43,8 @@
 
 ## Validation
 
-- Use `bun run strategy:smoke` for the current strategy-lab smoke check.
-- Use `bun run strategy:vm:smoke` to run starter strategies against candles
-  stored in local VictoriaMetrics.
-- Use `bun run strategy:read:smoke` to inspect the first constrained
-  support/resistance plus local volume profile reader.
-- Use `bun run reader:live:smoke --asset BTC --seconds 60` to combine
-  VictoriaMetrics auction context with live Hyperliquid orderflow.
-- Use `bun run market:smoke` for market-data adapter smoke checks.
-- Use `bun run market:vm:smoke` when local VictoriaMetrics is running at
-  `http://localhost:8428`.
-- Use `bun run orderflow:smoke --assets BTC --seconds 60` to inspect live
-  Hyperliquid trades+BBO and persist raw orderflow NDJSON.
-- Use `bun run orderflow:replay --asset BTC --date YYYY-MM-DD` to rebuild an
-  orderflow read from saved NDJSON.
-- Use `bun run strategy:perry:compile` to verify the strategy lab still
-  compiles through Perry. The generated binary is ignored.
+- Use `bun run reader:live --asset BTC --seconds 60` as the main system check.
+  It combines VictoriaMetrics auction context with live Hyperliquid trades+BBO
+  and persists raw orderflow NDJSON.
 - Use `tsgo`, not `tsc`, for typechecking.
 - Do not read `.env.local` or production env files.

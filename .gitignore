@@ -58,8 +58,6 @@ agent-2mo-result.json
 run_result*.json
 codex_review_request.md
 .perry-cache/
-strategy-lab-smoke
-strategy-lab-perry-smoke
 victoria-metrics-data/
 orderflow-data/
 
