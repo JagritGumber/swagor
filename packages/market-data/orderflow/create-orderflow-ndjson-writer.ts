@@ -15,13 +15,14 @@ export function createOrderflowNdjsonWriter(input: {
   network: HyperliquidNetwork;
   flushIntervalMs?: number;
   maxBufferedRecords?: number;
+  onError?(error: unknown): void;
 }): OrderflowNdjsonWriter {
   const buffers = new Map<string, string[]>();
   const writeQueues = new Map<string, Promise<void>>();
   const flushIntervalMs = input.flushIntervalMs ?? 1000;
   const maxBufferedRecords = input.maxBufferedRecords ?? 250;
   let timer: ReturnType<typeof setInterval> | null = setInterval(() => {
-    void flush();
+    void flush().catch((error: unknown) => input.onError?.(error));
   }, flushIntervalMs);
 
   function append(record: StoredOrderflowEvent): void {
@@ -34,7 +35,7 @@ export function createOrderflowNdjsonWriter(input: {
     const lines = buffers.get(path) ?? [];
     lines.push(`${JSON.stringify(record)}\n`);
     buffers.set(path, lines);
-    if (lines.length >= maxBufferedRecords) void flushPath(path);
+    if (lines.length >= maxBufferedRecords) void flushPath(path).catch((error: unknown) => input.onError?.(error));
   }
 
   async function flush(): Promise<void> {

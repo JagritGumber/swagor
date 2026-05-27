@@ -23,12 +23,15 @@ export function buildReaderTradePlan(read: LiveReaderRead, config: ReaderTradePl
   const watch = isWatch(read, side);
   if (!ready && !watch) return noTrade(read.asset, [`orderflow is not pressing into ${side} rejection yet`]);
 
+  const levels = planLevels(read, side, cfg.entryZoneMinPct);
+  if (!levels) return noTrade(read.asset, ["reader could not build numeric plan levels"]);
+  const status = ready ? readinessStatus(side, read.orderflow.lastPrice, levels.entryLow, levels.entryHigh) : "watch";
   return actionablePlan({
     read,
     side,
-    status: ready ? "ready" : "watch",
-    confidence: confidenceFor(read, ready, cfg),
-    entryZoneMinPct: cfg.entryZoneMinPct,
+    status,
+    confidence: confidenceFor(read, status, cfg),
+    levels,
   });
 }
 
@@ -67,7 +70,7 @@ function actionablePlan(input: {
   side: Side;
   status: ReaderActionableTradePlan["status"];
   confidence: number;
-  entryZoneMinPct: number;
+  levels: PlanLevels;
 }): ReaderActionableTradePlan {
   const level = input.read.auction.level;
   const profile = input.read.auction.profile;
@@ -76,24 +79,49 @@ function actionablePlan(input: {
     throw new Error("actionable reader trade plan requires level, profile, and last price");
   }
 
-  const zoneHalfWidth = Math.max(profile.binSize / 2, lastPrice * input.entryZoneMinPct);
-  const entryLow = level.price - zoneHalfWidth;
-  const entryHigh = level.price + zoneHalfWidth;
-  const stop = input.side === "long" ? entryLow - zoneHalfWidth : entryHigh + zoneHalfWidth;
-  const target = targetFor(input.side, entryLow, entryHigh, profile.poc, profile.valueAreaLow, profile.valueAreaHigh);
-
   return {
     status: input.status,
     asset: input.read.asset,
     side: input.side,
-    entryLow,
-    entryHigh,
-    stop,
-    target,
-    invalidation: input.read.invalidation ?? invalidationFor(input.side, stop),
+    entryLow: input.levels.entryLow,
+    entryHigh: input.levels.entryHigh,
+    stop: input.levels.stop,
+    target: input.levels.target,
+    invalidation: input.read.invalidation ?? invalidationFor(input.side, input.levels.stop),
     confidence: input.confidence,
     reasons: reasonsFor(input.read, input.side, input.status),
   };
+}
+
+type PlanLevels = {
+  entryLow: number;
+  entryHigh: number;
+  stop: number;
+  target: number;
+};
+
+function planLevels(read: LiveReaderRead, side: Side, entryZoneMinPct: number): PlanLevels | null {
+  const level = read.auction.level;
+  const profile = read.auction.profile;
+  const lastPrice = read.orderflow.lastPrice;
+  if (!level || !profile || lastPrice === null) return null;
+  const zoneHalfWidth = Math.max(profile.binSize / 2, lastPrice * entryZoneMinPct);
+  const entryLow = level.price - zoneHalfWidth;
+  const entryHigh = level.price + zoneHalfWidth;
+  const stop = side === "long" ? entryLow - zoneHalfWidth : entryHigh + zoneHalfWidth;
+  const target = targetFor(side, entryLow, entryHigh, profile.poc, profile.valueAreaLow, profile.valueAreaHigh);
+  return { entryLow, entryHigh, stop, target };
+}
+
+function readinessStatus(
+  side: Side,
+  lastPrice: number | null,
+  entryLow: number,
+  entryHigh: number,
+): ReaderActionableTradePlan["status"] {
+  if (lastPrice === null) return "watch";
+  if (side === "long") return lastPrice >= entryLow ? "ready" : "ready-if-reclaim";
+  return lastPrice <= entryHigh ? "ready" : "ready-if-reclaim";
 }
 
 function targetFor(side: Side, entryLow: number, entryHigh: number, poc: number, valueAreaLow: number, valueAreaHigh: number): number {
@@ -108,10 +136,11 @@ function invalidationFor(side: Side, stop: number): string {
 
 function confidenceFor(
   read: LiveReaderRead,
-  ready: boolean,
+  status: ReaderActionableTradePlan["status"],
   config: Required<ReaderTradePlanConfig>,
 ): number {
-  let confidence = ready ? config.readyConfidence : config.watchConfidence;
+  let confidence = status === "watch" ? config.watchConfidence : config.readyConfidence;
+  if (status === "ready-if-reclaim") confidence -= 0.06;
   if (read.orderflow.events.includes("large-print")) confidence += config.largePrintConfidenceBoost;
   if (read.orderflow.events.includes("stalled-buying") || read.orderflow.events.includes("stalled-selling")) {
     confidence += config.failedPressureConfidenceBoost;
@@ -125,12 +154,18 @@ function reasonsFor(
   status: ReaderActionableTradePlan["status"],
 ): string[] {
   const edge = side === "long" ? "support" : "resistance";
-  const action = status === "ready" ? "failed pressure confirms rejection" : "waiting for failed pressure confirmation";
+  const action = actionReason(status);
   return [
     `${read.auction.location} at ${edge}`,
     action,
     read.orderflow.narrative,
   ];
+}
+
+function actionReason(status: ReaderActionableTradePlan["status"]): string {
+  if (status === "ready") return "failed pressure confirms rejection";
+  if (status === "ready-if-reclaim") return "failed pressure is present but price still needs to reclaim the entry zone";
+  return "waiting for failed pressure confirmation";
 }
 
 function noTrade(asset: string, reasons: string[]): ReaderTradePlan {

@@ -1,6 +1,6 @@
 import type { Side } from "../types";
 
-export type ReaderTradePlanStatus = "no-trade" | "watch" | "ready";
+export type ReaderTradePlanStatus = "no-trade" | "watch" | "ready-if-reclaim" | "ready";
 
 export type ReaderTradePlanConfig = {
   entryZoneMinPct?: number;
@@ -18,7 +18,7 @@ export type ReaderNoTradePlan = {
 };
 
 export type ReaderActionableTradePlan = {
-  status: "watch" | "ready";
+  status: "watch" | "ready-if-reclaim" | "ready";
   asset: string;
   side: Side;
   entryLow: number;

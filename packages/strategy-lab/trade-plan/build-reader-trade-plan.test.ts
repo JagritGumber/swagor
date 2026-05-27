@@ -41,6 +41,42 @@ describe("buildReaderTradePlan", () => {
     expect(plan.target).toBeLessThan(plan.entryLow);
   });
 
+  test("requires long reclaim when failed selling happens below the entry zone", () => {
+    const plan = buildReaderTradePlan(
+      readerRead({
+        levelKind: "support",
+        location: "below-value",
+        pressure: "sell-pressure",
+        events: ["stalled-selling"],
+        stance: "possible-long",
+        lastPrice: 98,
+      }),
+    );
+
+    expect(plan.status).toBe("ready-if-reclaim");
+    if (plan.status !== "ready-if-reclaim") throw new Error("expected ready-if-reclaim plan");
+    expect(plan.side).toBe("long");
+    expect(plan.reasons).toContain("failed pressure is present but price still needs to reclaim the entry zone");
+  });
+
+  test("requires short reclaim when failed buying happens above the entry zone", () => {
+    const plan = buildReaderTradePlan(
+      readerRead({
+        levelKind: "resistance",
+        location: "above-value",
+        pressure: "buy-pressure",
+        events: ["stalled-buying"],
+        stance: "possible-short",
+        lastPrice: 102,
+      }),
+    );
+
+    expect(plan.status).toBe("ready-if-reclaim");
+    if (plan.status !== "ready-if-reclaim") throw new Error("expected ready-if-reclaim plan");
+    expect(plan.side).toBe("short");
+    expect(plan.reasons).toContain("failed pressure is present but price still needs to reclaim the entry zone");
+  });
+
   test("watches support when sellers press but have not failed", () => {
     const plan = buildReaderTradePlan(
       readerRead({

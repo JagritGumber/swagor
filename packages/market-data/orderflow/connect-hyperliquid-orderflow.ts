@@ -40,9 +40,9 @@ export function connectHyperliquidOrderflow(input: {
       const parsed = JSON.parse(text) as unknown;
       const receivedAt = Date.now();
       for (const record of hyperliquidOrderflowRecords({ network: input.network, message: parsed, receivedAt })) {
-        void input.onRecord?.(record);
+        callSafely(() => input.onRecord?.(record), input.onError);
         for (const orderflowEvent of record.events) {
-          void input.onEvent(orderflowEvent);
+          callSafely(() => input.onEvent(orderflowEvent), input.onError);
         }
       }
     } catch (error: unknown) {
@@ -57,6 +57,14 @@ export function connectHyperliquidOrderflow(input: {
       ws.close();
     },
   };
+}
+
+function callSafely(callback: () => void | Promise<void> | undefined, onError?: (error: unknown) => void): void {
+  try {
+    void Promise.resolve(callback()).catch((error: unknown) => onError?.(error));
+  } catch (error: unknown) {
+    onError?.(error);
+  }
 }
 
 function subscribe(ws: WebSocketLike, type: "trades" | "bbo", asset: string): void {

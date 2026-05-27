@@ -24,6 +24,7 @@ export async function runLiveReaderSession(input: LiveReaderSessionInput): Promi
   const writer = createOrderflowNdjsonWriter({
     rootDir: input.rootDir,
     network: input.network,
+    onError: input.onError,
   });
 
   const connection = connectHyperliquidOrderflow({
