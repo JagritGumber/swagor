@@ -21,10 +21,16 @@
   `ctx.index` and `*At` indicators over slicing arrays per tick.
 - Prefer explicit strategy definitions and deterministic backtests before adding UI, workers, or deployment.
 - Every backtest must model costs before results are treated as meaningful.
+- `packages/market-data` owns ingestion and storage adapters. Keep network,
+  VictoriaMetrics, filesystem, and DB APIs out of the Perry-compatible strategy
+  package.
 
 ## Validation
 
 - Use `bun run strategy:smoke` for the current strategy-lab smoke check.
+- Use `bun run market:smoke` for market-data adapter smoke checks.
+- Use `bun run market:vm:smoke` when local VictoriaMetrics is running at
+  `http://localhost:8428`.
 - Use `bun run strategy:perry:compile` to verify the strategy lab still
   compiles through Perry. The generated binary is ignored.
 - Use `tsgo`, not `tsc`, for typechecking.
