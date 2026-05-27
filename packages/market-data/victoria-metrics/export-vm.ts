@@ -1,4 +1,5 @@
 import type { VictoriaMetricsExportSeries } from "../shared/types";
+import { validateVmExportSeries } from "./validate-vm-export-series";
 
 export async function exportVm(input: {
   vmUrl: string;
@@ -23,5 +24,5 @@ export async function exportVm(input: {
   return text
     .trim()
     .split("\n")
-    .map((line) => JSON.parse(line) as VictoriaMetricsExportSeries);
+    .map((line) => validateVmExportSeries(JSON.parse(line) as unknown));
 }

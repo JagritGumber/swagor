@@ -35,14 +35,18 @@ export function connectHyperliquidOrderflow(input: {
     }
   };
   ws.onmessage = (event) => {
-    const text = typeof event.data === "string" ? event.data : new TextDecoder().decode(event.data);
-    const parsed = JSON.parse(text) as unknown;
-    const receivedAt = Date.now();
-    for (const record of hyperliquidOrderflowRecords({ network: input.network, message: parsed, receivedAt })) {
-      void input.onRecord?.(record);
-      for (const orderflowEvent of record.events) {
-        void input.onEvent(orderflowEvent);
+    try {
+      const text = typeof event.data === "string" ? event.data : new TextDecoder().decode(event.data);
+      const parsed = JSON.parse(text) as unknown;
+      const receivedAt = Date.now();
+      for (const record of hyperliquidOrderflowRecords({ network: input.network, message: parsed, receivedAt })) {
+        void input.onRecord?.(record);
+        for (const orderflowEvent of record.events) {
+          void input.onEvent(orderflowEvent);
+        }
       }
+    } catch (error: unknown) {
+      input.onError?.(error);
     }
   };
   ws.onerror = (event) => input.onError?.(event);

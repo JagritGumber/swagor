@@ -1,18 +1,18 @@
 import type { OrderflowEvent } from "../../strategy-lab";
 import type { HyperliquidWsBbo, HyperliquidWsTrade } from "./types";
+import { validateHyperliquidBboData, validateHyperliquidTradesData } from "./validate-hyperliquid-orderflow-message";
 
 export function normalizeHyperliquidOrderflowMessage(message: unknown, receivedAt: number): OrderflowEvent[] {
-  if (!isRecord(message)) return [];
-  if (message.channel === "trades") return normalizeTrades(message.data, receivedAt);
-  if (message.channel === "bbo") return normalizeBbo(message.data, receivedAt);
+  const trades = validateHyperliquidTradesData(message);
+  if (trades) return normalizeTrades(trades, receivedAt);
+  const bbo = validateHyperliquidBboData(message);
+  if (bbo) return normalizeBbo(bbo, receivedAt);
   return [];
 }
 
-function normalizeTrades(data: unknown, receivedAt: number): OrderflowEvent[] {
-  if (!Array.isArray(data)) return [];
+function normalizeTrades(data: HyperliquidWsTrade[], receivedAt: number): OrderflowEvent[] {
   const events: OrderflowEvent[] = [];
   for (const item of data) {
-    if (!isTrade(item)) continue;
     const price = Number(item.px);
     const size = Number(item.sz);
     if (!Number.isFinite(price) || !Number.isFinite(size)) continue;
@@ -32,41 +32,28 @@ function normalizeTrades(data: unknown, receivedAt: number): OrderflowEvent[] {
   return events;
 }
 
-function normalizeBbo(data: unknown, receivedAt: number): OrderflowEvent[] {
-  if (!isBbo(data)) return [];
+function normalizeBbo(data: HyperliquidWsBbo, receivedAt: number): OrderflowEvent[] {
   const bid = data.bbo[0];
   const ask = data.bbo[1];
+  const bidPrice = bid ? Number(bid.px) : null;
+  const bidSize = bid ? Number(bid.sz) : null;
+  const askPrice = ask ? Number(ask.px) : null;
+  const askSize = ask ? Number(ask.sz) : null;
+  if (!nullableFinite(bidPrice) || !nullableFinite(bidSize) || !nullableFinite(askPrice) || !nullableFinite(askSize)) return [];
   return [{
     type: "bbo",
     receivedAt,
     bbo: {
       asset: data.coin.toUpperCase(),
-      bidPrice: bid ? Number(bid.px) : null,
-      bidSize: bid ? Number(bid.sz) : null,
-      askPrice: ask ? Number(ask.px) : null,
-      askSize: ask ? Number(ask.sz) : null,
+      bidPrice,
+      bidSize,
+      askPrice,
+      askSize,
       time: data.time,
     },
   }];
 }
 
-function isTrade(value: unknown): value is HyperliquidWsTrade {
-  return isRecord(value)
-    && typeof value.coin === "string"
-    && typeof value.side === "string"
-    && typeof value.px === "string"
-    && typeof value.sz === "string"
-    && typeof value.time === "number"
-    && typeof value.tid === "number";
-}
-
-function isBbo(value: unknown): value is HyperliquidWsBbo {
-  return isRecord(value)
-    && typeof value.coin === "string"
-    && typeof value.time === "number"
-    && Array.isArray(value.bbo);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+function nullableFinite(value: number | null): boolean {
+  return value === null || Number.isFinite(value);
 }

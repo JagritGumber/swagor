@@ -1,5 +1,6 @@
 import { hyperliquidInfoUrl } from "./hyperliquid-info-url";
 import type { CandleInterval, HyperliquidCandle, HyperliquidNetwork } from "../shared/types";
+import { validateHyperliquidCandles } from "./validate-hyperliquid-candles";
 
 export async function fetchHyperliquidCandles(input: {
   network: HyperliquidNetwork;
@@ -22,5 +23,5 @@ export async function fetchHyperliquidCandles(input: {
     }),
   });
   if (!res.ok) throw new Error(`Hyperliquid ${input.network} ${res.status}: ${await res.text()}`);
-  return res.json() as Promise<HyperliquidCandle[]>;
+  return validateHyperliquidCandles(await res.json());
 }
