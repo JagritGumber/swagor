@@ -1,4 +1,4 @@
-import type { Candle } from "../../strategy-lab/src";
+import type { Candle } from "../strategy-lab";
 import type { HyperliquidCandle } from "./types";
 
 export function normalizeHyperliquidCandle(candle: HyperliquidCandle): Candle {

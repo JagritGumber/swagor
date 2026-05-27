@@ -1,4 +1,4 @@
-import { runBacktest, starterStrategies, type Candle } from "../packages/strategy-lab/src";
+import { runBacktest, starterStrategies, type Candle } from "../packages/strategy-lab";
 
 function syntheticCandles(count: number): Candle[] {
   const candles: Candle[] = [];

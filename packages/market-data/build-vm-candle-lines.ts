@@ -1,4 +1,4 @@
-import type { Candle } from "../../strategy-lab/src";
+import type { Candle } from "../strategy-lab";
 import { CANDLE_METRIC_NAMES } from "./candle-metric-names";
 import { prometheusLabels } from "./prometheus-labels";
 import type { CandleInterval, HyperliquidNetwork } from "./types";

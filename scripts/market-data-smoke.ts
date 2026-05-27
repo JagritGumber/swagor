@@ -1,5 +1,5 @@
-import { buildVmCandleLines, normalizeHyperliquidCandle } from "../packages/market-data/src";
-import type { HyperliquidCandle } from "../packages/market-data/src";
+import { buildVmCandleLines, normalizeHyperliquidCandle } from "../packages/market-data";
+import type { HyperliquidCandle } from "../packages/market-data";
 
 const raw: HyperliquidCandle = {
   t: 1_700_000_000_000,

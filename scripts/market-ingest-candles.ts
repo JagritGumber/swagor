@@ -1,4 +1,4 @@
-import { ingestHyperliquidCandles, type CandleInterval, type HyperliquidNetwork } from "../packages/market-data/src";
+import { ingestHyperliquidCandles, type CandleInterval, type HyperliquidNetwork } from "../packages/market-data";
 
 function arg(name: string, fallback?: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);

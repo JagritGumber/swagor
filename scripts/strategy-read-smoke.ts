@@ -1,5 +1,5 @@
-import { readVmCandles, type CandleInterval, type HyperliquidNetwork } from "../packages/market-data/src";
-import { readMarketAuction } from "../packages/strategy-lab/src";
+import { readVmCandles, type CandleInterval, type HyperliquidNetwork } from "../packages/market-data";
+import { readMarketAuction } from "../packages/strategy-lab";
 
 function arg(name: string, fallback?: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);

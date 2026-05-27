@@ -1,4 +1,4 @@
-import type { Candle } from "../../strategy-lab/src";
+import type { Candle } from "../strategy-lab";
 
 export type HyperliquidNetwork = "mainnet" | "testnet";
 export type CandleInterval = "5m" | "1h";
