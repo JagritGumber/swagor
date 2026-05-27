@@ -45,8 +45,10 @@
 
 ## Validation
 
-- Use `bun run reader:live --asset BTC --seconds 60` as the main system check.
-  It combines VictoriaMetrics auction context with live Hyperliquid trades+BBO
-  and persists raw orderflow NDJSON.
+- Core reader behavior should be exercised through code imports, not CLI
+  wrappers. Use `packages/live-reader` as the integration surface for the
+  whole-flow live reader.
+- Do not add module smoke commands for strategy-lab, market-data, orderflow, or
+  live-reader. The system should work as package code first.
 - Use `tsgo`, not `tsc`, for typechecking.
 - Do not read `.env.local` or production env files.
