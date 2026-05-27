@@ -1,5 +1,5 @@
 import type { CandleInterval, HyperliquidNetwork } from "../market-data";
-import type { LiveReaderRead } from "../strategy-lab";
+import type { LiveReaderRead, ReaderTradePlan, ReaderTradePlanConfig } from "../strategy-lab";
 
 export type LiveReaderSessionInput = {
   vmUrl: string;
@@ -12,7 +12,9 @@ export type LiveReaderSessionInput = {
   readIntervalMs?: number;
   orderflowWindowMs?: number;
   auctionRefreshMs?: number;
+  tradePlanConfig?: ReaderTradePlanConfig;
   onRead(read: LiveReaderRead): void;
+  onPlan?(read: LiveReaderRead, plan: ReaderTradePlan): void;
   onStatus?(status: string): void;
   onError?(error: unknown): void;
 };

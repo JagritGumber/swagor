@@ -1,10 +1,12 @@
 import { connectHyperliquidOrderflow, createOrderflowNdjsonWriter, intervalMs } from "../market-data";
 import {
   combineAuctionOrderflow,
+  buildReaderTradePlan,
   createOrderflowWindow,
   readOrderflowWindow,
   updateOrderflowWindow,
 } from "../strategy-lab";
+import { sleep } from "../shared";
 import { loadAuctionRead } from "./load-auction-read";
 import type { LiveReaderSessionInput } from "./types";
 
@@ -15,30 +17,12 @@ export async function runLiveReaderSession(input: LiveReaderSessionInput): Promi
   let auctionRefresh: Promise<void> | null = null;
   const auctionRefreshMs = input.auctionRefreshMs ?? intervalMs(input.interval);
   const window = createOrderflowWindow(input.orderflowWindowMs ?? 60_000);
+  const readIntervalMs = input.readIntervalMs ?? 1000;
+  let lastReadAt = 0;
   const writer = createOrderflowNdjsonWriter({
     rootDir: input.rootDir,
     network: input.network,
   });
-
-  const interval = setInterval(() => {
-    const now = Date.now();
-    if (now - auctionLoadedAt >= auctionRefreshMs) {
-      auctionRefresh ??= loadAuctionRead({ ...input, asset })
-        .then((nextAuction) => {
-          auction = nextAuction;
-          auctionLoadedAt = Date.now();
-        })
-        .catch((error: unknown) => {
-          auctionLoadedAt = Date.now();
-          input.onError?.(error);
-        })
-        .finally(() => {
-          auctionRefresh = null;
-        });
-    }
-    const orderflow = readOrderflowWindow({ asset, window });
-    input.onRead(combineAuctionOrderflow({ auction, orderflow }));
-  }, input.readIntervalMs ?? 1000);
 
   const connection = connectHyperliquidOrderflow({
     network: input.network,
@@ -46,19 +30,45 @@ export async function runLiveReaderSession(input: LiveReaderSessionInput): Promi
     onStatus: input.onStatus,
     onError: input.onError,
     onRecord: (record) => writer.append(record),
-    onEvent: (event) => updateOrderflowWindow(window, event),
+    onEvent: (event) => {
+      updateOrderflowWindow(window, event);
+      emitReadIfDue();
+    },
   });
 
   try {
     await sleep(input.seconds * 1000);
   } finally {
-    clearInterval(interval);
     connection.close();
     if (auctionRefresh) await auctionRefresh;
     await writer.close();
   }
-}
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  function emitReadIfDue(): void {
+    const now = Date.now();
+    if (now - lastReadAt < readIntervalMs) return;
+    lastReadAt = now;
+    refreshAuctionIfDue(now);
+    const orderflow = readOrderflowWindow({ asset, window });
+    const read = combineAuctionOrderflow({ auction, orderflow });
+    input.onRead(read);
+    if (input.onPlan) input.onPlan(read, buildReaderTradePlan(read, input.tradePlanConfig));
+  }
+
+  function refreshAuctionIfDue(now: number): void {
+    if (now - auctionLoadedAt < auctionRefreshMs || auctionRefresh) return;
+    auctionRefresh = refreshAuction();
+  }
+
+  async function refreshAuction(): Promise<void> {
+    try {
+      auction = await loadAuctionRead({ ...input, asset });
+      auctionLoadedAt = Date.now();
+    } catch (error: unknown) {
+      auctionLoadedAt = Date.now();
+      input.onError?.(error);
+    } finally {
+      auctionRefresh = null;
+    }
+  }
 }

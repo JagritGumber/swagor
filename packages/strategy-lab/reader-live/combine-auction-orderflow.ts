@@ -1,5 +1,6 @@
 import type { AuctionRead } from "../read/types";
 import type { OrderflowRead } from "../orderflow/types";
+import { readerRejectionEdgeFor } from "./reader-rejection-edge-for";
 import type { LiveReaderRead, LiveReaderStance } from "./types";
 
 export function combineAuctionOrderflow(input: {
@@ -21,21 +22,14 @@ export function combineAuctionOrderflow(input: {
 function stanceFor(auction: AuctionRead, orderflow: OrderflowRead): LiveReaderStance {
   if (!auction.level || !auction.profile) return "wait";
   if (auction.location === "near-poc") return "avoid-balanced-auction";
-  if (isResistanceEdge(auction) && orderflow.events.includes("stalled-buying")) return "possible-short";
-  if (isSupportEdge(auction) && orderflow.events.includes("stalled-selling")) return "possible-long";
-  if (isResistanceEdge(auction) && orderflow.pressure === "buy-pressure") return "watch-short-confirmation";
-  if (isSupportEdge(auction) && orderflow.pressure === "sell-pressure") return "watch-long-confirmation";
+  const edge = readerRejectionEdgeFor(auction);
+  if (edge?.side === "short" && orderflow.events.includes("stalled-buying")) return "possible-short";
+  if (edge?.side === "long" && orderflow.events.includes("stalled-selling")) return "possible-long";
+  if (edge?.side === "short" && orderflow.pressure === "buy-pressure") return "watch-short-confirmation";
+  if (edge?.side === "long" && orderflow.pressure === "sell-pressure") return "watch-long-confirmation";
   if (auction.bias === "short") return "watch-short-confirmation";
   if (auction.bias === "long") return "watch-long-confirmation";
   return "wait";
-}
-
-function isResistanceEdge(auction: AuctionRead): boolean {
-  return auction.level?.kind === "resistance" && (auction.location === "value-high" || auction.location === "above-value");
-}
-
-function isSupportEdge(auction: AuctionRead): boolean {
-  return auction.level?.kind === "support" && (auction.location === "value-low" || auction.location === "below-value");
 }
 
 function narrativeFor(auction: AuctionRead, orderflow: OrderflowRead, stance: LiveReaderStance): string {
