@@ -1,5 +1,5 @@
-import type { Candle } from "../strategy-lab";
-import type { HyperliquidCandle } from "./types";
+import type { Candle } from "../../strategy-lab";
+import type { HyperliquidCandle } from "../shared/types";
 
 export function normalizeHyperliquidCandle(candle: HyperliquidCandle): Candle {
   const normalized = {

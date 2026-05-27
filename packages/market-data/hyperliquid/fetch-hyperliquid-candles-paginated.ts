@@ -1,6 +1,6 @@
 import { fetchHyperliquidCandles } from "./fetch-hyperliquid-candles";
-import { intervalMs } from "./interval-ms";
-import type { CandleQuery, HyperliquidCandle } from "./types";
+import { intervalMs } from "../shared/interval-ms";
+import type { CandleQuery, HyperliquidCandle } from "../shared/types";
 
 const PAGE_LIMIT = 5000;
 

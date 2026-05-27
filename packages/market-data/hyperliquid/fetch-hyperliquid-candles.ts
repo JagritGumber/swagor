@@ -1,5 +1,5 @@
 import { hyperliquidInfoUrl } from "./hyperliquid-info-url";
-import type { CandleInterval, HyperliquidCandle, HyperliquidNetwork } from "./types";
+import type { CandleInterval, HyperliquidCandle, HyperliquidNetwork } from "../shared/types";
 
 export async function fetchHyperliquidCandles(input: {
   network: HyperliquidNetwork;

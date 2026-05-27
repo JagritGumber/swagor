@@ -25,6 +25,12 @@
 - `packages/market-data` owns ingestion and storage adapters. Keep network,
   VictoriaMetrics, filesystem, and DB APIs out of the Perry-compatible strategy
   package.
+- `packages/market-data` uses human-sortable folders with grep-first file
+  names:
+  - `shared`
+  - `hyperliquid`
+  - `victoria-metrics`
+  - `ingest`
 - For multi-month local backfills, start VictoriaMetrics with an explicit
   retention flag such as `-retentionPeriod=12`, otherwise the default is about
   one month.

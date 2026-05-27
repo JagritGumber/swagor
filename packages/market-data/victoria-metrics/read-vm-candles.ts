@@ -1,7 +1,7 @@
-import type { Candle } from "../strategy-lab";
+import type { Candle } from "../../strategy-lab";
 import { CANDLE_METRIC_NAMES, type CandleMetricField } from "./candle-metric-names";
 import { exportVm } from "./export-vm";
-import type { CandleInterval, HyperliquidNetwork, VictoriaMetricsExportSeries } from "./types";
+import type { CandleInterval, HyperliquidNetwork, VictoriaMetricsExportSeries } from "../shared/types";
 
 type PartialCandle = Partial<Omit<Candle, "t">> & { t: number };
 

@@ -1,8 +1,8 @@
-import { buildVmCandleLines } from "./build-vm-candle-lines";
-import { fetchHyperliquidCandlesPaginated } from "./fetch-hyperliquid-candles-paginated";
-import { normalizeHyperliquidCandle } from "./normalize-hyperliquid-candle";
-import { writeVmLines } from "./write-vm-lines";
-import type { CandleInterval, HyperliquidNetwork } from "./types";
+import { fetchHyperliquidCandlesPaginated } from "../hyperliquid/fetch-hyperliquid-candles-paginated";
+import { normalizeHyperliquidCandle } from "../hyperliquid/normalize-hyperliquid-candle";
+import type { CandleInterval, HyperliquidNetwork } from "../shared/types";
+import { buildVmCandleLines } from "../victoria-metrics/build-vm-candle-lines";
+import { writeVmLines } from "../victoria-metrics/write-vm-lines";
 
 export async function ingestHyperliquidCandles(input: {
   vmUrl: string;

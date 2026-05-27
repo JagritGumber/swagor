@@ -1,4 +1,4 @@
-import type { VictoriaMetricsExportSeries } from "./types";
+import type { VictoriaMetricsExportSeries } from "../shared/types";
 
 export async function exportVm(input: {
   vmUrl: string;

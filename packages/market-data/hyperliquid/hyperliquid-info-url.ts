@@ -1,4 +1,4 @@
-import type { HyperliquidNetwork } from "./types";
+import type { HyperliquidNetwork } from "../shared/types";
 
 export function hyperliquidInfoUrl(network: HyperliquidNetwork): string {
   if (network === "mainnet") return "https://api.hyperliquid.xyz/info";

@@ -1,7 +1,7 @@
-import type { Candle } from "../strategy-lab";
+import type { Candle } from "../../strategy-lab";
 import { CANDLE_METRIC_NAMES } from "./candle-metric-names";
 import { prometheusLabels } from "./prometheus-labels";
-import type { CandleInterval, HyperliquidNetwork } from "./types";
+import type { CandleInterval, HyperliquidNetwork } from "../shared/types";
 
 export function buildVmCandleLines(input: {
   network: HyperliquidNetwork;
