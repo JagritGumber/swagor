@@ -24,10 +24,15 @@
 - `packages/market-data` owns ingestion and storage adapters. Keep network,
   VictoriaMetrics, filesystem, and DB APIs out of the Perry-compatible strategy
   package.
+- For multi-month local backfills, start VictoriaMetrics with an explicit
+  retention flag such as `-retentionPeriod=12`, otherwise the default is about
+  one month.
 
 ## Validation
 
 - Use `bun run strategy:smoke` for the current strategy-lab smoke check.
+- Use `bun run strategy:vm:smoke` to run starter strategies against candles
+  stored in local VictoriaMetrics.
 - Use `bun run market:smoke` for market-data adapter smoke checks.
 - Use `bun run market:vm:smoke` when local VictoriaMetrics is running at
   `http://localhost:8428`.

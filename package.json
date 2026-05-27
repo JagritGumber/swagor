@@ -13,6 +13,7 @@
     "backtest:import": "bun --conditions react-server scripts/backtest-import.ts",
     "test:logic": "bun --conditions react-server scripts/test-logic.ts",
     "strategy:smoke": "bun scripts/strategy-lab-smoke.ts",
+    "strategy:vm:smoke": "bun scripts/strategy-vm-smoke.ts",
     "strategy:perry:compile": "perry compile scripts/strategy-lab-perry-smoke.ts -o strategy-lab-perry-smoke",
     "market:smoke": "bun scripts/market-data-smoke.ts",
     "market:vm:smoke": "bun scripts/market-vm-smoke.ts",
