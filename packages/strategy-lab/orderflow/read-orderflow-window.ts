@@ -1,4 +1,4 @@
-import type { OrderflowRead, OrderflowSide, OrderflowTrade, OrderflowWindow } from "./types";
+import type { OrderflowBbo, OrderflowRead, OrderflowSide, OrderflowTrade, OrderflowWindow } from "./types";
 
 export function readOrderflowWindow(input: {
   asset: string;
@@ -8,6 +8,7 @@ export function readOrderflowWindow(input: {
   let sellVolume = 0;
   let totalSize = 0;
   let largestTrade: OrderflowTrade | null = null;
+  let lastTrade: OrderflowTrade | null = null;
   let lastPrice: number | null = null;
 
   let tradeCount = 0;
@@ -17,6 +18,7 @@ export function readOrderflowWindow(input: {
     else sellVolume += trade.size;
     totalSize += trade.size;
     tradeCount += 1;
+    lastTrade = trade;
     lastPrice = trade.price;
     if (!largestTrade || trade.size > largestTrade.size) largestTrade = trade;
   }
@@ -25,7 +27,7 @@ export function readOrderflowWindow(input: {
   const dominantSide = dominantSideFor(buyVolume, sellVolume);
   const pressure = pressureFor(delta, buyVolume + sellVolume);
   const averageTradeSize = tradeCount === 0 ? 0 : totalSize / tradeCount;
-  const events = eventLabels({ window: input.window, delta, largestTrade, lastPrice, averageTradeSize, tradeCount });
+  const events = eventLabels({ window: input.window, delta, largestTrade, lastTrade, averageTradeSize, tradeCount });
   return {
     asset: input.asset,
     windowSeconds: input.window.windowMs / 1000,
@@ -60,7 +62,7 @@ function eventLabels(input: {
   window: OrderflowWindow;
   delta: number;
   largestTrade: OrderflowTrade | null;
-  lastPrice: number | null;
+  lastTrade: OrderflowTrade | null;
   averageTradeSize: number;
   tradeCount: number;
 }): string[] {
@@ -68,15 +70,31 @@ function eventLabels(input: {
   if (input.largestTrade && input.averageTradeSize > 0 && input.largestTrade.size >= input.averageTradeSize * 4) {
     labels.push("large-print");
   }
-  if (input.window.bbo && input.lastPrice !== null) {
-    const bbo = input.window.bbo;
-    if (bbo.askPrice !== null && input.lastPrice >= bbo.askPrice && input.delta > 0) labels.push("lifting-offers");
-    if (bbo.bidPrice !== null && input.lastPrice <= bbo.bidPrice && input.delta < 0) labels.push("hitting-bids");
-    if (bbo.askPrice !== null && input.lastPrice < bbo.askPrice && input.delta > 0) labels.push("stalled-buying");
-    if (bbo.bidPrice !== null && input.lastPrice > bbo.bidPrice && input.delta < 0) labels.push("stalled-selling");
+  if (input.lastTrade) {
+    const bbo = bboAtTradeTime(input.window, input.lastTrade);
+    if (bbo?.askPrice !== null && bbo?.askPrice !== undefined && input.lastTrade.price >= bbo.askPrice && input.delta > 0) {
+      labels.push("lifting-offers");
+    }
+    if (bbo?.bidPrice !== null && bbo?.bidPrice !== undefined && input.lastTrade.price <= bbo.bidPrice && input.delta < 0) {
+      labels.push("hitting-bids");
+    }
+    if (bbo?.askPrice !== null && bbo?.askPrice !== undefined && input.lastTrade.price < bbo.askPrice && input.delta > 0) {
+      labels.push("stalled-buying");
+    }
+    if (bbo?.bidPrice !== null && bbo?.bidPrice !== undefined && input.lastTrade.price > bbo.bidPrice && input.delta < 0) {
+      labels.push("stalled-selling");
+    }
   }
   if (labels.length === 0 && input.tradeCount > 0) labels.push("thin-follow-through");
   return labels;
+}
+
+function bboAtTradeTime(window: OrderflowWindow, trade: OrderflowTrade): OrderflowBbo | null {
+  for (let i = window.bboHistory.length - 1; i >= window.bboStartIndex; i--) {
+    const bbo = window.bboHistory[i];
+    if (bbo.time <= trade.time) return bbo;
+  }
+  return null;
 }
 
 function narrativeFor(asset: string, pressure: OrderflowRead["pressure"], events: string[], delta: number): string {

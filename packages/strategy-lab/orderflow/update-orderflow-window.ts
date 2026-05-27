@@ -8,5 +8,6 @@ export function updateOrderflowWindow(window: OrderflowWindow, event: OrderflowE
     return;
   }
   window.bbo = event.bbo;
+  window.bboHistory.push(event.bbo);
   expireOrderflowWindow(window, event.bbo.time);
 }

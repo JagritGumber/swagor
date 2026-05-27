@@ -10,6 +10,8 @@ export type LiveReaderSessionInput = {
   seconds: number;
   rootDir: string;
   readIntervalMs?: number;
+  orderflowWindowMs?: number;
+  auctionRefreshMs?: number;
   onRead(read: LiveReaderRead): void;
   onStatus?(status: string): void;
   onError?(error: unknown): void;

@@ -27,6 +27,8 @@ export type OrderflowWindow = {
   trades: OrderflowTrade[];
   startIndex: number;
   bbo: OrderflowBbo | null;
+  bboHistory: OrderflowBbo[];
+  bboStartIndex: number;
 };
 
 export type OrderflowPressure = "buy-pressure" | "sell-pressure" | "balanced";

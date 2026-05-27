@@ -17,6 +17,7 @@ export function createOrderflowNdjsonWriter(input: {
   maxBufferedRecords?: number;
 }): OrderflowNdjsonWriter {
   const buffers = new Map<string, string[]>();
+  const writeQueues = new Map<string, Promise<void>>();
   const flushIntervalMs = input.flushIntervalMs ?? 1000;
   const maxBufferedRecords = input.maxBufferedRecords ?? 250;
   let timer: ReturnType<typeof setInterval> | null = setInterval(() => {
@@ -33,24 +34,38 @@ export function createOrderflowNdjsonWriter(input: {
     const lines = buffers.get(path) ?? [];
     lines.push(`${JSON.stringify(record)}\n`);
     buffers.set(path, lines);
-    if (lines.length >= maxBufferedRecords) void flushPath(path, lines);
+    if (lines.length >= maxBufferedRecords) void flushPath(path);
   }
 
   async function flush(): Promise<void> {
     const writes: Array<Promise<void>> = [];
     for (const [path, lines] of buffers) {
-      if (lines.length === 0) continue;
-      writes.push(flushPath(path, lines));
+      if (lines.length === 0) {
+        const pending = writeQueues.get(path);
+        if (pending) writes.push(pending);
+        continue;
+      }
+      writes.push(flushPath(path));
     }
     await Promise.all(writes);
   }
 
-  async function flushPath(path: string, lines: string[]): Promise<void> {
-    if (lines.length === 0) return;
+  function flushPath(path: string): Promise<void> {
+    const lines = buffers.get(path);
+    if (!lines || lines.length === 0) return writeQueues.get(path) ?? Promise.resolve();
     const content = lines.join("");
     lines.length = 0;
-    await mkdir(dirname(path), { recursive: true });
-    await appendFile(path, content, "utf8");
+    const previous = writeQueues.get(path) ?? Promise.resolve();
+    const write = previous.then(async () => {
+      await mkdir(dirname(path), { recursive: true });
+      await appendFile(path, content, "utf8");
+    });
+    let tracked: Promise<void>;
+    tracked = write.finally(() => {
+      if (writeQueues.get(path) === tracked) writeQueues.delete(path);
+    });
+    writeQueues.set(path, tracked);
+    return tracked;
   }
 
   async function close(): Promise<void> {
