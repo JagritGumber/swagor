@@ -1,5 +1,7 @@
 import type { CandleInterval, HyperliquidNetwork } from "../market-data";
-import type { LiveReaderRead, ReaderTradePlan, ReaderTradePlanConfig } from "../strategy-lab";
+import type { LiveReaderRead } from "../strategy-lab/reader-live/types";
+import type { ReaderSetupConfig, ReaderSetupMemory, ReaderSetupResult, ReaderSetupStatus } from "../strategy-lab/reader-setup/types";
+import type { ReaderTradePlan, ReaderTradePlanConfig } from "../strategy-lab/trade-plan/types";
 
 export type LiveReaderSessionInput = {
   vmUrl: string;
@@ -13,8 +15,11 @@ export type LiveReaderSessionInput = {
   orderflowWindowMs?: number;
   auctionRefreshMs?: number;
   tradePlanConfig?: ReaderTradePlanConfig;
+  setupConfig?: ReaderSetupConfig;
+  setupMemory?: ReaderSetupMemory;
   onRead(read: LiveReaderRead): void;
   onPlan?(read: LiveReaderRead, plan: ReaderTradePlan): void;
+  onSetup?(result: ReaderSetupResult): void;
   onSessionEvent?(event: LiveReaderSessionEvent): void;
   onStatus?(status: string): void;
   onError?(error: unknown): void;
@@ -25,4 +30,13 @@ export type LiveReaderSessionEvent =
   | { type: "auction-refresh-started"; asset: string; at: number }
   | { type: "auction-refresh-completed"; asset: string; candleCount: number; at: number }
   | { type: "auction-refresh-failed"; asset: string; message: string; at: number }
-  | { type: "read-emitted"; asset: string; stance: LiveReaderRead["stance"]; planStatus: ReaderTradePlan["status"]; at: number };
+  | {
+      type: "read-emitted";
+      asset: string;
+      stance: LiveReaderRead["stance"];
+      planStatus: ReaderTradePlan["status"];
+      setupStatus: ReaderSetupStatus | null;
+      setupEvent: ReaderSetupResult["events"][number]["type"] | null;
+      planSource: ReaderSetupResult["planSource"];
+      at: number;
+    };

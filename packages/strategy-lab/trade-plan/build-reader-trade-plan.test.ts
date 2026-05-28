@@ -17,9 +17,10 @@ describe("buildReaderTradePlan", () => {
     expect(plan.status).toBe("ready");
     if (plan.status !== "ready") throw new Error("expected ready plan");
     expect(plan.side).toBe("long");
-    expect(plan.entryLow).toBeLessThan(plan.entryHigh);
-    expect(plan.stop).toBeLessThan(plan.entryLow);
-    expect(plan.target).toBeGreaterThan(plan.entryHigh);
+    expect(plan.entryLow).toBe(99);
+    expect(plan.entryHigh).toBe(101);
+    expect(plan.stop).toBe(98);
+    expect(plan.target).toBe(105);
   });
 
   test("creates a ready short plan for resistance with stalled buying", () => {
@@ -36,9 +37,10 @@ describe("buildReaderTradePlan", () => {
     expect(plan.status).toBe("ready");
     if (plan.status !== "ready") throw new Error("expected ready plan");
     expect(plan.side).toBe("short");
-    expect(plan.entryLow).toBeLessThan(plan.entryHigh);
-    expect(plan.stop).toBeGreaterThan(plan.entryHigh);
-    expect(plan.target).toBeLessThan(plan.entryLow);
+    expect(plan.entryLow).toBe(99);
+    expect(plan.entryHigh).toBe(101);
+    expect(plan.stop).toBe(102);
+    expect(plan.target).toBe(95);
   });
 
   test("requires long reclaim when failed selling happens below the entry zone", () => {

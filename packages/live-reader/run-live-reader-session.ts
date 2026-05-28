@@ -1,13 +1,12 @@
 import { connectHyperliquidOrderflow, createOrderflowNdjsonWriter, intervalMs } from "../market-data";
-import {
-  combineAuctionOrderflow,
-  buildReaderTradePlan,
-  createOrderflowWindow,
-  readMarketAuction,
-  readOrderflowWindow,
-  updateOrderflowWindow,
-} from "../strategy-lab";
 import { sleep } from "../shared";
+import { createOrderflowWindow } from "../strategy-lab/orderflow/create-orderflow-window";
+import { readOrderflowWindow } from "../strategy-lab/orderflow/read-orderflow-window";
+import { updateOrderflowWindow } from "../strategy-lab/orderflow/update-orderflow-window";
+import { readMarketAuction } from "../strategy-lab/read/read-market-auction";
+import { combineAuctionOrderflow } from "../strategy-lab/reader-live/combine-auction-orderflow";
+import { createReaderSetupMemory } from "../strategy-lab/reader-setup/create-reader-setup-memory";
+import { readMarketSetup } from "../strategy-lab/reader-setup/read-market-setup";
 import { loadAuctionCandles } from "./load-auction-candles";
 import type { LiveReaderSessionInput } from "./types";
 
@@ -20,6 +19,10 @@ export async function runLiveReaderSession(input: LiveReaderSessionInput): Promi
   const auctionRefreshMs = input.auctionRefreshMs ?? intervalMs(input.interval);
   const window = createOrderflowWindow(input.orderflowWindowMs ?? 60_000);
   const readIntervalMs = input.readIntervalMs ?? 1000;
+  const setupMemory = input.setupMemory ?? createReaderSetupMemory({
+    ttlMs: input.setupConfig?.setupTtlMs ?? undefined,
+    onEventError: input.onError,
+  });
   let lastReadAt = 0;
   const writer = createOrderflowNdjsonWriter({
     rootDir: input.rootDir,
@@ -60,10 +63,30 @@ export async function runLiveReaderSession(input: LiveReaderSessionInput): Promi
       ? auction
       : readMarketAuction({ asset, interval: input.interval, candles: auctionCandles, price: orderflow.lastPrice });
     const read = combineAuctionOrderflow({ auction: liveAuction, orderflow });
-    const plan = buildReaderTradePlan(read, input.tradePlanConfig);
+    const setup = readMarketSetup({
+      read,
+      memory: setupMemory,
+      now,
+      config: {
+        ...input.setupConfig,
+        keyScope: input.setupConfig?.keyScope ?? input.network,
+        tradePlanConfig: input.setupConfig?.tradePlanConfig ?? input.tradePlanConfig,
+      },
+    });
+    const plan = setup.plan;
     input.onRead(read);
+    input.onSetup?.(setup);
     input.onPlan?.(read, plan);
-    input.onSessionEvent?.({ type: "read-emitted", asset, stance: read.stance, planStatus: plan.status, at: now });
+    input.onSessionEvent?.({
+      type: "read-emitted",
+      asset,
+      stance: read.stance,
+      planStatus: plan.status,
+      setupStatus: setup.setup?.status ?? null,
+      setupEvent: setup.events.at(-1)?.type ?? null,
+      planSource: setup.planSource,
+      at: now,
+    });
   }
 
   function refreshAuctionIfDue(now: number): void {

@@ -39,6 +39,18 @@ export * from "./orderflow/read-orderflow-window";
 export * from "./reader-live/types";
 export * from "./reader-live/reader-rejection-edge-for";
 export * from "./reader-live/combine-auction-orderflow";
+export type {
+  ReaderSetupConfig,
+  ReaderSetupEvent,
+  ReaderSetupEventType,
+  ReaderSetupMemory,
+  ReaderSetupResult,
+  ReaderSetupState,
+  ReaderSetupStatus,
+} from "./reader-setup/types";
+export { readerSetupKeyFor } from "./reader-setup/reader-setup-key-for";
+export { createReaderSetupMemory } from "./reader-setup/create-reader-setup-memory";
+export { readMarketSetup } from "./reader-setup/read-market-setup";
 export * from "./trade-plan/types";
 export * from "./trade-plan/build-reader-trade-plan";
 export * from "./strategies/value-low-reclaim";
