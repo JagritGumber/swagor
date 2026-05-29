@@ -1,4 +1,4 @@
-import type { OrderflowTrade } from "../orderflow/types";
+import type { OrderflowEvidence, OrderflowTapeContext, OrderflowTrade } from "../orderflow/types";
 import type { AuctionLocation, PriceLevel } from "../read/types";
 import type { ReaderMarketRegime } from "../market-regime/types";
 import type { ReaderHistoryStep } from "../reader-history/types";
@@ -38,6 +38,8 @@ export type ReaderFormationRead = {
     delta: number;
     tradeCount: number;
     largestTrade: OrderflowTrade | null;
+    evidence?: OrderflowEvidence;
+    tape?: OrderflowTapeContext;
     events: string[];
   };
   setup: {

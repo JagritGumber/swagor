@@ -71,6 +71,8 @@ function formationRead(input: {
       delta: orderflow.delta,
       tradeCount: orderflow.tradeCount,
       largestTrade: orderflow.largestTrade,
+      evidence: orderflow.evidence,
+      tape: orderflow.tape,
       events: [...orderflow.events],
     },
     setup: {

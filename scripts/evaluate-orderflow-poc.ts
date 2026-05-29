@@ -340,6 +340,7 @@ function printResultAnalysis(trades: TradeEvaluation[]): void {
   printGroups("  by_setup_family_regime", groupedBy(judgeable, setupFamilyRegimeKey), 10);
   printGroups("  by_sequence", groupedBy(judgeable, sequenceKey), 8);
   printGroups("  by_narrative", groupedBy(judgeable, narrativeKey), 10);
+  printGroups("  by_orderflow_evidence", groupedBy(judgeable, orderflowEvidenceKey), 10);
   printGroups("  worst_families", groupedBy(judgeable, setupFamilyKey), 8, "worst");
   printGroups("  best_families", groupedBy(judgeable, setupFamilyKey), 5, "best");
   printGroups("  by_side_location", groupedBy(judgeable, sideLocationKey), 8);
@@ -444,6 +445,13 @@ function narrativeKey(trade: TradeEvaluation): string {
   return `${narrative.intent}|${narrative.direction}|${narrative.participation}|${narrative.levelStory}`;
 }
 
+function orderflowEvidenceKey(trade: TradeEvaluation): string {
+  const orderflow = significantRead(trade)?.orderflow ?? trade.dossier.orderflow;
+  const evidence = orderflow.evidence;
+  if (!evidence) return "no-evidence";
+  return `pressure=${evidence.pressure}|absorption=${evidence.absorption}|print=${evidence.print}|follow=${evidence.followThrough}`;
+}
+
 function sideLocationKey(trade: TradeEvaluation): string {
   const read = significantRead(trade);
   const location = read?.auction.location ?? trade.dossier.auction.location;
@@ -460,6 +468,8 @@ function eventFamily(events: string[]): string {
   if (events.includes("stalled-selling")) labels.push("stalled-selling");
   if (events.includes("stalled-buying")) labels.push("stalled-buying");
   if (events.includes("large-print")) labels.push("large-print");
+  if (events.includes("aggressive-absorption")) labels.push("aggressive-absorption");
+  if (events.includes("confirmed-absorption")) labels.push("confirmed-absorption");
   if (labels.length === 0 && events.includes("thin-follow-through")) labels.push("thin-follow-through");
   return labels.length === 0 ? "no-event" : labels.join("+");
 }

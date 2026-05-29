@@ -33,6 +33,27 @@ export type OrderflowWindow = {
 
 export type OrderflowPressure = "buy-pressure" | "sell-pressure" | "balanced";
 
+export type OrderflowEvidenceTier = "none" | "aggressive" | "confirmed";
+
+export type OrderflowEvidence = {
+  pressure: OrderflowEvidenceTier;
+  absorption: OrderflowEvidenceTier;
+  print: "none" | "local-standout";
+  followThrough: "holding" | "stalled" | "unknown";
+};
+
+export type OrderflowTapeContext = {
+  buyShare: number;
+  sellShare: number;
+  deltaShare: number;
+  dominantShare: number;
+  largestTradeShare: number | null;
+  medianTradeSize: number | null;
+  largestTradeRank: number | null;
+  lastTradeRank: number | null;
+  priceChange: number | null;
+};
+
 export type OrderflowRead = {
   asset: string;
   windowSeconds: number;
@@ -45,6 +66,8 @@ export type OrderflowRead = {
   largestTrade: OrderflowTrade | null;
   dominantSide: OrderflowSide | "none";
   pressure: OrderflowPressure;
+  evidence?: OrderflowEvidence;
+  tape?: OrderflowTapeContext;
   events: string[];
   narrative: string;
 };
