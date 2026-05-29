@@ -1,5 +1,6 @@
 import type { MemoryStore } from "../../shared";
 import type { LiveReaderRead } from "../reader-live/types";
+import type { ReaderSequence } from "../reader-sequence/types";
 import type { Side } from "../types";
 import type { ReaderActionableTradePlan, ReaderTradePlan, ReaderTradePlanConfig } from "../trade-plan/types";
 
@@ -12,6 +13,7 @@ export type ReaderSetupState = {
   interval: string;
   side: Side;
   status: ReaderSetupStatus;
+  sequence?: ReaderSequence;
   plan: ReaderActionableTradePlan;
   createdAt: number;
   updatedAt: number;

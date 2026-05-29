@@ -20,10 +20,16 @@ async function main(): Promise<void> {
   const assets = arg("assets", "BTC,ETH,SOL")!.split(",").map((asset) => asset.trim().toUpperCase()).filter(Boolean);
   const intervals = parseIntervals(arg("intervals", "5m,1h"));
   const days = Number(arg("days", "180"));
-  if (!Number.isFinite(days) || days <= 0) throw new Error("--days must be a positive number");
+  const startArg = arg("start");
+  const endArg = arg("end");
 
-  const endMs = Date.now();
-  const startMs = endMs - days * 86_400_000;
+  const endMs = endArg ? Date.parse(endArg) : Date.now();
+  const startMs = startArg ? Date.parse(startArg) : endMs - days * 86_400_000;
+  if (!Number.isFinite(days) || days <= 0) throw new Error("--days must be a positive number");
+  if (!Number.isFinite(startMs)) throw new Error("--start must be an ISO timestamp when provided");
+  if (!Number.isFinite(endMs)) throw new Error("--end must be an ISO timestamp when provided");
+  if (endMs < startMs) throw new Error("--end must be after --start");
+
   const results = await ingestHyperliquidCandles({ vmUrl, network, assets, intervals, startMs, endMs });
   for (const result of results) {
     console.log(`[market:ingest] ${network} ${result.asset} ${result.interval}: ${result.candles} candles`);

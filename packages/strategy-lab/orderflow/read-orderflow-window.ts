@@ -8,12 +8,14 @@ export function readOrderflowWindow(input: {
   let sellVolume = 0;
   let totalSize = 0;
   let largestTrade: OrderflowTrade | null = null;
+  let firstTrade: OrderflowTrade | null = null;
   let lastTrade: OrderflowTrade | null = null;
   let lastPrice: number | null = null;
 
   let tradeCount = 0;
   for (let i = input.window.startIndex; i < input.window.trades.length; i++) {
     const trade = input.window.trades[i];
+    firstTrade ??= trade;
     if (trade.side === "buy") buyVolume += trade.size;
     else sellVolume += trade.size;
     totalSize += trade.size;
@@ -27,7 +29,7 @@ export function readOrderflowWindow(input: {
   const dominantSide = dominantSideFor(buyVolume, sellVolume);
   const pressure = pressureFor(delta, buyVolume + sellVolume);
   const averageTradeSize = tradeCount === 0 ? 0 : totalSize / tradeCount;
-  const events = eventLabels({ window: input.window, delta, largestTrade, lastTrade, averageTradeSize, tradeCount });
+  const events = eventLabels({ window: input.window, delta, largestTrade, firstTrade, lastTrade, averageTradeSize, tradeCount });
   return {
     asset: input.asset,
     windowSeconds: input.window.windowMs / 1000,
@@ -62,6 +64,7 @@ function eventLabels(input: {
   window: OrderflowWindow;
   delta: number;
   largestTrade: OrderflowTrade | null;
+  firstTrade: OrderflowTrade | null;
   lastTrade: OrderflowTrade | null;
   averageTradeSize: number;
   tradeCount: number;
@@ -84,7 +87,17 @@ function eventLabels(input: {
     if (bbo?.bidPrice !== null && bbo?.bidPrice !== undefined && input.lastTrade.price > bbo.bidPrice && input.delta < 0) {
       labels.push("stalled-selling");
     }
+    if (!bbo && input.firstTrade && input.tradeCount >= 2) {
+      if (input.delta > 0 && input.lastTrade.price <= input.firstTrade.price) {
+        labels.push("stalled-buying");
+      }
+      if (input.delta < 0 && input.lastTrade.price >= input.firstTrade.price) {
+        labels.push("stalled-selling");
+      }
+    }
   }
+  if (labels.includes("stalled-buying") && labels.includes("large-print")) labels.push("buy-absorption");
+  if (labels.includes("stalled-selling") && labels.includes("large-print")) labels.push("sell-absorption");
   if (labels.length === 0 && input.tradeCount > 0) labels.push("thin-follow-through");
   return labels;
 }
@@ -98,6 +111,8 @@ function bboAtTradeTime(window: OrderflowWindow, trade: OrderflowTrade): Orderfl
 }
 
 function narrativeFor(asset: string, pressure: OrderflowRead["pressure"], events: string[], delta: number): string {
+  if (events.includes("buy-absorption")) return `${asset} shows buyers absorbed at the offer.`;
+  if (events.includes("sell-absorption")) return `${asset} shows sellers absorbed at the bid.`;
   if (events.includes("stalled-buying")) return `${asset} has positive delta but buyers are not holding the offer.`;
   if (events.includes("stalled-selling")) return `${asset} has negative delta but sellers are not holding the bid.`;
   if (events.includes("lifting-offers")) return `${asset} buyers are lifting offers with positive delta.`;

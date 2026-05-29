@@ -60,6 +60,7 @@ codex_review_request.md
 .perry-cache/
 victoria-metrics-data/
 orderflow-data/
+raw-data/
 
 # Tangent deploy helpers live locally in this project (needs Selbo's Circle
 # SDK + DB + env) but are NOT part of Selbo's product. Run from disk; never

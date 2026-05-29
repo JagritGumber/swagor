@@ -1,4 +1,5 @@
 import type { Candle } from "../types";
+import type { OrderflowTrade } from "../orderflow/types";
 import { clusterPriceLevels } from "./cluster-price-levels";
 import { findSwingHighs } from "./find-swing-highs";
 import { findSwingLows } from "./find-swing-lows";
@@ -18,6 +19,7 @@ export function readMarketAuction(input: {
   profileCandles?: number;
   profileRadiusPct?: number;
   profileBins?: number;
+  profileTrades?: OrderflowTrade[];
   price?: number;
 }): AuctionRead {
   const last = input.candles[input.candles.length - 1];
@@ -60,6 +62,7 @@ export function readMarketAuction(input: {
     profileCandles: input.profileCandles ?? 120,
     radiusPct: input.profileRadiusPct ?? 0.015,
     binCount: input.profileBins ?? 24,
+    profileTrades: input.profileTrades,
     price,
   });
 }
