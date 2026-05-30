@@ -3,11 +3,13 @@ import { runReaderReplayReport } from "../packages/strategy-lab/reader-report/ru
 import { intervalMs, readOrderflowEvents } from "../packages/market-data";
 import { analyzeReaderExecutionQuality } from "../packages/strategy-lab/reader-execution-quality/analyze-reader-execution-quality";
 import { buildReaderEvidenceReport } from "../packages/strategy-lab/reader-evidence/build-reader-evidence-report";
+import { analyzeReaderTrades, summarizeReaderTrades } from "../packages/strategy-lab/reader-analysis/analyze-reader-trades";
 import { runReaderHistoryReplay } from "../packages/strategy-lab/reader-history/run-reader-history-replay";
 import type { CandleInterval, HyperliquidNetwork } from "../packages/market-data";
 import type { OrderflowEvent } from "../packages/strategy-lab/orderflow/types";
 import type { ReaderExecutionQualityReport } from "../packages/strategy-lab/reader-execution-quality/types";
-import type { ReaderEvidenceReport, ReaderTradeDossier } from "../packages/strategy-lab/reader-evidence/types";
+import type { ReaderEvidenceReport } from "../packages/strategy-lab/reader-evidence/types";
+import type { ReaderAnalyzedTrade, ReaderAnalysisGroup, ReaderAnalysisReport, ReaderAnalysisSummary } from "../packages/strategy-lab/reader-analysis/types";
 import type { ReaderHistoryReplayResult } from "../packages/strategy-lab/reader-history/types";
 import type { Candle } from "../packages/strategy-lab/types";
 
@@ -28,34 +30,12 @@ type AssetEvaluation = {
   asset: string;
   status: EvaluationStatus;
   report: ReportView;
-  trades: TradeEvaluation[];
-  summary: EvaluationSummary;
+  analysis: ReaderAnalysisReport;
+  trades: ReaderAnalyzedTrade[];
+  summary: ReaderAnalysisSummary;
 };
 
 type EvaluationStatus = "OK" | "NO_ORDERFLOW_DATA" | "NO_TRADES" | "UNJUDGEABLE" | "TOO_FEW_TRADES";
-
-type TradeEvaluation = {
-  dossier: ReaderTradeDossier;
-  trust: boolean;
-  trustReason: string;
-};
-
-type EvaluationSummary = {
-  registeredTrades: number;
-  judgeableTrades: number;
-  unjudgeableTrades: number;
-  wins: number;
-  losses: number;
-  totalR: number;
-  averageR: number;
-  maxDrawdownR: number;
-};
-
-type AnalysisGroup = {
-  key: string;
-  trades: TradeEvaluation[];
-  summary: EvaluationSummary;
-};
 
 function arg(name: string, fallback?: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
@@ -145,14 +125,18 @@ function validateInput(): void {
 
 async function evaluateAsset(asset: string): Promise<AssetEvaluation> {
   const report = venue === "bybit" ? await runBybitReport(asset) : await runHyperliquidReport(asset);
-  const trades = report.evidence.trades.map((dossier) => tradeEvaluation(dossier));
-  const summary = summarizeTrades(trades);
+  const analysis = analyzeReaderTrades({
+    trades: report.evidence.trades,
+    minCoveragePct,
+    dailyLossLimitR,
+  });
   return {
     asset,
     report,
-    trades,
-    summary,
-    status: statusFor(report.diagnostics.orderflowEventCount, summary),
+    analysis,
+    trades: analysis.trades,
+    summary: analysis.summary,
+    status: statusFor(report.diagnostics.orderflowEventCount, analysis.summary),
   };
 }
 
@@ -209,51 +193,7 @@ async function runBybitReport(asset: string): Promise<ReportView> {
   };
 }
 
-function tradeEvaluation(dossier: ReaderTradeDossier): TradeEvaluation {
-  if (dossier.execution.quality === "unusable") {
-    return {
-      dossier,
-      trust: false,
-      trustReason: `price coverage ${dossier.execution.coveragePctWhileOpen}% below ${minCoveragePct}% or long unpriced gap`,
-    };
-  }
-  if (dossier.execution.coveragePctWhileOpen < minCoveragePct && dossier.execution.quality !== "open") {
-    return {
-      dossier,
-      trust: false,
-      trustReason: `price coverage ${dossier.execution.coveragePctWhileOpen}% below ${minCoveragePct}%`,
-    };
-  }
-  if (dossier.verdict === "open-trade") {
-    return {
-      dossier,
-      trust: false,
-      trustReason: "trade still open",
-    };
-  }
-  return {
-    dossier,
-    trust: true,
-    trustReason: "judgeable",
-  };
-}
-
-function summarizeTrades(trades: TradeEvaluation[]): EvaluationSummary {
-  const judgeable = trades.filter((trade) => trade.trust);
-  const rValues = judgeable.map((trade) => trade.dossier.trade.r ?? 0);
-  return {
-    registeredTrades: trades.length,
-    judgeableTrades: judgeable.length,
-    unjudgeableTrades: trades.length - judgeable.length,
-    wins: rValues.filter((r) => r > 0).length,
-    losses: rValues.filter((r) => r < 0).length,
-    totalR: round(sum(rValues)),
-    averageR: rValues.length === 0 ? 0 : round(sum(rValues) / rValues.length),
-    maxDrawdownR: round(maxDrawdown(rValues)),
-  };
-}
-
-function statusFor(orderflowEvents: number, summary: EvaluationSummary): EvaluationStatus {
+function statusFor(orderflowEvents: number, summary: ReaderAnalysisSummary): EvaluationStatus {
   if (orderflowEvents === 0) return "NO_ORDERFLOW_DATA";
   if (summary.registeredTrades === 0) return "NO_TRADES";
   if (summary.judgeableTrades === 0) return "UNJUDGEABLE";
@@ -282,7 +222,7 @@ function printAssetEvaluation(evaluation: AssetEvaluation): void {
   console.log(evaluation.asset);
   console.log(`data: candles=${diagnostics.candleCount} orderflow_events=${diagnostics.orderflowEventCount} first_orderflow=${nullableIso(diagnostics.firstOrderflowAt)} last_orderflow=${nullableIso(diagnostics.lastOrderflowAt)} status=${evaluation.status}`);
   printReaderDiagnostics(evaluation.report);
-  printResultAnalysis(evaluation.trades);
+  printResultAnalysis(evaluation.analysis);
   if (!summaryOnly) {
     const visibleTrades = tradesLimit === 0 ? evaluation.trades : evaluation.trades.slice(0, tradesLimit);
     console.log("registered:");
@@ -300,7 +240,7 @@ function printAssetEvaluation(evaluation: AssetEvaluation): void {
   console.log("");
 }
 
-function printTrade(index: number, trade: TradeEvaluation): void {
+function printTrade(index: number, trade: ReaderAnalyzedTrade): void {
   const dossier = trade.dossier;
   const result = dossier.trade;
   const read = dossier.formation.significantBeforeEntry[dossier.formation.significantBeforeEntry.length - 1];
@@ -309,6 +249,10 @@ function printTrade(index: number, trade: TradeEvaluation): void {
     : `${dossier.auction.location} ${dossier.auction.level?.kind ?? "level"} + ${dossier.orderflow.pressure} + ${dossier.orderflow.events.join("+") || "no-orderflow-event"}`;
   console.log(`  ${index}. ${iso(result.entryAt)} ${result.side} family=${result.setupFamily ?? "legacy"} sequence=${result.sequencePhase ?? "n/a"} regime=${result.regime?.mode ?? "unknown"} entry=${formatNumber(result.entryPrice)} stop=${formatNumber(result.stop)} target=${formatNumber(result.target)} exit=${result.exitReason ?? "open"} exitPrice=${formatNullable(result.exitPrice)} r=${formatNullable(result.r)} trust=${trade.trust}`);
   console.log(`     read=${readText}`);
+  console.log(`     diagnostics first=${trade.metrics.firstReaction} firstR=${formatNullable(trade.metrics.firstReactionR ?? undefined)} observedMfeR=${formatNullable(trade.metrics.observedMfeR ?? undefined)} observedMaeR=${formatNullable(trade.metrics.observedMaeR ?? undefined)} timing=${trade.metrics.entryTiming} poc=${trade.metrics.pocRotation} narrative=${trade.narrativeAudit.verdict} labels=${trade.labels.join("+")}`);
+  if (trade.narrativeAudit.invalidatingEvidence.length > 0) {
+    console.log(`     invalidating=${trade.narrativeAudit.invalidatingEvidence.join(" | ")}`);
+  }
   console.log(`     reason=${trade.trustReason} verdict=${dossier.verdict}`);
 }
 
@@ -327,170 +271,79 @@ function printReaderDiagnostics(report: ReportView): void {
   console.log(`  top_no_trade_reasons=${topReasons.length === 0 ? "none" : topReasons.map(([reason, count]) => `${count}x ${reason}`).join(" | ")}`);
 }
 
-function printResultAnalysis(trades: TradeEvaluation[]): void {
-  const judgeable = trades.filter((trade) => trade.trust);
+function printResultAnalysis(analysis: ReaderAnalysisReport): void {
+  const judgeable = analysis.trades.filter((trade) => trade.trust);
   console.log("analysis:");
   if (judgeable.length === 0) {
     console.log("  no judgeable trades");
     return;
   }
-  printGroups("  by_day", groupedBy(judgeable, dayKey), 10);
-  printGroups("  by_regime", groupedBy(judgeable, regimeKey), 8);
-  printGroups("  by_setup_family", groupedBy(judgeable, setupFamilyOnlyKey), 8);
-  printGroups("  by_setup_family_regime", groupedBy(judgeable, setupFamilyRegimeKey), 10);
-  printGroups("  by_sequence", groupedBy(judgeable, sequenceKey), 8);
-  printGroups("  by_narrative", groupedBy(judgeable, narrativeKey), 10);
-  printGroups("  by_orderflow_evidence", groupedBy(judgeable, orderflowEvidenceKey), 10);
-  printGroups("  worst_families", groupedBy(judgeable, setupFamilyKey), 8, "worst");
-  printGroups("  best_families", groupedBy(judgeable, setupFamilyKey), 5, "best");
-  printGroups("  by_side_location", groupedBy(judgeable, sideLocationKey), 8);
-  const guarded = dailyLossGuard(judgeable);
-  console.log(`  guarded_summary daily_loss_limit_r=${dailyLossLimitR} skipped=${guarded.skipped} trades=${guarded.summary.judgeableTrades} wins=${guarded.summary.wins} losses=${guarded.summary.losses} totalR=${formatNumber(guarded.summary.totalR)} avgR=${formatNumber(guarded.summary.averageR)} maxDD=${formatNumber(guarded.summary.maxDrawdownR)}`);
-  printGroups("  guarded_by_day", groupedBy(guarded.trades, dayKey), 10);
+  printGroups("  by_day", analysis.groups.byDay, 10);
+  printGroups("  by_regime", analysis.groups.byRegime, 8);
+  printGroups("  by_setup_family", analysis.groups.bySetupFamily, 8);
+  printGroups("  by_setup_family_regime", analysis.groups.bySetupFamilyRegime, 10);
+  printGroups("  by_sequence", analysis.groups.bySequence, 8);
+  printGroups("  by_narrative", analysis.groups.byNarrative, 10);
+  printGroups("  by_orderflow_evidence", analysis.groups.byOrderflowEvidence, 10);
+  printGroups("  by_entry_timing", analysis.groups.byEntryTiming, 8);
+  printGroups("  by_first_reaction", analysis.groups.byFirstReaction, 8);
+  printGroups("  by_poc_rotation", analysis.groups.byPocRotation, 8);
+  printGroups("  by_quality_label", analysis.groups.byQualityLabel, 10);
+  printGroups("  by_narrative_verdict", analysis.groups.byNarrativeVerdict, 8);
+  printGroups("  worst_families", analysis.groups.worstFamilies, 8, "ranked");
+  printGroups("  best_families", analysis.groups.bestFamilies, 5, "ranked");
+  printGroups("  worst_narratives", analysis.groups.worstNarratives, 8, "ranked");
+  printGroups("  by_side_location", analysis.groups.bySideLocation, 8);
+  printNarrativeFailureChains(analysis);
+  console.log(`  guarded_summary daily_loss_limit_r=${dailyLossLimitR} skipped=${analysis.guarded.skipped} trades=${analysis.guarded.summary.judgeableTrades} wins=${analysis.guarded.summary.wins} losses=${analysis.guarded.summary.losses} totalR=${formatNumber(analysis.guarded.summary.totalR)} avgR=${formatNumber(analysis.guarded.summary.averageR)} maxDD=${formatNumber(analysis.guarded.summary.maxDrawdownR)}`);
+  printGroups("  guarded_by_day", analyzeReaderTrades({ trades: analysis.guarded.trades.map((trade) => trade.dossier), minCoveragePct, dailyLossLimitR }).groups.byDay, 10);
+}
+
+function printNarrativeFailureChains(analysis: ReaderAnalysisReport): void {
+  console.log("  narrative_failure_chains");
+  if (analysis.narrativeFailureChains.length === 0) {
+    console.log("    none");
+    return;
+  }
+  for (const chain of analysis.narrativeFailureChains.slice(0, 8)) {
+    const verdicts = formatCounts(countBy(chain.trades, (trade) => trade.narrativeAudit.verdict));
+    console.log(`    ${chain.day}|${chain.key}: losses=${chain.losses} trades=${chain.trades.length} totalR=${formatNumber(chain.totalR)} verdicts=${verdicts}`);
+  }
 }
 
 function printGroups(
   label: string,
-  groups: AnalysisGroup[],
+  groups: ReaderAnalysisGroup[],
   limit: number,
-  order: "natural" | "worst" | "best" = "natural",
+  order: "key" | "ranked" = "key",
 ): void {
-  const sorted = [...groups].sort((left, right) => {
-    if (order === "worst") return left.summary.totalR - right.summary.totalR || right.summary.judgeableTrades - left.summary.judgeableTrades;
-    if (order === "best") return right.summary.totalR - left.summary.totalR || right.summary.judgeableTrades - left.summary.judgeableTrades;
-    return left.key.localeCompare(right.key);
-  });
+  const sorted = order === "ranked" ? groups : [...groups].sort((left, right) => left.key.localeCompare(right.key));
   console.log(label);
   for (const group of sorted.slice(0, limit)) {
     console.log(`    ${group.key}: trades=${group.summary.judgeableTrades} wins=${group.summary.wins} losses=${group.summary.losses} totalR=${formatNumber(group.summary.totalR)} avgR=${formatNumber(group.summary.averageR)} maxDD=${formatNumber(group.summary.maxDrawdownR)}`);
   }
 }
 
-function groupedBy(trades: TradeEvaluation[], keyFor: (trade: TradeEvaluation) => string): AnalysisGroup[] {
-  const groups = new Map<string, TradeEvaluation[]>();
-  for (const trade of trades) {
-    const key = keyFor(trade);
-    const group = groups.get(key);
-    if (group) group.push(trade);
-    else groups.set(key, [trade]);
-  }
-  return [...groups.entries()].map(([key, groupTrades]) => ({
-    key,
-    trades: groupTrades,
-    summary: summarizeTrades(groupTrades),
-  }));
-}
-
-function dailyLossGuard(trades: TradeEvaluation[]): {
-  trades: TradeEvaluation[];
-  skipped: number;
-  summary: EvaluationSummary;
-} {
-  const dayR = new Map<string, number>();
-  const stoppedDays = new Set<string>();
-  const kept: TradeEvaluation[] = [];
-  let skipped = 0;
-
-  for (const trade of [...trades].sort((a, b) => a.dossier.trade.entryAt - b.dossier.trade.entryAt)) {
-    const day = dayKey(trade);
-    if (stoppedDays.has(day)) {
-      skipped += 1;
-      continue;
-    }
-    kept.push(trade);
-    const nextR = (dayR.get(day) ?? 0) + (trade.dossier.trade.r ?? 0);
-    dayR.set(day, nextR);
-    if (nextR <= -dailyLossLimitR) stoppedDays.add(day);
-  }
-
-  return {
-    trades: kept,
-    skipped,
-    summary: summarizeTrades(kept),
-  };
-}
-
-function dayKey(trade: TradeEvaluation): string {
-  return iso(trade.dossier.trade.entryAt).slice(0, 10);
-}
-
-function setupFamilyKey(trade: TradeEvaluation): string {
-  const read = significantRead(trade);
-  const location = read?.auction.location ?? trade.dossier.auction.location;
-  const levelKind = read?.auction.levelKind ?? trade.dossier.auction.level?.kind ?? "level";
-  const pressure = read?.orderflow.pressure ?? trade.dossier.orderflow.pressure;
-  const events = eventFamily(read?.orderflow.events ?? trade.dossier.orderflow.events);
-  return `${setupFamilyOnlyKey(trade)}|${trade.dossier.trade.side}|${location}|${levelKind}|${pressure}|${events}`;
-}
-
-function setupFamilyOnlyKey(trade: TradeEvaluation): string {
-  return trade.dossier.trade.setupFamily ?? "legacy";
-}
-
-function regimeKey(trade: TradeEvaluation): string {
-  return trade.dossier.trade.regime?.mode ?? "unknown";
-}
-
-function setupFamilyRegimeKey(trade: TradeEvaluation): string {
-  return `${setupFamilyOnlyKey(trade)}|${regimeKey(trade)}`;
-}
-
-function sequenceKey(trade: TradeEvaluation): string {
-  return `${setupFamilyOnlyKey(trade)}|${trade.dossier.trade.sequencePhase ?? "n/a"}`;
-}
-
-function narrativeKey(trade: TradeEvaluation): string {
-  const narrative = trade.dossier.trade.narrative ?? significantRead(trade)?.narrative;
-  if (!narrative) return "no-narrative";
-  return `${narrative.intent}|${narrative.direction}|${narrative.participation}|${narrative.levelStory}`;
-}
-
-function orderflowEvidenceKey(trade: TradeEvaluation): string {
-  const orderflow = significantRead(trade)?.orderflow ?? trade.dossier.orderflow;
-  const evidence = orderflow.evidence;
-  if (!evidence) return "no-evidence";
-  return `pressure=${evidence.pressure}|absorption=${evidence.absorption}|print=${evidence.print}|follow=${evidence.followThrough}`;
-}
-
-function sideLocationKey(trade: TradeEvaluation): string {
-  const read = significantRead(trade);
-  const location = read?.auction.location ?? trade.dossier.auction.location;
-  const levelKind = read?.auction.levelKind ?? trade.dossier.auction.level?.kind ?? "level";
-  return `${trade.dossier.trade.side}|${location}|${levelKind}`;
-}
-
-function significantRead(trade: TradeEvaluation) {
-  return trade.dossier.formation.significantBeforeEntry[trade.dossier.formation.significantBeforeEntry.length - 1] ?? null;
-}
-
-function eventFamily(events: string[]): string {
-  const labels: string[] = [];
-  if (events.includes("stalled-selling")) labels.push("stalled-selling");
-  if (events.includes("stalled-buying")) labels.push("stalled-buying");
-  if (events.includes("large-print")) labels.push("large-print");
-  if (events.includes("aggressive-absorption")) labels.push("aggressive-absorption");
-  if (events.includes("confirmed-absorption")) labels.push("confirmed-absorption");
-  if (labels.length === 0 && events.includes("thin-follow-through")) labels.push("thin-follow-through");
-  return labels.length === 0 ? "no-event" : labels.join("+");
-}
-
-function finalSummary(evaluations: AssetEvaluation[]): EvaluationSummary {
-  const trades = evaluations.flatMap((evaluation) => evaluation.trades);
-  return summarizeTrades(trades);
+function finalSummary(evaluations: AssetEvaluation[]): ReaderAnalysisSummary {
+  return summarizeReaderTrades(evaluations.flatMap((evaluation) => evaluation.trades));
 }
 
 function guardedFinalSummary(evaluations: AssetEvaluation[]): {
   skipped: number;
-  summary: EvaluationSummary;
+  summary: ReaderAnalysisSummary;
 } {
-  const guarded = dailyLossGuard(evaluations.flatMap((evaluation) => evaluation.trades.filter((trade) => trade.trust)));
+  const guarded = analyzeReaderTrades({
+    trades: evaluations.flatMap((evaluation) => evaluation.trades.map((trade) => trade.dossier)),
+    minCoveragePct,
+    dailyLossLimitR,
+  }).guarded;
   return {
     skipped: guarded.skipped,
     summary: guarded.summary,
   };
 }
 
-function decisionFor(evaluations: AssetEvaluation[], summary: EvaluationSummary): string {
+function decisionFor(evaluations: AssetEvaluation[], summary: ReaderAnalysisSummary): string {
   if (evaluations.every((evaluation) => evaluation.status === "NO_ORDERFLOW_DATA")) return "COLLECT_MORE_DATA";
   if (summary.judgeableTrades < minJudgeableTrades) return "COLLECT_MORE_DATA";
   if (summary.totalR <= 0 || summary.averageR <= 0) return "KILL";
@@ -506,10 +359,6 @@ function assetDecisionFor(evaluation: AssetEvaluation): string {
   if (evaluation.summary.totalR <= 0 || evaluation.summary.averageR <= 0) return "KILL";
   if (evaluation.summary.maxDrawdownR <= -5) return "ADJUST";
   return "CONTINUE";
-}
-
-function sum(values: number[]): number {
-  return values.reduce((total, value) => total + value, 0);
 }
 
 function countBy<T>(items: T[], keyFor: (item: T) => string): Map<string, number> {
@@ -533,22 +382,6 @@ function formatCounts(counts: Map<string, number>): string {
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([key, count]) => `${key}:${count}`)
     .join(",");
-}
-
-function maxDrawdown(rValues: number[]): number {
-  let equity = 0;
-  let peak = 0;
-  let maxDd = 0;
-  for (const r of rValues) {
-    equity += r;
-    peak = Math.max(peak, equity);
-    maxDd = Math.min(maxDd, equity - peak);
-  }
-  return maxDd;
-}
-
-function round(value: number): number {
-  return Number(value.toFixed(4));
 }
 
 function formatNumber(value: number): string {

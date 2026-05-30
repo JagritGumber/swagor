@@ -19,6 +19,7 @@ export type ReaderResultEntry = {
   target: number;
   confidence: number;
   narrative?: ReaderNarrative;
+  narrativeKey?: string | null;
   reasons: string[];
 };
 

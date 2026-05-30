@@ -1,4 +1,5 @@
 import type { ReaderSetupResult } from "../reader-setup/types";
+import { readerNarrativeKeyFor } from "../reader-narrative-state/reader-narrative-key-for";
 import type { ReaderActionableTradePlan } from "../trade-plan/types";
 import { readerResultForPrice } from "./reader-result-for-price";
 import type { ReaderResultEntry, ReaderResultEvent, ReaderResultState, ReaderResultUpdate } from "./types";
@@ -122,6 +123,15 @@ function entryFromPlan(
     target: plan.target,
     confidence: plan.confidence,
     narrative: plan.narrative,
+    narrativeKey: readerNarrativeKeyFor({
+      asset: plan.asset,
+      at: entryAt,
+      narrative: plan.narrative,
+      auction: {
+        location: result.read.auction.location,
+        levelKind: result.read.auction.level?.kind ?? null,
+      },
+    }),
     reasons: plan.reasons,
   };
 }

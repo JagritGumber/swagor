@@ -1,5 +1,6 @@
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultState, ReaderResultUpdate } from "../reader-result/types";
+import type { ReaderNarrativeStateMemory } from "../reader-narrative-state/types";
 import type { ReaderSetupConfig, ReaderSetupEvent, ReaderSetupMemory, ReaderSetupResult } from "../reader-setup/types";
 
 export type ReaderReplayStep = LiveReaderRead | {
@@ -46,5 +47,6 @@ export type ReaderReplayResult = {
   open: ReaderResultEntry | null;
   summary: ReaderReplaySummary;
   setupMemory: ReaderSetupMemory;
+  narrativeMemory: ReaderNarrativeStateMemory;
   resultState: ReaderResultState;
 };

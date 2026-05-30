@@ -1,4 +1,6 @@
 import type { LiveReaderRead } from "../reader-live/types";
+import { applyReaderNarrativeStateToPlan } from "../reader-narrative-state/apply-reader-narrative-state-to-plan";
+import { readerNarrativeKeyFor } from "../reader-narrative-state/reader-narrative-key-for";
 import { buildReaderTradePlan } from "../trade-plan/build-reader-trade-plan";
 import type { ReaderActionableTradePlan, ReaderNoTradePlan, ReaderTradePlan } from "../trade-plan/types";
 import { readerSetupKeyFor } from "./reader-setup-key-for";
@@ -20,7 +22,12 @@ export function readMarketSetup(input: {
   expireSetup(input.memory, key, input.read.asset, now, events);
 
   const previous = input.memory.get(key)?.value ?? null;
-  const plan = buildReaderTradePlan(input.read, input.config?.tradePlanConfig);
+  const rawPlan = buildReaderTradePlan(input.read, input.config?.tradePlanConfig);
+  const plan = applyReaderNarrativeStateToPlan({
+    read: input.read,
+    plan: rawPlan,
+    state: narrativeStateFor(input.read, now, input.config),
+  });
   if (previous && crossedStop(previous.plan, input.read.orderflow.lastPrice)) {
     input.memory.delete(key, "setup invalidated at stop", now);
     const blocked = noTrade(input.read, [`tracked ${previous.side} setup invalidated at stop ${previous.plan.stop}`], previous.plan.setupFamily);
@@ -41,6 +48,26 @@ export function readMarketSetup(input: {
   input.memory.set(key, setup, { now, ttlMs: input.config?.setupTtlMs, reason: setup.lastReason });
   events.push(setupEvent(eventTypeFor(previous, plan), key, input.read.asset, now, setup.lastReason));
   return { read: input.read, plan, setup, events, planSource: "fresh-read" };
+}
+
+function narrativeStateFor(
+  read: LiveReaderRead,
+  now: number,
+  config: ReaderSetupConfig | undefined,
+) {
+  if (config?.narrativeState?.enabled === false) return null;
+  const memory = config?.narrativeState?.memory;
+  if (!memory) return null;
+  const key = readerNarrativeKeyFor({
+    asset: read.asset,
+    at: now,
+    narrative: read.narrativeRead,
+    auction: {
+      location: read.auction.location,
+      levelKind: read.auction.level?.kind ?? null,
+    },
+  });
+  return key ? memory.get(key)?.value ?? null : null;
 }
 
 function expireSetup(

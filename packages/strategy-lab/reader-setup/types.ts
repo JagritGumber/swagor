@@ -1,5 +1,6 @@
 import type { MemoryStore } from "../../shared";
 import type { LiveReaderRead } from "../reader-live/types";
+import type { ReaderNarrativeStateConfig } from "../reader-narrative-state/types";
 import type { ReaderSequence } from "../reader-sequence/types";
 import type { Side } from "../types";
 import type { ReaderActionableTradePlan, ReaderTradePlan, ReaderTradePlanConfig } from "../trade-plan/types";
@@ -26,6 +27,7 @@ export type ReaderSetupMemory = MemoryStore<ReaderSetupState>;
 
 export type ReaderSetupConfig = {
   tradePlanConfig?: ReaderTradePlanConfig;
+  narrativeState?: ReaderNarrativeStateConfig;
   setupTtlMs?: number | null;
   keyScope?: string;
 };

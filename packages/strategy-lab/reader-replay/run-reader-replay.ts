@@ -1,5 +1,7 @@
 import { createReaderResultState } from "../reader-result/create-reader-result-state";
 import { updateReaderResult } from "../reader-result/update-reader-result";
+import { createReaderNarrativeStateMemory } from "../reader-narrative-state/create-reader-narrative-state-memory";
+import { updateReaderNarrativeState } from "../reader-narrative-state/update-reader-narrative-state";
 import { createReaderSetupMemory } from "../reader-setup/create-reader-setup-memory";
 import { readMarketSetup } from "../reader-setup/read-market-setup";
 import { summarizeReaderOutcomes } from "./summarize-reader-outcomes";
@@ -9,7 +11,15 @@ import type { ReaderSetupEvent, ReaderSetupResult } from "../reader-setup/types"
 
 export function runReaderReplay(input: ReaderReplayInput): ReaderReplayResult {
   const setupMemory = input.setupMemory ?? createReaderSetupMemory({ ttlMs: input.setupConfig?.setupTtlMs ?? undefined });
+  const narrativeMemory = input.setupConfig?.narrativeState?.memory ?? createReaderNarrativeStateMemory();
   const resultState = input.resultState ?? createReaderResultState({ maxEvents: input.resultMaxEvents });
+  const setupConfig = {
+    ...input.setupConfig,
+    narrativeState: {
+      ...input.setupConfig?.narrativeState,
+      memory: narrativeMemory,
+    },
+  };
   const setupResults: ReaderSetupResult[] = [];
   const setupEvents: ReaderSetupEvent[] = [];
   const resultUpdates: ReaderResultUpdate[] = [];
@@ -24,7 +34,7 @@ export function runReaderReplay(input: ReaderReplayInput): ReaderReplayResult {
       read: step.read,
       memory: setupMemory,
       now: step.now,
-      config: input.setupConfig,
+      config: setupConfig,
     });
     const resultUpdate = updateReaderResult({
       state: resultState,
@@ -37,6 +47,14 @@ export function runReaderReplay(input: ReaderReplayInput): ReaderReplayResult {
     resultUpdates.push(snapshotResultUpdate(resultUpdate));
     resultEvents.push(...resultUpdate.events);
     if (resultUpdate.opened) entries.push(resultUpdate.opened);
+    if (resultUpdate.closed && setupConfig.narrativeState?.enabled !== false) {
+      updateReaderNarrativeState({
+        memory: narrativeMemory,
+        outcome: resultUpdate.closed,
+        now: step.now,
+        ttlMs: setupConfig.narrativeState?.ttlMs,
+      });
+    }
   }
 
   const outcomes = resultState.outcomes.slice(initialOutcomeCount);
@@ -55,6 +73,7 @@ export function runReaderReplay(input: ReaderReplayInput): ReaderReplayResult {
       outcomes,
     }),
     setupMemory,
+    narrativeMemory,
     resultState,
   };
 }

@@ -95,6 +95,18 @@ export type {
 } from "./reader-execution-quality/types";
 export { analyzeReaderExecutionQuality } from "./reader-execution-quality/analyze-reader-execution-quality";
 export type {
+  ReaderNarrativeKeyInput,
+  ReaderNarrativeState,
+  ReaderNarrativeStateConfig,
+  ReaderNarrativeStateMemory,
+  ReaderNarrativeStatePlanInput,
+  ReaderNarrativeStateStatus,
+} from "./reader-narrative-state/types";
+export { applyReaderNarrativeStateToPlan } from "./reader-narrative-state/apply-reader-narrative-state-to-plan";
+export { createReaderNarrativeStateMemory } from "./reader-narrative-state/create-reader-narrative-state-memory";
+export { readerNarrativeKeyFor } from "./reader-narrative-state/reader-narrative-key-for";
+export { updateReaderNarrativeState } from "./reader-narrative-state/update-reader-narrative-state";
+export type {
   ReaderFormationInput,
   ReaderFormationRead,
   ReaderFormationTape,
@@ -113,6 +125,23 @@ export type {
 export { candleIndexForTime } from "./reader-evidence/candle-index-for-time";
 export { candleWindowForTrade } from "./reader-evidence/candle-window-for-trade";
 export { buildReaderEvidenceReport } from "./reader-evidence/build-reader-evidence-report";
+export type {
+  AnalyzeReaderTradesInput,
+  ReaderAnalyzedTrade,
+  ReaderAnalysisGroup,
+  ReaderAnalysisReport,
+  ReaderAnalysisSummary,
+  ReaderGuardedAnalysis,
+  ReaderNarrativeAudit,
+  ReaderNarrativeFailureChain,
+  ReaderNarrativeVerdict,
+  ReaderPocRotation,
+  ReaderTradeAnalysisMetrics,
+  ReaderTradeQualityLabel,
+  ReaderTradeReaction,
+  ReaderTradeTiming,
+} from "./reader-analysis/types";
+export { analyzeReaderTrades, summarizeReaderTrades } from "./reader-analysis/analyze-reader-trades";
 export type {
   ReaderReplayReport,
   ReaderReplayReportDiagnostics,
