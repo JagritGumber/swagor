@@ -145,6 +145,7 @@ describe("buildReaderTradePlan", () => {
         },
         auctionMode: {
           mode: "poc-gravity",
+          phase: "poc-gravity-rotation",
           allowedDirection: "both",
           reasons: ["recent edge attempt returned to POC"],
         },
@@ -165,6 +166,7 @@ describe("buildReaderTradePlan", () => {
         stance: "possible-long",
         auctionMode: {
           mode: "failed-expansion",
+          phase: "failed-expansion-fade",
           allowedDirection: "short",
           reasons: ["long expansion failed back into value"],
         },

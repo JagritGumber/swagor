@@ -30,30 +30,30 @@ function modeFor(input: {
   pocGravity: boolean;
 }): ReaderAuctionMode {
   if (violentUnknown(input, input.state)) {
-    return mode("violent-unknown", "none", [
+    return mode("violent-unknown", "violent-chop", "none", [
       "high-vol auction is rotating around POC with two-sided pressure",
     ]);
   }
 
   if (input.failedExpansion !== null) {
-    return mode("failed-expansion", opposite(input.failedExpansion), [
+    return mode("failed-expansion", failedExpansionPhase(input.auction.location), opposite(input.failedExpansion), [
       `${input.failedExpansion} expansion failed back into value`,
     ]);
   }
 
   if (input.pocGravity && insideValue(input.auction.location)) {
-    return mode("poc-gravity", "both", [
+    return mode("poc-gravity", "poc-gravity-rotation", "both", [
       "recent edge attempt returned to POC, so only POC-directed rotations are allowed",
     ]);
   }
 
   if (initiativeExpansion(input.auction.location, input.orderflow.pressure)) {
-    return mode("initiative-expansion", expansionDirection(input.auction.location) ?? "both", [
+    return mode("initiative-expansion", "initiative-acceptance", expansionDirection(input.auction.location) ?? "both", [
       "auction is accepting outside value with initiative pressure",
     ]);
   }
 
-  return mode("balanced-value", "both", [
+  return mode("balanced-value", balancedPhase(input.auction.location), "both", [
     insideValue(input.auction.location)
       ? "auction is inside value"
       : "auction is waiting for value acceptance or rejection",
@@ -76,8 +76,13 @@ function updateState(input: {
   input.state.previousPressure = input.pressure;
 }
 
-function mode(mode: ReaderAuctionMode["mode"], allowedDirection: ReaderAuctionMode["allowedDirection"], reasons: string[]): ReaderAuctionMode {
-  return { mode, allowedDirection, reasons };
+function mode(
+  mode: ReaderAuctionMode["mode"],
+  phase: ReaderAuctionMode["phase"],
+  allowedDirection: ReaderAuctionMode["allowedDirection"],
+  reasons: string[],
+): ReaderAuctionMode {
+  return { mode, phase, allowedDirection, reasons };
 }
 
 function expansionDirection(location: AuctionRead["location"]): Side | null {
@@ -89,6 +94,18 @@ function expansionDirection(location: AuctionRead["location"]): Side | null {
 function failedExpansionDirection(location: AuctionRead["location"], lastExpansionDirection: Side | null): Side | null {
   if (!lastExpansionDirection || !insideValue(location)) return null;
   return lastExpansionDirection;
+}
+
+function failedExpansionPhase(location: AuctionRead["location"]): ReaderAuctionMode["phase"] {
+  return location === "value-low" || location === "value-high"
+    ? "failed-expansion-fade"
+    : "poc-gravity-rotation";
+}
+
+function balancedPhase(location: AuctionRead["location"]): ReaderAuctionMode["phase"] {
+  return location === "value-low" || location === "value-high"
+    ? "value-edge-rotation"
+    : "balanced-wait";
 }
 
 function initiativeExpansion(location: AuctionRead["location"], pressure: OrderflowRead["pressure"]): boolean {

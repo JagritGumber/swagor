@@ -247,7 +247,8 @@ function printTrade(index: number, trade: ReaderAnalyzedTrade): void {
   const readText = read
     ? `${read.narrative?.intent ?? "no-narrative"}/${read.narrative?.direction ?? "none"} ${read.auction.location} ${read.auction.levelKind ?? "level"} + ${read.orderflow.pressure} + ${read.orderflow.events.join("+") || "no-orderflow-event"}`
     : `${dossier.auction.location} ${dossier.auction.level?.kind ?? "level"} + ${dossier.orderflow.pressure} + ${dossier.orderflow.events.join("+") || "no-orderflow-event"}`;
-  console.log(`  ${index}. ${iso(result.entryAt)} ${result.side} family=${result.setupFamily ?? "legacy"} mode=${result.auctionMode?.mode ?? dossier.auctionMode?.mode ?? "unknown"} sequence=${result.sequencePhase ?? "n/a"} regime=${result.regime?.mode ?? "unknown"} entry=${formatNumber(result.entryPrice)} stop=${formatNumber(result.stop)} target=${formatNumber(result.target)} exit=${result.exitReason ?? "open"} exitPrice=${formatNullable(result.exitPrice)} r=${formatNullable(result.r)} trust=${trade.trust}`);
+  const auctionMode = result.auctionMode ?? dossier.auctionMode;
+  console.log(`  ${index}. ${iso(result.entryAt)} ${result.side} family=${result.setupFamily ?? "legacy"} mode=${auctionMode?.mode ?? "unknown"}/${auctionMode?.phase ?? "unknown"} sequence=${result.sequencePhase ?? "n/a"} regime=${result.regime?.mode ?? "unknown"} entry=${formatNumber(result.entryPrice)} stop=${formatNumber(result.stop)} target=${formatNumber(result.target)} exit=${result.exitReason ?? "open"} exitPrice=${formatNullable(result.exitPrice)} r=${formatNullable(result.r)} trust=${trade.trust}`);
   console.log(`     read=${readText}`);
   console.log(`     diagnostics first=${trade.metrics.firstReaction} firstR=${formatNullable(trade.metrics.firstReactionR ?? undefined)} observedMfeR=${formatNullable(trade.metrics.observedMfeR ?? undefined)} observedMaeR=${formatNullable(trade.metrics.observedMaeR ?? undefined)} timing=${trade.metrics.entryTiming} poc=${trade.metrics.pocRotation} narrative=${trade.narrativeAudit.verdict} labels=${trade.labels.join("+")}`);
   if (trade.narrativeAudit.invalidatingEvidence.length > 0) {
@@ -261,13 +262,14 @@ function printReaderDiagnostics(report: ReportView): void {
   const setupEvents = countBy(report.setupEvents, (event) => event.type);
   const auctionLocations = countBy(report.historySteps, (step) => step.read.auction.location);
   const auctionModes = countBy(report.historySteps, (step) => step.read.auctionMode?.mode ?? "unknown");
+  const auctionPhases = countBy(report.historySteps, (step) => step.read.auctionMode?.phase ?? "unknown");
   const orderflowPressure = countBy(report.historySteps, (step) => step.read.orderflow.pressure);
   const narrativeIntents = countBy(report.historySteps, (step) => step.read.narrativeRead?.intent ?? "no-narrative");
   const narrativeParticipation = countBy(report.historySteps, (step) => step.read.narrativeRead?.participation ?? "unknown");
   const topReasons = topCounts(report.setupResults.flatMap((result) => result.plan.reasons), 3);
   console.log(`reader: reads=${report.summary.totalReads} entries_opened=${report.summary.entriesOpened} outcomes=${report.summary.totalOutcomes} open=${report.open ? "yes" : "no"}`);
   console.log(`  plans=${formatCounts(planStatuses)} setup_events=${formatCounts(setupEvents)}`);
-  console.log(`  auction=${formatCounts(auctionLocations)} auction_mode=${formatCounts(auctionModes)} orderflow=${formatCounts(orderflowPressure)}`);
+  console.log(`  auction=${formatCounts(auctionLocations)} auction_mode=${formatCounts(auctionModes)} auction_phase=${formatCounts(auctionPhases)} orderflow=${formatCounts(orderflowPressure)}`);
   console.log(`  narrative_intent=${formatCounts(narrativeIntents)} participation=${formatCounts(narrativeParticipation)}`);
   console.log(`  top_no_trade_reasons=${topReasons.length === 0 ? "none" : topReasons.map(([reason, count]) => `${count}x ${reason}`).join(" | ")}`);
 }
@@ -286,6 +288,7 @@ function printResultAnalysis(analysis: ReaderAnalysisReport): void {
   printGroups("  by_sequence", analysis.groups.bySequence, 8);
   printGroups("  by_narrative", analysis.groups.byNarrative, 10);
   printGroups("  by_auction_mode", analysis.groups.byAuctionMode, 8);
+  printGroups("  by_auction_phase", analysis.groups.byAuctionPhase, 8);
   printGroups("  by_orderflow_evidence", analysis.groups.byOrderflowEvidence, 10);
   printGroups("  by_entry_timing", analysis.groups.byEntryTiming, 8);
   printGroups("  by_first_reaction", analysis.groups.byFirstReaction, 8);

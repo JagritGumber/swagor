@@ -8,8 +8,17 @@ export type ReaderAuctionModeName =
   | "initiative-expansion"
   | "violent-unknown";
 
+export type ReaderAuctionPhase =
+  | "balanced-wait"
+  | "failed-expansion-fade"
+  | "initiative-acceptance"
+  | "poc-gravity-rotation"
+  | "value-edge-rotation"
+  | "violent-chop";
+
 export type ReaderAuctionMode = {
   mode: ReaderAuctionModeName;
+  phase: ReaderAuctionPhase;
   allowedDirection: Side | "both" | "none";
   reasons: string[];
 };

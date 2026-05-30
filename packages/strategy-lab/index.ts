@@ -46,7 +46,7 @@ export * from "./reader-live/reader-rejection-edge-for";
 export * from "./reader-live/combine-auction-orderflow";
 export type { ReaderSequence, ReaderSequencePhase } from "./reader-sequence/types";
 export { blocksImmediateEntry, sequenceForPlan } from "./reader-sequence/sequence-phase-for-plan";
-export type { ReaderAuctionMode, ReaderAuctionModeName, ReaderAuctionModeState } from "./reader-auction-mode/types";
+export type { ReaderAuctionMode, ReaderAuctionModeName, ReaderAuctionModeState, ReaderAuctionPhase } from "./reader-auction-mode/types";
 export { createReaderAuctionModeState } from "./reader-auction-mode/create-reader-auction-mode-state";
 export { readReaderAuctionMode } from "./reader-auction-mode/read-reader-auction-mode";
 export type {

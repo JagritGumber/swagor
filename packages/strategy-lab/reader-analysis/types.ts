@@ -104,6 +104,7 @@ export type ReaderAnalysisReport = {
     bySequence: ReaderAnalysisGroup[];
     byNarrative: ReaderAnalysisGroup[];
     byAuctionMode: ReaderAnalysisGroup[];
+    byAuctionPhase: ReaderAnalysisGroup[];
     byOrderflowEvidence: ReaderAnalysisGroup[];
     bySideLocation: ReaderAnalysisGroup[];
     byEntryTiming: ReaderAnalysisGroup[];

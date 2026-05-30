@@ -11,6 +11,7 @@ describe("readReaderAuctionMode", () => {
     const mode = readReaderAuctionMode({ auction: auction("value-high"), orderflow: orderflow("balanced"), state });
 
     expect(mode.mode).toBe("failed-expansion");
+    expect(mode.phase).toBe("failed-expansion-fade");
     expect(mode.allowedDirection).toBe("short");
   });
 
@@ -20,13 +21,29 @@ describe("readReaderAuctionMode", () => {
     const mode = readReaderAuctionMode({ auction: auction("near-poc"), orderflow: orderflow("balanced"), state });
 
     expect(mode.mode).toBe("poc-gravity");
+    expect(mode.phase).toBe("poc-gravity-rotation");
   });
 
   test("marks initiative expansion when value is accepted with pressure", () => {
     const mode = readReaderAuctionMode({ auction: auction("below-value"), orderflow: orderflow("sell-pressure") });
 
     expect(mode.mode).toBe("initiative-expansion");
+    expect(mode.phase).toBe("initiative-acceptance");
     expect(mode.allowedDirection).toBe("short");
+  });
+
+  test("labels balanced edge reads as value-edge rotation", () => {
+    const mode = readReaderAuctionMode({ auction: auction("value-low"), orderflow: orderflow("balanced") });
+
+    expect(mode.mode).toBe("balanced-value");
+    expect(mode.phase).toBe("value-edge-rotation");
+  });
+
+  test("labels near POC reads as balanced wait", () => {
+    const mode = readReaderAuctionMode({ auction: auction("near-poc"), orderflow: orderflow("balanced") });
+
+    expect(mode.mode).toBe("balanced-value");
+    expect(mode.phase).toBe("balanced-wait");
   });
 });
 

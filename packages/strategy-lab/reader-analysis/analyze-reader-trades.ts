@@ -36,6 +36,7 @@ export function analyzeReaderTrades(input: AnalyzeReaderTradesInput): ReaderAnal
       bySequence: groupedBy(judgeable, sequenceKey),
       byNarrative: groupedBy(judgeable, narrativeKey),
       byAuctionMode: groupedBy(judgeable, auctionModeKey),
+      byAuctionPhase: groupedBy(judgeable, auctionPhaseKey),
       byOrderflowEvidence: groupedBy(judgeable, orderflowEvidenceKey),
       bySideLocation: groupedBy(judgeable, sideLocationKey),
       byEntryTiming: groupedBy(judgeable, (trade) => trade.metrics.entryTiming),
@@ -99,7 +100,7 @@ function applyNarrativeFailureState(trades: ReaderAnalyzedTrade[]): ReaderAnalyz
               verdict: "wrong" as const,
               invalidatingEvidence: unique([
                 ...trade.narrativeAudit.invalidatingEvidence,
-                "same narrative thesis has already failed twice this session",
+                "same narrative thesis has already failed twice in this analysis chain",
               ]),
             },
           }
@@ -379,6 +380,12 @@ function narrativeKey(trade: ReaderAnalyzedTrade): string {
 function auctionModeKey(trade: ReaderAnalyzedTrade): string {
   return trade.dossier.trade.auctionMode?.mode
     ?? trade.dossier.auctionMode?.mode
+    ?? "unknown";
+}
+
+function auctionPhaseKey(trade: ReaderAnalyzedTrade): string {
+  return trade.dossier.trade.auctionMode?.phase
+    ?? trade.dossier.auctionMode?.phase
     ?? "unknown";
 }
 
