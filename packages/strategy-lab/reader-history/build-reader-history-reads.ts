@@ -4,6 +4,7 @@ import { readOrderflowWindow } from "../orderflow/read-orderflow-window";
 import { updateOrderflowWindow } from "../orderflow/update-orderflow-window";
 import { readMarketRegime } from "../market-regime/read-market-regime";
 import { readMarketAuction } from "../read/read-market-auction";
+import { createReaderAuctionModeState } from "../reader-auction-mode/create-reader-auction-mode-state";
 import { combineAuctionOrderflow } from "../reader-live/combine-auction-orderflow";
 import type { OrderflowEvent, OrderflowTrade } from "../orderflow/types";
 import type { Candle } from "../types";
@@ -28,6 +29,7 @@ export function buildReaderHistoryReads(input: ReaderHistoryInput): ReaderHistor
   const window = createOrderflowWindow(input.orderflowWindowMs ?? 60_000);
   const profileWindowMs = input.auctionConfig?.profileTradeWindowMs ?? (input.auctionConfig?.profileCandles ?? 120) * input.candleIntervalMs;
   const profileWindow = createOrderflowWindow(profileWindowMs);
+  const auctionModeState = createReaderAuctionModeState();
   const steps: ReaderHistoryStep[] = [];
   let candleIndex = 0;
   let eventIndex = 0;
@@ -65,6 +67,7 @@ export function buildReaderHistoryReads(input: ReaderHistoryInput): ReaderHistor
         auction,
         orderflow,
         regime,
+        auctionModeState,
         lastClosedCandle: activeCandles[activeCandles.length - 1] ?? null,
       }),
     });

@@ -126,6 +126,55 @@ describe("buildReaderTradePlan", () => {
     expect(plan.reasons).toContain("price is near POC");
   });
 
+  test("POC gravity blocks edge plans that do not target POC", () => {
+    const plan = buildReaderTradePlan(
+      readerRead({
+        levelKind: "support",
+        location: "value-low",
+        pressure: "sell-pressure",
+        events: ["stalled-selling"],
+        stance: "possible-long",
+        profile: {
+          low: 90,
+          high: 120,
+          binSize: 2,
+          poc: 99,
+          valueAreaLow: 95,
+          valueAreaHigh: 115,
+          bins: [],
+        },
+        auctionMode: {
+          mode: "poc-gravity",
+          allowedDirection: "both",
+          reasons: ["recent edge attempt returned to POC"],
+        },
+      }),
+    );
+
+    expect(plan.status).toBe("no-trade");
+    expect(plan.reasons[0]).toContain("poc-gravity");
+  });
+
+  test("failed expansion blocks chasing in the failed direction", () => {
+    const plan = buildReaderTradePlan(
+      readerRead({
+        levelKind: "support",
+        location: "value-low",
+        pressure: "sell-pressure",
+        events: ["stalled-selling"],
+        stance: "possible-long",
+        auctionMode: {
+          mode: "failed-expansion",
+          allowedDirection: "short",
+          reasons: ["long expansion failed back into value"],
+        },
+      }),
+    );
+
+    expect(plan.status).toBe("no-trade");
+    expect(plan.reasons[0]).toContain("failed-expansion");
+  });
+
   test("does not trade without profile, level, or last price", () => {
     const plan = buildReaderTradePlan(
       readerRead({
@@ -154,10 +203,12 @@ function readerRead(input: {
   stance: LiveReaderRead["stance"];
   profile?: LiveReaderRead["auction"]["profile"];
   lastPrice?: number | null;
+  auctionMode?: LiveReaderRead["auctionMode"];
 }): LiveReaderRead {
   return {
     asset: "BTC",
     stance: input.stance,
+    auctionMode: input.auctionMode,
     narrative: "test read",
     invalidation: "test invalidation",
     target: "test target",

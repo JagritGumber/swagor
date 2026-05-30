@@ -38,8 +38,12 @@ function baseNoTradeReasons(read: LiveReaderRead, narrative: ReaderNarrative): s
 function watchPlan(read: LiveReaderRead, narrative: ReaderNarrative): ReaderTradePlan {
   const side = narrativeSide(narrative);
   if (!side) return noTrade(read, narrative.reasons);
+  const modeBlock = auctionModeBlock(read, side, familyFor(narrative));
+  if (modeBlock.length > 0) return noTrade(read, modeBlock, familyFor(narrative));
   const levels = planLevels(read, side, narrative);
   if (!levels) return noTrade(read, ["narrative is watchable but numeric auction levels are incomplete"], familyFor(narrative));
+  const targetBlock = auctionModeTargetBlock(read, side, levels);
+  if (targetBlock.length > 0) return noTrade(read, targetBlock, familyFor(narrative));
   return actionablePlan({
     read,
     narrative,
@@ -53,8 +57,12 @@ function watchPlan(read: LiveReaderRead, narrative: ReaderNarrative): ReaderTrad
 function reclaimPlan(read: LiveReaderRead, narrative: ReaderNarrative): ReaderTradePlan {
   const side = narrativeSide(narrative);
   if (!side) return noTrade(read, narrative.reasons);
+  const modeBlock = auctionModeBlock(read, side, "reversal-reclaim");
+  if (modeBlock.length > 0) return noTrade(read, modeBlock, "reversal-reclaim");
   const levels = planLevels(read, side, narrative);
   if (!levels) return noTrade(read, ["narrative allows reclaim but numeric auction levels are incomplete"], "reversal-reclaim");
+  const targetBlock = auctionModeTargetBlock(read, side, levels);
+  if (targetBlock.length > 0) return noTrade(read, targetBlock, "reversal-reclaim");
   return actionablePlan({
     read,
     narrative,
@@ -68,8 +76,12 @@ function reclaimPlan(read: LiveReaderRead, narrative: ReaderNarrative): ReaderTr
 function readyPlan(read: LiveReaderRead, narrative: ReaderNarrative, setupFamily: ReaderSetupFamily): ReaderTradePlan {
   const side = narrativeSide(narrative);
   if (!side) return noTrade(read, narrative.reasons, setupFamily);
+  const modeBlock = auctionModeBlock(read, side, setupFamily);
+  if (modeBlock.length > 0) return noTrade(read, modeBlock, setupFamily);
   const levels = planLevels(read, side, narrative);
   if (!levels) return noTrade(read, ["narrative allows continuation but numeric auction levels are incomplete"], setupFamily);
+  const targetBlock = auctionModeTargetBlock(read, side, levels);
+  if (targetBlock.length > 0) return noTrade(read, targetBlock, setupFamily);
   return actionablePlan({
     read,
     narrative,
@@ -131,6 +143,41 @@ function planLevels(read: LiveReaderRead, side: Side, narrative: ReaderNarrative
   const target = targetFor(side, entryLow, entryHigh, profile.poc, profile.valueAreaLow, profile.valueAreaHigh);
   if (!validReclaimGeometry(side, entryLow, entryHigh, stop, target)) return null;
   return { entryLow, entryHigh, stop, target };
+}
+
+function auctionModeBlock(read: LiveReaderRead, side: Side, setupFamily: ReaderSetupFamily): string[] {
+  const auctionMode = read.auctionMode;
+  if (!auctionMode) return [];
+  if (auctionMode.mode === "violent-unknown") return modeReasons(read, "violent auction mode blocks ready entries");
+  if (auctionMode.allowedDirection !== "both" && auctionMode.allowedDirection !== side) {
+    return modeReasons(read, `${auctionMode.mode} does not allow ${side} plans`);
+  }
+  if (auctionMode.mode === "failed-expansion" && setupFamily === "breakout-acceptance") {
+    return modeReasons(read, "failed expansion blocks breakout chasing");
+  }
+  return [];
+}
+
+function auctionModeTargetBlock(read: LiveReaderRead, side: Side, levels: PlanLevels): string[] {
+  const auctionMode = read.auctionMode;
+  if (!auctionMode || (auctionMode.mode !== "balanced-value" && auctionMode.mode !== "poc-gravity")) return [];
+  if (targetMovesTowardPoc(read, side, levels)) return [];
+  return modeReasons(read, `${auctionMode.mode} only allows edge-to-POC rotations`);
+}
+
+function targetMovesTowardPoc(read: LiveReaderRead, side: Side, levels: PlanLevels): boolean {
+  const profile = read.auction.profile;
+  if (!profile) return false;
+  const tolerance = profile.binSize / 2;
+  if (!Number.isFinite(tolerance) || tolerance <= 0) return false;
+  if (side === "long") {
+    return profile.poc > levels.entryHigh && Math.abs(levels.target - profile.poc) <= tolerance;
+  }
+  return profile.poc < levels.entryLow && Math.abs(levels.target - profile.poc) <= tolerance;
+}
+
+function modeReasons(read: LiveReaderRead, reason: string): string[] {
+  return dedupe([reason, ...(read.auctionMode?.reasons ?? [])]);
 }
 
 function breakoutLevels(read: LiveReaderRead, side: Side, zoneHalfWidth: number): PlanLevels | null {

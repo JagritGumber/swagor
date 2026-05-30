@@ -122,6 +122,7 @@ function entryFromPlan(
     stop: plan.stop,
     target: plan.target,
     confidence: plan.confidence,
+    auctionMode: result.read.auctionMode,
     narrative: plan.narrative,
     narrativeKey: readerNarrativeKeyFor({
       asset: plan.asset,

@@ -1,6 +1,7 @@
 import type { OrderflowEvidence, OrderflowTapeContext, OrderflowTrade } from "../orderflow/types";
 import type { AuctionLocation, PriceLevel } from "../read/types";
 import type { ReaderMarketRegime } from "../market-regime/types";
+import type { ReaderAuctionMode } from "../reader-auction-mode/types";
 import type { ReaderHistoryStep } from "../reader-history/types";
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultUpdate } from "../reader-result/types";
@@ -22,6 +23,7 @@ export type ReaderFormationRead = {
   at: number;
   lastPrice: number | null;
   stance: LiveReaderRead["stance"];
+  auctionMode?: ReaderAuctionMode;
   narrative?: LiveReaderRead["narrativeRead"];
   regime?: ReaderMarketRegime;
   auction: {

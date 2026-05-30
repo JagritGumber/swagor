@@ -90,6 +90,7 @@ function tradeDossier(input: {
       sequenceReason: input.entry.sequenceReason,
     },
     auction: compactAuction(setupResult.read.auction),
+    auctionMode: setupResult.read.auctionMode,
     orderflow: setupResult.read.orderflow,
     candles: candleWindowForTrade({
       candles: input.candles,

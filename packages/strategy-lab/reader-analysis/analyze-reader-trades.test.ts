@@ -60,7 +60,7 @@ describe("analyzeReaderTrades", () => {
     expect(report.trades[0]?.narrativeAudit.invalidatingEvidence).toContain("first post-entry read moved against the thesis");
   });
 
-  test("marks repeated same-session thesis failure as wrong narrative", () => {
+  test("marks repeated thesis failure as wrong narrative", () => {
     const report = analyzeReaderTrades({
       trades: [
         trade({ r: -1, afterPrices: [99], entryAtOffsetMs: 0 }),

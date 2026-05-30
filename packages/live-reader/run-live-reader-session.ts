@@ -5,6 +5,7 @@ import { readOrderflowWindow } from "../strategy-lab/orderflow/read-orderflow-wi
 import { updateOrderflowWindow } from "../strategy-lab/orderflow/update-orderflow-window";
 import { readMarketRegime } from "../strategy-lab/market-regime/read-market-regime";
 import { readMarketAuction } from "../strategy-lab/read/read-market-auction";
+import { createReaderAuctionModeState } from "../strategy-lab/reader-auction-mode/create-reader-auction-mode-state";
 import { combineAuctionOrderflow } from "../strategy-lab/reader-live/combine-auction-orderflow";
 import { createReaderSetupMemory } from "../strategy-lab/reader-setup/create-reader-setup-memory";
 import { readMarketSetup } from "../strategy-lab/reader-setup/read-market-setup";
@@ -19,6 +20,7 @@ export async function runLiveReaderSession(input: LiveReaderSessionInput): Promi
   let auctionRefresh: Promise<void> | null = null;
   const auctionRefreshMs = input.auctionRefreshMs ?? intervalMs(input.interval);
   const window = createOrderflowWindow(input.orderflowWindowMs ?? 60_000);
+  const auctionModeState = createReaderAuctionModeState();
   const readIntervalMs = input.readIntervalMs ?? 1000;
   const setupMemory = input.setupMemory ?? createReaderSetupMemory({
     ttlMs: input.setupConfig?.setupTtlMs ?? undefined,
@@ -67,6 +69,7 @@ export async function runLiveReaderSession(input: LiveReaderSessionInput): Promi
       auction: liveAuction,
       orderflow,
       regime: readMarketRegime({ candles: auctionCandles, now }),
+      auctionModeState,
       lastClosedCandle: auctionCandles[auctionCandles.length - 1] ?? null,
     });
     const setup = readMarketSetup({

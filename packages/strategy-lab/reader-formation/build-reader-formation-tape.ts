@@ -55,6 +55,7 @@ function formationRead(input: {
     at: input.at,
     lastPrice: orderflow.lastPrice,
     stance: input.setupResult.read.stance,
+    auctionMode: input.setupResult.read.auctionMode,
     narrative: input.setupResult.read.narrativeRead,
     regime: input.setupResult.read.regime,
     auction: {

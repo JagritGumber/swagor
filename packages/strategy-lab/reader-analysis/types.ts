@@ -103,6 +103,7 @@ export type ReaderAnalysisReport = {
     bySetupFamilyRegime: ReaderAnalysisGroup[];
     bySequence: ReaderAnalysisGroup[];
     byNarrative: ReaderAnalysisGroup[];
+    byAuctionMode: ReaderAnalysisGroup[];
     byOrderflowEvidence: ReaderAnalysisGroup[];
     bySideLocation: ReaderAnalysisGroup[];
     byEntryTiming: ReaderAnalysisGroup[];

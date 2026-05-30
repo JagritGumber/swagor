@@ -1,5 +1,6 @@
 import type { ReaderSetupResult } from "../reader-setup/types";
 import type { ReaderMarketRegime } from "../market-regime/types";
+import type { ReaderAuctionMode } from "../reader-auction-mode/types";
 import type { ReaderNarrative } from "../reader-narrative/types";
 import type { ReaderActionableTradePlan } from "../trade-plan/types";
 
@@ -18,6 +19,7 @@ export type ReaderResultEntry = {
   stop: number;
   target: number;
   confidence: number;
+  auctionMode?: ReaderAuctionMode;
   narrative?: ReaderNarrative;
   narrativeKey?: string | null;
   reasons: string[];

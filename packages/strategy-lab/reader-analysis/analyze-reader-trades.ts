@@ -35,6 +35,7 @@ export function analyzeReaderTrades(input: AnalyzeReaderTradesInput): ReaderAnal
       bySetupFamilyRegime: groupedBy(judgeable, setupFamilyRegimeKey),
       bySequence: groupedBy(judgeable, sequenceKey),
       byNarrative: groupedBy(judgeable, narrativeKey),
+      byAuctionMode: groupedBy(judgeable, auctionModeKey),
       byOrderflowEvidence: groupedBy(judgeable, orderflowEvidenceKey),
       bySideLocation: groupedBy(judgeable, sideLocationKey),
       byEntryTiming: groupedBy(judgeable, (trade) => trade.metrics.entryTiming),
@@ -373,6 +374,12 @@ function sequenceKey(trade: ReaderAnalyzedTrade): string {
 
 function narrativeKey(trade: ReaderAnalyzedTrade): string {
   return narrativeKeyForDossier(trade.dossier);
+}
+
+function auctionModeKey(trade: ReaderAnalyzedTrade): string {
+  return trade.dossier.trade.auctionMode?.mode
+    ?? trade.dossier.auctionMode?.mode
+    ?? "unknown";
 }
 
 function narrativeKeyForDossier(dossier: ReaderTradeDossier): string {

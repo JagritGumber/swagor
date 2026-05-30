@@ -1,5 +1,6 @@
 import type { LiveReaderRead } from "../reader-live/types";
 import type { AuctionLocation, PriceLevel } from "../read/types";
+import type { ReaderAuctionMode } from "../reader-auction-mode/types";
 import type { ReaderExecutionDiagnosis, ReaderExecutionQuality, ReaderExecutionQualityReport } from "../reader-execution-quality/types";
 import type { ReaderFormationRead } from "../reader-formation/types";
 import type { ReaderHistoryStep } from "../reader-history/types";
@@ -105,6 +106,7 @@ export type ReaderTradeDossier = {
     invalidation: string | null;
     target: string | null;
   };
+  auctionMode?: ReaderAuctionMode;
   orderflow: LiveReaderRead["orderflow"];
   candles: ReaderCandleEvidence;
   execution: ReaderTradeExecutionQuality;

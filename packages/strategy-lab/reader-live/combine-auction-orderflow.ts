@@ -1,6 +1,8 @@
 import type { AuctionRead } from "../read/types";
 import type { OrderflowRead } from "../orderflow/types";
 import type { ReaderMarketRegime } from "../market-regime/types";
+import { readReaderAuctionMode } from "../reader-auction-mode/read-reader-auction-mode";
+import type { ReaderAuctionMode, ReaderAuctionModeState } from "../reader-auction-mode/types";
 import { readReaderNarrative } from "../reader-narrative/read-reader-narrative";
 import type { ReaderNarrative } from "../reader-narrative/types";
 import type { Candle } from "../types";
@@ -11,13 +13,22 @@ export function combineAuctionOrderflow(input: {
   orderflow: OrderflowRead;
   regime: ReaderMarketRegime;
   lastClosedCandle: Candle | null;
+  auctionModeState?: ReaderAuctionModeState | null;
+  auctionMode?: ReaderAuctionMode;
 }): LiveReaderRead {
   const narrativeRead = readReaderNarrative(input);
+  const auctionMode = input.auctionMode ?? readReaderAuctionMode({
+    auction: input.auction,
+    orderflow: input.orderflow,
+    regime: input.regime,
+    state: input.auctionModeState,
+  });
   const stance = stanceFor(narrativeRead);
   return {
     asset: input.auction.asset,
     auction: input.auction,
     orderflow: input.orderflow,
+    auctionMode,
     regime: input.regime,
     lastClosedCandle: input.lastClosedCandle,
     stance,
