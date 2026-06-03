@@ -50,6 +50,7 @@ function printReport(report: ReaderCandidateLearnerReport): void {
   printLessons("future_avoid", report.futureAvoidCandidates, 8);
   printLessons("noise", report.noiseCandidates, 8);
   printLessons("geometry_artifacts", report.geometryArtifactCandidates, 8);
+  printLessons("thin_sample", report.thinSampleCandidates, 8);
   printLessons("untradeable_balance", report.untradeableBalanceCandidates, 5);
   printLessons("unjudgeable", report.unjudgeableCandidates, 5);
 }
@@ -92,12 +93,18 @@ function markdownFor(report: ReaderCandidateLearnerReport): string {
     `Average result R: ${formatNullableR(report.summary.avgResultR)}`,
     `Average max favorable R: ${formatNullableR(report.summary.avgMaxFavorableR)}`,
     `Average max adverse R: ${formatNullableR(report.summary.avgMaxAdverseR)}`,
+    `Median target R: ${formatNullableR(report.summary.medianTargetR)}`,
+    `Median target bps: ${formatNullableBps(report.summary.medianTargetBps)}`,
+    `Median invalidation bps: ${formatNullableBps(report.summary.medianInvalidationBps)}`,
+    `Median result R: ${formatNullableR(report.summary.medianResultR)}`,
+    `Minimum invalidation bps: ${formatNullableBps(report.summary.minInvalidationBps)}`,
     "",
     sectionFor("Paper Promote Candidates", report.paperPromoteCandidates),
     sectionFor("Builder Too Strict Candidates", report.builderTooStrictCandidates),
     sectionFor("Future Avoid Candidates", report.futureAvoidCandidates),
     sectionFor("Noise Candidates", report.noiseCandidates),
     sectionFor("Geometry Artifact Candidates", report.geometryArtifactCandidates),
+    sectionFor("Thin Sample Candidates", report.thinSampleCandidates),
     sectionFor("Untradeable Balance Candidates", report.untradeableBalanceCandidates),
     sectionFor("Unjudgeable Candidates", report.unjudgeableCandidates),
   ].join("\n");
@@ -125,6 +132,11 @@ function sectionFor(title: string, lessons: ReaderCandidateLearnerLesson[]): str
     lines.push(`Average result R: ${formatNullableR(lesson.summary.avgResultR)}`);
     lines.push(`Average max favorable R: ${formatNullableR(lesson.summary.avgMaxFavorableR)}`);
     lines.push(`Average max adverse R: ${formatNullableR(lesson.summary.avgMaxAdverseR)}`);
+    lines.push(`Median target R: ${formatNullableR(lesson.summary.medianTargetR)}`);
+    lines.push(`Median target bps: ${formatNullableBps(lesson.summary.medianTargetBps)}`);
+    lines.push(`Median invalidation bps: ${formatNullableBps(lesson.summary.medianInvalidationBps)}`);
+    lines.push(`Median result R: ${formatNullableR(lesson.summary.medianResultR)}`);
+    lines.push(`Minimum invalidation bps: ${formatNullableBps(lesson.summary.minInvalidationBps)}`);
     if (lesson.sampleWarning) lines.push(`Sample: ${lesson.sampleWarning}`);
     lines.push(`Reasons: ${lesson.reasons.join(" | ") || "none"}`);
     lines.push(`Refs: ${lesson.refs.join(", ")}`);
@@ -148,6 +160,10 @@ function summaryLine(summary: ReaderCandidateLearnerReport["summary"]): string {
     `avgTargetR=${formatNullableR(summary.avgTargetR)}`,
     `avgTargetBps=${formatNullableBps(summary.avgTargetBps)}`,
     `avgInvalidationBps=${formatNullableBps(summary.avgInvalidationBps)}`,
+    `medianResultR=${formatNullableR(summary.medianResultR)}`,
+    `medianTargetR=${formatNullableR(summary.medianTargetR)}`,
+    `medianInvalidationBps=${formatNullableBps(summary.medianInvalidationBps)}`,
+    `minInvalidationBps=${formatNullableBps(summary.minInvalidationBps)}`,
     `avgMAE=${formatNullableR(summary.avgMaxAdverseR)}`,
     `invalidGeometry=${summary.invalidGeometry}`,
     `executed=${summary.executed}`,

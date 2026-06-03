@@ -25,6 +25,7 @@ export function learnReaderCandidateTapes(input: ReaderCandidateLearnerInput): R
     builderTooStrictCandidates: ranked(lessons.filter((lesson) => lesson.guidance === "builder-too-strict-candidate"), "best"),
     noiseCandidates: ranked(lessons.filter((lesson) => lesson.guidance === "noise-candidate"), "worst"),
     geometryArtifactCandidates: lessons.filter((lesson) => lesson.guidance === "geometry-artifact-candidate"),
+    thinSampleCandidates: ranked(lessons.filter((lesson) => lesson.guidance === "thin-sample-candidate"), "best"),
     untradeableBalanceCandidates: lessons.filter((lesson) => lesson.guidance === "untradeable-balance-candidate"),
     unjudgeableCandidates: lessons.filter((lesson) => lesson.guidance === "unjudgeable-candidate"),
   };
@@ -71,7 +72,7 @@ function lessonFor(input: {
   const sampleWarning = summary.judgeable < input.minimumSample
     ? `only ${summary.judgeable} judgeable candidates; use as research, not execution permission`
     : null;
-  const guidance = guidanceFor({ group: input.group, summary });
+  const guidance = guidanceFor({ group: input.group, summary, minimumSample: input.minimumSample });
   return {
     key: input.group.key,
     guidance,
@@ -85,10 +86,12 @@ function lessonFor(input: {
 function guidanceFor(input: {
   group: ReaderCandidateLearnerGroup;
   summary: ReaderCandidateLearnerSummary;
+  minimumSample: number;
 }): ReaderCandidateLearnerGuidance {
   if (input.group.candidates.every(isUntradeableBalanceCandidate)) return "untradeable-balance-candidate";
   if (input.summary.judgeable === 0) return "unjudgeable-candidate";
   if (input.summary.invalidGeometry > 0) return "geometry-artifact-candidate";
+  if (input.summary.judgeable < input.minimumSample) return "thin-sample-candidate";
   if (input.summary.worked > input.summary.invalidated && input.group.candidates.some(isStrictBuilderResponse)) {
     return "builder-too-strict-candidate";
   }
@@ -120,8 +123,13 @@ function reasonsFor(input: {
   if (input.summary.avgTargetR !== null) reasons.push(`average target ${formatR(input.summary.avgTargetR)}`);
   if (input.summary.avgTargetBps !== null) reasons.push(`average target ${formatBps(input.summary.avgTargetBps)}`);
   if (input.summary.avgInvalidationBps !== null) reasons.push(`average invalidation ${formatBps(input.summary.avgInvalidationBps)}`);
+  if (input.summary.medianResultR !== null) reasons.push(`median result ${formatR(input.summary.medianResultR)}`);
+  if (input.summary.medianTargetR !== null) reasons.push(`median target ${formatR(input.summary.medianTargetR)}`);
+  if (input.summary.medianInvalidationBps !== null) reasons.push(`median invalidation ${formatBps(input.summary.medianInvalidationBps)}`);
+  if (input.summary.minInvalidationBps !== null) reasons.push(`minimum invalidation ${formatBps(input.summary.minInvalidationBps)}`);
   if (input.group.candidates.some(isStrictBuilderResponse)) reasons.push("builder did not execute this candidate family");
   if (input.guidance === "geometry-artifact-candidate") reasons.push("removed from promotion because target/stop geometry is not clean");
+  if (input.guidance === "thin-sample-candidate") reasons.push("removed from promotion because the sample is too thin");
   if (input.guidance === "untradeable-balance-candidate") reasons.push("removed from guidance because balanced POC chop has no trade direction");
   if (input.guidance === "unjudgeable-candidate") reasons.push("candidate family lacks directional geometry or profile/level context");
   return reasons;
@@ -152,6 +160,11 @@ function summaryFor(candidates: ReaderCandidate[]): ReaderCandidateLearnerSummar
     avgResultR: average(candidates.map((candidate) => candidate.outcome.resultR)),
     avgMaxFavorableR: average(candidates.map((candidate) => candidate.outcome.maxFavorableR)),
     avgMaxAdverseR: average(candidates.map((candidate) => candidate.outcome.maxAdverseR)),
+    medianTargetR: median(candidates.map((candidate) => candidate.outcome.targetR)),
+    medianTargetBps: median(candidates.map((candidate) => candidate.outcome.targetBps)),
+    medianInvalidationBps: median(candidates.map((candidate) => candidate.outcome.invalidationBps)),
+    medianResultR: median(candidates.map((candidate) => candidate.outcome.resultR)),
+    minInvalidationBps: minimum(candidates.map((candidate) => candidate.outcome.invalidationBps)),
   };
 }
 
@@ -177,6 +190,7 @@ function average(values: Array<number | null>): number | null {
 }
 
 function scoreFor(summary: ReaderCandidateLearnerSummary): number {
+  if (summary.medianResultR !== null) return summary.medianResultR;
   if (summary.avgResultR !== null) return summary.avgResultR;
   return summary.workedRate - (summary.invalidGeometry / Math.max(summary.candidates, 1));
 }
@@ -187,4 +201,26 @@ function formatR(value: number): string {
 
 function formatBps(value: number): string {
   return `${value.toFixed(4).replace(/\.?0+$/, "")}bps`;
+}
+
+function median(values: Array<number | null>): number | null {
+  const finiteValues = sortedFinite(values);
+  if (finiteValues.length === 0) return null;
+  const middle = Math.floor(finiteValues.length / 2);
+  if (finiteValues.length % 2 === 1) return finiteValues[middle] ?? null;
+  const left = finiteValues[middle - 1];
+  const right = finiteValues[middle];
+  if (left === undefined || right === undefined) return null;
+  return round((left + right) / 2);
+}
+
+function minimum(values: Array<number | null>): number | null {
+  const finiteValues = sortedFinite(values);
+  return finiteValues[0] ?? null;
+}
+
+function sortedFinite(values: Array<number | null>): number[] {
+  return values
+    .filter((value): value is number => value !== null && Number.isFinite(value))
+    .sort((left, right) => left - right);
 }

@@ -58,7 +58,9 @@ function candidateDraftFor(
   const family = familyFor(read, setup);
   if (!family) return null;
   const side = sideFor(read, setup, family);
+  const entryPrice = read.orderflow.lastPrice;
   const geometry = geometryFor(read, setup, side);
+  if (!isRecordableCandidate({ family, side, entryPrice, geometry })) return null;
   const response = builderResponseFor(setup, resultUpdate);
 
   return {
@@ -66,7 +68,7 @@ function candidateDraftFor(
     observedAt,
     family,
     side,
-    entryPrice: read.orderflow.lastPrice,
+    entryPrice,
     target: geometry.target,
     invalidation: geometry.invalidation,
     reader: {
@@ -93,6 +95,24 @@ function candidateDraftFor(
       reasons: setup.plan.reasons,
     },
   };
+}
+
+function isRecordableCandidate(input: {
+  family: ReaderCandidateFamily;
+  side: Side | null;
+  entryPrice: number | null;
+  geometry: { target: number | null; invalidation: number | null };
+}): boolean {
+  if (input.family === "poc-chop-no-trade" && input.side === null) return true;
+  if (!input.side || input.entryPrice === null || input.geometry.target === null || input.geometry.invalidation === null) {
+    return false;
+  }
+  return isTradeableGeometry({
+    side: input.side,
+    entryPrice: input.entryPrice,
+    target: input.geometry.target,
+    invalidation: input.geometry.invalidation,
+  });
 }
 
 function familyFor(read: LiveReaderRead, setup: ReaderSetupResult): ReaderCandidateFamily | null {
@@ -144,6 +164,16 @@ function geometryFor(
     target: profile.poc < read.auction.level.price ? profile.poc : profile.valueAreaLow,
     invalidation: read.auction.level.price,
   };
+}
+
+function isTradeableGeometry(input: {
+  side: Side;
+  entryPrice: number;
+  target: number;
+  invalidation: number;
+}): boolean {
+  return signedMove(input.side, input.entryPrice, input.target) > 0
+    && signedMove(input.side, input.invalidation, input.entryPrice) > 0;
 }
 
 function builderResponseFor(

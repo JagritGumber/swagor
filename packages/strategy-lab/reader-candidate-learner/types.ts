@@ -6,6 +6,7 @@ export type ReaderCandidateLearnerGuidance =
   | "builder-too-strict-candidate"
   | "noise-candidate"
   | "geometry-artifact-candidate"
+  | "thin-sample-candidate"
   | "untradeable-balance-candidate"
   | "unjudgeable-candidate";
 
@@ -38,6 +39,11 @@ export type ReaderCandidateLearnerSummary = {
   avgResultR: number | null;
   avgMaxFavorableR: number | null;
   avgMaxAdverseR: number | null;
+  medianTargetR: number | null;
+  medianTargetBps: number | null;
+  medianInvalidationBps: number | null;
+  medianResultR: number | null;
+  minInvalidationBps: number | null;
 };
 
 export type ReaderCandidateLearnerLesson = {
@@ -56,6 +62,7 @@ export type ReaderCandidateLearnerReport = {
   builderTooStrictCandidates: ReaderCandidateLearnerLesson[];
   noiseCandidates: ReaderCandidateLearnerLesson[];
   geometryArtifactCandidates: ReaderCandidateLearnerLesson[];
+  thinSampleCandidates: ReaderCandidateLearnerLesson[];
   untradeableBalanceCandidates: ReaderCandidateLearnerLesson[];
   unjudgeableCandidates: ReaderCandidateLearnerLesson[];
 };
