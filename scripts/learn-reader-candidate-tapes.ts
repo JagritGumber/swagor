@@ -13,7 +13,7 @@ function arg(name: string, fallback?: string): string | undefined {
 }
 
 const tapePaths = parseList(arg("tapes"));
-const minimumSampleForGuidance = optionalPositiveInteger(arg("minimum-sample-for-guidance"), "--minimum-sample-for-guidance");
+const minimumSampleForGuidance = requiredPositiveInteger(arg("minimum-sample-for-guidance"), "--minimum-sample-for-guidance");
 const out = arg("out");
 
 if (tapePaths.length === 0) throw new Error("--tapes must include one or more candidate-tape JSON paths");
@@ -21,7 +21,7 @@ if (tapePaths.length === 0) throw new Error("--tapes must include one or more ca
 const tapes = await Promise.all(tapePaths.map(readTape));
 const report = learnReaderCandidateTapes({
   tapes,
-  ...(minimumSampleForGuidance === undefined ? {} : { minimumSampleForGuidance }),
+  minimumSampleForGuidance,
 });
 
 printReport(report);
@@ -31,8 +31,8 @@ function parseList(value: string | undefined): string[] {
   return (value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
 }
 
-function optionalPositiveInteger(value: string | undefined, name: string): number | undefined {
-  if (value === undefined || value === "") return undefined;
+function requiredPositiveInteger(value: string | undefined, name: string): number {
+  if (value === undefined || value === "") throw new Error(`${name} is required so the learner has no hidden sample policy`);
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`${name} must be a positive integer`);
   return parsed;

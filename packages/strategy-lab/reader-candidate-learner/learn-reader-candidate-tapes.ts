@@ -8,10 +8,8 @@ import type {
   ReaderCandidateLearnerSummary,
 } from "./types";
 
-const DEFAULT_MINIMUM_SAMPLE_FOR_GUIDANCE = 20;
-
 export function learnReaderCandidateTapes(input: ReaderCandidateLearnerInput): ReaderCandidateLearnerReport {
-  const minimumSample = input.minimumSampleForGuidance ?? DEFAULT_MINIMUM_SAMPLE_FOR_GUIDANCE;
+  const minimumSample = input.minimumSampleForGuidance;
   const candidates = input.tapes.flatMap((tape) => tape.assets.flatMap((asset) => asset.tape.candidates));
   const ignored = candidates.filter((candidate) => candidate.builder.response !== "executed");
   const lessons = groupedCandidates(ignored)

@@ -20,7 +20,7 @@ export type ReaderCandidateTapeFile = {
 
 export type ReaderCandidateLearnerInput = {
   tapes: ReaderCandidateTapeFile[];
-  minimumSampleForGuidance?: number;
+  minimumSampleForGuidance: number;
 };
 
 export type ReaderCandidateLearnerSummary = {
