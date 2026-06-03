@@ -5,6 +5,8 @@ import { readReaderAuctionMode } from "../reader-auction-mode/read-reader-auctio
 import type { ReaderAuctionMode, ReaderAuctionModeState } from "../reader-auction-mode/types";
 import { readReaderNarrative } from "../reader-narrative/read-reader-narrative";
 import type { ReaderNarrative } from "../reader-narrative/types";
+import { readReaderVpState } from "../reader-vp-state/read-reader-vp-state";
+import type { ReaderVpState, ReaderVpStateMemory } from "../reader-vp-state/types";
 import type { Candle } from "../types";
 import type { LiveReaderRead, LiveReaderStance } from "./types";
 
@@ -15,6 +17,8 @@ export function combineAuctionOrderflow(input: {
   lastClosedCandle: Candle | null;
   auctionModeState?: ReaderAuctionModeState | null;
   auctionMode?: ReaderAuctionMode;
+  vpStateMemory?: ReaderVpStateMemory | null;
+  vpState?: ReaderVpState;
 }): LiveReaderRead {
   const narrativeRead = readReaderNarrative(input);
   const auctionMode = input.auctionMode ?? readReaderAuctionMode({
@@ -23,12 +27,18 @@ export function combineAuctionOrderflow(input: {
     regime: input.regime,
     state: input.auctionModeState,
   });
+  const vpState = input.vpState ?? readReaderVpState({
+    auction: input.auction,
+    orderflow: input.orderflow,
+    memory: input.vpStateMemory,
+  });
   const stance = stanceFor(narrativeRead);
   return {
     asset: input.auction.asset,
     auction: input.auction,
     orderflow: input.orderflow,
     auctionMode,
+    vpState,
     regime: input.regime,
     lastClosedCandle: input.lastClosedCandle,
     stance,

@@ -1,0 +1,19 @@
+{
+  "symbol": "BTCUSDT",
+  "startMonth": "2025-05",
+  "endMonth": "2025-05",
+  "results": [
+    {
+      "month": "2025-05",
+      "mode": "utc-day",
+      "judgeableTrades": 47,
+      "unjudgeableTrades": 0,
+      "wins": 19,
+      "losses": 28,
+      "totalR": 3.6884,
+      "averageR": 0.0785,
+      "maxDrawdownR": -9.6192,
+      "decision": "ADJUST"
+    }
+  ]
+}

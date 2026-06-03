@@ -1,0 +1,22 @@
+{
+  "symbol": "BTCUSDT",
+  "startMonth": "2026-04",
+  "endMonth": "2026-04",
+  "bucketEventMode": "aggregate",
+  "auctionLevelCandles": 240,
+  "chunking": "days",
+  "results": [
+    {
+      "month": "2026-04",
+      "mode": "rolling",
+      "judgeableTrades": 52,
+      "unjudgeableTrades": 1,
+      "wins": 29,
+      "losses": 23,
+      "totalR": 0.6699,
+      "averageR": 0.0129,
+      "maxDrawdownR": -5.4484,
+      "decision": "ADJUST"
+    }
+  ]
+}

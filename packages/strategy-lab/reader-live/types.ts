@@ -3,6 +3,7 @@ import type { OrderflowRead } from "../orderflow/types";
 import type { ReaderMarketRegime } from "../market-regime/types";
 import type { ReaderAuctionMode } from "../reader-auction-mode/types";
 import type { ReaderNarrative } from "../reader-narrative/types";
+import type { ReaderVpState } from "../reader-vp-state/types";
 import type { Candle } from "../types";
 
 export type LiveReaderStance =
@@ -18,6 +19,7 @@ export type LiveReaderRead = {
   auction: AuctionRead;
   orderflow: OrderflowRead;
   auctionMode?: ReaderAuctionMode;
+  vpState?: ReaderVpState;
   regime?: ReaderMarketRegime;
   lastClosedCandle?: Candle | null;
   stance: LiveReaderStance;

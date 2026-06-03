@@ -1,19 +1,31 @@
-import { join } from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { runReaderReplayReport } from "../packages/strategy-lab/reader-report/run-reader-replay-report";
-import { intervalMs, readOrderflowEvents } from "../packages/market-data";
+import { intervalMs, readOrderflowBuckets, readOrderflowEvents } from "../packages/market-data";
 import { analyzeReaderExecutionQuality } from "../packages/strategy-lab/reader-execution-quality/analyze-reader-execution-quality";
 import { buildReaderEvidenceReport } from "../packages/strategy-lab/reader-evidence/build-reader-evidence-report";
+import { buildReaderCandidateTape } from "../packages/strategy-lab/reader-candidates/build-reader-candidate-tape";
 import { analyzeReaderTrades, summarizeReaderTrades } from "../packages/strategy-lab/reader-analysis/analyze-reader-trades";
 import { runReaderHistoryReplay } from "../packages/strategy-lab/reader-history/run-reader-history-replay";
+import { createReaderNarrativeStateMemory } from "../packages/strategy-lab/reader-narrative-state/create-reader-narrative-state-memory";
+import { createReaderResultState } from "../packages/strategy-lab/reader-result/create-reader-result-state";
+import { createReaderSetupMemory } from "../packages/strategy-lab/reader-setup/create-reader-setup-memory";
+import { summarizeReaderOutcomes } from "../packages/strategy-lab/reader-replay/summarize-reader-outcomes";
 import type { CandleInterval, HyperliquidNetwork } from "../packages/market-data";
+import type { OrderflowBucket } from "../packages/market-data";
 import type { OrderflowEvent } from "../packages/strategy-lab/orderflow/types";
 import type { ReaderExecutionQualityReport } from "../packages/strategy-lab/reader-execution-quality/types";
 import type { ReaderEvidenceReport } from "../packages/strategy-lab/reader-evidence/types";
 import type { ReaderAnalyzedTrade, ReaderAnalysisGroup, ReaderAnalysisReport, ReaderAnalysisSummary } from "../packages/strategy-lab/reader-analysis/types";
 import type { ReaderHistoryReplayResult } from "../packages/strategy-lab/reader-history/types";
+import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultUpdate } from "../packages/strategy-lab/reader-result/types";
+import type { ReaderSetupEvent, ReaderSetupResult } from "../packages/strategy-lab/reader-setup/types";
+import type { ReaderNarrativeSessionMode } from "../packages/strategy-lab/reader-narrative-state/types";
 import type { Candle } from "../packages/strategy-lab/types";
 
 type Venue = "hyperliquid" | "bybit";
+type DataMode = "raw" | "parquet";
+type BucketEventMode = "split" | "aggregate";
 
 type ReportView = ReaderHistoryReplayResult & {
   diagnostics: {
@@ -64,9 +76,26 @@ function parseInterval(value: string | undefined): CandleInterval {
   return "5m";
 }
 
+function parseDataMode(value: string | undefined): DataMode {
+  return value === "parquet" ? "parquet" : "raw";
+}
+
+function parseBucketEventMode(value: string | undefined): BucketEventMode {
+  return value === "aggregate" ? "aggregate" : "split";
+}
+
+function parseNarrativeSessionMode(value: string | undefined): ReaderNarrativeSessionMode {
+  if (value === "rolling" || value === "liquidity-session") return value;
+  return "utc-day";
+}
+
 const vmUrl = arg("vm-url", process.env.VM_URL ?? "http://localhost:8428")!;
 const orderflowRootDir = arg("orderflow-root", process.env.ORDERFLOW_ROOT_DIR ?? "orderflow-data")!;
+const marketStoreRoot = arg("market-store-root", process.env.MARKET_STORE_ROOT ?? "market-store")!;
 const venue = parseVenue(arg("venue", process.env.VENUE ?? "hyperliquid"));
+const dataMode = parseDataMode(arg("data-mode", process.env.DATA_MODE ?? "raw"));
+const bucketEventMode = parseBucketEventMode(arg("bucket-event-mode", process.env.BUCKET_EVENT_MODE ?? "split"));
+const narrativeSessionMode = parseNarrativeSessionMode(arg("narrative-session-mode", process.env.NARRATIVE_SESSION_MODE ?? "utc-day"));
 const network = parseNetwork(arg("network", process.env.NETWORK ?? "mainnet"));
 const assets = parseAssets(arg("assets", process.env.ASSETS), venue);
 const interval = parseInterval(arg("interval", process.env.INTERVAL ?? "5m"));
@@ -79,7 +108,13 @@ const minCoveragePct = Number(arg("min-coverage-pct", process.env.MIN_COVERAGE_P
 const minJudgeableTrades = Number(arg("min-judgeable-trades", process.env.MIN_JUDGEABLE_TRADES ?? "5"));
 const tradesLimit = Number(arg("trades-limit", process.env.TRADES_LIMIT ?? "20"));
 const dailyLossLimitR = Number(arg("daily-loss-limit-r", process.env.DAILY_LOSS_LIMIT_R ?? "3"));
+const auctionLevelCandles = optionalPositiveNumber(arg("auction-level-candles", process.env.AUCTION_LEVEL_CANDLES), "--auction-level-candles");
+const profileTradeSampleLimit = optionalPositiveNumber(arg("profile-trade-sample-limit", process.env.PROFILE_TRADE_SAMPLE_LIMIT), "--profile-trade-sample-limit");
+const tradeTapeOut = arg("trade-tape-out", process.env.TRADE_TAPE_OUT);
+const candidateTapeOut = arg("candidate-tape-out", process.env.CANDIDATE_TAPE_OUT);
 const summaryOnly = hasFlag("summary-only");
+const chunkMonths = hasFlag("chunk-months");
+const chunkDays = hasFlag("chunk-days");
 
 validateInput();
 
@@ -89,6 +124,8 @@ for (const asset of assets) {
 }
 
 printEvaluation(evaluations);
+await writeTradeTapeIfRequested(evaluations);
+await writeCandidateTapeIfRequested(evaluations);
 
 function parseTimeArg(name: string, envValue: string | undefined, fallback: number): number {
   const raw = arg(name);
@@ -107,6 +144,21 @@ function parseTimeArg(name: string, envValue: string | undefined, fallback: numb
     throw new Error(`${name.toUpperCase()}_MS must be unix milliseconds or ISO timestamp`);
   }
   return fallback;
+}
+
+function optionalPositiveNumber(value: string | undefined, name: string): number | undefined {
+  if (value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) throw new Error(`${name} must be a positive finite number`);
+  return parsed;
+}
+
+function auctionConfig(): { levelCandles?: number; profileTradeSampleLimit?: number } | undefined {
+  if (auctionLevelCandles === undefined && profileTradeSampleLimit === undefined) return undefined;
+  return {
+    ...(auctionLevelCandles === undefined ? {} : { levelCandles: auctionLevelCandles }),
+    ...(profileTradeSampleLimit === undefined ? {} : { profileTradeSampleLimit }),
+  };
 }
 
 function validateInput(): void {
@@ -156,9 +208,12 @@ async function runHyperliquidReport(asset: string): Promise<ReportView> {
 }
 
 async function runBybitReport(asset: string): Promise<ReportView> {
+  if (dataMode === "parquet" && (chunkMonths || chunkDays)) return runBybitChunkedParquetReport(asset);
   const candleIntervalMs = intervalMs(interval);
-  const orderflowEvents = await readBybitOrderflowEvents(asset);
-  const candles = candlesFromTrades({ asset, events: orderflowEvents, candleIntervalMs });
+  const data = dataMode === "parquet"
+    ? await readBybitCompactOrderflow(asset, candleIntervalMs)
+    : await readBybitRawOrderflow(asset, candleIntervalMs);
+  const { candles, orderflowEvents } = data;
   const replay = runReaderHistoryReplay({
     asset,
     interval,
@@ -169,8 +224,12 @@ async function runBybitReport(asset: string): Promise<ReportView> {
     orderflowWindowMs,
     startAt: startMs,
     endAt: endMs,
+    auctionConfig: auctionConfig(),
     replay: {
-      setupConfig: { setupTtlMs },
+      setupConfig: {
+        setupTtlMs,
+        narrativeState: { sessionMode: narrativeSessionMode },
+      },
     },
   });
   const executionQuality = analyzeReaderExecutionQuality({ readIntervalMs, replay });
@@ -203,7 +262,7 @@ function statusFor(orderflowEvents: number, summary: ReaderAnalysisSummary): Eva
 
 function printEvaluation(evaluations: AssetEvaluation[]): void {
   console.log("ORDERFLOW POC EVALUATION");
-  console.log(`venue=${venue} range=${iso(startMs)} -> ${iso(endMs)} assets=${assets.join(",")} interval=${interval}`);
+  console.log(`venue=${venue} dataMode=${dataMode} bucketEventMode=${bucketEventMode} narrativeSessionMode=${narrativeSessionMode} auctionLevelCandles=${auctionLevelCandles ?? "all"} profileTradeSampleLimit=${profileTradeSampleLimit ?? "default"} range=${iso(startMs)} -> ${iso(endMs)} assets=${assets.join(",")} interval=${interval}`);
   console.log(`readIntervalMs=${readIntervalMs} orderflowWindowMs=${orderflowWindowMs} minCoveragePct=${minCoveragePct} dailyLossLimitR=${dailyLossLimitR}`);
   console.log("");
 
@@ -215,6 +274,212 @@ function printEvaluation(evaluations: AssetEvaluation[]): void {
   console.log(`judgeable_trades=${final.judgeableTrades} unjudgeable_trades=${final.unjudgeableTrades} wins=${final.wins} losses=${final.losses} totalR=${formatNumber(final.totalR)} avgR=${formatNumber(final.averageR)} maxDD=${formatNumber(final.maxDrawdownR)}`);
   console.log(`guarded_judgeable=${guarded.summary.judgeableTrades} guarded_skipped=${guarded.skipped} guarded_wins=${guarded.summary.wins} guarded_losses=${guarded.summary.losses} guarded_totalR=${formatNumber(guarded.summary.totalR)} guarded_avgR=${formatNumber(guarded.summary.averageR)} guarded_maxDD=${formatNumber(guarded.summary.maxDrawdownR)}`);
   console.log(`decision=${decisionFor(evaluations, final)}`);
+}
+
+async function writeTradeTapeIfRequested(evaluations: AssetEvaluation[]): Promise<void> {
+  if (!tradeTapeOut) return;
+  await mkdir(dirname(tradeTapeOut), { recursive: true });
+  await writeFile(tradeTapeOut, `${JSON.stringify(tradeTapeFor(evaluations), null, 2)}\n`);
+  console.log(`trade_tape=${tradeTapeOut}`);
+}
+
+async function writeCandidateTapeIfRequested(evaluations: AssetEvaluation[]): Promise<void> {
+  if (!candidateTapeOut) return;
+  await mkdir(dirname(candidateTapeOut), { recursive: true });
+  await writeFile(candidateTapeOut, `${JSON.stringify(candidateTapeFor(evaluations), null, 2)}\n`);
+  console.log(`candidate_tape=${candidateTapeOut}`);
+}
+
+function candidateTapeFor(evaluations: AssetEvaluation[]) {
+  const assetsWithTapes = evaluations.map((evaluation) => ({
+    asset: evaluation.asset,
+    status: evaluation.status,
+    diagnostics: evaluation.report.diagnostics,
+    tape: buildReaderCandidateTape({
+      historySteps: evaluation.report.historySteps,
+      setupResults: evaluation.report.setupResults,
+      resultUpdates: evaluation.report.resultUpdates,
+    }),
+  }));
+  return {
+    run: runMetadata(),
+    summary: {
+      candidates: assetsWithTapes.reduce((sum, item) => sum + item.tape.summary.candidates, 0),
+      directional: assetsWithTapes.reduce((sum, item) => sum + item.tape.summary.directional, 0),
+      nonDirectional: assetsWithTapes.reduce((sum, item) => sum + item.tape.summary.nonDirectional, 0),
+      worked: assetsWithTapes.reduce((sum, item) => sum + item.tape.summary.worked, 0),
+      invalidated: assetsWithTapes.reduce((sum, item) => sum + item.tape.summary.invalidated, 0),
+      unresolved: assetsWithTapes.reduce((sum, item) => sum + item.tape.summary.unresolved, 0),
+      unjudgeable: assetsWithTapes.reduce((sum, item) => sum + item.tape.summary.unjudgeable, 0),
+      executed: assetsWithTapes.reduce((sum, item) => sum + item.tape.summary.executed, 0),
+    },
+    assets: assetsWithTapes,
+  };
+}
+
+function runMetadata() {
+  return {
+    venue,
+    network,
+    dataMode,
+    bucketEventMode,
+    narrativeSessionMode,
+    interval,
+    assets,
+    startAt: iso(startMs),
+    endAt: iso(endMs),
+    readIntervalMs,
+    orderflowWindowMs,
+    setupTtlMs,
+    minCoveragePct,
+    dailyLossLimitR,
+    auctionLevelCandles: auctionLevelCandles ?? null,
+    profileTradeSampleLimit: profileTradeSampleLimit ?? null,
+    chunking: chunkDays ? "days" : chunkMonths ? "months" : "none",
+  };
+}
+
+function tradeTapeFor(evaluations: AssetEvaluation[]) {
+  const final = finalSummary(evaluations);
+  const guarded = guardedFinalSummary(evaluations);
+  return {
+    run: runMetadata(),
+    summary: {
+      registeredTrades: final.registeredTrades,
+      judgeableTrades: final.judgeableTrades,
+      unjudgeableTrades: final.unjudgeableTrades,
+      wins: final.wins,
+      losses: final.losses,
+      totalR: final.totalR,
+      averageR: final.averageR,
+      maxDrawdownR: final.maxDrawdownR,
+      guarded: {
+        skipped: guarded.skipped,
+        judgeableTrades: guarded.summary.judgeableTrades,
+        wins: guarded.summary.wins,
+        losses: guarded.summary.losses,
+        totalR: guarded.summary.totalR,
+        averageR: guarded.summary.averageR,
+        maxDrawdownR: guarded.summary.maxDrawdownR,
+      },
+      decision: decisionFor(evaluations, final),
+    },
+    assets: evaluations.map((evaluation) => ({
+      asset: evaluation.asset,
+      status: evaluation.status,
+      diagnostics: evaluation.report.diagnostics,
+      summary: evaluation.summary,
+      groups: tradeTapeGroups(evaluation.analysis),
+      trades: evaluation.trades.map((trade, index) => tradeTapeRecord(evaluation.asset, index + 1, trade)),
+    })),
+  };
+}
+
+function tradeTapeGroups(analysis: ReaderAnalysisReport) {
+  return {
+    byDay: compactGroups(analysis.groups.byDay),
+    byRegime: compactGroups(analysis.groups.byRegime),
+    bySetupFamily: compactGroups(analysis.groups.bySetupFamily),
+    bySetupFamilyRegime: compactGroups(analysis.groups.bySetupFamilyRegime),
+    bySequence: compactGroups(analysis.groups.bySequence),
+    byNarrative: compactGroups(analysis.groups.byNarrative),
+    byAuctionMode: compactGroups(analysis.groups.byAuctionMode),
+    byAuctionPhase: compactGroups(analysis.groups.byAuctionPhase),
+    byOrderflowEvidence: compactGroups(analysis.groups.byOrderflowEvidence),
+    bySideLocation: compactGroups(analysis.groups.bySideLocation),
+    byEntryTiming: compactGroups(analysis.groups.byEntryTiming),
+    byFirstReaction: compactGroups(analysis.groups.byFirstReaction),
+    byPocRotation: compactGroups(analysis.groups.byPocRotation),
+    byQualityLabel: compactGroups(analysis.groups.byQualityLabel),
+    byNarrativeVerdict: compactGroups(analysis.groups.byNarrativeVerdict),
+    worstFamilies: compactGroups(analysis.groups.worstFamilies),
+    bestFamilies: compactGroups(analysis.groups.bestFamilies),
+    worstNarratives: compactGroups(analysis.groups.worstNarratives),
+    narrativeFailureChains: analysis.narrativeFailureChains.map((chain) => ({
+      day: chain.day,
+      key: chain.key,
+      losses: chain.losses,
+      totalR: chain.totalR,
+      tradeIndexes: chain.trades.map((trade) => analysis.trades.indexOf(trade) + 1),
+    })),
+  };
+}
+
+function compactGroups(groups: ReaderAnalysisGroup[]) {
+  return groups.map((group) => ({
+    key: group.key,
+    summary: group.summary,
+    tradeEntryTimes: group.trades.map((trade) => iso(trade.dossier.trade.entryAt)),
+  }));
+}
+
+function tradeTapeRecord(asset: string, index: number, trade: ReaderAnalyzedTrade) {
+  const dossier = trade.dossier;
+  const result = dossier.trade;
+  const read = dossier.formation.significantBeforeEntry[dossier.formation.significantBeforeEntry.length - 1];
+  const auctionMode = result.auctionMode ?? dossier.auctionMode;
+  return {
+    index,
+    asset,
+    entryAt: iso(result.entryAt),
+    side: result.side,
+    setupFamily: result.setupFamily ?? null,
+    trust: trade.trust,
+    trustReason: trade.trustReason,
+    result: {
+      entryPrice: result.entryPrice,
+      stop: result.stop,
+      target: result.target,
+      exitReason: result.exitReason ?? null,
+      exitAt: result.exitAt === undefined ? null : iso(result.exitAt),
+      exitPrice: result.exitPrice ?? null,
+      r: result.r ?? null,
+    },
+    readerState: {
+      regime: result.regime?.mode ?? null,
+      auctionLocation: read?.auction.location ?? dossier.auction.location,
+      auctionLevelKind: read?.auction.levelKind ?? dossier.auction.level?.kind ?? null,
+      auctionMode: auctionMode?.mode ?? null,
+      auctionPhase: auctionMode?.phase ?? null,
+      sequencePhase: result.sequencePhase ?? dossier.setup.sequencePhase ?? null,
+      setupPlanSource: dossier.setup.planSource,
+      setupAgeMs: dossier.setup.setupAgeMs,
+      setupReadCount: dossier.setup.readCount,
+    },
+    narrative: {
+      intent: read?.narrative?.intent ?? null,
+      direction: read?.narrative?.direction ?? null,
+      participation: read?.narrative?.participation ?? null,
+      verdict: trade.narrativeAudit.verdict,
+      key: trade.narrativeAudit.key,
+      invalidatingEvidence: trade.narrativeAudit.invalidatingEvidence,
+    },
+    vp: {
+      auction: read?.vp?.auction ?? null,
+      poc: read?.vp?.poc ?? null,
+      value: read?.vp?.value ?? null,
+    },
+    orderflow: {
+      pressure: read?.orderflow.pressure ?? dossier.orderflow.pressure,
+      events: read?.orderflow.events ?? dossier.orderflow.events,
+      tradeCount: read?.orderflow.tradeCount ?? dossier.orderflow.tradeCount,
+      largestTrade: read?.orderflow.largestTrade ?? dossier.orderflow.largestTrade,
+    },
+    diagnostics: {
+      firstReaction: trade.metrics.firstReaction,
+      firstReactionR: trade.metrics.firstReactionR,
+      observedMfeR: trade.metrics.observedMfeR,
+      observedMaeR: trade.metrics.observedMaeR,
+      timeInTradeMs: trade.metrics.timeInTradeMs,
+      pricedReadsAfterEntry: trade.metrics.pricedReadsAfterEntry,
+      entryTiming: trade.metrics.entryTiming,
+      pocRotation: trade.metrics.pocRotation,
+      labels: trade.labels,
+    },
+    reviewVerdict: null,
+    reviewNotes: null,
+    dossierVerdict: dossier.verdict,
+  };
 }
 
 function printAssetEvaluation(evaluation: AssetEvaluation): void {
@@ -247,9 +512,12 @@ function printTrade(index: number, trade: ReaderAnalyzedTrade): void {
   const readText = read
     ? `${read.narrative?.intent ?? "no-narrative"}/${read.narrative?.direction ?? "none"} ${read.auction.location} ${read.auction.levelKind ?? "level"} + ${read.orderflow.pressure} + ${read.orderflow.events.join("+") || "no-orderflow-event"}`
     : `${dossier.auction.location} ${dossier.auction.level?.kind ?? "level"} + ${dossier.orderflow.pressure} + ${dossier.orderflow.events.join("+") || "no-orderflow-event"}`;
+  const vpText = read?.vp
+    ? `${read.vp.auction}/${read.vp.poc}/${read.vp.value}`
+    : "no-vp";
   const auctionMode = result.auctionMode ?? dossier.auctionMode;
   console.log(`  ${index}. ${iso(result.entryAt)} ${result.side} family=${result.setupFamily ?? "legacy"} mode=${auctionMode?.mode ?? "unknown"}/${auctionMode?.phase ?? "unknown"} sequence=${result.sequencePhase ?? "n/a"} regime=${result.regime?.mode ?? "unknown"} entry=${formatNumber(result.entryPrice)} stop=${formatNumber(result.stop)} target=${formatNumber(result.target)} exit=${result.exitReason ?? "open"} exitPrice=${formatNullable(result.exitPrice)} r=${formatNullable(result.r)} trust=${trade.trust}`);
-  console.log(`     read=${readText}`);
+  console.log(`     read=${readText} vp=${vpText}`);
   console.log(`     diagnostics first=${trade.metrics.firstReaction} firstR=${formatNullable(trade.metrics.firstReactionR ?? undefined)} observedMfeR=${formatNullable(trade.metrics.observedMfeR ?? undefined)} observedMaeR=${formatNullable(trade.metrics.observedMaeR ?? undefined)} timing=${trade.metrics.entryTiming} poc=${trade.metrics.pocRotation} narrative=${trade.narrativeAudit.verdict} labels=${trade.labels.join("+")}`);
   if (trade.narrativeAudit.invalidatingEvidence.length > 0) {
     console.log(`     invalidating=${trade.narrativeAudit.invalidatingEvidence.join(" | ")}`);
@@ -263,15 +531,21 @@ function printReaderDiagnostics(report: ReportView): void {
   const auctionLocations = countBy(report.historySteps, (step) => step.read.auction.location);
   const auctionModes = countBy(report.historySteps, (step) => step.read.auctionMode?.mode ?? "unknown");
   const auctionPhases = countBy(report.historySteps, (step) => step.read.auctionMode?.phase ?? "unknown");
+  const vpAuction = countBy(report.historySteps, (step) => step.read.vpState?.auction ?? "unknown");
+  const vpPoc = countBy(report.historySteps, (step) => step.read.vpState?.poc ?? "unknown");
+  const vpValue = countBy(report.historySteps, (step) => step.read.vpState?.value ?? "unknown");
   const orderflowPressure = countBy(report.historySteps, (step) => step.read.orderflow.pressure);
   const narrativeIntents = countBy(report.historySteps, (step) => step.read.narrativeRead?.intent ?? "no-narrative");
   const narrativeParticipation = countBy(report.historySteps, (step) => step.read.narrativeRead?.participation ?? "unknown");
-  const topReasons = topCounts(report.setupResults.flatMap((result) => result.plan.reasons), 3);
+  const topReasons = topCounts(report.setupResults.flatMap((result) => result.plan.reasons), 8);
+  const vpBlocks = topCounts(report.setupResults.flatMap((result) => result.plan.reasons.filter((reason) => reason.startsWith("VP "))), 8);
   console.log(`reader: reads=${report.summary.totalReads} entries_opened=${report.summary.entriesOpened} outcomes=${report.summary.totalOutcomes} open=${report.open ? "yes" : "no"}`);
   console.log(`  plans=${formatCounts(planStatuses)} setup_events=${formatCounts(setupEvents)}`);
   console.log(`  auction=${formatCounts(auctionLocations)} auction_mode=${formatCounts(auctionModes)} auction_phase=${formatCounts(auctionPhases)} orderflow=${formatCounts(orderflowPressure)}`);
+  console.log(`  vp_auction=${formatCounts(vpAuction)} vp_poc=${formatCounts(vpPoc)} vp_value=${formatCounts(vpValue)}`);
   console.log(`  narrative_intent=${formatCounts(narrativeIntents)} participation=${formatCounts(narrativeParticipation)}`);
   console.log(`  top_no_trade_reasons=${topReasons.length === 0 ? "none" : topReasons.map(([reason, count]) => `${count}x ${reason}`).join(" | ")}`);
+  console.log(`  vp_blocks=${vpBlocks.length === 0 ? "none" : vpBlocks.map(([reason, count]) => `${count}x ${reason}`).join(" | ")}`);
 }
 
 function printResultAnalysis(analysis: ReaderAnalysisReport): void {
@@ -405,6 +679,155 @@ function nullableIso(time: number | null): string {
   return time === null ? "n/a" : iso(time);
 }
 
+async function readBybitRawOrderflow(asset: string, candleIntervalMs: number): Promise<{
+  candles: Candle[];
+  orderflowEvents: OrderflowEvent[];
+}> {
+  const orderflowEvents = await readBybitOrderflowEvents(asset);
+  return {
+    candles: candlesFromTrades({ asset, events: orderflowEvents, candleIntervalMs }),
+    orderflowEvents,
+  };
+}
+
+async function runBybitChunkedParquetReport(asset: string): Promise<ReportView> {
+  const candleIntervalMs = intervalMs(interval);
+  const setupMemory = createReaderSetupMemory({ ttlMs: setupTtlMs });
+  const narrativeMemory = createReaderNarrativeStateMemory();
+  const resultState = createReaderResultState();
+  const setupResults: ReaderSetupResult[] = [];
+  const setupEvents: ReaderSetupEvent[] = [];
+  const resultUpdates: ReaderResultUpdate[] = [];
+  const resultEvents: ReaderResultEvent[] = [];
+  const entries: ReaderResultEntry[] = [];
+  const historySteps: ReaderHistoryReplayResult["historySteps"] = [];
+  const evidenceTrades: ReaderEvidenceReport["trades"] = [];
+  let candleCount = 0;
+  let orderflowEventCount = 0;
+  let firstOrderflowAt: number | null = null;
+  let lastOrderflowAt: number | null = null;
+
+  for (const chunk of timeChunks(startMs, endMs)) {
+    const buckets = await readOrderflowBuckets({
+      rootDir: marketStoreRoot,
+      venue: "bybit",
+      market: "trading",
+      symbol: asset,
+      startMs: chunk.start,
+      endMs: chunk.end,
+    });
+    const candles = candlesFromBuckets({ buckets, candleIntervalMs });
+    const orderflowEvents = orderflowEventsFromBuckets({ asset, buckets, mode: bucketEventMode });
+    candleCount += candles.length;
+    orderflowEventCount += orderflowEvents.length;
+    firstOrderflowAt ??= firstEventTime(orderflowEvents);
+    lastOrderflowAt = lastEventTime(orderflowEvents) ?? lastOrderflowAt;
+
+    const replay = runReaderHistoryReplay({
+      asset,
+      interval,
+      candleIntervalMs,
+      candles,
+      orderflowEvents,
+      readIntervalMs,
+      orderflowWindowMs,
+      startAt: chunk.start,
+      endAt: chunk.end,
+      auctionConfig: auctionConfig(),
+      replay: {
+        setupMemory,
+        resultState,
+        setupConfig: {
+          setupTtlMs,
+          narrativeState: {
+            memory: narrativeMemory,
+            sessionMode: narrativeSessionMode,
+          },
+        },
+      },
+    });
+    const executionQuality = analyzeReaderExecutionQuality({ readIntervalMs, replay });
+    const evidence = buildReaderEvidenceReport({
+      candles,
+      candleIntervalMs,
+      readIntervalMs,
+      executionQuality,
+      replay,
+    });
+
+    setupResults.push(...replay.setupResults);
+    setupEvents.push(...replay.setupEvents);
+    resultUpdates.push(...replay.resultUpdates);
+    resultEvents.push(...replay.resultEvents);
+    entries.push(...replay.entries);
+    historySteps.push(...replay.historySteps);
+    evidenceTrades.push(...evidence.trades);
+    console.log(`chunk ${asset} ${iso(chunk.start)} -> ${iso(chunk.end)} candles=${candles.length} events=${orderflowEvents.length} entries=${replay.entries.length} outcomes=${replay.outcomes.length}`);
+  }
+
+  const outcomes = resultState.outcomes;
+  const summary = summarizeReaderOutcomes({
+    totalReads: historySteps.length,
+    totalEntries: entries.length,
+    entriesOpened: entries.length,
+    outcomes,
+  });
+  const report = {
+    setupResults,
+    setupEvents,
+    resultUpdates,
+    resultEvents,
+    entries,
+    outcomes,
+    open: resultState.open,
+    summary,
+    setupMemory,
+    narrativeMemory,
+    resultState,
+    historySteps,
+  };
+  const aggregateExecutionQuality = analyzeReaderExecutionQuality({ readIntervalMs, replay: report });
+  return {
+    ...report,
+    diagnostics: {
+      candleCount,
+      orderflowEventCount,
+      firstOrderflowAt,
+      lastOrderflowAt,
+    },
+    executionQuality: aggregateExecutionQuality,
+    evidence: {
+      summary,
+      dataQuality: {
+        tradeCount: evidenceTrades.length,
+        missingPriceReads: evidenceTrades.reduce((sum, trade) => sum + trade.execution.missingPriceReads, 0),
+        degradedTrades: evidenceTrades.filter((trade) => trade.execution.quality === "degraded").length,
+        unusableTrades: evidenceTrades.filter((trade) => trade.execution.quality === "unusable").length,
+        replayQuality: aggregateExecutionQuality.replayQuality,
+      },
+      trades: evidenceTrades,
+    },
+  };
+}
+
+async function readBybitCompactOrderflow(asset: string, candleIntervalMs: number): Promise<{
+  candles: Candle[];
+  orderflowEvents: OrderflowEvent[];
+}> {
+  const buckets = await readOrderflowBuckets({
+    rootDir: marketStoreRoot,
+    venue: "bybit",
+    market: "trading",
+    symbol: asset,
+    startMs,
+    endMs,
+  });
+  return {
+    candles: candlesFromBuckets({ buckets, candleIntervalMs }),
+    orderflowEvents: orderflowEventsFromBuckets({ asset, buckets, mode: bucketEventMode }),
+  };
+}
+
 async function readBybitOrderflowEvents(asset: string): Promise<OrderflowEvent[]> {
   const events: OrderflowEvent[] = [];
   for (const date of dateRange(startMs, endMs)) {
@@ -420,6 +843,156 @@ async function readBybitOrderflowEvents(asset: string): Promise<OrderflowEvent[]
   return events
     .filter((event) => eventTime(event) >= startMs && eventTime(event) <= endMs)
     .sort((a, b) => eventTime(a) - eventTime(b));
+}
+
+function candlesFromBuckets(input: {
+  buckets: OrderflowBucket[];
+  candleIntervalMs: number;
+}): Candle[] {
+  const byStart = new Map<number, Candle>();
+  for (const bucket of input.buckets) {
+    const start = Math.floor(bucket.bucketMs / input.candleIntervalMs) * input.candleIntervalMs;
+    const existing = byStart.get(start);
+    const volume = bucket.buyVolume + bucket.sellVolume;
+    if (!existing) {
+      byStart.set(start, {
+        t: start,
+        o: bucket.open,
+        h: bucket.high,
+        l: bucket.low,
+        c: bucket.close,
+        v: volume,
+      });
+      continue;
+    }
+    existing.h = Math.max(existing.h, bucket.high);
+    existing.l = Math.min(existing.l, bucket.low);
+    existing.c = bucket.close;
+    existing.v += volume;
+  }
+  return [...byStart.values()].sort((a, b) => a.t - b.t);
+}
+
+function orderflowEventsFromBuckets(input: {
+  asset: string;
+  buckets: OrderflowBucket[];
+  mode: BucketEventMode;
+}): OrderflowEvent[] {
+  const events: OrderflowEvent[] = [];
+  for (const bucket of input.buckets) {
+    events.push(...bucketTradeEvents({ asset: input.asset, bucket, mode: input.mode }));
+  }
+  return events.sort((left, right) => eventTime(left) - eventTime(right));
+}
+
+function bucketTradeEvents(input: {
+  asset: string;
+  bucket: OrderflowBucket;
+  mode: BucketEventMode;
+}): OrderflowEvent[] {
+  const events: OrderflowEvent[] = [];
+  const largestSize = Math.max(0, input.bucket.largestTradeSize);
+  const largestBuy = input.bucket.largestTradeSide === "buy" ? largestSize : 0;
+  const largestSell = input.bucket.largestTradeSide === "sell" ? largestSize : 0;
+  const buyRemainder = Math.max(0, input.bucket.buyVolume - largestBuy);
+  const sellRemainder = Math.max(0, input.bucket.sellVolume - largestSell);
+  const firstSide = input.bucket.delta >= 0 ? "buy" : "sell";
+
+  if (buyRemainder > 0) {
+    events.push(...bucketSideEvents({
+      asset: input.asset,
+      idPrefix: `${input.bucket.bucketMs}:buy`,
+      side: "buy",
+      totalSize: buyRemainder,
+      maxChunkSize: largestSize,
+      price: firstSide === "buy" ? input.bucket.open : input.bucket.close,
+      time: input.bucket.bucketMs,
+      mode: input.mode,
+    }));
+  }
+  if (sellRemainder > 0) {
+    events.push(...bucketSideEvents({
+      asset: input.asset,
+      idPrefix: `${input.bucket.bucketMs}:sell`,
+      side: "sell",
+      totalSize: sellRemainder,
+      maxChunkSize: largestSize,
+      price: firstSide === "sell" ? input.bucket.open : input.bucket.close,
+      time: input.bucket.bucketMs,
+      mode: input.mode,
+    }));
+  }
+  if (largestSize > 0) {
+    events.push(bucketTradeEvent({
+      asset: input.asset,
+      id: `${input.bucket.bucketMs}:largest`,
+      side: input.bucket.largestTradeSide,
+      size: largestSize,
+      price: input.bucket.largestTradePrice || input.bucket.close,
+      time: input.bucket.bucketMs,
+    }));
+  }
+  return events;
+}
+
+function bucketSideEvents(input: {
+  asset: string;
+  idPrefix: string;
+  side: "buy" | "sell";
+  totalSize: number;
+  maxChunkSize: number;
+  price: number;
+  time: number;
+  mode: BucketEventMode;
+}): OrderflowEvent[] {
+  if (input.mode === "aggregate") {
+    return [bucketTradeEvent({
+      asset: input.asset,
+      id: `${input.idPrefix}:aggregate`,
+      side: input.side,
+      size: input.totalSize,
+      price: input.price,
+      time: input.time,
+    })];
+  }
+
+  const targetChunkSize = input.maxChunkSize > 0 ? Math.max(input.maxChunkSize * 0.75, input.totalSize / 8) : input.totalSize;
+  const chunks = Math.max(1, Math.min(8, Math.ceil(input.totalSize / targetChunkSize)));
+  const size = input.totalSize / chunks;
+  const events: OrderflowEvent[] = [];
+  for (let index = 0; index < chunks; index += 1) {
+    events.push(bucketTradeEvent({
+      asset: input.asset,
+      id: `${input.idPrefix}:${index}`,
+      side: input.side,
+      size,
+      price: input.price,
+      time: input.time,
+    }));
+  }
+  return events;
+}
+
+function bucketTradeEvent(input: {
+  asset: string;
+  id: string;
+  side: "buy" | "sell";
+  size: number;
+  price: number;
+  time: number;
+}): OrderflowEvent {
+  return {
+    type: "trade",
+    receivedAt: input.time,
+    trade: {
+      asset: input.asset,
+      side: input.side,
+      price: input.price,
+      size: input.size,
+      time: input.time,
+      id: input.id,
+    },
+  };
 }
 
 function candlesFromTrades(input: {
@@ -475,6 +1048,41 @@ function dateRange(start: number, end: number): string[] {
     current.setUTCDate(current.getUTCDate() + 1);
   }
   return dates;
+}
+
+function monthChunks(start: number, end: number): Array<{ start: number; end: number }> {
+  const chunks: Array<{ start: number; end: number }> = [];
+  const cursor = new Date(start);
+  cursor.setUTCDate(1);
+  cursor.setUTCHours(0, 0, 0, 0);
+  while (cursor.getTime() < end) {
+    const chunkStart = Math.max(start, cursor.getTime());
+    const next = new Date(cursor);
+    next.setUTCMonth(next.getUTCMonth() + 1);
+    const chunkEnd = Math.min(end - 1, next.getTime() - 1);
+    if (chunkEnd >= chunkStart) chunks.push({ start: chunkStart, end: chunkEnd });
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  return chunks;
+}
+
+function dayChunks(start: number, end: number): Array<{ start: number; end: number }> {
+  const chunks: Array<{ start: number; end: number }> = [];
+  const cursor = new Date(start);
+  cursor.setUTCHours(0, 0, 0, 0);
+  while (cursor.getTime() < end) {
+    const chunkStart = Math.max(start, cursor.getTime());
+    const next = new Date(cursor);
+    next.setUTCDate(next.getUTCDate() + 1);
+    const chunkEnd = Math.min(end - 1, next.getTime() - 1);
+    if (chunkEnd >= chunkStart) chunks.push({ start: chunkStart, end: chunkEnd });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return chunks;
+}
+
+function timeChunks(start: number, end: number): Array<{ start: number; end: number }> {
+  return chunkDays ? dayChunks(start, end) : monthChunks(start, end);
 }
 
 function isMissingFileError(error: unknown): boolean {

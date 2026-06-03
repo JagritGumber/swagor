@@ -132,6 +132,8 @@ function entryFromPlan(
         location: result.read.auction.location,
         levelKind: result.read.auction.level?.kind ?? null,
       },
+      sessionMode: result.narrativeStateConfig?.sessionMode,
+      session: result.narrativeStateConfig?.session,
     }),
     reasons: plan.reasons,
   };

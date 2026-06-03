@@ -10,17 +10,13 @@ export function readMarketRegime(input: {
   candles: Candle[];
   now: number;
 }): ReaderMarketRegime {
-  const sessionCandles = currentUtcDayCandles(input.candles, input.now);
-  if (sessionCandles.length < MIN_CANDLES) {
+  const session = currentUtcDayStats(input.candles, input.now);
+  if (session.count < MIN_CANDLES) {
     return regime("unknown", false, 0, 0, 0, "not enough current-session candles");
   }
 
-  const open = sessionCandles[0].o;
-  const close = sessionCandles[sessionCandles.length - 1].c;
-  const high = Math.max(...sessionCandles.map((candle) => candle.h));
-  const low = Math.min(...sessionCandles.map((candle) => candle.l));
-  const rangePct = open > 0 ? (high - low) / open : 0;
-  const driftPct = open > 0 ? (close - open) / open : 0;
+  const rangePct = session.open > 0 ? (session.high - session.low) / session.open : 0;
+  const driftPct = session.open > 0 ? (session.close - session.open) / session.open : 0;
   const directionalEfficiency = rangePct > 0 ? Math.abs(driftPct) / rangePct : 0;
   const highVol = rangePct >= HIGH_VOL_RANGE_PCT;
 
@@ -40,11 +36,30 @@ export function readMarketRegime(input: {
   return regime("range", false, rangePct, driftPct, directionalEfficiency, "session range is contained");
 }
 
-function currentUtcDayCandles(candles: Candle[], now: number): Candle[] {
+function currentUtcDayStats(candles: Candle[], now: number): {
+  count: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+} {
   const dayStart = new Date(now);
   dayStart.setUTCHours(0, 0, 0, 0);
   const start = dayStart.getTime();
-  return candles.filter((candle) => candle.t >= start && candle.t <= now);
+  let count = 0;
+  let open = 0;
+  let high = Number.NEGATIVE_INFINITY;
+  let low = Number.POSITIVE_INFINITY;
+  let close = 0;
+  for (const candle of candles) {
+    if (candle.t < start || candle.t > now) continue;
+    if (count === 0) open = candle.o;
+    high = Math.max(high, candle.h);
+    low = Math.min(low, candle.l);
+    close = candle.c;
+    count += 1;
+  }
+  return { count, open, high, low, close };
 }
 
 function regime(

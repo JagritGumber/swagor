@@ -1,0 +1,22 @@
+{
+  "symbol": "BTCUSDT",
+  "startMonth": "2025-06",
+  "endMonth": "2025-06",
+  "bucketEventMode": "aggregate",
+  "auctionLevelCandles": 240,
+  "chunking": "days",
+  "results": [
+    {
+      "month": "2025-06",
+      "mode": "rolling",
+      "judgeableTrades": 2,
+      "unjudgeableTrades": 0,
+      "wins": 0,
+      "losses": 2,
+      "totalR": -2,
+      "averageR": -1,
+      "maxDrawdownR": -2,
+      "decision": "COLLECT_MORE_DATA"
+    }
+  ]
+}

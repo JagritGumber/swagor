@@ -13,6 +13,7 @@ export function readMarketAuction(input: {
   candles: Candle[];
   swingLeft?: number;
   swingRight?: number;
+  levelCandles?: number;
   levelTolerancePct?: number;
   levelMinTouches?: number;
   maxLevelDistancePct?: number;
@@ -40,8 +41,12 @@ export function readMarketAuction(input: {
   const price = input.price ?? last.c;
   const swingLeft = input.swingLeft ?? 3;
   const swingRight = input.swingRight ?? 3;
-  const supports = findSwingLows({ candles: input.candles, left: swingLeft, right: swingRight });
-  const resistances = findSwingHighs({ candles: input.candles, left: swingLeft, right: swingRight });
+  const levelCandles = levelDetectionCandles({
+    candles: input.candles,
+    limit: input.levelCandles,
+  });
+  const supports = findSwingLows({ candles: levelCandles, left: swingLeft, right: swingRight });
+  const resistances = findSwingHighs({ candles: levelCandles, left: swingLeft, right: swingRight });
   const levels = clusterPriceLevels({
     supports,
     resistances,
@@ -65,4 +70,16 @@ export function readMarketAuction(input: {
     profileTrades: input.profileTrades,
     price,
   });
+}
+
+function levelDetectionCandles(input: {
+  candles: Candle[];
+  limit: number | undefined;
+}): Candle[] {
+  if (input.limit === undefined) return input.candles;
+  if (!Number.isFinite(input.limit) || input.limit <= 0) {
+    throw new Error("reader auction levelCandles must be a positive finite number");
+  }
+  if (input.candles.length <= input.limit) return input.candles;
+  return input.candles.slice(input.candles.length - input.limit);
 }

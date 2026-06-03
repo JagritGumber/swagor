@@ -4,6 +4,7 @@ import type { ReaderMarketRegime } from "../market-regime/types";
 import type { ReaderAuctionMode } from "../reader-auction-mode/types";
 import type { ReaderHistoryStep } from "../reader-history/types";
 import type { LiveReaderRead } from "../reader-live/types";
+import type { ReaderVpState } from "../reader-vp-state/types";
 import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultUpdate } from "../reader-result/types";
 import type { ReaderSetupEventType, ReaderSetupResult } from "../reader-setup/types";
 
@@ -24,6 +25,7 @@ export type ReaderFormationRead = {
   lastPrice: number | null;
   stance: LiveReaderRead["stance"];
   auctionMode?: ReaderAuctionMode;
+  vp?: ReaderVpState;
   narrative?: LiveReaderRead["narrativeRead"];
   regime?: ReaderMarketRegime;
   auction: {

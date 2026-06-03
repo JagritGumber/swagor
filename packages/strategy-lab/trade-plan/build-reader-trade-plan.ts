@@ -3,6 +3,7 @@ import { readReaderNarrative } from "../reader-narrative/read-reader-narrative";
 import type { ReaderNarrative } from "../reader-narrative/types";
 import type { Side } from "../types";
 import type { LiveReaderRead } from "../reader-live/types";
+import { readReaderVpPlaybook } from "../reader-vp-playbook/read-reader-vp-playbook";
 import type { ReaderActionableTradePlan, ReaderSetupFamily, ReaderTradePlan, ReaderTradePlanConfig } from "./types";
 
 export function buildReaderTradePlan(read: LiveReaderRead, _config: ReaderTradePlanConfig = {}): ReaderTradePlan {
@@ -59,6 +60,8 @@ function reclaimPlan(read: LiveReaderRead, narrative: ReaderNarrative): ReaderTr
   if (!side) return noTrade(read, narrative.reasons);
   const modeBlock = auctionModeBlock(read, side, "reversal-reclaim");
   if (modeBlock.length > 0) return noTrade(read, modeBlock, "reversal-reclaim");
+  const vpBlock = vpPlaybookBlock(read, narrative, side, "reversal-reclaim");
+  if (vpBlock.length > 0) return noTrade(read, vpBlock, "reversal-reclaim");
   const levels = planLevels(read, side, narrative);
   if (!levels) return noTrade(read, ["narrative allows reclaim but numeric auction levels are incomplete"], "reversal-reclaim");
   const targetBlock = auctionModeTargetBlock(read, side, levels);
@@ -78,6 +81,8 @@ function readyPlan(read: LiveReaderRead, narrative: ReaderNarrative, setupFamily
   if (!side) return noTrade(read, narrative.reasons, setupFamily);
   const modeBlock = auctionModeBlock(read, side, setupFamily);
   if (modeBlock.length > 0) return noTrade(read, modeBlock, setupFamily);
+  const vpBlock = vpPlaybookBlock(read, narrative, side, setupFamily);
+  if (vpBlock.length > 0) return noTrade(read, vpBlock, setupFamily);
   const levels = planLevels(read, side, narrative);
   if (!levels) return noTrade(read, ["narrative allows continuation but numeric auction levels are incomplete"], setupFamily);
   const targetBlock = auctionModeTargetBlock(read, side, levels);
@@ -160,9 +165,31 @@ function auctionModeBlock(read: LiveReaderRead, side: Side, setupFamily: ReaderS
 
 function auctionModeTargetBlock(read: LiveReaderRead, side: Side, levels: PlanLevels): string[] {
   const auctionMode = read.auctionMode;
-  if (!auctionMode || (auctionMode.mode !== "balanced-value" && auctionMode.mode !== "poc-gravity")) return [];
+  if (!auctionMode || (auctionMode.mode !== "balanced-value" && auctionMode.mode !== "poc-gravity" && auctionMode.mode !== "failed-expansion")) return [];
   if (targetMovesTowardPoc(read, side, levels)) return [];
   return modeReasons(read, `${auctionMode.mode} only allows edge-to-POC rotations`);
+}
+
+function vpPlaybookBlock(
+  read: LiveReaderRead,
+  narrative: ReaderNarrative,
+  side: Side,
+  setupFamily: ReaderSetupFamily,
+): string[] {
+  const playbook = readReaderVpPlaybook(read, narrative);
+  if (playbook.kind === "no-trade") {
+    return playbook.reason === "VP does not provide a clean fade or continuation playbook"
+      ? []
+      : [`VP blocks trade: ${playbook.reason}`];
+  }
+  if (playbook.allowedSide !== side) return [`VP allows ${playbook.allowedSide}, not ${side}: ${playbook.reason}`];
+  if (setupFamily === "breakout-acceptance" && playbook.kind !== "accepted-continuation") {
+    return [`VP blocks breakout plan: ${playbook.reason}`];
+  }
+  if (setupFamily === "reversal-reclaim" && playbook.kind === "accepted-continuation") {
+    return [`VP blocks fade against accepted continuation: ${playbook.reason}`];
+  }
+  return [];
 }
 
 function targetMovesTowardPoc(read: LiveReaderRead, side: Side, levels: PlanLevels): boolean {

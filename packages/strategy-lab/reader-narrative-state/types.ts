@@ -1,4 +1,5 @@
 import type { MemoryStore } from "../../shared";
+import type { ReaderSessionConfig } from "../reader-session/types";
 import type { ReaderNarrative } from "../reader-narrative/types";
 import type { ReaderActionableTradePlan } from "../trade-plan/types";
 
@@ -24,10 +25,14 @@ export type ReaderNarrativeState = {
 
 export type ReaderNarrativeStateMemory = MemoryStore<ReaderNarrativeState>;
 
+export type ReaderNarrativeSessionMode = "utc-day" | "rolling" | "liquidity-session";
+
 export type ReaderNarrativeStateConfig = {
   enabled?: boolean;
   memory?: ReaderNarrativeStateMemory;
   ttlMs?: number | null;
+  sessionMode?: ReaderNarrativeSessionMode;
+  session?: ReaderSessionConfig;
 };
 
 export type ReaderNarrativeKeyInput = {
@@ -38,6 +43,8 @@ export type ReaderNarrativeKeyInput = {
     location: string;
     levelKind: string | null;
   };
+  sessionMode?: ReaderNarrativeSessionMode;
+  session?: ReaderSessionConfig;
 };
 
 export type ReaderNarrativeStatePlanInput = {

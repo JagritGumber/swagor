@@ -32,7 +32,7 @@ export function readMarketSetup(input: {
     input.memory.delete(key, "setup invalidated at stop", now);
     const blocked = noTrade(input.read, [`tracked ${previous.side} setup invalidated at stop ${previous.plan.stop}`], previous.plan.setupFamily);
     events.push(setupEvent("setup-invalidated", key, input.read.asset, now, blocked.reasons[0] ?? "setup invalidated"));
-    return { read: input.read, plan: blocked, setup: null, events, planSource: "none" };
+    return resultFor(input.read, blocked, null, events, "none", input.config);
   }
 
   if (!isActionable(plan)) {
@@ -41,13 +41,13 @@ export function readMarketSetup(input: {
       events.push(setupEvent("setup-invalidated", key, input.read.asset, now, "current narrative no longer supports the setup"));
     }
     events.push(setupEvent("setup-none", key, input.read.asset, now, plan.reasons[0] ?? "reader found no setup"));
-    return { read: input.read, plan, setup: null, events, planSource: "none" };
+    return resultFor(input.read, plan, null, events, "none", input.config);
   }
 
   const setup = setupFromPlan(key, input.config?.keyScope ?? null, input.read, plan, now, previous);
   input.memory.set(key, setup, { now, ttlMs: input.config?.setupTtlMs, reason: setup.lastReason });
   events.push(setupEvent(eventTypeFor(previous, plan), key, input.read.asset, now, setup.lastReason));
-  return { read: input.read, plan, setup, events, planSource: "fresh-read" };
+  return resultFor(input.read, plan, setup, events, "fresh-read", input.config);
 }
 
 function narrativeStateFor(
@@ -56,7 +56,8 @@ function narrativeStateFor(
   config: ReaderSetupConfig | undefined,
 ) {
   if (config?.narrativeState?.enabled === false) return null;
-  const memory = config?.narrativeState?.memory;
+  const narrativeState = config?.narrativeState;
+  const memory = narrativeState?.memory;
   if (!memory) return null;
   const key = readerNarrativeKeyFor({
     asset: read.asset,
@@ -66,8 +67,28 @@ function narrativeStateFor(
       location: read.auction.location,
       levelKind: read.auction.level?.kind ?? null,
     },
+    sessionMode: narrativeState.sessionMode,
+    session: narrativeState.session,
   });
   return key ? memory.get(key)?.value ?? null : null;
+}
+
+function resultFor(
+  read: LiveReaderRead,
+  plan: ReaderTradePlan,
+  setup: ReaderSetupState | null,
+  events: ReaderSetupEvent[],
+  planSource: ReaderSetupResult["planSource"],
+  config: ReaderSetupConfig | undefined,
+): ReaderSetupResult {
+  return {
+    read,
+    plan,
+    setup,
+    events,
+    planSource,
+    narrativeStateConfig: config?.narrativeState,
+  };
 }
 
 function expireSetup(
@@ -98,6 +119,13 @@ function setupFromPlan(
     interval: read.auction.interval,
     side: plan.side,
     status: statusForPlan(plan),
+    sequence: plan.sequencePhase
+      ? {
+          family: plan.setupFamily === "breakout-acceptance" ? "breakout-acceptance" : "reversal-reclaim",
+          phase: plan.sequencePhase,
+          reason: plan.sequenceReason ?? "reader sequence updated",
+        }
+      : previous?.sequence,
     plan,
     createdAt: previous?.createdAt ?? now,
     updatedAt: now,

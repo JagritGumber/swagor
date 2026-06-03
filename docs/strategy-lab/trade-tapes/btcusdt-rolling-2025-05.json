@@ -1,0 +1,1392 @@
+{
+  "run": {
+    "venue": "bybit",
+    "network": "mainnet",
+    "dataMode": "parquet",
+    "bucketEventMode": "aggregate",
+    "narrativeSessionMode": "rolling",
+    "interval": "5m",
+    "assets": [
+      "BTCUSDT"
+    ],
+    "startAt": "2025-05-01T00:00:00.000Z",
+    "endAt": "2025-06-01T00:00:00.000Z",
+    "readIntervalMs": 60000,
+    "orderflowWindowMs": 300000,
+    "setupTtlMs": 900000,
+    "minCoveragePct": 90,
+    "dailyLossLimitR": 3,
+    "auctionLevelCandles": 240,
+    "profileTradeSampleLimit": null,
+    "chunking": "days"
+  },
+  "summary": {
+    "registeredTrades": 7,
+    "judgeableTrades": 7,
+    "unjudgeableTrades": 0,
+    "wins": 5,
+    "losses": 2,
+    "totalR": 3.4967,
+    "averageR": 0.4995,
+    "maxDrawdownR": -1,
+    "guarded": {
+      "skipped": 0,
+      "judgeableTrades": 7,
+      "wins": 5,
+      "losses": 2,
+      "totalR": 3.4967,
+      "averageR": 0.4995,
+      "maxDrawdownR": -1
+    },
+    "decision": "CONTINUE"
+  },
+  "assets": [
+    {
+      "asset": "BTCUSDT",
+      "status": "OK",
+      "diagnostics": {
+        "candleCount": 8928,
+        "orderflowEventCount": 5079282,
+        "firstOrderflowAt": 1746057600000,
+        "lastOrderflowAt": 1748735999000
+      },
+      "summary": {
+        "registeredTrades": 7,
+        "judgeableTrades": 7,
+        "unjudgeableTrades": 0,
+        "wins": 5,
+        "losses": 2,
+        "totalR": 3.4967,
+        "averageR": 0.4995,
+        "maxDrawdownR": -1
+      },
+      "groups": {
+        "byDay": [
+          {
+            "key": "2025-05-01",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 0,
+              "totalR": 0.385,
+              "averageR": 0.385,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z"
+            ]
+          },
+          {
+            "key": "2025-05-02",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 0,
+              "losses": 1,
+              "totalR": -1,
+              "averageR": -1,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-02T14:23:00.000Z"
+            ]
+          },
+          {
+            "key": "2025-05-03",
+            "summary": {
+              "registeredTrades": 2,
+              "judgeableTrades": 2,
+              "unjudgeableTrades": 0,
+              "wins": 2,
+              "losses": 0,
+              "totalR": 4.0629,
+              "averageR": 2.0314,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z"
+            ]
+          },
+          {
+            "key": "2025-05-04",
+            "summary": {
+              "registeredTrades": 3,
+              "judgeableTrades": 3,
+              "unjudgeableTrades": 0,
+              "wins": 2,
+              "losses": 1,
+              "totalR": 0.0488,
+              "averageR": 0.0163,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "byRegime": [
+          {
+            "key": "trend-up",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 0,
+              "totalR": 0.385,
+              "averageR": 0.385,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z"
+            ]
+          },
+          {
+            "key": "range",
+            "summary": {
+              "registeredTrades": 5,
+              "judgeableTrades": 5,
+              "unjudgeableTrades": 0,
+              "wins": 3,
+              "losses": 2,
+              "totalR": 0.3392,
+              "averageR": 0.0678,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-02T14:23:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          },
+          {
+            "key": "trend-down",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 0,
+              "totalR": 2.7725,
+              "averageR": 2.7725,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-03T12:11:00.000Z"
+            ]
+          }
+        ],
+        "bySetupFamily": [
+          {
+            "key": "reversal-reclaim",
+            "summary": {
+              "registeredTrades": 7,
+              "judgeableTrades": 7,
+              "unjudgeableTrades": 0,
+              "wins": 5,
+              "losses": 2,
+              "totalR": 3.4967,
+              "averageR": 0.4995,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-02T14:23:00.000Z",
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "bySetupFamilyRegime": [
+          {
+            "key": "reversal-reclaim|trend-up",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 0,
+              "totalR": 0.385,
+              "averageR": 0.385,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z"
+            ]
+          },
+          {
+            "key": "reversal-reclaim|range",
+            "summary": {
+              "registeredTrades": 5,
+              "judgeableTrades": 5,
+              "unjudgeableTrades": 0,
+              "wins": 3,
+              "losses": 2,
+              "totalR": 0.3392,
+              "averageR": 0.0678,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-02T14:23:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          },
+          {
+            "key": "reversal-reclaim|trend-down",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 0,
+              "totalR": 2.7725,
+              "averageR": 2.7725,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-03T12:11:00.000Z"
+            ]
+          }
+        ],
+        "bySequence": [
+          {
+            "key": "reversal-reclaim|n/a",
+            "summary": {
+              "registeredTrades": 7,
+              "judgeableTrades": 7,
+              "unjudgeableTrades": 0,
+              "wins": 5,
+              "losses": 2,
+              "totalR": 3.4967,
+              "averageR": 0.4995,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-02T14:23:00.000Z",
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "byNarrative": [
+          {
+            "key": "reversal-reclaim|short|absorption|rejecting-above",
+            "summary": {
+              "registeredTrades": 2,
+              "judgeableTrades": 2,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 1,
+              "totalR": -0.615,
+              "averageR": -0.3075,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-02T14:23:00.000Z"
+            ]
+          },
+          {
+            "key": "reversal-reclaim|long|absorption|rejecting-below",
+            "summary": {
+              "registeredTrades": 5,
+              "judgeableTrades": 5,
+              "unjudgeableTrades": 0,
+              "wins": 4,
+              "losses": 1,
+              "totalR": 4.1117,
+              "averageR": 0.8223,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "byAuctionMode": [
+          {
+            "key": "failed-expansion",
+            "summary": {
+              "registeredTrades": 7,
+              "judgeableTrades": 7,
+              "unjudgeableTrades": 0,
+              "wins": 5,
+              "losses": 2,
+              "totalR": 3.4967,
+              "averageR": 0.4995,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-02T14:23:00.000Z",
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "byAuctionPhase": [
+          {
+            "key": "failed-expansion-fade",
+            "summary": {
+              "registeredTrades": 7,
+              "judgeableTrades": 7,
+              "unjudgeableTrades": 0,
+              "wins": 5,
+              "losses": 2,
+              "totalR": 3.4967,
+              "averageR": 0.4995,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-02T14:23:00.000Z",
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "byOrderflowEvidence": [
+          {
+            "key": "pressure=confirmed|absorption=confirmed|print=local-standout|follow=stalled",
+            "summary": {
+              "registeredTrades": 6,
+              "judgeableTrades": 6,
+              "unjudgeableTrades": 0,
+              "wins": 4,
+              "losses": 2,
+              "totalR": 3.1494,
+              "averageR": 0.5249,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-02T14:23:00.000Z",
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          },
+          {
+            "key": "pressure=aggressive|absorption=aggressive|print=none|follow=stalled",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 0,
+              "totalR": 0.3473,
+              "averageR": 0.3473,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-04T03:46:00.000Z"
+            ]
+          }
+        ],
+        "bySideLocation": [
+          {
+            "key": "short|value-high|resistance",
+            "summary": {
+              "registeredTrades": 2,
+              "judgeableTrades": 2,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 1,
+              "totalR": -0.615,
+              "averageR": -0.3075,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-02T14:23:00.000Z"
+            ]
+          },
+          {
+            "key": "long|value-low|support",
+            "summary": {
+              "registeredTrades": 5,
+              "judgeableTrades": 5,
+              "unjudgeableTrades": 0,
+              "wins": 4,
+              "losses": 1,
+              "totalR": 4.1117,
+              "averageR": 0.8223,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "byEntryTiming": [
+          {
+            "key": "near-local-extreme",
+            "summary": {
+              "registeredTrades": 5,
+              "judgeableTrades": 5,
+              "unjudgeableTrades": 0,
+              "wins": 4,
+              "losses": 1,
+              "totalR": 4.1494,
+              "averageR": 0.8299,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          },
+          {
+            "key": "middle-of-local-range",
+            "summary": {
+              "registeredTrades": 2,
+              "judgeableTrades": 2,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 1,
+              "totalR": -0.6527,
+              "averageR": -0.3264,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-02T14:23:00.000Z",
+              "2025-05-04T03:46:00.000Z"
+            ]
+          }
+        ],
+        "byFirstReaction": [
+          {
+            "key": "favorable-first-read",
+            "summary": {
+              "registeredTrades": 5,
+              "judgeableTrades": 5,
+              "unjudgeableTrades": 0,
+              "wins": 4,
+              "losses": 1,
+              "totalR": 3.7952,
+              "averageR": 0.759,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-02T14:23:00.000Z",
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:46:00.000Z"
+            ]
+          },
+          {
+            "key": "adverse-first-read",
+            "summary": {
+              "registeredTrades": 2,
+              "judgeableTrades": 2,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 1,
+              "totalR": -0.2985,
+              "averageR": -0.1492,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "byPocRotation": [
+          {
+            "key": "moved-toward-poc",
+            "summary": {
+              "registeredTrades": 5,
+              "judgeableTrades": 5,
+              "unjudgeableTrades": 0,
+              "wins": 5,
+              "losses": 0,
+              "totalR": 5.4967,
+              "averageR": 1.0993,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z"
+            ]
+          },
+          {
+            "key": "moved-away-from-poc",
+            "summary": {
+              "registeredTrades": 2,
+              "judgeableTrades": 2,
+              "unjudgeableTrades": 0,
+              "wins": 0,
+              "losses": 2,
+              "totalR": -2,
+              "averageR": -1,
+              "maxDrawdownR": -2
+            },
+            "tradeEntryTimes": [
+              "2025-05-02T14:23:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "byQualityLabel": [
+          {
+            "key": "clean-continuation",
+            "summary": {
+              "registeredTrades": 4,
+              "judgeableTrades": 4,
+              "unjudgeableTrades": 0,
+              "wins": 4,
+              "losses": 0,
+              "totalR": 4.7952,
+              "averageR": 1.1988,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:46:00.000Z"
+            ]
+          },
+          {
+            "key": "absorbed-but-no-rotation+needs-selbo-size-down",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 0,
+              "losses": 1,
+              "totalR": -1,
+              "averageR": -1,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-02T14:23:00.000Z"
+            ]
+          },
+          {
+            "key": "failed-follow-through",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 0,
+              "totalR": 0.7015,
+              "averageR": 0.7015,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-04T03:18:00.000Z"
+            ]
+          },
+          {
+            "key": "failed-follow-through+absorbed-but-no-rotation",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 0,
+              "losses": 1,
+              "totalR": -1,
+              "averageR": -1,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "byNarrativeVerdict": [
+          {
+            "key": "confirmed",
+            "summary": {
+              "registeredTrades": 3,
+              "judgeableTrades": 3,
+              "unjudgeableTrades": 0,
+              "wins": 3,
+              "losses": 0,
+              "totalR": 4.4479,
+              "averageR": 1.4826,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z"
+            ]
+          },
+          {
+            "key": "invalidated",
+            "summary": {
+              "registeredTrades": 2,
+              "judgeableTrades": 2,
+              "unjudgeableTrades": 0,
+              "wins": 0,
+              "losses": 2,
+              "totalR": -2,
+              "averageR": -1,
+              "maxDrawdownR": -2
+            },
+            "tradeEntryTimes": [
+              "2025-05-02T14:23:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          },
+          {
+            "key": "weak-confirmed",
+            "summary": {
+              "registeredTrades": 2,
+              "judgeableTrades": 2,
+              "unjudgeableTrades": 0,
+              "wins": 2,
+              "losses": 0,
+              "totalR": 1.0488,
+              "averageR": 0.5244,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z"
+            ]
+          }
+        ],
+        "worstFamilies": [
+          {
+            "key": "reversal-reclaim|short|value-high|resistance|buy-pressure|stalled-buying+large-print+confirmed-absorption",
+            "summary": {
+              "registeredTrades": 2,
+              "judgeableTrades": 2,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 1,
+              "totalR": -0.615,
+              "averageR": -0.3075,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-02T14:23:00.000Z"
+            ]
+          },
+          {
+            "key": "reversal-reclaim|long|value-low|support|sell-pressure|stalled-selling+aggressive-absorption",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 0,
+              "totalR": 0.3473,
+              "averageR": 0.3473,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-04T03:46:00.000Z"
+            ]
+          },
+          {
+            "key": "reversal-reclaim|long|value-low|support|sell-pressure|stalled-selling+large-print+confirmed-absorption",
+            "summary": {
+              "registeredTrades": 4,
+              "judgeableTrades": 4,
+              "unjudgeableTrades": 0,
+              "wins": 3,
+              "losses": 1,
+              "totalR": 3.7644,
+              "averageR": 0.9411,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "bestFamilies": [
+          {
+            "key": "reversal-reclaim|long|value-low|support|sell-pressure|stalled-selling+large-print+confirmed-absorption",
+            "summary": {
+              "registeredTrades": 4,
+              "judgeableTrades": 4,
+              "unjudgeableTrades": 0,
+              "wins": 3,
+              "losses": 1,
+              "totalR": 3.7644,
+              "averageR": 0.9411,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          },
+          {
+            "key": "reversal-reclaim|long|value-low|support|sell-pressure|stalled-selling+aggressive-absorption",
+            "summary": {
+              "registeredTrades": 1,
+              "judgeableTrades": 1,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 0,
+              "totalR": 0.3473,
+              "averageR": 0.3473,
+              "maxDrawdownR": 0
+            },
+            "tradeEntryTimes": [
+              "2025-05-04T03:46:00.000Z"
+            ]
+          },
+          {
+            "key": "reversal-reclaim|short|value-high|resistance|buy-pressure|stalled-buying+large-print+confirmed-absorption",
+            "summary": {
+              "registeredTrades": 2,
+              "judgeableTrades": 2,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 1,
+              "totalR": -0.615,
+              "averageR": -0.3075,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-02T14:23:00.000Z"
+            ]
+          }
+        ],
+        "worstNarratives": [
+          {
+            "key": "reversal-reclaim|short|absorption|rejecting-above",
+            "summary": {
+              "registeredTrades": 2,
+              "judgeableTrades": 2,
+              "unjudgeableTrades": 0,
+              "wins": 1,
+              "losses": 1,
+              "totalR": -0.615,
+              "averageR": -0.3075,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-01T12:16:00.000Z",
+              "2025-05-02T14:23:00.000Z"
+            ]
+          },
+          {
+            "key": "reversal-reclaim|long|absorption|rejecting-below",
+            "summary": {
+              "registeredTrades": 5,
+              "judgeableTrades": 5,
+              "unjudgeableTrades": 0,
+              "wins": 4,
+              "losses": 1,
+              "totalR": 4.1117,
+              "averageR": 0.8223,
+              "maxDrawdownR": -1
+            },
+            "tradeEntryTimes": [
+              "2025-05-03T12:11:00.000Z",
+              "2025-05-03T17:22:00.000Z",
+              "2025-05-04T03:18:00.000Z",
+              "2025-05-04T03:46:00.000Z",
+              "2025-05-04T10:55:00.000Z"
+            ]
+          }
+        ],
+        "narrativeFailureChains": []
+      },
+      "trades": [
+        {
+          "index": 1,
+          "asset": "BTCUSDT",
+          "entryAt": "2025-05-01T12:16:00.000Z",
+          "side": "short",
+          "setupFamily": "reversal-reclaim",
+          "trust": true,
+          "trustReason": "judgeable",
+          "result": {
+            "entryPrice": 96200.5,
+            "stop": 96417.77174999999,
+            "target": 96116.842375,
+            "exitReason": "target",
+            "exitAt": "2025-05-01T12:31:00.000Z",
+            "exitPrice": 96116.842375,
+            "r": 0.385
+          },
+          "readerState": {
+            "regime": "trend-up",
+            "auctionLocation": "value-high",
+            "auctionLevelKind": "resistance",
+            "auctionMode": "failed-expansion",
+            "auctionPhase": "failed-expansion-fade",
+            "sequencePhase": null,
+            "setupPlanSource": "fresh-read",
+            "setupAgeMs": 60000,
+            "setupReadCount": 2
+          },
+          "narrative": {
+            "intent": "reversal-reclaim",
+            "direction": "short",
+            "participation": "absorption",
+            "verdict": "confirmed",
+            "key": "reversal-reclaim|short|absorption|rejecting-above",
+            "invalidatingEvidence": []
+          },
+          "vp": {
+            "auction": "rejecting-above-value",
+            "poc": "poc-stable",
+            "value": "value-stable"
+          },
+          "orderflow": {
+            "pressure": "buy-pressure",
+            "events": [
+              "large-print",
+              "stalled-buying",
+              "buy-absorption",
+              "confirmed-absorption"
+            ],
+            "tradeCount": 688,
+            "largestTrade": {
+              "asset": "BTCUSDT",
+              "side": "buy",
+              "price": 96244.2,
+              "size": 35.23000000000002,
+              "time": 1746101661000,
+              "id": "1746101661000:buy:aggregate"
+            }
+          },
+          "diagnostics": {
+            "firstReaction": "favorable-first-read",
+            "firstReactionR": 0.0575,
+            "observedMfeR": 0.3277,
+            "observedMaeR": 0.0575,
+            "timeInTradeMs": 900000,
+            "pricedReadsAfterEntry": 5,
+            "entryTiming": "near-local-extreme",
+            "pocRotation": "moved-toward-poc",
+            "labels": [
+              "clean-continuation"
+            ]
+          },
+          "reviewVerdict": null,
+          "reviewNotes": null,
+          "dossierVerdict": "valid-setup-good-outcome"
+        },
+        {
+          "index": 2,
+          "asset": "BTCUSDT",
+          "entryAt": "2025-05-02T14:23:00.000Z",
+          "side": "short",
+          "setupFamily": "reversal-reclaim",
+          "trust": true,
+          "trustReason": "judgeable",
+          "result": {
+            "entryPrice": 96928.3,
+            "stop": 97155.004640625,
+            "target": 96851.7742890625,
+            "exitReason": "stop",
+            "exitAt": "2025-05-02T14:33:00.000Z",
+            "exitPrice": 97155.004640625,
+            "r": -1
+          },
+          "readerState": {
+            "regime": "range",
+            "auctionLocation": "value-high",
+            "auctionLevelKind": "resistance",
+            "auctionMode": "failed-expansion",
+            "auctionPhase": "failed-expansion-fade",
+            "sequencePhase": null,
+            "setupPlanSource": "fresh-read",
+            "setupAgeMs": 0,
+            "setupReadCount": 1
+          },
+          "narrative": {
+            "intent": "reversal-reclaim",
+            "direction": "short",
+            "participation": "absorption",
+            "verdict": "invalidated",
+            "key": "reversal-reclaim|short|absorption|rejecting-above",
+            "invalidatingEvidence": [
+              "price moved away from POC after the narrative",
+              "entry came from the middle of the local range",
+              "absorption did not create rotation"
+            ]
+          },
+          "vp": {
+            "auction": "rejecting-above-value",
+            "poc": "poc-stable",
+            "value": "value-stable"
+          },
+          "orderflow": {
+            "pressure": "buy-pressure",
+            "events": [
+              "large-print",
+              "stalled-buying",
+              "buy-absorption",
+              "confirmed-absorption"
+            ],
+            "tradeCount": 683,
+            "largestTrade": {
+              "asset": "BTCUSDT",
+              "side": "buy",
+              "price": 96940.4,
+              "size": 31.54099999999994,
+              "time": 1746195728000,
+              "id": "1746195728000:buy:aggregate"
+            }
+          },
+          "diagnostics": {
+            "firstReaction": "favorable-first-read",
+            "firstReactionR": 0.026,
+            "observedMfeR": 0.026,
+            "observedMaeR": -0.906,
+            "timeInTradeMs": 600000,
+            "pricedReadsAfterEntry": 5,
+            "entryTiming": "middle-of-local-range",
+            "pocRotation": "moved-away-from-poc",
+            "labels": [
+              "absorbed-but-no-rotation",
+              "needs-selbo-size-down"
+            ]
+          },
+          "reviewVerdict": null,
+          "reviewNotes": null,
+          "dossierVerdict": "valid-setup-bad-outcome"
+        },
+        {
+          "index": 3,
+          "asset": "BTCUSDT",
+          "entryAt": "2025-05-03T12:11:00.000Z",
+          "side": "long",
+          "setupFamily": "reversal-reclaim",
+          "trust": true,
+          "trustReason": "judgeable",
+          "result": {
+            "entryPrice": 95856.1,
+            "stop": 95713.20874999999,
+            "target": 96252.269375,
+            "exitReason": "target",
+            "exitAt": "2025-05-03T14:00:00.000Z",
+            "exitPrice": 96252.269375,
+            "r": 2.7725
+          },
+          "readerState": {
+            "regime": "trend-down",
+            "auctionLocation": "value-low",
+            "auctionLevelKind": "support",
+            "auctionMode": "failed-expansion",
+            "auctionPhase": "failed-expansion-fade",
+            "sequencePhase": null,
+            "setupPlanSource": "fresh-read",
+            "setupAgeMs": 0,
+            "setupReadCount": 1
+          },
+          "narrative": {
+            "intent": "reversal-reclaim",
+            "direction": "long",
+            "participation": "absorption",
+            "verdict": "confirmed",
+            "key": "reversal-reclaim|long|absorption|rejecting-below",
+            "invalidatingEvidence": []
+          },
+          "vp": {
+            "auction": "rejecting-below-value",
+            "poc": "poc-migrating-up",
+            "value": "value-stable"
+          },
+          "orderflow": {
+            "pressure": "sell-pressure",
+            "events": [
+              "large-print",
+              "stalled-selling",
+              "sell-absorption",
+              "confirmed-absorption"
+            ],
+            "tradeCount": 603,
+            "largestTrade": {
+              "asset": "BTCUSDT",
+              "side": "buy",
+              "price": 95852.5,
+              "size": 9.894999999999992,
+              "time": 1746274135000,
+              "id": "1746274135000:buy:aggregate"
+            }
+          },
+          "diagnostics": {
+            "firstReaction": "favorable-first-read",
+            "firstReactionR": 0.1554,
+            "observedMfeR": 0.534,
+            "observedMaeR": -0.0343,
+            "timeInTradeMs": 6540000,
+            "pricedReadsAfterEntry": 5,
+            "entryTiming": "near-local-extreme",
+            "pocRotation": "moved-toward-poc",
+            "labels": [
+              "clean-continuation"
+            ]
+          },
+          "reviewVerdict": null,
+          "reviewNotes": null,
+          "dossierVerdict": "valid-setup-good-outcome"
+        },
+        {
+          "index": 4,
+          "asset": "BTCUSDT",
+          "entryAt": "2025-05-03T17:22:00.000Z",
+          "side": "long",
+          "setupFamily": "reversal-reclaim",
+          "trust": true,
+          "trustReason": "judgeable",
+          "result": {
+            "entryPrice": 95947.2,
+            "stop": 95711.84379166669,
+            "target": 96250.89672916668,
+            "exitReason": "target",
+            "exitAt": "2025-05-03T19:35:00.000Z",
+            "exitPrice": 96250.89672916668,
+            "r": 1.2904
+          },
+          "readerState": {
+            "regime": "range",
+            "auctionLocation": "value-low",
+            "auctionLevelKind": "support",
+            "auctionMode": "failed-expansion",
+            "auctionPhase": "failed-expansion-fade",
+            "sequencePhase": null,
+            "setupPlanSource": "fresh-read",
+            "setupAgeMs": 0,
+            "setupReadCount": 1
+          },
+          "narrative": {
+            "intent": "reversal-reclaim",
+            "direction": "long",
+            "participation": "absorption",
+            "verdict": "confirmed",
+            "key": "reversal-reclaim|long|absorption|rejecting-below",
+            "invalidatingEvidence": []
+          },
+          "vp": {
+            "auction": "rejecting-below-value",
+            "poc": "poc-migrating-up",
+            "value": "value-stable"
+          },
+          "orderflow": {
+            "pressure": "sell-pressure",
+            "events": [
+              "large-print",
+              "stalled-selling",
+              "sell-absorption",
+              "confirmed-absorption"
+            ],
+            "tradeCount": 750,
+            "largestTrade": {
+              "asset": "BTCUSDT",
+              "side": "sell",
+              "price": 95859.1,
+              "size": 260.1060000000015,
+              "time": 1746292825000,
+              "id": "1746292825000:sell:aggregate"
+            }
+          },
+          "diagnostics": {
+            "firstReaction": "favorable-first-read",
+            "firstReactionR": 0.2239,
+            "observedMfeR": 0.3442,
+            "observedMaeR": 0.2239,
+            "timeInTradeMs": 7980000,
+            "pricedReadsAfterEntry": 5,
+            "entryTiming": "near-local-extreme",
+            "pocRotation": "moved-toward-poc",
+            "labels": [
+              "clean-continuation"
+            ]
+          },
+          "reviewVerdict": null,
+          "reviewNotes": null,
+          "dossierVerdict": "valid-setup-good-outcome"
+        },
+        {
+          "index": 5,
+          "asset": "BTCUSDT",
+          "entryAt": "2025-05-04T03:18:00.000Z",
+          "side": "long",
+          "setupFamily": "reversal-reclaim",
+          "trust": true,
+          "trustReason": "judgeable",
+          "result": {
+            "entryPrice": 95688.8,
+            "stop": 95513.15912499999,
+            "target": 95812.01131249999,
+            "exitReason": "target",
+            "exitAt": "2025-05-04T03:36:00.000Z",
+            "exitPrice": 95812.01131249999,
+            "r": 0.7015
+          },
+          "readerState": {
+            "regime": "range",
+            "auctionLocation": "value-low",
+            "auctionLevelKind": "support",
+            "auctionMode": "failed-expansion",
+            "auctionPhase": "failed-expansion-fade",
+            "sequencePhase": null,
+            "setupPlanSource": "fresh-read",
+            "setupAgeMs": 0,
+            "setupReadCount": 1
+          },
+          "narrative": {
+            "intent": "reversal-reclaim",
+            "direction": "long",
+            "participation": "absorption",
+            "verdict": "weak-confirmed",
+            "key": "reversal-reclaim|long|absorption|rejecting-below",
+            "invalidatingEvidence": [
+              "first post-entry read moved against the thesis"
+            ]
+          },
+          "vp": {
+            "auction": "rejecting-below-value",
+            "poc": "poc-stable",
+            "value": "value-stable"
+          },
+          "orderflow": {
+            "pressure": "sell-pressure",
+            "events": [
+              "large-print",
+              "stalled-selling",
+              "sell-absorption",
+              "confirmed-absorption"
+            ],
+            "tradeCount": 462,
+            "largestTrade": {
+              "asset": "BTCUSDT",
+              "side": "buy",
+              "price": 95690.1,
+              "size": 12.001000000000007,
+              "time": 1746328414000,
+              "id": "1746328414000:buy:aggregate"
+            }
+          },
+          "diagnostics": {
+            "firstReaction": "adverse-first-read",
+            "firstReactionR": -0.3183,
+            "observedMfeR": -0.1161,
+            "observedMaeR": -0.3183,
+            "timeInTradeMs": 1080000,
+            "pricedReadsAfterEntry": 5,
+            "entryTiming": "near-local-extreme",
+            "pocRotation": "moved-toward-poc",
+            "labels": [
+              "failed-follow-through"
+            ]
+          },
+          "reviewVerdict": null,
+          "reviewNotes": null,
+          "dossierVerdict": "valid-setup-good-outcome"
+        },
+        {
+          "index": 6,
+          "asset": "BTCUSDT",
+          "entryAt": "2025-05-04T03:46:00.000Z",
+          "side": "long",
+          "setupFamily": "reversal-reclaim",
+          "trust": true,
+          "trustReason": "judgeable",
+          "result": {
+            "entryPrice": 95727.9,
+            "stop": 95506.10129166667,
+            "target": 95804.93139583335,
+            "exitReason": "target",
+            "exitAt": "2025-05-04T04:11:00.000Z",
+            "exitPrice": 95804.93139583335,
+            "r": 0.3473
+          },
+          "readerState": {
+            "regime": "range",
+            "auctionLocation": "value-low",
+            "auctionLevelKind": "support",
+            "auctionMode": "failed-expansion",
+            "auctionPhase": "failed-expansion-fade",
+            "sequencePhase": null,
+            "setupPlanSource": "fresh-read",
+            "setupAgeMs": 300000,
+            "setupReadCount": 6
+          },
+          "narrative": {
+            "intent": "reversal-reclaim",
+            "direction": "long",
+            "participation": "absorption",
+            "verdict": "weak-confirmed",
+            "key": "reversal-reclaim|long|absorption|rejecting-below",
+            "invalidatingEvidence": [
+              "entry came from the middle of the local range"
+            ]
+          },
+          "vp": {
+            "auction": "rejecting-below-value",
+            "poc": "poc-stable",
+            "value": "value-stable"
+          },
+          "orderflow": {
+            "pressure": "sell-pressure",
+            "events": [
+              "stalled-selling",
+              "sell-absorption",
+              "aggressive-absorption"
+            ],
+            "tradeCount": 383,
+            "largestTrade": {
+              "asset": "BTCUSDT",
+              "side": "sell",
+              "price": 95671.8,
+              "size": 14.069000000000006,
+              "time": 1746330071000,
+              "id": "1746330071000:sell:aggregate"
+            }
+          },
+          "diagnostics": {
+            "firstReaction": "favorable-first-read",
+            "firstReactionR": 0.0095,
+            "observedMfeR": 0.3129,
+            "observedMaeR": 0.0095,
+            "timeInTradeMs": 1500000,
+            "pricedReadsAfterEntry": 5,
+            "entryTiming": "middle-of-local-range",
+            "pocRotation": "moved-toward-poc",
+            "labels": [
+              "clean-continuation"
+            ]
+          },
+          "reviewVerdict": null,
+          "reviewNotes": null,
+          "dossierVerdict": "valid-setup-good-outcome"
+        },
+        {
+          "index": 7,
+          "asset": "BTCUSDT",
+          "entryAt": "2025-05-04T10:55:00.000Z",
+          "side": "long",
+          "setupFamily": "reversal-reclaim",
+          "trust": true,
+          "trustReason": "judgeable",
+          "result": {
+            "entryPrice": 95405.1,
+            "stop": 95207.941125,
+            "target": 95744.15606249998,
+            "exitReason": "stop",
+            "exitAt": "2025-05-04T22:04:00.000Z",
+            "exitPrice": 95207.941125,
+            "r": -1
+          },
+          "readerState": {
+            "regime": "range",
+            "auctionLocation": "value-low",
+            "auctionLevelKind": "support",
+            "auctionMode": "failed-expansion",
+            "auctionPhase": "failed-expansion-fade",
+            "sequencePhase": null,
+            "setupPlanSource": "fresh-read",
+            "setupAgeMs": 300000,
+            "setupReadCount": 6
+          },
+          "narrative": {
+            "intent": "reversal-reclaim",
+            "direction": "long",
+            "participation": "absorption",
+            "verdict": "invalidated",
+            "key": "reversal-reclaim|long|absorption|rejecting-below",
+            "invalidatingEvidence": [
+              "first post-entry read moved against the thesis",
+              "price moved away from POC after the narrative",
+              "absorption did not create rotation"
+            ]
+          },
+          "vp": {
+            "auction": "rejecting-below-value",
+            "poc": "poc-stable",
+            "value": "value-stable"
+          },
+          "orderflow": {
+            "pressure": "sell-pressure",
+            "events": [
+              "large-print",
+              "stalled-selling",
+              "sell-absorption",
+              "confirmed-absorption"
+            ],
+            "tradeCount": 462,
+            "largestTrade": {
+              "asset": "BTCUSDT",
+              "side": "sell",
+              "price": 95379.5,
+              "size": 25.78600000000036,
+              "time": 1746356018000,
+              "id": "1746356018000:sell:aggregate"
+            }
+          },
+          "diagnostics": {
+            "firstReaction": "adverse-first-read",
+            "firstReactionR": -0.1648,
+            "observedMfeR": -0.0725,
+            "observedMaeR": -0.2668,
+            "timeInTradeMs": 40140000,
+            "pricedReadsAfterEntry": 5,
+            "entryTiming": "near-local-extreme",
+            "pocRotation": "moved-away-from-poc",
+            "labels": [
+              "failed-follow-through",
+              "absorbed-but-no-rotation"
+            ]
+          },
+          "reviewVerdict": null,
+          "reviewNotes": null,
+          "dossierVerdict": "valid-setup-bad-outcome"
+        }
+      ]
+    }
+  ]
+}

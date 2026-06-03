@@ -6,6 +6,7 @@ import type { Candle } from "../types";
 export type ReaderHistoryAuctionConfig = {
   swingLeft?: number;
   swingRight?: number;
+  levelCandles?: number;
   levelTolerancePct?: number;
   levelMinTouches?: number;
   maxLevelDistancePct?: number;

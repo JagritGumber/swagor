@@ -55,4 +55,5 @@ export type ReaderSetupResult = {
   setup: ReaderSetupState | null;
   events: ReaderSetupEvent[];
   planSource: "fresh-read" | "memory-held" | "memory-promoted" | "none";
+  narrativeStateConfig?: ReaderNarrativeStateConfig;
 };
