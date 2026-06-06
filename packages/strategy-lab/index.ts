@@ -51,9 +51,23 @@ export * from "./reader-vp-playbook/read-reader-vp-playbook";
 export * from "./reader-learner/types";
 export * from "./reader-learner/learn-reader-trade-tapes";
 export * from "./reader-candidates/types";
+export * from "./reader-candidates/read-reader-candidate";
 export * from "./reader-candidates/build-reader-candidate-tape";
 export * from "./reader-candidate-learner/types";
 export * from "./reader-candidate-learner/learn-reader-candidate-tapes";
+export type {
+  ReaderRadarCandidate,
+  ReaderRadarConfig,
+  ReaderRadarEvent,
+  ReaderRadarEventType,
+  ReaderRadarMemory,
+  ReaderRadarMode,
+  ReaderRadarStatus,
+  ReaderRadarUpdate,
+} from "./reader-radar/types";
+export { createReaderRadarMemory } from "./reader-radar/create-reader-radar-memory";
+export { readerRadarKeyFor } from "./reader-radar/reader-radar-key-for";
+export { updateReaderRadar } from "./reader-radar/update-reader-radar";
 export * from "./reader-live/types";
 export * from "./reader-live/reader-rejection-edge-for";
 export * from "./reader-live/combine-auction-orderflow";

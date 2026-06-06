@@ -2,6 +2,9 @@ import { createReaderResultState } from "../reader-result/create-reader-result-s
 import { updateReaderResult } from "../reader-result/update-reader-result";
 import { createReaderNarrativeStateMemory } from "../reader-narrative-state/create-reader-narrative-state-memory";
 import { updateReaderNarrativeState } from "../reader-narrative-state/update-reader-narrative-state";
+import { createReaderRadarMemory } from "../reader-radar/create-reader-radar-memory";
+import { updateReaderRadar } from "../reader-radar/update-reader-radar";
+import type { ReaderRadarEvent, ReaderRadarUpdate } from "../reader-radar/types";
 import { createReaderSetupMemory } from "../reader-setup/create-reader-setup-memory";
 import { readMarketSetup } from "../reader-setup/read-market-setup";
 import { summarizeReaderOutcomes } from "./summarize-reader-outcomes";
@@ -11,6 +14,7 @@ import type { ReaderSetupEvent, ReaderSetupResult } from "../reader-setup/types"
 
 export function runReaderReplay(input: ReaderReplayInput): ReaderReplayResult {
   const setupMemory = input.setupMemory ?? createReaderSetupMemory({ ttlMs: input.setupConfig?.setupTtlMs ?? undefined });
+  const radarMemory = input.radarConfig ? input.radarMemory ?? createReaderRadarMemory() : null;
   const narrativeMemory = input.setupConfig?.narrativeState?.memory ?? createReaderNarrativeStateMemory();
   const resultState = input.resultState ?? createReaderResultState({ maxEvents: input.resultMaxEvents });
   const setupConfig = {
@@ -22,6 +26,8 @@ export function runReaderReplay(input: ReaderReplayInput): ReaderReplayResult {
   };
   const setupResults: ReaderSetupResult[] = [];
   const setupEvents: ReaderSetupEvent[] = [];
+  const radarUpdates: ReaderRadarUpdate[] = [];
+  const radarEvents: ReaderRadarEvent[] = [];
   const resultUpdates: ReaderResultUpdate[] = [];
   const resultEvents: ReaderResultEvent[] = [];
   const entries: ReaderResultEntry[] = [];
@@ -29,13 +35,28 @@ export function runReaderReplay(input: ReaderReplayInput): ReaderReplayResult {
   const initialOpen = resultState.open;
 
   for (const [index, stepInput] of input.reads.entries()) {
-    const step = replayStepFor(stepInput, index, input.requireTimestamps ?? Boolean(input.setupConfig?.setupTtlMs));
-    const setup = readMarketSetup({
+    const step = replayStepFor(
+      stepInput,
+      index,
+      input.requireTimestamps ?? Boolean(input.setupConfig?.setupTtlMs || input.radarConfig?.maxStaleMs),
+    );
+    let setup = readMarketSetup({
       read: step.read,
       memory: setupMemory,
       now: step.now,
       config: setupConfig,
     });
+    if (input.radarConfig && radarMemory) {
+      const radarUpdate = updateReaderRadar({
+        setup,
+        memory: radarMemory,
+        config: input.radarConfig,
+        now: step.now,
+      });
+      setup = radarUpdate.setup;
+      radarUpdates.push(radarUpdate);
+      radarEvents.push(...radarUpdate.events);
+    }
     const resultUpdate = updateReaderResult({
       state: resultState,
       result: setup,
@@ -61,6 +82,8 @@ export function runReaderReplay(input: ReaderReplayInput): ReaderReplayResult {
   return {
     setupResults,
     setupEvents,
+    radarUpdates,
+    radarEvents,
     resultUpdates,
     resultEvents,
     entries,
@@ -73,6 +96,7 @@ export function runReaderReplay(input: ReaderReplayInput): ReaderReplayResult {
       outcomes,
     }),
     setupMemory,
+    radarMemory,
     narrativeMemory,
     resultState,
   };

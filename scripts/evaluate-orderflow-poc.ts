@@ -8,6 +8,7 @@ import { buildReaderCandidateTape } from "../packages/strategy-lab/reader-candid
 import { analyzeReaderTrades, summarizeReaderTrades } from "../packages/strategy-lab/reader-analysis/analyze-reader-trades";
 import { runReaderHistoryReplay } from "../packages/strategy-lab/reader-history/run-reader-history-replay";
 import { createReaderNarrativeStateMemory } from "../packages/strategy-lab/reader-narrative-state/create-reader-narrative-state-memory";
+import { createReaderRadarMemory } from "../packages/strategy-lab/reader-radar/create-reader-radar-memory";
 import { createReaderResultState } from "../packages/strategy-lab/reader-result/create-reader-result-state";
 import { createReaderSetupMemory } from "../packages/strategy-lab/reader-setup/create-reader-setup-memory";
 import { summarizeReaderOutcomes } from "../packages/strategy-lab/reader-replay/summarize-reader-outcomes";
@@ -21,11 +22,13 @@ import type { ReaderHistoryReplayResult } from "../packages/strategy-lab/reader-
 import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultUpdate } from "../packages/strategy-lab/reader-result/types";
 import type { ReaderSetupEvent, ReaderSetupResult } from "../packages/strategy-lab/reader-setup/types";
 import type { ReaderNarrativeSessionMode } from "../packages/strategy-lab/reader-narrative-state/types";
+import type { ReaderRadarConfig, ReaderRadarEvent, ReaderRadarUpdate } from "../packages/strategy-lab/reader-radar/types";
 import type { Candle } from "../packages/strategy-lab/types";
 
 type Venue = "hyperliquid" | "bybit";
 type DataMode = "raw" | "parquet";
 type BucketEventMode = "split" | "aggregate";
+type ReaderRadarArg = "off" | "shadow" | "execute";
 
 type ReportView = ReaderHistoryReplayResult & {
   diagnostics: {
@@ -89,6 +92,11 @@ function parseNarrativeSessionMode(value: string | undefined): ReaderNarrativeSe
   return "utc-day";
 }
 
+function parseReaderRadar(value: string | undefined): ReaderRadarArg {
+  if (value === "shadow" || value === "execute") return value;
+  return "off";
+}
+
 const vmUrl = arg("vm-url", process.env.VM_URL ?? "http://localhost:8428")!;
 const orderflowRootDir = arg("orderflow-root", process.env.ORDERFLOW_ROOT_DIR ?? "orderflow-data")!;
 const marketStoreRoot = arg("market-store-root", process.env.MARKET_STORE_ROOT ?? "market-store")!;
@@ -96,6 +104,7 @@ const venue = parseVenue(arg("venue", process.env.VENUE ?? "hyperliquid"));
 const dataMode = parseDataMode(arg("data-mode", process.env.DATA_MODE ?? "raw"));
 const bucketEventMode = parseBucketEventMode(arg("bucket-event-mode", process.env.BUCKET_EVENT_MODE ?? "split"));
 const narrativeSessionMode = parseNarrativeSessionMode(arg("narrative-session-mode", process.env.NARRATIVE_SESSION_MODE ?? "utc-day"));
+const readerRadar = parseReaderRadar(arg("reader-radar", process.env.READER_RADAR ?? "off"));
 const network = parseNetwork(arg("network", process.env.NETWORK ?? "mainnet"));
 const assets = parseAssets(arg("assets", process.env.ASSETS), venue);
 const interval = parseInterval(arg("interval", process.env.INTERVAL ?? "5m"));
@@ -104,6 +113,7 @@ const endMs = parseTimeArg("end", process.env.END_MS, Date.parse("2026-05-27T22:
 const readIntervalMs = Number(arg("read-interval-ms", process.env.READ_INTERVAL_MS ?? "60000"));
 const orderflowWindowMs = Number(arg("orderflow-window-ms", process.env.ORDERFLOW_WINDOW_MS ?? "300000"));
 const setupTtlMs = Number(arg("setup-ttl-ms", process.env.SETUP_TTL_MS ?? "900000"));
+const readerRadarMaxStaleMs = optionalPositiveNumber(arg("reader-radar-max-stale-ms", process.env.READER_RADAR_MAX_STALE_MS), "--reader-radar-max-stale-ms");
 const minCoveragePct = Number(arg("min-coverage-pct", process.env.MIN_COVERAGE_PCT ?? "90"));
 const minJudgeableTrades = Number(arg("min-judgeable-trades", process.env.MIN_JUDGEABLE_TRADES ?? "5"));
 const tradesLimit = Number(arg("trades-limit", process.env.TRADES_LIMIT ?? "20"));
@@ -161,6 +171,14 @@ function auctionConfig(): { levelCandles?: number; profileTradeSampleLimit?: num
   };
 }
 
+function readerRadarConfig(): ReaderRadarConfig | undefined {
+  if (readerRadar === "off") return undefined;
+  return {
+    mode: readerRadar,
+    maxStaleMs: readerRadarMaxStaleMs ?? null,
+  };
+}
+
 function validateInput(): void {
   if (assets.length === 0) throw new Error("--assets must include at least one asset");
   if (!Number.isFinite(startMs)) throw new Error("--start must be valid");
@@ -169,6 +187,7 @@ function validateInput(): void {
   if (!Number.isFinite(readIntervalMs) || readIntervalMs <= 0) throw new Error("--read-interval-ms must be positive");
   if (!Number.isFinite(orderflowWindowMs) || orderflowWindowMs <= 0) throw new Error("--orderflow-window-ms must be positive");
   if (!Number.isFinite(setupTtlMs) || setupTtlMs <= 0) throw new Error("--setup-ttl-ms must be positive");
+  if (readerRadar === "execute" && readerRadarMaxStaleMs === undefined) throw new Error("--reader-radar=execute requires explicit --reader-radar-max-stale-ms");
   if (!Number.isFinite(minCoveragePct) || minCoveragePct < 0 || minCoveragePct > 100) throw new Error("--min-coverage-pct must be 0..100");
   if (!Number.isFinite(minJudgeableTrades) || minJudgeableTrades < 0) throw new Error("--min-judgeable-trades must be non-negative");
   if (!Number.isFinite(tradesLimit) || tradesLimit < 0) throw new Error("--trades-limit must be non-negative");
@@ -226,6 +245,7 @@ async function runBybitReport(asset: string): Promise<ReportView> {
     endAt: endMs,
     auctionConfig: auctionConfig(),
     replay: {
+      radarConfig: readerRadarConfig(),
       setupConfig: {
         setupTtlMs,
         narrativeState: { sessionMode: narrativeSessionMode },
@@ -262,7 +282,7 @@ function statusFor(orderflowEvents: number, summary: ReaderAnalysisSummary): Eva
 
 function printEvaluation(evaluations: AssetEvaluation[]): void {
   console.log("ORDERFLOW POC EVALUATION");
-  console.log(`venue=${venue} dataMode=${dataMode} bucketEventMode=${bucketEventMode} narrativeSessionMode=${narrativeSessionMode} auctionLevelCandles=${auctionLevelCandles ?? "all"} profileTradeSampleLimit=${profileTradeSampleLimit ?? "default"} range=${iso(startMs)} -> ${iso(endMs)} assets=${assets.join(",")} interval=${interval}`);
+  console.log(`venue=${venue} dataMode=${dataMode} bucketEventMode=${bucketEventMode} narrativeSessionMode=${narrativeSessionMode} readerRadar=${readerRadar} readerRadarMaxStaleMs=${readerRadarMaxStaleMs ?? "off"} auctionLevelCandles=${auctionLevelCandles ?? "all"} profileTradeSampleLimit=${profileTradeSampleLimit ?? "default"} range=${iso(startMs)} -> ${iso(endMs)} assets=${assets.join(",")} interval=${interval}`);
   console.log(`readIntervalMs=${readIntervalMs} orderflowWindowMs=${orderflowWindowMs} minCoveragePct=${minCoveragePct} dailyLossLimitR=${dailyLossLimitR}`);
   console.log("");
 
@@ -273,7 +293,12 @@ function printEvaluation(evaluations: AssetEvaluation[]): void {
   console.log("FINAL");
   console.log(`judgeable_trades=${final.judgeableTrades} unjudgeable_trades=${final.unjudgeableTrades} wins=${final.wins} losses=${final.losses} totalR=${formatNumber(final.totalR)} avgR=${formatNumber(final.averageR)} maxDD=${formatNumber(final.maxDrawdownR)}`);
   console.log(`guarded_judgeable=${guarded.summary.judgeableTrades} guarded_skipped=${guarded.skipped} guarded_wins=${guarded.summary.wins} guarded_losses=${guarded.summary.losses} guarded_totalR=${formatNumber(guarded.summary.totalR)} guarded_avgR=${formatNumber(guarded.summary.averageR)} guarded_maxDD=${formatNumber(guarded.summary.maxDrawdownR)}`);
+  console.log(`radar_born=${sumRadarEvents(evaluations, "radar-born")} radar_improved=${sumRadarEvents(evaluations, "radar-improved")} radar_deteriorated=${sumRadarEvents(evaluations, "radar-deteriorated")} radar_promoted=${sumRadarEvents(evaluations, "radar-promoted")} radar_killed=${sumRadarEvents(evaluations, "radar-killed")} radar_expired=${sumRadarEvents(evaluations, "radar-expired")}`);
   console.log(`decision=${decisionFor(evaluations, final)}`);
+}
+
+function sumRadarEvents(evaluations: AssetEvaluation[], type: ReaderRadarEvent["type"]): number {
+  return evaluations.reduce((sum, evaluation) => sum + evaluation.report.radarEvents.filter((event) => event.type === type).length, 0);
 }
 
 async function writeTradeTapeIfRequested(evaluations: AssetEvaluation[]): Promise<void> {
@@ -695,8 +720,12 @@ async function runBybitChunkedParquetReport(asset: string): Promise<ReportView> 
   const setupMemory = createReaderSetupMemory({ ttlMs: setupTtlMs });
   const narrativeMemory = createReaderNarrativeStateMemory();
   const resultState = createReaderResultState();
+  const radarConfig = readerRadarConfig();
+  const radarMemory = radarConfig ? createReaderRadarMemory() : null;
   const setupResults: ReaderSetupResult[] = [];
   const setupEvents: ReaderSetupEvent[] = [];
+  const radarUpdates: ReaderRadarUpdate[] = [];
+  const radarEvents: ReaderRadarEvent[] = [];
   const resultUpdates: ReaderResultUpdate[] = [];
   const resultEvents: ReaderResultEvent[] = [];
   const entries: ReaderResultEntry[] = [];
@@ -735,6 +764,8 @@ async function runBybitChunkedParquetReport(asset: string): Promise<ReportView> 
       endAt: chunk.end,
       auctionConfig: auctionConfig(),
       replay: {
+        radarConfig,
+        ...(radarMemory ? { radarMemory } : {}),
         setupMemory,
         resultState,
         setupConfig: {
@@ -757,6 +788,8 @@ async function runBybitChunkedParquetReport(asset: string): Promise<ReportView> 
 
     setupResults.push(...replay.setupResults);
     setupEvents.push(...replay.setupEvents);
+    radarUpdates.push(...replay.radarUpdates);
+    radarEvents.push(...replay.radarEvents);
     resultUpdates.push(...replay.resultUpdates);
     resultEvents.push(...replay.resultEvents);
     entries.push(...replay.entries);
@@ -775,6 +808,8 @@ async function runBybitChunkedParquetReport(asset: string): Promise<ReportView> 
   const report = {
     setupResults,
     setupEvents,
+    radarUpdates,
+    radarEvents,
     resultUpdates,
     resultEvents,
     entries,
@@ -782,6 +817,7 @@ async function runBybitChunkedParquetReport(asset: string): Promise<ReportView> 
     open: resultState.open,
     summary,
     setupMemory,
+    radarMemory,
     narrativeMemory,
     resultState,
     historySteps,
