@@ -43,6 +43,8 @@ export function readReaderCandidate(input: {
       regime: read.regime?.mode ?? null,
       narrativeIntent: read.narrativeRead?.intent ?? null,
       narrativeDirection: read.narrativeRead?.direction ?? null,
+      localRangeLocation: read.localRange?.location ?? null,
+      localRangePosition: read.localRange?.position ?? null,
     },
     orderflow: {
       pressure: read.orderflow.pressure,
@@ -79,10 +81,12 @@ function isRecordableCandidate(input: {
 function familyFor(read: LiveReaderRead, setup: ReaderSetupResult): ReaderCandidateFamily | null {
   if (read.auction.location === "near-poc") return "poc-chop-no-trade";
   if (read.narrativeRead?.intent === "breakout-continuation") return "initiative-continuation";
+  if (read.narrativeRead?.intent === "trend-continuation" || read.narrativeRead?.intent === "continuation-pullback") return "trend-continuation";
   if (read.orderflow.events.some((event) => event.includes("absorption"))) return "absorption-reaction";
   if (read.auction.location === "value-high") return "value-high-reaction";
   if (read.auction.location === "value-low") return "value-low-reaction";
   if (setup.plan.status !== "no-trade" && setup.plan.setupFamily === "breakout-acceptance") return "initiative-continuation";
+  if (setup.plan.status !== "no-trade" && setup.plan.setupFamily === "trend-continuation") return "trend-continuation";
   return null;
 }
 

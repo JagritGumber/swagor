@@ -123,7 +123,7 @@ describe("buildReaderTradePlan", () => {
     );
 
     expect(plan.status).toBe("no-trade");
-    expect(plan.reasons).toContain("price is near POC");
+    expect(plan.reasons).toContain("price is balanced around local POC");
   });
 
   test("POC gravity blocks edge plans that do not target POC", () => {

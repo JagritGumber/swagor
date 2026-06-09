@@ -40,6 +40,27 @@ describe("analyzeReaderTrades", () => {
     expect(report.groups.byDay[0]?.summary.judgeableTrades).toBe(1);
   });
 
+  test("reports dated equity state without treating peak drawdown as starting loss", () => {
+    const report = analyzeReaderTrades({
+      riskPct: 0.25,
+      initialCapital: 10_000,
+      trades: [
+        trade({ r: 10, entryAtOffsetMs: 0 }),
+        trade({ r: -4, entryAtOffsetMs: 86_400_000 }),
+        trade({ r: -3, entryAtOffsetMs: 172_800_000 }),
+      ],
+    });
+
+    expect(report.summary.totalR).toBe(3);
+    expect(report.summary.maxDrawdownR).toBe(-7);
+    expect(report.summary.maxDrawdownFrom).toBe("2025-05-01");
+    expect(report.summary.maxDrawdownAt).toBe("2025-05-03");
+    expect(report.summary.minEquityR).toBe(0);
+    expect(report.summary.minEquityAt).toBe("start");
+    expect(report.summary.returnPct).toBe(0.75);
+    expect(report.summary.capitalRequiredAtRiskPct).toBe(10_000);
+  });
+
   test("marks adverse no-rotation losses as invalidated narrative", () => {
     const report = analyzeReaderTrades({
       trades: [

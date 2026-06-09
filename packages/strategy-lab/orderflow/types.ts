@@ -42,6 +42,18 @@ export type OrderflowEvidence = {
   followThrough: "holding" | "stalled" | "unknown";
 };
 
+export type OrderflowInitiativeConviction =
+  | "none"
+  | "mixed"
+  | "decisive"
+  | "overwhelming";
+
+export type OrderflowInitiative = {
+  side: OrderflowSide | "none";
+  conviction: OrderflowInitiativeConviction;
+  reasons: string[];
+};
+
 export type OrderflowTapeContext = {
   buyShare: number;
   sellShare: number;
@@ -67,6 +79,7 @@ export type OrderflowRead = {
   dominantSide: OrderflowSide | "none";
   pressure: OrderflowPressure;
   evidence?: OrderflowEvidence;
+  initiative?: OrderflowInitiative;
   tape?: OrderflowTapeContext;
   events: string[];
   narrative: string;

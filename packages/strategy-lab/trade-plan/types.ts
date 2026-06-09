@@ -4,9 +4,20 @@ import type { ReaderNarrative } from "../reader-narrative/types";
 import type { ReaderSequencePhase } from "../reader-sequence/types";
 
 export type ReaderTradePlanStatus = "no-trade" | "watch" | "ready-if-reclaim" | "ready";
-export type ReaderSetupFamily = "none" | "reversal-reclaim" | "breakout-acceptance";
+export type ReaderSetupFamily = "none" | "reversal-reclaim" | "breakout-acceptance" | "trend-continuation";
 
-export type ReaderTradePlanConfig = Record<string, never>;
+export type ReaderTradeStyle =
+  | "all"
+  | "reversal-only"
+  | "trend-only"
+  | "trend-breakout-only"
+  | "trend-pullback-only"
+  | "trend-long-pullback-only"
+  | "trend-short-pullback-only";
+
+export type ReaderTradePlanConfig = {
+  tradeStyle?: ReaderTradeStyle;
+};
 
 export type ReaderNoTradePlan = {
   status: "no-trade";

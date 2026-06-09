@@ -1,20 +1,36 @@
 import type { AuctionRead } from "../read/types";
 import type { OrderflowRead } from "../orderflow/types";
 import type { Candle, Side } from "../types";
+import { absorptionPolicyAllowsReclaim } from "../reader-absorption-quality/read-reader-absorption-quality";
+import type { ReaderAbsorptionPolicy, ReaderAbsorptionQuality } from "../reader-absorption-quality/types";
 import { readerRejectionEdgeFor } from "../reader-live/reader-rejection-edge-for";
+import type { ReaderVpState } from "../reader-vp-state/types";
 import type { ReaderNarrative, ReaderNarrativeLevelStory, ReaderNarrativeParticipation } from "./types";
 
 export function readReaderNarrative(input: {
   auction: AuctionRead;
   orderflow: OrderflowRead;
   lastClosedCandle: Candle | null;
+  absorptionQuality?: ReaderAbsorptionQuality;
+  absorptionPolicy?: ReaderAbsorptionPolicy;
+  vpState?: ReaderVpState;
 }): ReaderNarrative {
   const base = baseNarrative(input.auction, input.orderflow);
   if (base) return base;
 
   const participation = participationFor(input.orderflow);
   const levelStory = levelStoryFor(input.auction, input.orderflow, input.lastClosedCandle);
-  const rejection = rejectionNarrative(input.auction, input.orderflow, participation, levelStory);
+  const trend = trendNarrative(input.auction, input.orderflow, participation, levelStory, input.vpState);
+  if (trend) return trend;
+
+  const rejection = rejectionNarrative(
+    input.auction,
+    input.orderflow,
+    participation,
+    levelStory,
+    input.absorptionQuality,
+    input.absorptionPolicy,
+  );
   if (rejection) return rejection;
 
   const breakout = breakoutNarrative(input.auction, input.orderflow, participation, levelStory);
@@ -31,6 +47,101 @@ export function readReaderNarrative(input: {
     ],
     invalidation: null,
     target: null,
+  };
+}
+
+function trendNarrative(
+  auction: AuctionRead,
+  orderflow: OrderflowRead,
+  participation: ReaderNarrativeParticipation,
+  levelStory: ReaderNarrativeLevelStory,
+  vpState: ReaderVpState | undefined,
+): ReaderNarrative | null {
+  if (
+    auction.level?.kind === "resistance"
+    && auction.location === "above-value"
+    && vpState?.auction === "accepting-above-value"
+    && levelStory === "accepting-above"
+    && participation === "initiative-buying"
+  ) {
+    return trendRead("long", participation, levelStory, auction, orderflow, [
+      "buyers are accepting above value while VP migrates higher",
+      "trend continuation follows accepted value migration",
+    ]);
+  }
+  if (
+    auction.level?.kind === "support"
+    && auction.location === "below-value"
+    && vpState?.auction === "accepting-below-value"
+    && levelStory === "accepting-below"
+    && participation === "initiative-selling"
+  ) {
+    return trendRead("short", participation, levelStory, auction, orderflow, [
+      "sellers are accepting below value while VP migrates lower",
+      "trend continuation follows accepted value migration",
+    ]);
+  }
+  if (
+    auction.level?.kind === "support"
+    && auction.location === "value-low"
+    && vpState?.poc === "poc-migrating-up"
+    && vpState.value !== "value-expanding-up"
+    && orderflow.pressure === "buy-pressure"
+  ) {
+    return {
+      intent: "continuation-pullback",
+      direction: "long",
+      participation,
+      levelStory,
+      reasons: [
+        "value is migrating up and buyers reclaimed the lower value edge",
+        "trend continuation pullback follows value migration instead of fading it",
+        orderflow.narrative,
+      ],
+      invalidation: auction.invalidation,
+      target: auction.target,
+    };
+  }
+  if (
+    auction.level?.kind === "resistance"
+    && auction.location === "value-high"
+    && vpState?.poc === "poc-migrating-down"
+    && vpState.value !== "value-expanding-down"
+    && orderflow.pressure === "sell-pressure"
+  ) {
+    return {
+      intent: "continuation-pullback",
+      direction: "short",
+      participation,
+      levelStory,
+      reasons: [
+        "value is migrating down and sellers reclaimed the upper value edge",
+        "trend continuation pullback follows value migration instead of fading it",
+        orderflow.narrative,
+      ],
+      invalidation: auction.invalidation,
+      target: auction.target,
+    };
+  }
+  return null;
+}
+
+function trendRead(
+  direction: Side,
+  participation: ReaderNarrativeParticipation,
+  levelStory: ReaderNarrativeLevelStory,
+  auction: AuctionRead,
+  orderflow: OrderflowRead,
+  reasons: string[],
+): ReaderNarrative {
+  return {
+    intent: "trend-continuation",
+    direction,
+    participation,
+    levelStory,
+    reasons: [...reasons, orderflow.narrative],
+    invalidation: auction.invalidation,
+    target: auction.target,
   };
 }
 
@@ -75,6 +186,8 @@ function rejectionNarrative(
   orderflow: OrderflowRead,
   participation: ReaderNarrativeParticipation,
   levelStory: ReaderNarrativeLevelStory,
+  absorptionQuality: ReaderAbsorptionQuality | undefined,
+  absorptionPolicy: ReaderAbsorptionPolicy | undefined,
 ): ReaderNarrative | null {
   const edge = readerRejectionEdgeFor(auction);
   if (!edge) return null;
@@ -84,6 +197,9 @@ function rejectionNarrative(
     && levelStory === "rejecting-below"
     && orderflow.events.includes("sell-absorption")
   ) {
+    if (!absorptionPolicyAllowsReclaim(absorptionQuality, absorptionPolicy)) {
+      return waitNarrative(absorptionWaitReason(absorptionQuality, absorptionPolicy), auction, orderflow, levelStory);
+    }
     return {
       intent: "reversal-reclaim",
       direction: "long",
@@ -104,6 +220,9 @@ function rejectionNarrative(
     && levelStory === "rejecting-above"
     && orderflow.events.includes("buy-absorption")
   ) {
+    if (!absorptionPolicyAllowsReclaim(absorptionQuality, absorptionPolicy)) {
+      return waitNarrative(absorptionWaitReason(absorptionQuality, absorptionPolicy), auction, orderflow, levelStory);
+    }
     return {
       intent: "reversal-reclaim",
       direction: "short",
@@ -131,6 +250,14 @@ function rejectionNarrative(
     ], auction);
   }
   return null;
+}
+
+function absorptionWaitReason(
+  absorptionQuality: ReaderAbsorptionQuality | undefined,
+  absorptionPolicy: ReaderAbsorptionPolicy | undefined,
+): string {
+  if (!absorptionQuality) return "absorption has no quality read yet";
+  return `absorption policy ${absorptionPolicy ?? "strict-trap"} rejects ${absorptionQuality.quality}: ${absorptionQuality.reasons.join("; ")}`;
 }
 
 function breakoutNarrative(

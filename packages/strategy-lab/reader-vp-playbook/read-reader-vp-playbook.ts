@@ -52,6 +52,28 @@ function acceptedContinuation(read: LiveReaderRead, narrative: ReaderNarrative |
   ) {
     return playbook("accepted-continuation", "short", "VP accepts below value/support with initiative selling");
   }
+  if (
+    read.auction.location === "value-low"
+    && read.auction.level?.kind === "support"
+    && narrative?.intent === "continuation-pullback"
+    && narrative.direction === "long"
+    && read.orderflow.pressure === "buy-pressure"
+    && read.vpState?.poc === "poc-migrating-up"
+    && read.vpState.value !== "value-expanding-up"
+  ) {
+    return playbook("accepted-continuation", "long", "VP trend context accepts a value-low pullback with buying pressure");
+  }
+  if (
+    read.auction.location === "value-high"
+    && read.auction.level?.kind === "resistance"
+    && narrative?.intent === "continuation-pullback"
+    && narrative.direction === "short"
+    && read.orderflow.pressure === "sell-pressure"
+    && read.vpState?.poc === "poc-migrating-down"
+    && read.vpState.value !== "value-expanding-down"
+  ) {
+    return playbook("accepted-continuation", "short", "VP trend context accepts a value-high pullback with selling pressure");
+  }
   return null;
 }
 

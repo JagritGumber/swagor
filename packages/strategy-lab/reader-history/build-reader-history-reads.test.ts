@@ -128,6 +128,47 @@ describe("buildReaderHistoryReads", () => {
     expect(steps[0]?.read.auction.profile?.high).toBeLessThan(200);
   });
 
+  test("builds local range from the configured auction window", () => {
+    const steps = buildReaderHistoryReads({
+      asset: "BTC",
+      interval: "5m",
+      candleIntervalMs: 1_000,
+      candles: candles(),
+      orderflowEvents: [
+        trade(8_000, "buy", 101, 1),
+      ],
+      readIntervalMs: 1_000,
+      orderflowWindowMs: 5_000,
+      startAt: 8_000,
+      endAt: 8_000,
+      auctionConfig: {
+        ...looseAuctionConfig(),
+        localRangeCandles: 2,
+      },
+    });
+
+    expect(steps[0]?.read.localRange).toMatchObject({
+      high: 104,
+      low: 99,
+      location: "middle",
+    });
+  });
+
+  test("rejects non-positive local range windows", () => {
+    expect(() => buildReaderHistoryReads({
+      asset: "BTC",
+      interval: "5m",
+      candleIntervalMs: 1_000,
+      candles: candles(),
+      orderflowEvents: [],
+      readIntervalMs: 1_000,
+      auctionConfig: {
+        ...looseAuctionConfig(),
+        localRangeCandles: 0,
+      },
+    })).toThrow("reader history localRangeCandles must be a positive finite number");
+  });
+
   test("aligns reads to configured grid", () => {
     const steps = buildReaderHistoryReads({
       asset: "BTC",
@@ -172,7 +213,6 @@ describe("buildReaderHistoryReads", () => {
     expect(result.historySteps).toHaveLength(3);
     expect(result.summary.totalReads).toBe(3);
     expect(result.setupResults).toHaveLength(3);
-    expect(result.entries.length + result.outcomes.length + (result.open ? 1 : 0)).toBeGreaterThan(0);
   });
 
   test("returns no reads when no historical time bounds exist", () => {

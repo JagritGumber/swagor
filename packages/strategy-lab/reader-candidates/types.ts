@@ -8,6 +8,7 @@ export type ReaderCandidateFamily =
   | "value-high-reaction"
   | "value-low-reaction"
   | "initiative-continuation"
+  | "trend-continuation"
   | "absorption-reaction";
 
 export type ReaderCandidateBuilderResponse =
@@ -43,6 +44,8 @@ export type ReaderCandidate = {
     regime: string | null;
     narrativeIntent: string | null;
     narrativeDirection: string | null;
+    localRangeLocation: string | null;
+    localRangePosition: number | null;
   };
   orderflow: {
     pressure: string;
@@ -58,6 +61,8 @@ export type ReaderCandidate = {
   outcome: {
     verdict: ReaderCandidateOutcome;
     firstReaction: "favorable" | "adverse" | "flat" | "none";
+    firstReactionMove: number | null;
+    firstReactionR: number | null;
     targetDistance: number | null;
     invalidationDistance: number | null;
     targetBps: number | null;

@@ -2,6 +2,7 @@ import type { OrderflowEvidence, OrderflowTapeContext, OrderflowTrade } from "..
 import type { AuctionLocation, PriceLevel } from "../read/types";
 import type { ReaderMarketRegime } from "../market-regime/types";
 import type { ReaderAuctionMode } from "../reader-auction-mode/types";
+import type { ReaderAbsorptionQuality } from "../reader-absorption-quality/types";
 import type { ReaderHistoryStep } from "../reader-history/types";
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderVpState } from "../reader-vp-state/types";
@@ -24,6 +25,7 @@ export type ReaderFormationRead = {
   at: number;
   lastPrice: number | null;
   stance: LiveReaderRead["stance"];
+  absorptionQuality?: ReaderAbsorptionQuality;
   auctionMode?: ReaderAuctionMode;
   vp?: ReaderVpState;
   narrative?: LiveReaderRead["narrativeRead"];
@@ -43,6 +45,7 @@ export type ReaderFormationRead = {
     tradeCount: number;
     largestTrade: OrderflowTrade | null;
     evidence?: OrderflowEvidence;
+    initiative?: LiveReaderRead["orderflow"]["initiative"];
     tape?: OrderflowTapeContext;
     events: string[];
   };

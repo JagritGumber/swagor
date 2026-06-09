@@ -3,7 +3,7 @@ import type { OrderflowTrade } from "../orderflow/types";
 import { buildLocalVolumeProfile } from "./build-local-volume-profile";
 import { buildTradeVolumeProfile } from "./build-trade-volume-profile";
 import { readAuctionAtPrice } from "./read-auction-at-price";
-import type { AuctionRead, PriceLevel } from "./types";
+import type { AuctionRead, LocalVolumeProfile, PriceLevel } from "./types";
 
 export function readAuctionAtLevel(input: {
   asset: string;
@@ -14,6 +14,7 @@ export function readAuctionAtLevel(input: {
   radiusPct: number;
   binCount: number;
   profileTrades?: OrderflowTrade[];
+  profileOverride?: LocalVolumeProfile | null;
   price?: number;
 }): AuctionRead {
   const last = input.candles[input.candles.length - 1];
@@ -32,7 +33,7 @@ export function readAuctionAtLevel(input: {
   }
 
   const profileWindow = input.candles.slice(Math.max(0, input.candles.length - input.profileCandles));
-  const profile = input.profileTrades && input.profileTrades.length > 0 ? buildTradeVolumeProfile({
+  const profile = input.profileOverride ?? (input.profileTrades && input.profileTrades.length > 0 ? buildTradeVolumeProfile({
     trades: input.profileTrades,
     anchorPrice: input.level.price,
     radiusPct: input.radiusPct,
@@ -42,7 +43,7 @@ export function readAuctionAtLevel(input: {
     anchorPrice: input.level.price,
     radiusPct: input.radiusPct,
     binCount: input.binCount,
-  });
+  }));
   if (!profile) {
     return {
       asset: input.asset,

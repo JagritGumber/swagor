@@ -9,6 +9,15 @@ export type ReaderAnalysisSummary = {
   totalR: number;
   averageR: number;
   maxDrawdownR: number;
+  maxDrawdownAt: string;
+  maxDrawdownFrom: string;
+  minEquityR: number;
+  minEquityAt: string;
+  returnPct: number;
+  maxDrawdownPct: number;
+  minEquityPct: number;
+  capitalRequiredAtRiskPct: number | null;
+  capitalMultipleNeededToNeverGoBelowStart: number;
 };
 
 export type ReaderTradeReaction =
@@ -106,6 +115,7 @@ export type ReaderAnalysisReport = {
     byAuctionMode: ReaderAnalysisGroup[];
     byAuctionPhase: ReaderAnalysisGroup[];
     byOrderflowEvidence: ReaderAnalysisGroup[];
+    byAbsorptionQuality: ReaderAnalysisGroup[];
     bySideLocation: ReaderAnalysisGroup[];
     byEntryTiming: ReaderAnalysisGroup[];
     byFirstReaction: ReaderAnalysisGroup[];
@@ -124,4 +134,8 @@ export type AnalyzeReaderTradesInput = {
   trades: ReaderTradeDossier[];
   minCoveragePct?: number;
   dailyLossLimitR?: number;
+  riskPct?: number;
+  feePct?: number;
+  slippagePct?: number;
+  initialCapital?: number;
 };

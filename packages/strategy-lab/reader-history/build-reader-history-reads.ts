@@ -3,6 +3,7 @@ import { expireOrderflowWindow } from "../orderflow/expire-orderflow-window";
 import { readOrderflowWindow } from "../orderflow/read-orderflow-window";
 import { updateOrderflowWindow } from "../orderflow/update-orderflow-window";
 import { readMarketRegime } from "../market-regime/read-market-regime";
+import { buildTradeVolumeProfileFromRange } from "../read/build-trade-volume-profile";
 import { clusterPriceLevels } from "../read/cluster-price-levels";
 import { findSwingHighs } from "../read/find-swing-highs";
 import { findSwingLows } from "../read/find-swing-lows";
@@ -25,6 +26,9 @@ export function buildReaderHistoryReads(input: ReaderHistoryInput): ReaderHistor
   }
   if (input.alignReadsToMs !== undefined && (!Number.isFinite(input.alignReadsToMs) || input.alignReadsToMs <= 0)) {
     throw new Error("reader history alignReadsToMs must be a positive finite number");
+  }
+  if (input.auctionConfig?.localRangeCandles !== undefined && (!Number.isFinite(input.auctionConfig.localRangeCandles) || input.auctionConfig.localRangeCandles <= 0)) {
+    throw new Error("reader history localRangeCandles must be a positive finite number");
   }
   const asset = input.asset.toUpperCase();
   const candles = sortedCandles(input.candles);
@@ -72,11 +76,12 @@ export function buildReaderHistoryReads(input: ReaderHistoryInput): ReaderHistor
       candleIndex,
       cache: auctionCache,
       config: input.auctionConfig,
-      profileTrades: sampledProfileTrades({
+      profileTradeWindow: {
         trades: profileWindow.trades,
         startIndex: profileWindow.startIndex,
-        limit: input.auctionConfig?.profileTradeSampleLimit ?? 20_000,
-      }),
+        endIndex: profileWindow.trades.length,
+        sampleLimit: input.auctionConfig?.profileTradeSampleLimit ?? 20_000,
+      },
       price: orderflow.lastPrice ?? activeCandles[activeCandles.length - 1].c,
     });
     steps.push({
@@ -88,6 +93,12 @@ export function buildReaderHistoryReads(input: ReaderHistoryInput): ReaderHistor
         auctionModeState,
         vpStateMemory,
         lastClosedCandle: activeCandles[activeCandles.length - 1] ?? null,
+        localRange: localRangeFor({
+          candles: activeCandles,
+          price: orderflow.lastPrice ?? activeCandles[activeCandles.length - 1]?.c ?? null,
+          windowCandles: input.auctionConfig?.localRangeCandles ?? localRangeCandlesFor(input),
+        }),
+        config: input.readerConfig,
       }),
     });
   }
@@ -107,7 +118,7 @@ function readHistoryAuction(input: {
   candleIndex: number;
   cache: HistoryAuctionCache;
   config: ReaderHistoryInput["auctionConfig"];
-  profileTrades: OrderflowTrade[];
+  profileTradeWindow: HistoryProfileTradeWindow;
   price: number;
 }): AuctionRead {
   if (input.cache.candleIndex !== input.candleIndex) {
@@ -122,6 +133,14 @@ function readHistoryAuction(input: {
     price: input.price,
     maxDistancePct: input.config?.maxLevelDistancePct ?? 0.012,
   });
+  const profile = input.profileTradeWindow.endIndex > input.profileTradeWindow.startIndex
+    ? buildTradeVolumeProfileFromRange({
+      ...input.profileTradeWindow,
+      anchorPrice: level?.price ?? input.price,
+      radiusPct: input.config?.profileRadiusPct ?? 0.015,
+      binCount: input.config?.profileBins ?? 24,
+    })
+    : null;
   return readAuctionAtLevel({
     asset: input.asset,
     interval: input.interval,
@@ -130,10 +149,17 @@ function readHistoryAuction(input: {
     profileCandles: input.config?.profileCandles ?? 120,
     radiusPct: input.config?.profileRadiusPct ?? 0.015,
     binCount: input.config?.profileBins ?? 24,
-    profileTrades: input.profileTrades,
+    profileOverride: profile,
     price: input.price,
   });
 }
+
+type HistoryProfileTradeWindow = {
+  trades: OrderflowTrade[];
+  startIndex: number;
+  endIndex: number;
+  sampleLimit: number;
+};
 
 function historyPriceLevels(input: {
   candles: Candle[];
@@ -163,23 +189,47 @@ function levelDetectionCandles(input: {
   return input.candles.slice(input.candles.length - input.limit);
 }
 
-function sampledProfileTrades(input: {
-  trades: OrderflowTrade[];
-  startIndex: number;
-  limit: number;
-}): OrderflowTrade[] {
-  const count = input.trades.length - input.startIndex;
-  if (count <= 0) return [];
-  if (!Number.isFinite(input.limit) || input.limit <= 0 || count <= input.limit) {
-    return input.trades.slice(input.startIndex);
-  }
+function localRangeCandlesFor(input: ReaderHistoryInput): number {
+  return input.auctionConfig?.profileCandles ?? 50;
+}
 
-  const sampled: OrderflowTrade[] = [];
-  const stride = count / input.limit;
-  for (let index = 0; index < input.limit; index += 1) {
-    sampled.push(input.trades[input.startIndex + Math.floor(index * stride)]);
+function localRangeFor(input: {
+  candles: Candle[];
+  price: number | null;
+  windowCandles: number;
+}) {
+  const candles = input.candles.slice(Math.max(0, input.candles.length - input.windowCandles));
+  if (candles.length === 0 || input.price === null) {
+    return {
+      high: null,
+      low: null,
+      position: null,
+      location: "unknown" as const,
+    };
   }
-  return sampled;
+  const high = Math.max(...candles.map((candle) => candle.h));
+  const low = Math.min(...candles.map((candle) => candle.l));
+  if (!Number.isFinite(high) || !Number.isFinite(low) || high === low) {
+    return {
+      high: null,
+      low: null,
+      position: null,
+      location: "unknown" as const,
+    };
+  }
+  const position = (input.price - low) / (high - low);
+  return {
+    high,
+    low,
+    position,
+    location: localRangeLocationFor(position),
+  };
+}
+
+function localRangeLocationFor(position: number) {
+  if (position <= 0.25) return "lower-edge" as const;
+  if (position >= 0.75) return "upper-edge" as const;
+  return "middle" as const;
 }
 
 function sortedCandles(candles: Candle[]): Candle[] {

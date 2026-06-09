@@ -85,6 +85,18 @@ describe("analyzeReaderExecutionQuality", () => {
     expect(report.trades[0]?.quality).toBe("clean");
   });
 
+  test("reader-failure exit counts as priced coverage", () => {
+    const report = analyzeReaderExecutionQuality(inputFor({
+      events: [
+        readerFailure(2),
+      ],
+    }));
+
+    expect(report.trades[0]?.coveragePctWhileOpen).toBe(100);
+    expect(report.trades[0]?.quality).toBe("clean");
+    expect(report.trades[0]?.diagnosis).toBe("clean-price-coverage");
+  });
+
   test("open trade reports open while still measuring later reads", () => {
     const report = analyzeReaderExecutionQuality(inputFor({
       exitAt: null,
@@ -107,7 +119,9 @@ function inputFor(input: {
   exitAt?: number | null;
 }): ReaderExecutionQualityInput {
   const entry = entryFor(1);
-  const inferredExitAt = input.events.find((event) => event.type === "stop-hit" || event.type === "target-hit")?.at ?? 4;
+  const inferredExitAt = input.events.find((event) =>
+    event.type === "stop-hit" || event.type === "target-hit" || event.type === "reader-failure-exit"
+  )?.at ?? 4;
   const outcome = input.exitAt === null ? null : outcomeFor(entry, input.exitAt ?? inferredExitAt);
   return {
     readIntervalMs: input.readIntervalMs,
@@ -129,7 +143,12 @@ function inputFor(input: {
       open: outcome ? null : entry,
       resultUpdates: [
         { input: setup(), opened: entry, closed: null, events: [opened(1)] },
-        ...input.events.map((event) => ({ input: setup(), opened: null, closed: event.type === "stop-hit" ? outcome : null, events: [event] })),
+        ...input.events.map((event) => ({
+          input: setup(),
+          opened: null,
+          closed: event.type === "stop-hit" || event.type === "reader-failure-exit" ? outcome : null,
+          events: [event],
+        })),
       ],
     },
   };
@@ -173,6 +192,10 @@ function unpriced(at: number): ReaderResultEvent {
 
 function stop(at: number): ReaderResultEvent {
   return { type: "stop-hit", asset: "BTC", side: "long", price: 98, r: -1, at, reason: "stop" };
+}
+
+function readerFailure(at: number): ReaderResultEvent {
+  return { type: "reader-failure-exit", asset: "BTC", side: "long", price: 99, r: -0.5, at, reason: "reader failure" };
 }
 
 function setup(): ReaderSetupResult {

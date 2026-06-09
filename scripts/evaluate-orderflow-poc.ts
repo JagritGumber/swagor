@@ -23,12 +23,21 @@ import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderR
 import type { ReaderSetupEvent, ReaderSetupResult } from "../packages/strategy-lab/reader-setup/types";
 import type { ReaderNarrativeSessionMode } from "../packages/strategy-lab/reader-narrative-state/types";
 import type { ReaderRadarConfig, ReaderRadarEvent, ReaderRadarUpdate } from "../packages/strategy-lab/reader-radar/types";
+import { READER_ABSORPTION_POLICIES, type ReaderAbsorptionPolicy } from "../packages/strategy-lab/reader-absorption-quality/types";
 import type { Candle } from "../packages/strategy-lab/types";
 
 type Venue = "hyperliquid" | "bybit";
 type DataMode = "raw" | "parquet";
 type BucketEventMode = "split" | "aggregate";
 type ReaderRadarArg = "off" | "shadow" | "execute";
+type TradeStyle =
+  | "all"
+  | "reversal-only"
+  | "trend-only"
+  | "trend-breakout-only"
+  | "trend-pullback-only"
+  | "trend-long-pullback-only"
+  | "trend-short-pullback-only";
 
 type ReportView = ReaderHistoryReplayResult & {
   diagnostics: {
@@ -97,6 +106,23 @@ function parseReaderRadar(value: string | undefined): ReaderRadarArg {
   return "off";
 }
 
+function parseTradeStyle(value: string | undefined): TradeStyle {
+  if (
+    value === "reversal-only"
+    || value === "trend-only"
+    || value === "trend-breakout-only"
+    || value === "trend-pullback-only"
+    || value === "trend-long-pullback-only"
+    || value === "trend-short-pullback-only"
+  ) return value;
+  return "all";
+}
+
+function parseAbsorptionPolicy(value: string | undefined): ReaderAbsorptionPolicy {
+  if (value && READER_ABSORPTION_POLICIES.includes(value as ReaderAbsorptionPolicy)) return value as ReaderAbsorptionPolicy;
+  return "strict-trap";
+}
+
 const vmUrl = arg("vm-url", process.env.VM_URL ?? "http://localhost:8428")!;
 const orderflowRootDir = arg("orderflow-root", process.env.ORDERFLOW_ROOT_DIR ?? "orderflow-data")!;
 const marketStoreRoot = arg("market-store-root", process.env.MARKET_STORE_ROOT ?? "market-store")!;
@@ -105,6 +131,8 @@ const dataMode = parseDataMode(arg("data-mode", process.env.DATA_MODE ?? "raw"))
 const bucketEventMode = parseBucketEventMode(arg("bucket-event-mode", process.env.BUCKET_EVENT_MODE ?? "split"));
 const narrativeSessionMode = parseNarrativeSessionMode(arg("narrative-session-mode", process.env.NARRATIVE_SESSION_MODE ?? "utc-day"));
 const readerRadar = parseReaderRadar(arg("reader-radar", process.env.READER_RADAR ?? "off"));
+const tradeStyle = parseTradeStyle(arg("trade-style", process.env.TRADE_STYLE ?? "all"));
+const absorptionPolicy = parseAbsorptionPolicy(arg("absorption-policy", process.env.ABSORPTION_POLICY ?? "strict-trap"));
 const network = parseNetwork(arg("network", process.env.NETWORK ?? "mainnet"));
 const assets = parseAssets(arg("assets", process.env.ASSETS), venue);
 const interval = parseInterval(arg("interval", process.env.INTERVAL ?? "5m"));
@@ -118,10 +146,16 @@ const minCoveragePct = Number(arg("min-coverage-pct", process.env.MIN_COVERAGE_P
 const minJudgeableTrades = Number(arg("min-judgeable-trades", process.env.MIN_JUDGEABLE_TRADES ?? "5"));
 const tradesLimit = Number(arg("trades-limit", process.env.TRADES_LIMIT ?? "20"));
 const dailyLossLimitR = Number(arg("daily-loss-limit-r", process.env.DAILY_LOSS_LIMIT_R ?? "3"));
+const riskPct = Number(arg("risk-pct", process.env.RISK_PCT ?? "0.25"));
+const feePct = Number(arg("fee-pct", process.env.FEE_PCT ?? "0"));
+const slippagePct = Number(arg("slippage-pct", process.env.SLIPPAGE_PCT ?? "0"));
+const initialCapital = optionalPositiveNumber(arg("initial-capital", process.env.INITIAL_CAPITAL), "--initial-capital");
 const auctionLevelCandles = optionalPositiveNumber(arg("auction-level-candles", process.env.AUCTION_LEVEL_CANDLES), "--auction-level-candles");
 const profileTradeSampleLimit = optionalPositiveNumber(arg("profile-trade-sample-limit", process.env.PROFILE_TRADE_SAMPLE_LIMIT), "--profile-trade-sample-limit");
+const localRangeCandles = optionalPositiveNumber(arg("local-range-candles", process.env.LOCAL_RANGE_CANDLES), "--local-range-candles");
 const tradeTapeOut = arg("trade-tape-out", process.env.TRADE_TAPE_OUT);
 const candidateTapeOut = arg("candidate-tape-out", process.env.CANDIDATE_TAPE_OUT);
+const radarEventsOut = arg("radar-events-out", process.env.RADAR_EVENTS_OUT);
 const summaryOnly = hasFlag("summary-only");
 const chunkMonths = hasFlag("chunk-months");
 const chunkDays = hasFlag("chunk-days");
@@ -136,6 +170,7 @@ for (const asset of assets) {
 printEvaluation(evaluations);
 await writeTradeTapeIfRequested(evaluations);
 await writeCandidateTapeIfRequested(evaluations);
+await writeRadarEventsIfRequested(evaluations);
 
 function parseTimeArg(name: string, envValue: string | undefined, fallback: number): number {
   const raw = arg(name);
@@ -163,12 +198,17 @@ function optionalPositiveNumber(value: string | undefined, name: string): number
   return parsed;
 }
 
-function auctionConfig(): { levelCandles?: number; profileTradeSampleLimit?: number } | undefined {
-  if (auctionLevelCandles === undefined && profileTradeSampleLimit === undefined) return undefined;
+function auctionConfig(): { levelCandles?: number; profileTradeSampleLimit?: number; localRangeCandles?: number } | undefined {
+  if (auctionLevelCandles === undefined && profileTradeSampleLimit === undefined && localRangeCandles === undefined) return undefined;
   return {
     ...(auctionLevelCandles === undefined ? {} : { levelCandles: auctionLevelCandles }),
     ...(profileTradeSampleLimit === undefined ? {} : { profileTradeSampleLimit }),
+    ...(localRangeCandles === undefined ? {} : { localRangeCandles }),
   };
+}
+
+function tradePlanConfig() {
+  return { tradeStyle };
 }
 
 function readerRadarConfig(): ReaderRadarConfig | undefined {
@@ -176,6 +216,7 @@ function readerRadarConfig(): ReaderRadarConfig | undefined {
   return {
     mode: readerRadar,
     maxStaleMs: readerRadarMaxStaleMs ?? null,
+    tradeStyle,
   };
 }
 
@@ -192,6 +233,9 @@ function validateInput(): void {
   if (!Number.isFinite(minJudgeableTrades) || minJudgeableTrades < 0) throw new Error("--min-judgeable-trades must be non-negative");
   if (!Number.isFinite(tradesLimit) || tradesLimit < 0) throw new Error("--trades-limit must be non-negative");
   if (!Number.isFinite(dailyLossLimitR) || dailyLossLimitR <= 0) throw new Error("--daily-loss-limit-r must be positive");
+  if (!Number.isFinite(riskPct) || riskPct <= 0) throw new Error("--risk-pct must be positive");
+  if (!Number.isFinite(feePct) || feePct < 0) throw new Error("--fee-pct must be non-negative");
+  if (!Number.isFinite(slippagePct) || slippagePct < 0) throw new Error("--slippage-pct must be non-negative");
 }
 
 async function evaluateAsset(asset: string): Promise<AssetEvaluation> {
@@ -200,6 +244,10 @@ async function evaluateAsset(asset: string): Promise<AssetEvaluation> {
     trades: report.evidence.trades,
     minCoveragePct,
     dailyLossLimitR,
+    riskPct,
+    feePct,
+    slippagePct,
+    initialCapital,
   });
   return {
     asset,
@@ -243,13 +291,15 @@ async function runBybitReport(asset: string): Promise<ReportView> {
     orderflowWindowMs,
     startAt: startMs,
     endAt: endMs,
-    auctionConfig: auctionConfig(),
-    replay: {
-      radarConfig: readerRadarConfig(),
-      setupConfig: {
-        setupTtlMs,
-        narrativeState: { sessionMode: narrativeSessionMode },
-      },
+      auctionConfig: auctionConfig(),
+      readerConfig: { absorptionPolicy },
+      replay: {
+        radarConfig: readerRadarConfig(),
+        setupConfig: {
+          tradePlanConfig: tradePlanConfig(),
+          setupTtlMs,
+          narrativeState: { sessionMode: narrativeSessionMode },
+        },
     },
   });
   const executionQuality = analyzeReaderExecutionQuality({ readIntervalMs, replay });
@@ -282,8 +332,9 @@ function statusFor(orderflowEvents: number, summary: ReaderAnalysisSummary): Eva
 
 function printEvaluation(evaluations: AssetEvaluation[]): void {
   console.log("ORDERFLOW POC EVALUATION");
-  console.log(`venue=${venue} dataMode=${dataMode} bucketEventMode=${bucketEventMode} narrativeSessionMode=${narrativeSessionMode} readerRadar=${readerRadar} readerRadarMaxStaleMs=${readerRadarMaxStaleMs ?? "off"} auctionLevelCandles=${auctionLevelCandles ?? "all"} profileTradeSampleLimit=${profileTradeSampleLimit ?? "default"} range=${iso(startMs)} -> ${iso(endMs)} assets=${assets.join(",")} interval=${interval}`);
+  console.log(`venue=${venue} dataMode=${dataMode} bucketEventMode=${bucketEventMode} narrativeSessionMode=${narrativeSessionMode} readerRadar=${readerRadar} readerRadarMaxStaleMs=${readerRadarMaxStaleMs ?? "off"} tradeStyle=${tradeStyle} absorptionPolicy=${absorptionPolicy} auctionLevelCandles=${auctionLevelCandles ?? "all"} profileTradeSampleLimit=${profileTradeSampleLimit ?? "default"} localRangeCandles=${localRangeCandles ?? "auto"} range=${iso(startMs)} -> ${iso(endMs)} assets=${assets.join(",")} interval=${interval}`);
   console.log(`readIntervalMs=${readIntervalMs} orderflowWindowMs=${orderflowWindowMs} minCoveragePct=${minCoveragePct} dailyLossLimitR=${dailyLossLimitR}`);
+  console.log(`riskPct=${riskPct} feePct=${feePct} slippagePct=${slippagePct} initialCapital=${initialCapital ?? "off"}`);
   console.log("");
 
   for (const evaluation of evaluations) printAssetEvaluation(evaluation);
@@ -291,8 +342,8 @@ function printEvaluation(evaluations: AssetEvaluation[]): void {
   const final = finalSummary(evaluations);
   const guarded = guardedFinalSummary(evaluations);
   console.log("FINAL");
-  console.log(`judgeable_trades=${final.judgeableTrades} unjudgeable_trades=${final.unjudgeableTrades} wins=${final.wins} losses=${final.losses} totalR=${formatNumber(final.totalR)} avgR=${formatNumber(final.averageR)} maxDD=${formatNumber(final.maxDrawdownR)}`);
-  console.log(`guarded_judgeable=${guarded.summary.judgeableTrades} guarded_skipped=${guarded.skipped} guarded_wins=${guarded.summary.wins} guarded_losses=${guarded.summary.losses} guarded_totalR=${formatNumber(guarded.summary.totalR)} guarded_avgR=${formatNumber(guarded.summary.averageR)} guarded_maxDD=${formatNumber(guarded.summary.maxDrawdownR)}`);
+  console.log(`judgeable_trades=${final.judgeableTrades} unjudgeable_trades=${final.unjudgeableTrades} wins=${final.wins} losses=${final.losses} totalR=${formatNumber(final.totalR)} avgR=${formatNumber(final.averageR)} maxDD=${formatNumber(final.maxDrawdownR)} maxDDFrom=${final.maxDrawdownFrom} maxDDAt=${final.maxDrawdownAt} minEquity=${formatNumber(final.minEquityR)} minEquityAt=${final.minEquityAt} returnPct=${formatNumber(final.returnPct)} maxDDPct=${formatNumber(final.maxDrawdownPct)} minEquityPct=${formatNumber(final.minEquityPct)} capitalRequired=${formatNullable(final.capitalRequiredAtRiskPct)} capitalMultiple=${formatNumber(final.capitalMultipleNeededToNeverGoBelowStart)}`);
+  console.log(`guarded_judgeable=${guarded.summary.judgeableTrades} guarded_skipped=${guarded.skipped} guarded_wins=${guarded.summary.wins} guarded_losses=${guarded.summary.losses} guarded_totalR=${formatNumber(guarded.summary.totalR)} guarded_avgR=${formatNumber(guarded.summary.averageR)} guarded_maxDD=${formatNumber(guarded.summary.maxDrawdownR)} guarded_maxDDFrom=${guarded.summary.maxDrawdownFrom} guarded_maxDDAt=${guarded.summary.maxDrawdownAt} guarded_minEquity=${formatNumber(guarded.summary.minEquityR)} guarded_minEquityAt=${guarded.summary.minEquityAt}`);
   console.log(`radar_born=${sumRadarEvents(evaluations, "radar-born")} radar_improved=${sumRadarEvents(evaluations, "radar-improved")} radar_deteriorated=${sumRadarEvents(evaluations, "radar-deteriorated")} radar_promoted=${sumRadarEvents(evaluations, "radar-promoted")} radar_killed=${sumRadarEvents(evaluations, "radar-killed")} radar_expired=${sumRadarEvents(evaluations, "radar-expired")}`);
   console.log(`decision=${decisionFor(evaluations, final)}`);
 }
@@ -313,6 +364,34 @@ async function writeCandidateTapeIfRequested(evaluations: AssetEvaluation[]): Pr
   await mkdir(dirname(candidateTapeOut), { recursive: true });
   await writeFile(candidateTapeOut, `${JSON.stringify(candidateTapeFor(evaluations), null, 2)}\n`);
   console.log(`candidate_tape=${candidateTapeOut}`);
+}
+
+async function writeRadarEventsIfRequested(evaluations: AssetEvaluation[]): Promise<void> {
+  if (!radarEventsOut) return;
+  await mkdir(dirname(radarEventsOut), { recursive: true });
+  await writeFile(radarEventsOut, `${JSON.stringify(radarEventsFor(evaluations), null, 2)}\n`);
+  console.log(`radar_events=${radarEventsOut}`);
+}
+
+function radarEventsFor(evaluations: AssetEvaluation[]) {
+  const assets = evaluations.map((evaluation) => ({
+    asset: evaluation.asset,
+    status: evaluation.status,
+    events: evaluation.report.radarEvents,
+  }));
+  return {
+    run: runMetadata(),
+    summary: {
+      born: sumRadarEvents(evaluations, "radar-born"),
+      improved: sumRadarEvents(evaluations, "radar-improved"),
+      deteriorated: sumRadarEvents(evaluations, "radar-deteriorated"),
+      promoted: sumRadarEvents(evaluations, "radar-promoted"),
+      killed: sumRadarEvents(evaluations, "radar-killed"),
+      expired: sumRadarEvents(evaluations, "radar-expired"),
+      ignored: sumRadarEvents(evaluations, "radar-ignored"),
+    },
+    assets,
+  };
 }
 
 function candidateTapeFor(evaluations: AssetEvaluation[]) {
@@ -358,8 +437,15 @@ function runMetadata() {
     setupTtlMs,
     minCoveragePct,
     dailyLossLimitR,
+    tradeStyle,
+    riskPct,
+    feePct,
+    slippagePct,
+    initialCapital: initialCapital ?? null,
+    absorptionPolicy,
     auctionLevelCandles: auctionLevelCandles ?? null,
     profileTradeSampleLimit: profileTradeSampleLimit ?? null,
+    localRangeCandles: localRangeCandles ?? null,
     chunking: chunkDays ? "days" : chunkMonths ? "months" : "none",
   };
 }
@@ -378,6 +464,15 @@ function tradeTapeFor(evaluations: AssetEvaluation[]) {
       totalR: final.totalR,
       averageR: final.averageR,
       maxDrawdownR: final.maxDrawdownR,
+      maxDrawdownFrom: final.maxDrawdownFrom,
+      maxDrawdownAt: final.maxDrawdownAt,
+      minEquityR: final.minEquityR,
+      minEquityAt: final.minEquityAt,
+      returnPct: final.returnPct,
+      maxDrawdownPct: final.maxDrawdownPct,
+      minEquityPct: final.minEquityPct,
+      capitalRequiredAtRiskPct: final.capitalRequiredAtRiskPct,
+      capitalMultipleNeededToNeverGoBelowStart: final.capitalMultipleNeededToNeverGoBelowStart,
       guarded: {
         skipped: guarded.skipped,
         judgeableTrades: guarded.summary.judgeableTrades,
@@ -386,6 +481,10 @@ function tradeTapeFor(evaluations: AssetEvaluation[]) {
         totalR: guarded.summary.totalR,
         averageR: guarded.summary.averageR,
         maxDrawdownR: guarded.summary.maxDrawdownR,
+        maxDrawdownFrom: guarded.summary.maxDrawdownFrom,
+        maxDrawdownAt: guarded.summary.maxDrawdownAt,
+        minEquityR: guarded.summary.minEquityR,
+        minEquityAt: guarded.summary.minEquityAt,
       },
       decision: decisionFor(evaluations, final),
     },
@@ -411,6 +510,7 @@ function tradeTapeGroups(analysis: ReaderAnalysisReport) {
     byAuctionMode: compactGroups(analysis.groups.byAuctionMode),
     byAuctionPhase: compactGroups(analysis.groups.byAuctionPhase),
     byOrderflowEvidence: compactGroups(analysis.groups.byOrderflowEvidence),
+    byAbsorptionQuality: compactGroups(analysis.groups.byAbsorptionQuality),
     bySideLocation: compactGroups(analysis.groups.bySideLocation),
     byEntryTiming: compactGroups(analysis.groups.byEntryTiming),
     byFirstReaction: compactGroups(analysis.groups.byFirstReaction),
@@ -470,7 +570,9 @@ function tradeTapeRecord(asset: string, index: number, trade: ReaderAnalyzedTrad
       setupPlanSource: dossier.setup.planSource,
       setupAgeMs: dossier.setup.setupAgeMs,
       setupReadCount: dossier.setup.readCount,
+      setupReasons: dossier.setup.reasons,
     },
+    absorptionQuality: read?.absorptionQuality ?? null,
     narrative: {
       intent: read?.narrative?.intent ?? null,
       direction: read?.narrative?.direction ?? null,
@@ -488,7 +590,14 @@ function tradeTapeRecord(asset: string, index: number, trade: ReaderAnalyzedTrad
       pressure: read?.orderflow.pressure ?? dossier.orderflow.pressure,
       events: read?.orderflow.events ?? dossier.orderflow.events,
       tradeCount: read?.orderflow.tradeCount ?? dossier.orderflow.tradeCount,
+      buyVolume: dossier.orderflow.buyVolume,
+      sellVolume: dossier.orderflow.sellVolume,
+      delta: read?.orderflow.delta ?? dossier.orderflow.delta,
+      averageTradeSize: dossier.orderflow.averageTradeSize,
       largestTrade: read?.orderflow.largestTrade ?? dossier.orderflow.largestTrade,
+      evidence: read?.orderflow.evidence ?? dossier.orderflow.evidence ?? null,
+      initiative: read?.orderflow.initiative ?? dossier.orderflow.initiative ?? null,
+      tape: read?.orderflow.tape ?? dossier.orderflow.tape ?? null,
     },
     diagnostics: {
       firstReaction: trade.metrics.firstReaction,
@@ -525,7 +634,7 @@ function printAssetEvaluation(evaluation: AssetEvaluation): void {
     }
   }
   console.log("summary:");
-  console.log(`  registered=${evaluation.summary.registeredTrades} judgeable=${evaluation.summary.judgeableTrades} unjudgeable=${evaluation.summary.unjudgeableTrades} wins=${evaluation.summary.wins} losses=${evaluation.summary.losses} totalR=${formatNumber(evaluation.summary.totalR)} avgR=${formatNumber(evaluation.summary.averageR)} maxDD=${formatNumber(evaluation.summary.maxDrawdownR)}`);
+  console.log(`  registered=${evaluation.summary.registeredTrades} judgeable=${evaluation.summary.judgeableTrades} unjudgeable=${evaluation.summary.unjudgeableTrades} wins=${evaluation.summary.wins} losses=${evaluation.summary.losses} totalR=${formatNumber(evaluation.summary.totalR)} avgR=${formatNumber(evaluation.summary.averageR)} maxDD=${formatNumber(evaluation.summary.maxDrawdownR)} maxDDFrom=${evaluation.summary.maxDrawdownFrom} maxDDAt=${evaluation.summary.maxDrawdownAt} minEquity=${formatNumber(evaluation.summary.minEquityR)} minEquityAt=${evaluation.summary.minEquityAt} returnPct=${formatNumber(evaluation.summary.returnPct)}`);
   console.log(`  decision=${assetDecisionFor(evaluation)}`);
   console.log("");
 }
@@ -535,7 +644,7 @@ function printTrade(index: number, trade: ReaderAnalyzedTrade): void {
   const result = dossier.trade;
   const read = dossier.formation.significantBeforeEntry[dossier.formation.significantBeforeEntry.length - 1];
   const readText = read
-    ? `${read.narrative?.intent ?? "no-narrative"}/${read.narrative?.direction ?? "none"} ${read.auction.location} ${read.auction.levelKind ?? "level"} + ${read.orderflow.pressure} + ${read.orderflow.events.join("+") || "no-orderflow-event"}`
+    ? `${read.narrative?.intent ?? "no-narrative"}/${read.narrative?.direction ?? "none"} ${read.auction.location} ${read.auction.levelKind ?? "level"} + ${read.orderflow.pressure} + ${read.orderflow.events.join("+") || "no-orderflow-event"} absorption=${read.absorptionQuality?.quality ?? "none"}`
     : `${dossier.auction.location} ${dossier.auction.level?.kind ?? "level"} + ${dossier.orderflow.pressure} + ${dossier.orderflow.events.join("+") || "no-orderflow-event"}`;
   const vpText = read?.vp
     ? `${read.vp.auction}/${read.vp.poc}/${read.vp.value}`
@@ -562,6 +671,7 @@ function printReaderDiagnostics(report: ReportView): void {
   const orderflowPressure = countBy(report.historySteps, (step) => step.read.orderflow.pressure);
   const narrativeIntents = countBy(report.historySteps, (step) => step.read.narrativeRead?.intent ?? "no-narrative");
   const narrativeParticipation = countBy(report.historySteps, (step) => step.read.narrativeRead?.participation ?? "unknown");
+  const absorptionQuality = countBy(report.historySteps, (step) => step.read.absorptionQuality?.quality ?? "none");
   const topReasons = topCounts(report.setupResults.flatMap((result) => result.plan.reasons), 8);
   const vpBlocks = topCounts(report.setupResults.flatMap((result) => result.plan.reasons.filter((reason) => reason.startsWith("VP "))), 8);
   console.log(`reader: reads=${report.summary.totalReads} entries_opened=${report.summary.entriesOpened} outcomes=${report.summary.totalOutcomes} open=${report.open ? "yes" : "no"}`);
@@ -569,6 +679,7 @@ function printReaderDiagnostics(report: ReportView): void {
   console.log(`  auction=${formatCounts(auctionLocations)} auction_mode=${formatCounts(auctionModes)} auction_phase=${formatCounts(auctionPhases)} orderflow=${formatCounts(orderflowPressure)}`);
   console.log(`  vp_auction=${formatCounts(vpAuction)} vp_poc=${formatCounts(vpPoc)} vp_value=${formatCounts(vpValue)}`);
   console.log(`  narrative_intent=${formatCounts(narrativeIntents)} participation=${formatCounts(narrativeParticipation)}`);
+  console.log(`  absorption_quality=${formatCounts(absorptionQuality)}`);
   console.log(`  top_no_trade_reasons=${topReasons.length === 0 ? "none" : topReasons.map(([reason, count]) => `${count}x ${reason}`).join(" | ")}`);
   console.log(`  vp_blocks=${vpBlocks.length === 0 ? "none" : vpBlocks.map(([reason, count]) => `${count}x ${reason}`).join(" | ")}`);
 }
@@ -589,6 +700,7 @@ function printResultAnalysis(analysis: ReaderAnalysisReport): void {
   printGroups("  by_auction_mode", analysis.groups.byAuctionMode, 8);
   printGroups("  by_auction_phase", analysis.groups.byAuctionPhase, 8);
   printGroups("  by_orderflow_evidence", analysis.groups.byOrderflowEvidence, 10);
+  printGroups("  by_absorption_quality", analysis.groups.byAbsorptionQuality, 10);
   printGroups("  by_entry_timing", analysis.groups.byEntryTiming, 8);
   printGroups("  by_first_reaction", analysis.groups.byFirstReaction, 8);
   printGroups("  by_poc_rotation", analysis.groups.byPocRotation, 8);
@@ -599,8 +711,8 @@ function printResultAnalysis(analysis: ReaderAnalysisReport): void {
   printGroups("  worst_narratives", analysis.groups.worstNarratives, 8, "ranked");
   printGroups("  by_side_location", analysis.groups.bySideLocation, 8);
   printNarrativeFailureChains(analysis);
-  console.log(`  guarded_summary daily_loss_limit_r=${dailyLossLimitR} skipped=${analysis.guarded.skipped} trades=${analysis.guarded.summary.judgeableTrades} wins=${analysis.guarded.summary.wins} losses=${analysis.guarded.summary.losses} totalR=${formatNumber(analysis.guarded.summary.totalR)} avgR=${formatNumber(analysis.guarded.summary.averageR)} maxDD=${formatNumber(analysis.guarded.summary.maxDrawdownR)}`);
-  printGroups("  guarded_by_day", analyzeReaderTrades({ trades: analysis.guarded.trades.map((trade) => trade.dossier), minCoveragePct, dailyLossLimitR }).groups.byDay, 10);
+  console.log(`  guarded_summary daily_loss_limit_r=${dailyLossLimitR} skipped=${analysis.guarded.skipped} trades=${analysis.guarded.summary.judgeableTrades} wins=${analysis.guarded.summary.wins} losses=${analysis.guarded.summary.losses} totalR=${formatNumber(analysis.guarded.summary.totalR)} avgR=${formatNumber(analysis.guarded.summary.averageR)} maxDD=${formatNumber(analysis.guarded.summary.maxDrawdownR)} maxDDFrom=${analysis.guarded.summary.maxDrawdownFrom} maxDDAt=${analysis.guarded.summary.maxDrawdownAt} minEquity=${formatNumber(analysis.guarded.summary.minEquityR)} minEquityAt=${analysis.guarded.summary.minEquityAt}`);
+  printGroups("  guarded_by_day", analyzeReaderTrades({ trades: analysis.guarded.trades.map((trade) => trade.dossier), minCoveragePct, dailyLossLimitR, riskPct, feePct, slippagePct, initialCapital }).groups.byDay, 10);
 }
 
 function printNarrativeFailureChains(analysis: ReaderAnalysisReport): void {
@@ -629,7 +741,7 @@ function printGroups(
 }
 
 function finalSummary(evaluations: AssetEvaluation[]): ReaderAnalysisSummary {
-  return summarizeReaderTrades(evaluations.flatMap((evaluation) => evaluation.trades));
+  return summarizeReaderTrades(evaluations.flatMap((evaluation) => evaluation.trades), summaryOptions());
 }
 
 function guardedFinalSummary(evaluations: AssetEvaluation[]): {
@@ -640,6 +752,7 @@ function guardedFinalSummary(evaluations: AssetEvaluation[]): {
     trades: evaluations.flatMap((evaluation) => evaluation.trades.map((trade) => trade.dossier)),
     minCoveragePct,
     dailyLossLimitR,
+    ...summaryOptions(),
   }).guarded;
   return {
     skipped: guarded.skipped,
@@ -692,8 +805,8 @@ function formatNumber(value: number): string {
   return Number.isFinite(value) ? value.toFixed(4).replace(/\.?0+$/, "") : "n/a";
 }
 
-function formatNullable(value: number | undefined): string {
-  return value === undefined ? "n/a" : formatNumber(value);
+function formatNullable(value: number | null | undefined): string {
+  return value === undefined || value === null ? "n/a" : formatNumber(value);
 }
 
 function iso(time: number): string {
@@ -712,6 +825,15 @@ async function readBybitRawOrderflow(asset: string, candleIntervalMs: number): P
   return {
     candles: candlesFromTrades({ asset, events: orderflowEvents, candleIntervalMs }),
     orderflowEvents,
+  };
+}
+
+function summaryOptions() {
+  return {
+    riskPct,
+    feePct,
+    slippagePct,
+    initialCapital,
   };
 }
 
@@ -763,12 +885,14 @@ async function runBybitChunkedParquetReport(asset: string): Promise<ReportView> 
       startAt: chunk.start,
       endAt: chunk.end,
       auctionConfig: auctionConfig(),
+      readerConfig: { absorptionPolicy },
       replay: {
         radarConfig,
         ...(radarMemory ? { radarMemory } : {}),
         setupMemory,
         resultState,
         setupConfig: {
+          tradePlanConfig: tradePlanConfig(),
           setupTtlMs,
           narrativeState: {
             memory: narrativeMemory,

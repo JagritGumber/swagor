@@ -1,6 +1,7 @@
 import type {
   OrderflowBbo,
   OrderflowEvidence,
+  OrderflowInitiative,
   OrderflowRead,
   OrderflowSide,
   OrderflowTapeContext,
@@ -12,11 +13,10 @@ export function readOrderflowWindow(input: {
   asset: string;
   window: OrderflowWindow;
 }): OrderflowRead {
-  const trades = input.window.trades.slice(input.window.startIndex);
-  const stats = tapeStats(trades);
+  const stats = tapeStats(input.window.trades, input.window.startIndex);
   const dominantSide = dominantSideFor(stats.buyVolume, stats.sellVolume);
   const pressure = pressureFor(dominantSide);
-  const print = printEvidence(input.window.trades, input.window.startIndex, stats.largestTrade, stats.tape.medianTradeSize);
+  const print = printEvidence(stats.largestTrade, stats.secondLargestTradeSize, stats.tape.medianTradeSize);
   const events = eventLabels({
     window: input.window,
     pressure,
@@ -27,6 +27,7 @@ export function readOrderflowWindow(input: {
     firstTrade: stats.firstTrade,
     lastTrade: stats.lastTrade,
   });
+  const evidence = evidenceFor({ events, pressure, print });
 
   return {
     asset: input.asset,
@@ -35,24 +36,31 @@ export function readOrderflowWindow(input: {
     buyVolume: stats.buyVolume,
     sellVolume: stats.sellVolume,
     delta: stats.delta,
-    tradeCount: trades.length,
+    tradeCount: stats.tradeCount,
     averageTradeSize: stats.averageTradeSize,
     largestTrade: stats.largestTrade,
     dominantSide,
     pressure,
-    evidence: evidenceFor({ events, pressure, print }),
+    evidence,
+    initiative: initiativeFor({
+      dominantSide,
+      evidence,
+      tape: stats.tape,
+    }),
     tape: stats.tape,
     events,
     narrative: narrativeFor(input.asset, pressure, events, stats.delta, stats.tape),
   };
 }
 
-function tapeStats(trades: OrderflowTrade[]): {
+function tapeStats(trades: OrderflowTrade[], startIndex: number): {
   buyVolume: number;
   sellVolume: number;
   delta: number;
+  tradeCount: number;
   averageTradeSize: number;
   largestTrade: OrderflowTrade | null;
+  secondLargestTradeSize: number;
   firstTrade: OrderflowTrade | null;
   lastTrade: OrderflowTrade | null;
   tape: OrderflowTapeContext;
@@ -61,14 +69,24 @@ function tapeStats(trades: OrderflowTrade[]): {
   let sellVolume = 0;
   let totalSize = 0;
   let largestTrade: OrderflowTrade | null = null;
-  const firstTrade = trades[0] ?? null;
+  let secondLargestTradeSize = 0;
+  const tradeCount = Math.max(0, trades.length - startIndex);
+  const firstTrade = trades[startIndex] ?? null;
   const lastTrade = trades[trades.length - 1] ?? null;
+  const sizes: number[] = [];
 
-  for (const trade of trades) {
+  for (let index = startIndex; index < trades.length; index += 1) {
+    const trade = trades[index];
     if (trade.side === "buy") buyVolume += trade.size;
     else sellVolume += trade.size;
     totalSize += trade.size;
-    if (!largestTrade || trade.size > largestTrade.size) largestTrade = trade;
+    sizes.push(trade.size);
+    if (!largestTrade || trade.size > largestTrade.size) {
+      secondLargestTradeSize = largestTrade?.size ?? 0;
+      largestTrade = trade;
+    } else if (trade.size > secondLargestTradeSize) {
+      secondLargestTradeSize = trade.size;
+    }
   }
 
   const delta = buyVolume - sellVolume;
@@ -78,15 +96,17 @@ function tapeStats(trades: OrderflowTrade[]): {
   const deltaShare = totalVolume === 0 ? 0 : delta / totalVolume;
   const dominantShare = totalVolume === 0 ? 0 : Math.max(buyShare, sellShare);
   const priceChange = firstTrade && lastTrade ? lastTrade.price - firstTrade.price : null;
-  const sizes = trades.map((trade) => trade.size).sort((left, right) => left - right);
+  sizes.sort((left, right) => left - right);
   const medianTradeSize = medianOfSorted(sizes);
 
   return {
     buyVolume,
     sellVolume,
     delta,
-    averageTradeSize: trades.length === 0 ? 0 : totalSize / trades.length,
+    tradeCount,
+    averageTradeSize: tradeCount === 0 ? 0 : totalSize / tradeCount,
     largestTrade,
+    secondLargestTradeSize,
     firstTrade,
     lastTrade,
     tape: {
@@ -173,8 +193,48 @@ function evidenceFor(input: {
       ? "stalled"
       : input.events.includes("lifting-offers") || input.events.includes("hitting-bids")
         ? "holding"
-        : "unknown",
+      : "unknown",
   };
+}
+
+function initiativeFor(input: {
+  dominantSide: OrderflowSide | "none";
+  evidence: OrderflowEvidence;
+  tape: OrderflowTapeContext;
+}): OrderflowInitiative {
+  if (input.dominantSide === "none" || input.evidence.pressure === "none") {
+    return {
+      side: "none",
+      conviction: "none",
+      reasons: ["orderflow has no directional pressure"],
+    };
+  }
+
+  const reasons: string[] = [];
+  const dominantOverwhelmsOpposite = input.tape.dominantShare >= 2 / 3;
+  const printIsLocalStandout = input.evidence.print === "local-standout";
+  const priceMovesWithInitiative = priceMoveSupportsSide(input.tape.priceChange, input.dominantSide);
+
+  if (dominantOverwhelmsOpposite) reasons.push("dominant side carries at least twice the opposite-side volume");
+  else reasons.push("dominant side is only mildly ahead of opposite-side volume");
+
+  if (printIsLocalStandout) reasons.push("largest print is locally significant");
+  else reasons.push("no locally significant initiative print is present");
+
+  if (priceMovesWithInitiative) reasons.push("price moves with the dominant initiative side");
+  else reasons.push("price does not confirm the dominant initiative side");
+
+  const score = Number(dominantOverwhelmsOpposite) + Number(printIsLocalStandout) + Number(priceMovesWithInitiative);
+  return {
+    side: input.dominantSide,
+    conviction: score === 3 ? "overwhelming" : score === 2 ? "decisive" : "mixed",
+    reasons,
+  };
+}
+
+function priceMoveSupportsSide(priceChange: number | null, side: OrderflowSide): boolean {
+  if (priceChange === null) return false;
+  return side === "buy" ? priceChange > 0 : priceChange < 0;
 }
 
 function bboAtTradeTime(window: OrderflowWindow, trade: OrderflowTrade): OrderflowBbo | null {
@@ -203,19 +263,12 @@ function medianOfSorted(sortedValues: number[]): number | null {
 }
 
 function printEvidence(
-  trades: OrderflowTrade[],
-  startIndex: number,
   largestTrade: OrderflowTrade | null,
+  secondLargestTradeSize: number,
   medianTradeSize: number | null,
 ): OrderflowEvidence["print"] {
   if (!largestTrade || medianTradeSize === null) return "none";
-  let secondLargest = 0;
-  for (let index = startIndex; index < trades.length; index += 1) {
-    const size = trades[index].size;
-    if (trades[index] === largestTrade) continue;
-    if (size > secondLargest) secondLargest = size;
-  }
-  return largestTrade.size > secondLargest + medianTradeSize ? "local-standout" : "none";
+  return largestTrade.size > secondLargestTradeSize + medianTradeSize ? "local-standout" : "none";
 }
 
 function narrativeFor(

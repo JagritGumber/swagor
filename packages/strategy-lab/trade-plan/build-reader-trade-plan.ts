@@ -11,17 +11,23 @@ export function buildReaderTradePlan(read: LiveReaderRead, _config: ReaderTradeP
   const reasons = baseNoTradeReasons(read, narrative);
   if (reasons.length > 0) return noTrade(read, reasons);
 
+  const styleBlock = tradeStyleBlock(read, narrative, _config.tradeStyle ?? "all");
+  if (styleBlock.length > 0) return noTrade(read, styleBlock, familyFor(narrative));
+
+  const continuationBlock = continuationPullbackBlock(read, narrative);
+  if (continuationBlock.length > 0) return noTrade(read, continuationBlock, familyFor(narrative));
+
   if (narrative.intent === "breakout-watch" || narrative.intent === "reversal-watch") {
     return watchPlan(read, narrative);
   }
-  if (narrative.intent === "breakout-continuation") {
-    return readyPlan(read, narrative, "breakout-acceptance");
+  if (narrative.intent === "breakout-continuation" || narrative.intent === "trend-continuation") {
+    return readyPlan(read, narrative, narrative.intent === "trend-continuation" ? "trend-continuation" : "breakout-acceptance");
   }
   if (narrative.intent === "reversal-reclaim") {
     return reclaimPlan(read, narrative);
   }
   if (narrative.intent === "continuation-pullback") {
-    return watchPlan(read, narrative);
+    return readyPlan(read, narrative, "trend-continuation");
   }
 
   return noTrade(read, narrative.reasons.length > 0 ? narrative.reasons : ["narrative does not allow a trade"]);
@@ -39,9 +45,9 @@ function baseNoTradeReasons(read: LiveReaderRead, narrative: ReaderNarrative): s
 function watchPlan(read: LiveReaderRead, narrative: ReaderNarrative): ReaderTradePlan {
   const side = narrativeSide(narrative);
   if (!side) return noTrade(read, narrative.reasons);
-  const modeBlock = auctionModeBlock(read, side, familyFor(narrative));
+  const modeBlock = auctionModeBlock(read, side, narrative, familyFor(narrative));
   if (modeBlock.length > 0) return noTrade(read, modeBlock, familyFor(narrative));
-  const levels = planLevels(read, side, narrative);
+  const levels = planLevels(read, side, narrative, familyFor(narrative));
   if (!levels) return noTrade(read, ["narrative is watchable but numeric auction levels are incomplete"], familyFor(narrative));
   const targetBlock = auctionModeTargetBlock(read, side, levels);
   if (targetBlock.length > 0) return noTrade(read, targetBlock, familyFor(narrative));
@@ -58,11 +64,11 @@ function watchPlan(read: LiveReaderRead, narrative: ReaderNarrative): ReaderTrad
 function reclaimPlan(read: LiveReaderRead, narrative: ReaderNarrative): ReaderTradePlan {
   const side = narrativeSide(narrative);
   if (!side) return noTrade(read, narrative.reasons);
-  const modeBlock = auctionModeBlock(read, side, "reversal-reclaim");
+  const modeBlock = auctionModeBlock(read, side, narrative, "reversal-reclaim");
   if (modeBlock.length > 0) return noTrade(read, modeBlock, "reversal-reclaim");
   const vpBlock = vpPlaybookBlock(read, narrative, side, "reversal-reclaim");
   if (vpBlock.length > 0) return noTrade(read, vpBlock, "reversal-reclaim");
-  const levels = planLevels(read, side, narrative);
+  const levels = planLevels(read, side, narrative, "reversal-reclaim");
   if (!levels) return noTrade(read, ["narrative allows reclaim but numeric auction levels are incomplete"], "reversal-reclaim");
   const targetBlock = auctionModeTargetBlock(read, side, levels);
   if (targetBlock.length > 0) return noTrade(read, targetBlock, "reversal-reclaim");
@@ -79,11 +85,11 @@ function reclaimPlan(read: LiveReaderRead, narrative: ReaderNarrative): ReaderTr
 function readyPlan(read: LiveReaderRead, narrative: ReaderNarrative, setupFamily: ReaderSetupFamily): ReaderTradePlan {
   const side = narrativeSide(narrative);
   if (!side) return noTrade(read, narrative.reasons, setupFamily);
-  const modeBlock = auctionModeBlock(read, side, setupFamily);
+  const modeBlock = auctionModeBlock(read, side, narrative, setupFamily);
   if (modeBlock.length > 0) return noTrade(read, modeBlock, setupFamily);
   const vpBlock = vpPlaybookBlock(read, narrative, side, setupFamily);
   if (vpBlock.length > 0) return noTrade(read, vpBlock, setupFamily);
-  const levels = planLevels(read, side, narrative);
+  const levels = planLevels(read, side, narrative, setupFamily);
   if (!levels) return noTrade(read, ["narrative allows continuation but numeric auction levels are incomplete"], setupFamily);
   const targetBlock = auctionModeTargetBlock(read, side, levels);
   if (targetBlock.length > 0) return noTrade(read, targetBlock, setupFamily);
@@ -129,7 +135,12 @@ type PlanLevels = {
   target: number;
 };
 
-function planLevels(read: LiveReaderRead, side: Side, narrative: ReaderNarrative): PlanLevels | null {
+function planLevels(
+  read: LiveReaderRead,
+  side: Side,
+  narrative: ReaderNarrative,
+  setupFamily: ReaderSetupFamily,
+): PlanLevels | null {
   const level = read.auction.level;
   const profile = read.auction.profile;
   const lastPrice = read.orderflow.lastPrice;
@@ -137,6 +148,10 @@ function planLevels(read: LiveReaderRead, side: Side, narrative: ReaderNarrative
 
   const zoneHalfWidth = profile.binSize / 2;
   if (!Number.isFinite(zoneHalfWidth) || zoneHalfWidth <= 0) return null;
+
+  if (setupFamily === "trend-continuation") {
+    return trendContinuationLevels(read, side, zoneHalfWidth);
+  }
 
   if (narrative.intent === "breakout-continuation") {
     return breakoutLevels(read, side, zoneHalfWidth);
@@ -150,14 +165,21 @@ function planLevels(read: LiveReaderRead, side: Side, narrative: ReaderNarrative
   return { entryLow, entryHigh, stop, target };
 }
 
-function auctionModeBlock(read: LiveReaderRead, side: Side, setupFamily: ReaderSetupFamily): string[] {
+function auctionModeBlock(
+  read: LiveReaderRead,
+  side: Side,
+  narrative: ReaderNarrative,
+  setupFamily: ReaderSetupFamily,
+): string[] {
   const auctionMode = read.auctionMode;
   if (!auctionMode) return [];
   if (auctionMode.mode === "violent-unknown") return modeReasons(read, "violent auction mode blocks ready entries");
   if (auctionMode.allowedDirection !== "both" && auctionMode.allowedDirection !== side) {
     return modeReasons(read, `${auctionMode.mode} does not allow ${side} plans`);
   }
-  if (auctionMode.mode === "failed-expansion" && setupFamily === "breakout-acceptance") {
+  const failedExpansionChase = setupFamily === "breakout-acceptance"
+    || (setupFamily === "trend-continuation" && narrative.intent === "trend-continuation");
+  if (auctionMode.mode === "failed-expansion" && failedExpansionChase) {
     return modeReasons(read, "failed expansion blocks breakout chasing");
   }
   return [];
@@ -183,7 +205,7 @@ function vpPlaybookBlock(
       : [`VP blocks trade: ${playbook.reason}`];
   }
   if (playbook.allowedSide !== side) return [`VP allows ${playbook.allowedSide}, not ${side}: ${playbook.reason}`];
-  if (setupFamily === "breakout-acceptance" && playbook.kind !== "accepted-continuation") {
+  if ((setupFamily === "breakout-acceptance" || setupFamily === "trend-continuation") && playbook.kind !== "accepted-continuation") {
     return [`VP blocks breakout plan: ${playbook.reason}`];
   }
   if (setupFamily === "reversal-reclaim" && playbook.kind === "accepted-continuation") {
@@ -230,6 +252,35 @@ function breakoutLevels(read: LiveReaderRead, side: Side, zoneHalfWidth: number)
   return { entryLow, entryHigh, stop, target };
 }
 
+function trendContinuationLevels(read: LiveReaderRead, side: Side, zoneHalfWidth: number): PlanLevels | null {
+  const level = read.auction.level;
+  const profile = read.auction.profile;
+  const lastPrice = read.orderflow.lastPrice;
+  if (!level || !profile || lastPrice === null) return null;
+
+  if (side === "long") {
+    const stop = level.price - zoneHalfWidth;
+    const target = nextHigherStructure(lastPrice, profile.valueAreaHigh, profile.high);
+    if (target === null || !validTarget(side, lastPrice, stop, target)) return null;
+    return {
+      entryLow: Math.min(lastPrice, level.price),
+      entryHigh: Math.max(lastPrice, level.price + zoneHalfWidth),
+      stop,
+      target,
+    };
+  }
+
+  const stop = level.price + zoneHalfWidth;
+  const target = nextLowerStructure(lastPrice, profile.valueAreaLow, profile.low);
+  if (target === null || !validTarget(side, lastPrice, stop, target)) return null;
+  return {
+    entryLow: Math.min(lastPrice, level.price - zoneHalfWidth),
+    entryHigh: Math.max(lastPrice, level.price),
+    stop,
+    target,
+  };
+}
+
 function targetFor(side: Side, entryLow: number, entryHigh: number, poc: number, valueAreaLow: number, valueAreaHigh: number): number {
   if (side === "long") return poc > entryHigh ? poc : valueAreaHigh;
   return poc < entryLow ? poc : valueAreaLow;
@@ -268,9 +319,90 @@ function narrativeSide(narrative: ReaderNarrative): Side | null {
 }
 
 function familyFor(narrative: ReaderNarrative): ReaderSetupFamily {
-  return narrative.intent === "breakout-watch" || narrative.intent === "breakout-continuation"
-    ? "breakout-acceptance"
-    : "reversal-reclaim";
+  if (narrative.intent === "breakout-watch" || narrative.intent === "breakout-continuation") return "breakout-acceptance";
+  if (narrative.intent === "trend-continuation" || narrative.intent === "continuation-pullback") return "trend-continuation";
+  return "reversal-reclaim";
+}
+
+function tradeStyleBlock(read: LiveReaderRead, narrative: ReaderNarrative, style: NonNullable<ReaderTradePlanConfig["tradeStyle"]>): string[] {
+  if (style === "all") return [];
+  const family = familyFor(narrative);
+  if (style === "trend-only" && family !== "trend-continuation") {
+    return [`trend-only experiment blocks ${family} setup`];
+  }
+  if (style === "trend-breakout-only" && narrative.intent !== "trend-continuation") {
+    return [`trend-breakout-only experiment blocks ${narrative.intent} setup`];
+  }
+  if (style === "trend-pullback-only" && narrative.intent !== "continuation-pullback") {
+    return [`trend-pullback-only experiment blocks ${narrative.intent} setup`];
+  }
+  if (style === "trend-long-pullback-only" && (narrative.intent !== "continuation-pullback" || narrative.direction !== "long")) {
+    return [`trend-long-pullback-only experiment blocks ${narrative.intent}/${narrative.direction} setup`];
+  }
+  if (style === "trend-short-pullback-only" && (narrative.intent !== "continuation-pullback" || narrative.direction !== "short")) {
+    return [`trend-short-pullback-only experiment blocks ${narrative.intent}/${narrative.direction} setup`];
+  }
+  if (style === "reversal-only" && family === "trend-continuation") {
+    return ["reversal-only experiment blocks trend-continuation setup"];
+  }
+  return [];
+}
+
+function continuationPullbackBlock(read: LiveReaderRead, narrative: ReaderNarrative): string[] {
+  if (narrative.intent !== "continuation-pullback") return [];
+  const edgeMismatch = continuationPullbackEdgeMismatch(read, narrative);
+  if (edgeMismatch.length > 0) return edgeMismatch;
+  const initiativeFailure = continuationInitiativeFailure(read, narrative);
+  if (initiativeFailure.length > 0) return initiativeFailure;
+  if (narrative.participation !== "absorption") return [];
+  return [
+    "continuation pullback is blocked because absorption is not initiative continuation by itself",
+    "absorption must resolve into initiative participation before trend continuation entry",
+  ];
+}
+
+function continuationPullbackEdgeMismatch(read: LiveReaderRead, narrative: ReaderNarrative): string[] {
+  if (narrative.direction === "long" && (read.auction.location !== "value-low" || read.auction.level?.kind !== "support")) {
+    return [
+      "continuation pullback is blocked because long pullback is not at value-low support",
+      "below-value acceptance is not a long pullback into value support",
+    ];
+  }
+  if (narrative.direction === "short" && (read.auction.location !== "value-high" || read.auction.level?.kind !== "resistance")) {
+    return [
+      "continuation pullback is blocked because short pullback is not at value-high resistance",
+      "above-value acceptance is not a short pullback into value resistance",
+    ];
+  }
+  return [];
+}
+
+function continuationInitiativeFailure(read: LiveReaderRead, narrative: ReaderNarrative): string[] {
+  if (narrative.direction === "long" && initiativeSideIsAbsorbed(read, "long")) {
+    return [
+      "continuation pullback is blocked because buying initiative is being absorbed",
+      "a long pullback needs initiative buying, not stalled buying into absorption",
+    ];
+  }
+  if (narrative.direction === "short" && initiativeSideIsAbsorbed(read, "short")) {
+    return [
+      "continuation pullback is blocked because selling initiative is being absorbed",
+      "a short pullback needs initiative selling, not stalled selling into absorption",
+    ];
+  }
+  if (read.absorptionQuality?.quality === "churn") {
+    return [
+      "continuation pullback is blocked because absorption is reading as churn",
+      "churn means the reader has no clean initiative continuation",
+    ];
+  }
+  return [];
+}
+
+function initiativeSideIsAbsorbed(read: LiveReaderRead, side: Side): boolean {
+  const events = new Set(read.orderflow.events);
+  if (side === "long") return events.has("buy-absorption") || events.has("stalled-buying");
+  return events.has("sell-absorption") || events.has("stalled-selling");
 }
 
 function reasonsFor(read: LiveReaderRead, narrative: ReaderNarrative, setupFamily: ReaderSetupFamily): string[] {

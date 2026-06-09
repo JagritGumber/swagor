@@ -50,6 +50,7 @@ function printReport(report: ReaderCandidateLearnerReport): void {
   printLessons("future_avoid", report.futureAvoidCandidates, 8);
   printLessons("noise", report.noiseCandidates, 8);
   printLessons("geometry_artifacts", report.geometryArtifactCandidates, 8);
+  printLessons("risk_reward_artifacts", report.riskRewardArtifactCandidates, 8);
   printLessons("thin_sample", report.thinSampleCandidates, 8);
   printLessons("untradeable_balance", report.untradeableBalanceCandidates, 5);
   printLessons("unjudgeable", report.unjudgeableCandidates, 5);
@@ -87,16 +88,19 @@ function markdownFor(report: ReaderCandidateLearnerReport): string {
     `Worked rate: ${format(report.summary.workedRate)}`,
     `Executed: ${report.summary.executed}`,
     `Invalid geometry: ${report.summary.invalidGeometry}`,
+    `Sub-risk target: ${report.summary.subRiskTarget}`,
     `Average target R: ${formatNullableR(report.summary.avgTargetR)}`,
     `Average target bps: ${formatNullableBps(report.summary.avgTargetBps)}`,
     `Average invalidation bps: ${formatNullableBps(report.summary.avgInvalidationBps)}`,
     `Average result R: ${formatNullableR(report.summary.avgResultR)}`,
+    `Average first reaction R: ${formatNullableR(report.summary.avgFirstReactionR)}`,
     `Average max favorable R: ${formatNullableR(report.summary.avgMaxFavorableR)}`,
     `Average max adverse R: ${formatNullableR(report.summary.avgMaxAdverseR)}`,
     `Median target R: ${formatNullableR(report.summary.medianTargetR)}`,
     `Median target bps: ${formatNullableBps(report.summary.medianTargetBps)}`,
     `Median invalidation bps: ${formatNullableBps(report.summary.medianInvalidationBps)}`,
     `Median result R: ${formatNullableR(report.summary.medianResultR)}`,
+    `Median first reaction R: ${formatNullableR(report.summary.medianFirstReactionR)}`,
     `Minimum invalidation bps: ${formatNullableBps(report.summary.minInvalidationBps)}`,
     "",
     sectionFor("Paper Promote Candidates", report.paperPromoteCandidates),
@@ -104,6 +108,7 @@ function markdownFor(report: ReaderCandidateLearnerReport): string {
     sectionFor("Future Avoid Candidates", report.futureAvoidCandidates),
     sectionFor("Noise Candidates", report.noiseCandidates),
     sectionFor("Geometry Artifact Candidates", report.geometryArtifactCandidates),
+    sectionFor("Risk Reward Artifact Candidates", report.riskRewardArtifactCandidates),
     sectionFor("Thin Sample Candidates", report.thinSampleCandidates),
     sectionFor("Untradeable Balance Candidates", report.untradeableBalanceCandidates),
     sectionFor("Unjudgeable Candidates", report.unjudgeableCandidates),
@@ -126,16 +131,19 @@ function sectionFor(title: string, lessons: ReaderCandidateLearnerLesson[]): str
     lines.push(`Candidates: ${lesson.summary.candidates}`);
     lines.push(`Worked rate: ${format(lesson.summary.workedRate)}`);
     lines.push(`Invalid geometry: ${lesson.summary.invalidGeometry}`);
+    lines.push(`Sub-risk target: ${lesson.summary.subRiskTarget}`);
     lines.push(`Average target R: ${formatNullableR(lesson.summary.avgTargetR)}`);
     lines.push(`Average target bps: ${formatNullableBps(lesson.summary.avgTargetBps)}`);
     lines.push(`Average invalidation bps: ${formatNullableBps(lesson.summary.avgInvalidationBps)}`);
     lines.push(`Average result R: ${formatNullableR(lesson.summary.avgResultR)}`);
+    lines.push(`Average first reaction R: ${formatNullableR(lesson.summary.avgFirstReactionR)}`);
     lines.push(`Average max favorable R: ${formatNullableR(lesson.summary.avgMaxFavorableR)}`);
     lines.push(`Average max adverse R: ${formatNullableR(lesson.summary.avgMaxAdverseR)}`);
     lines.push(`Median target R: ${formatNullableR(lesson.summary.medianTargetR)}`);
     lines.push(`Median target bps: ${formatNullableBps(lesson.summary.medianTargetBps)}`);
     lines.push(`Median invalidation bps: ${formatNullableBps(lesson.summary.medianInvalidationBps)}`);
     lines.push(`Median result R: ${formatNullableR(lesson.summary.medianResultR)}`);
+    lines.push(`Median first reaction R: ${formatNullableR(lesson.summary.medianFirstReactionR)}`);
     lines.push(`Minimum invalidation bps: ${formatNullableBps(lesson.summary.minInvalidationBps)}`);
     if (lesson.sampleWarning) lines.push(`Sample: ${lesson.sampleWarning}`);
     lines.push(`Reasons: ${lesson.reasons.join(" | ") || "none"}`);
@@ -157,15 +165,18 @@ function summaryLine(summary: ReaderCandidateLearnerReport["summary"]): string {
     `invalidated=${summary.invalidated}`,
     `workedRate=${format(summary.workedRate)}`,
     `avgResultR=${formatNullableR(summary.avgResultR)}`,
+    `avgFirstReactionR=${formatNullableR(summary.avgFirstReactionR)}`,
     `avgTargetR=${formatNullableR(summary.avgTargetR)}`,
     `avgTargetBps=${formatNullableBps(summary.avgTargetBps)}`,
     `avgInvalidationBps=${formatNullableBps(summary.avgInvalidationBps)}`,
     `medianResultR=${formatNullableR(summary.medianResultR)}`,
+    `medianFirstReactionR=${formatNullableR(summary.medianFirstReactionR)}`,
     `medianTargetR=${formatNullableR(summary.medianTargetR)}`,
     `medianInvalidationBps=${formatNullableBps(summary.medianInvalidationBps)}`,
     `minInvalidationBps=${formatNullableBps(summary.minInvalidationBps)}`,
     `avgMAE=${formatNullableR(summary.avgMaxAdverseR)}`,
     `invalidGeometry=${summary.invalidGeometry}`,
+    `subRiskTarget=${summary.subRiskTarget}`,
     `executed=${summary.executed}`,
   ].join(" ");
 }

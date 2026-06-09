@@ -7,6 +7,26 @@ export function buildTradeVolumeProfile(input: {
   radiusPct: number;
   binCount: number;
 }): LocalVolumeProfile | null {
+  return buildTradeVolumeProfileFromRange({
+    trades: input.trades,
+    startIndex: 0,
+    endIndex: input.trades.length,
+    sampleLimit: null,
+    anchorPrice: input.anchorPrice,
+    radiusPct: input.radiusPct,
+    binCount: input.binCount,
+  });
+}
+
+export function buildTradeVolumeProfileFromRange(input: {
+  trades: OrderflowTrade[];
+  startIndex: number;
+  endIndex: number;
+  sampleLimit: number | null;
+  anchorPrice: number;
+  radiusPct: number;
+  binCount: number;
+}): LocalVolumeProfile | null {
   const low = input.anchorPrice * (1 - input.radiusPct);
   const high = input.anchorPrice * (1 + input.radiusPct);
   if (high <= low || input.binCount <= 0) return null;
@@ -18,7 +38,17 @@ export function buildTradeVolumeProfile(input: {
     bins.push({ low: binLow, high: binLow + binSize, mid: binLow + binSize / 2, volume: 0 });
   }
 
-  for (const trade of input.trades) {
+  const startIndex = Math.max(0, Math.min(input.trades.length, input.startIndex));
+  const endIndex = Math.max(startIndex, Math.min(input.trades.length, input.endIndex));
+  const count = endIndex - startIndex;
+  const sampleLimit = input.sampleLimit;
+  const stride = sampleLimit !== null && Number.isFinite(sampleLimit) && sampleLimit > 0 && count > sampleLimit
+    ? count / sampleLimit
+    : 1;
+  const sampleCount = stride === 1 ? count : Math.floor(sampleLimit ?? count);
+
+  for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
+    const trade = input.trades[startIndex + Math.floor(sampleIndex * stride)];
     if (trade.price < low || trade.price > high) continue;
     const index = Math.min(input.binCount - 1, Math.max(0, Math.floor((trade.price - low) / binSize)));
     bins[index].volume += trade.size;

@@ -9,6 +9,13 @@ export function sequenceForPlan(plan: ReaderActionableTradePlan): ReaderSequence
       reason: "breakout candle closed outside level; waiting for next read acceptance",
     };
   }
+  if (plan.setupFamily === "trend-continuation") {
+    return {
+      family: "trend-continuation",
+      phase: "breakout-closed",
+      reason: "trend continuation accepted value migration; waiting for next read acceptance",
+    };
+  }
   if (plan.status === "ready-if-reclaim") {
     return {
       family: "reversal-reclaim",

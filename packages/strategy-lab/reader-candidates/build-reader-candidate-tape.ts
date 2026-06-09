@@ -56,12 +56,16 @@ function outcomeFor(input: {
   let maxFavorableMove = 0;
   let maxAdverseMove = 0;
   let firstReaction: ReaderCandidate["outcome"]["firstReaction"] = "none";
+  let firstReactionMove: number | null = null;
 
   for (const step of input.reads) {
     const price = step.read.orderflow.lastPrice;
     if (price === null) continue;
     const move = signedMove(candidate.side, candidate.entryPrice, price);
-    if (firstReaction === "none") firstReaction = reactionFor(move);
+    if (firstReaction === "none") {
+      firstReaction = reactionFor(move);
+      firstReactionMove = move;
+    }
     maxFavorableMove = Math.max(maxFavorableMove, move);
     maxAdverseMove = Math.min(maxAdverseMove, move);
 
@@ -69,6 +73,8 @@ function outcomeFor(input: {
       return {
         verdict: "worked",
         firstReaction,
+        firstReactionMove,
+        firstReactionR: rMultiple(firstReactionMove, geometry.invalidationDistance),
         ...geometry,
         maxFavorableMove,
         maxAdverseMove,
@@ -83,6 +89,8 @@ function outcomeFor(input: {
       return {
         verdict: "invalidated",
         firstReaction,
+        firstReactionMove,
+        firstReactionR: rMultiple(firstReactionMove, geometry.invalidationDistance),
         ...geometry,
         maxFavorableMove,
         maxAdverseMove,
@@ -98,6 +106,8 @@ function outcomeFor(input: {
   return {
     verdict: "unresolved",
     firstReaction,
+    firstReactionMove,
+    firstReactionR: rMultiple(firstReactionMove, geometry.invalidationDistance),
     ...geometry,
     maxFavorableMove,
     maxAdverseMove,
@@ -113,6 +123,8 @@ function emptyOutcome(verdict: ReaderCandidateOutcome): ReaderCandidate["outcome
   return {
     verdict,
     firstReaction: "none",
+    firstReactionMove: null,
+    firstReactionR: null,
     targetDistance: null,
     invalidationDistance: null,
     targetBps: null,
@@ -166,7 +178,8 @@ function geometryDiagnosticsFor(candidate: ReaderCandidateDraft): Pick<
   };
 }
 
-function rMultiple(move: number, invalidationDistance: number | null): number | null {
+function rMultiple(move: number | null, invalidationDistance: number | null): number | null {
+  if (move === null) return null;
   if (invalidationDistance === null || invalidationDistance <= 0) return null;
   return round(move / invalidationDistance);
 }
@@ -207,6 +220,7 @@ function candidateKeyFor(candidate: ReaderCandidateDraft): string {
     candidate.reader.vpAuction ?? "none",
     candidate.reader.vpPoc ?? "none",
     candidate.reader.vpValue ?? "none",
+    candidate.reader.localRangeLocation ?? "none",
     candidate.orderflow.pressure,
     candidate.orderflow.events.join("+") || "none",
     candidate.builder.response,

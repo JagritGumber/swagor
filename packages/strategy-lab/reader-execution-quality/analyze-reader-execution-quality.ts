@@ -91,7 +91,12 @@ function observedPriceEvents(events: ReaderResultEvent[]): ObservedPriceEvent[] 
   return events
     .flatMap((event): ObservedPriceEvent[] => {
       if (event.type === "position-unpriced") return [{ type: "unpriced", at: event.at }];
-      if (event.type === "position-held" || event.type === "stop-hit" || event.type === "target-hit") return [{ type: "priced", at: event.at }];
+      if (
+        event.type === "position-held"
+        || event.type === "stop-hit"
+        || event.type === "target-hit"
+        || event.type === "reader-failure-exit"
+      ) return [{ type: "priced", at: event.at }];
       return [];
     })
     .sort((a, b) => a.at - b.at);

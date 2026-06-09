@@ -3,12 +3,13 @@ import type { OrderflowRead } from "../orderflow/types";
 import type { ReaderMarketRegime } from "../market-regime/types";
 import { readReaderAuctionMode } from "../reader-auction-mode/read-reader-auction-mode";
 import type { ReaderAuctionMode, ReaderAuctionModeState } from "../reader-auction-mode/types";
+import { readReaderAbsorptionQuality } from "../reader-absorption-quality/read-reader-absorption-quality";
 import { readReaderNarrative } from "../reader-narrative/read-reader-narrative";
 import type { ReaderNarrative } from "../reader-narrative/types";
 import { readReaderVpState } from "../reader-vp-state/read-reader-vp-state";
 import type { ReaderVpState, ReaderVpStateMemory } from "../reader-vp-state/types";
 import type { Candle } from "../types";
-import type { LiveReaderRead, LiveReaderStance } from "./types";
+import type { LiveReaderConfig, LiveReaderRead, LiveReaderStance } from "./types";
 
 export function combineAuctionOrderflow(input: {
   auction: AuctionRead;
@@ -19,8 +20,9 @@ export function combineAuctionOrderflow(input: {
   auctionMode?: ReaderAuctionMode;
   vpStateMemory?: ReaderVpStateMemory | null;
   vpState?: ReaderVpState;
+  localRange?: LiveReaderRead["localRange"];
+  config?: LiveReaderConfig;
 }): LiveReaderRead {
-  const narrativeRead = readReaderNarrative(input);
   const auctionMode = input.auctionMode ?? readReaderAuctionMode({
     auction: input.auction,
     orderflow: input.orderflow,
@@ -32,15 +34,29 @@ export function combineAuctionOrderflow(input: {
     orderflow: input.orderflow,
     memory: input.vpStateMemory,
   });
+  const absorptionQuality = readReaderAbsorptionQuality({
+    auction: input.auction,
+    orderflow: input.orderflow,
+    auctionMode,
+    vpState,
+  });
+  const narrativeRead = readReaderNarrative({
+    ...input,
+    absorptionQuality,
+    absorptionPolicy: input.config?.absorptionPolicy,
+    vpState,
+  });
   const stance = stanceFor(narrativeRead);
   return {
     asset: input.auction.asset,
     auction: input.auction,
     orderflow: input.orderflow,
+    absorptionQuality,
     auctionMode,
     vpState,
     regime: input.regime,
     lastClosedCandle: input.lastClosedCandle,
+    localRange: input.localRange,
     stance,
     narrativeRead,
     narrative: narrativeFor(input.auction.asset, narrativeRead),
@@ -54,12 +70,18 @@ function stanceFor(narrative: ReaderNarrative): LiveReaderStance {
     return narrative.levelStory === "inside-value" ? "avoid-balanced-auction" : "wait";
   }
   if (narrative.direction === "long") {
-    return narrative.intent === "reversal-reclaim" || narrative.intent === "breakout-continuation"
+    return narrative.intent === "reversal-reclaim"
+        || narrative.intent === "breakout-continuation"
+        || narrative.intent === "trend-continuation"
+        || narrative.intent === "continuation-pullback"
       ? "possible-long"
       : "watch-long-confirmation";
   }
   if (narrative.direction === "short") {
-    return narrative.intent === "reversal-reclaim" || narrative.intent === "breakout-continuation"
+    return narrative.intent === "reversal-reclaim"
+        || narrative.intent === "breakout-continuation"
+        || narrative.intent === "trend-continuation"
+        || narrative.intent === "continuation-pullback"
       ? "possible-short"
       : "watch-short-confirmation";
   }

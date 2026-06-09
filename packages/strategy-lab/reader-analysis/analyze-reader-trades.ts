@@ -13,6 +13,7 @@ import type {
   ReaderTradeReaction,
   ReaderTradeTiming,
 } from "./types";
+import { summarizeReaderEquity } from "./summarize-reader-equity";
 import type { ReaderTradeDossier } from "../reader-evidence/types";
 import type { ReaderFormationRead } from "../reader-formation/types";
 
@@ -23,48 +24,79 @@ export function analyzeReaderTrades(input: AnalyzeReaderTradesInput): ReaderAnal
   const minCoveragePct = input.minCoveragePct ?? DEFAULT_MIN_COVERAGE_PCT;
   const analyzed = applyNarrativeFailureState(input.trades.map((dossier) => analyzedTrade({ dossier, minCoveragePct })));
   const judgeable = analyzed.filter((trade) => trade.trust);
-  const guarded = dailyLossGuard(judgeable, input.dailyLossLimitR ?? DEFAULT_DAILY_LOSS_LIMIT_R);
+  const summaryOptions = {
+    riskPct: input.riskPct,
+    feePct: input.feePct,
+    slippagePct: input.slippagePct,
+    initialCapital: input.initialCapital,
+  };
+  const guarded = dailyLossGuard(judgeable, input.dailyLossLimitR ?? DEFAULT_DAILY_LOSS_LIMIT_R, summaryOptions);
 
   return {
     trades: analyzed,
-    summary: summarizeReaderTrades(analyzed),
+    summary: summarizeReaderTrades(analyzed, summaryOptions),
     groups: {
-      byDay: groupedBy(judgeable, dayKey),
-      byRegime: groupedBy(judgeable, regimeKey),
-      bySetupFamily: groupedBy(judgeable, setupFamilyOnlyKey),
-      bySetupFamilyRegime: groupedBy(judgeable, setupFamilyRegimeKey),
-      bySequence: groupedBy(judgeable, sequenceKey),
-      byNarrative: groupedBy(judgeable, narrativeKey),
-      byAuctionMode: groupedBy(judgeable, auctionModeKey),
-      byAuctionPhase: groupedBy(judgeable, auctionPhaseKey),
-      byOrderflowEvidence: groupedBy(judgeable, orderflowEvidenceKey),
-      bySideLocation: groupedBy(judgeable, sideLocationKey),
-      byEntryTiming: groupedBy(judgeable, (trade) => trade.metrics.entryTiming),
-      byFirstReaction: groupedBy(judgeable, (trade) => trade.metrics.firstReaction),
-      byPocRotation: groupedBy(judgeable, (trade) => trade.metrics.pocRotation),
-      byQualityLabel: groupedBy(judgeable, qualityLabelKey),
-      byNarrativeVerdict: groupedBy(judgeable, (trade) => trade.narrativeAudit.verdict),
-      worstFamilies: sortedGroups(groupedBy(judgeable, setupFamilyKey), "worst"),
-      bestFamilies: sortedGroups(groupedBy(judgeable, setupFamilyKey), "best"),
-      worstNarratives: sortedGroups(groupedBy(judgeable, (trade) => trade.narrativeAudit.key), "worst"),
+      byDay: groupedBy(judgeable, dayKey, summaryOptions),
+      byRegime: groupedBy(judgeable, regimeKey, summaryOptions),
+      bySetupFamily: groupedBy(judgeable, setupFamilyOnlyKey, summaryOptions),
+      bySetupFamilyRegime: groupedBy(judgeable, setupFamilyRegimeKey, summaryOptions),
+      bySequence: groupedBy(judgeable, sequenceKey, summaryOptions),
+      byNarrative: groupedBy(judgeable, narrativeKey, summaryOptions),
+      byAuctionMode: groupedBy(judgeable, auctionModeKey, summaryOptions),
+      byAuctionPhase: groupedBy(judgeable, auctionPhaseKey, summaryOptions),
+      byOrderflowEvidence: groupedBy(judgeable, orderflowEvidenceKey, summaryOptions),
+      byAbsorptionQuality: groupedBy(judgeable, absorptionQualityKey, summaryOptions),
+      bySideLocation: groupedBy(judgeable, sideLocationKey, summaryOptions),
+      byEntryTiming: groupedBy(judgeable, (trade) => trade.metrics.entryTiming, summaryOptions),
+      byFirstReaction: groupedBy(judgeable, (trade) => trade.metrics.firstReaction, summaryOptions),
+      byPocRotation: groupedBy(judgeable, (trade) => trade.metrics.pocRotation, summaryOptions),
+      byQualityLabel: groupedBy(judgeable, qualityLabelKey, summaryOptions),
+      byNarrativeVerdict: groupedBy(judgeable, (trade) => trade.narrativeAudit.verdict, summaryOptions),
+      worstFamilies: sortedGroups(groupedBy(judgeable, setupFamilyKey, summaryOptions), "worst"),
+      bestFamilies: sortedGroups(groupedBy(judgeable, setupFamilyKey, summaryOptions), "best"),
+      worstNarratives: sortedGroups(groupedBy(judgeable, (trade) => trade.narrativeAudit.key, summaryOptions), "worst"),
     },
-    narrativeFailureChains: narrativeFailureChains(judgeable),
+    narrativeFailureChains: narrativeFailureChains(judgeable, summaryOptions),
     guarded,
   };
 }
 
-export function summarizeReaderTrades(trades: ReaderAnalyzedTrade[]): ReaderAnalysisSummary {
+type SummaryOptions = {
+  riskPct?: number;
+  feePct?: number;
+  slippagePct?: number;
+  initialCapital?: number;
+};
+
+export function summarizeReaderTrades(
+  trades: ReaderAnalyzedTrade[],
+  options: SummaryOptions = {},
+): ReaderAnalysisSummary {
   const judgeable = trades.filter((trade) => trade.trust);
   const rValues = judgeable.map((trade) => trade.metrics.r ?? 0);
+  const equity = summarizeReaderEquity(judgeable.map((trade) => ({
+    r: trade.metrics.r ?? 0,
+    entryAt: trade.dossier.trade.entryAt,
+    exitAt: trade.dossier.trade.exitAt,
+  })), options);
   return {
     registeredTrades: trades.length,
     judgeableTrades: judgeable.length,
     unjudgeableTrades: trades.length - judgeable.length,
     wins: rValues.filter((r) => r > 0).length,
     losses: rValues.filter((r) => r < 0).length,
-    totalR: round(sum(rValues)),
+    totalR: equity.totalR,
     averageR: rValues.length === 0 ? 0 : round(sum(rValues) / rValues.length),
-    maxDrawdownR: round(maxDrawdown(rValues)),
+    maxDrawdownR: equity.maxDrawdownR,
+    maxDrawdownAt: equity.maxDrawdownAt,
+    maxDrawdownFrom: equity.maxDrawdownFrom,
+    minEquityR: equity.minEquityR,
+    minEquityAt: equity.minEquityAt,
+    returnPct: equity.returnPct,
+    maxDrawdownPct: equity.maxDrawdownPct,
+    minEquityPct: equity.minEquityPct,
+    capitalRequiredAtRiskPct: equity.capitalRequiredAtRiskPct,
+    capitalMultipleNeededToNeverGoBelowStart: equity.capitalMultipleNeededToNeverGoBelowStart,
   };
 }
 
@@ -269,7 +301,11 @@ function signedMoveR(input: {
   return raw / input.risk;
 }
 
-function groupedBy(trades: ReaderAnalyzedTrade[], keyFor: (trade: ReaderAnalyzedTrade) => string): ReaderAnalysisGroup[] {
+function groupedBy(
+  trades: ReaderAnalyzedTrade[],
+  keyFor: (trade: ReaderAnalyzedTrade) => string,
+  options: SummaryOptions,
+): ReaderAnalysisGroup[] {
   const groups = new Map<string, ReaderAnalyzedTrade[]>();
   for (const trade of trades) {
     const key = keyFor(trade);
@@ -280,11 +316,15 @@ function groupedBy(trades: ReaderAnalyzedTrade[], keyFor: (trade: ReaderAnalyzed
   return [...groups.entries()].map(([key, groupTrades]) => ({
     key,
     trades: groupTrades,
-    summary: summarizeReaderTrades(groupTrades),
+    summary: summarizeReaderTrades(groupTrades, options),
   }));
 }
 
-function dailyLossGuard(trades: ReaderAnalyzedTrade[], dailyLossLimitR: number): ReaderGuardedAnalysis {
+function dailyLossGuard(
+  trades: ReaderAnalyzedTrade[],
+  dailyLossLimitR: number,
+  options: SummaryOptions,
+): ReaderGuardedAnalysis {
   const dayR = new Map<string, number>();
   const stoppedDays = new Set<string>();
   const kept: ReaderAnalyzedTrade[] = [];
@@ -305,7 +345,7 @@ function dailyLossGuard(trades: ReaderAnalyzedTrade[], dailyLossLimitR: number):
   return {
     trades: kept,
     skipped,
-    summary: summarizeReaderTrades(kept),
+    summary: summarizeReaderTrades(kept, options),
   };
 }
 
@@ -316,10 +356,14 @@ function sortedGroups(groups: ReaderAnalysisGroup[], order: "worst" | "best"): R
   });
 }
 
-function narrativeFailureChains(trades: ReaderAnalyzedTrade[]): ReaderNarrativeFailureChain[] {
+function narrativeFailureChains(
+  trades: ReaderAnalyzedTrade[],
+  options: SummaryOptions,
+): ReaderNarrativeFailureChain[] {
   return sortedGroups(groupedBy(
     trades.filter(narrativeFailureFor),
     narrativeChainKey,
+    options,
   ), "worst")
     .filter((group) => group.trades.length >= 2)
     .map((group) => {
@@ -402,6 +446,12 @@ function orderflowEvidenceKey(trade: ReaderAnalyzedTrade): string {
   return `pressure=${evidence.pressure}|absorption=${evidence.absorption}|print=${evidence.print}|follow=${evidence.followThrough}`;
 }
 
+function absorptionQualityKey(trade: ReaderAnalyzedTrade): string {
+  const quality = significantRead(trade)?.absorptionQuality;
+  if (!quality) return "no-absorption-quality";
+  return `${quality.quality}|${quality.side}|${quality.absorbedSide}|${quality.priceToPoc}|towardPoc=${quality.targetMovesTowardPoc}`;
+}
+
 function sideLocationKey(trade: ReaderAnalyzedTrade): string {
   const read = significantRead(trade);
   const location = read?.auction.location ?? trade.dossier.auction.location;
@@ -439,18 +489,6 @@ function unique<T>(items: T[]): T[] {
 
 function sum(values: number[]): number {
   return values.reduce((total, value) => total + value, 0);
-}
-
-function maxDrawdown(rValues: number[]): number {
-  let equity = 0;
-  let peak = 0;
-  let maxDd = 0;
-  for (const r of rValues) {
-    equity += r;
-    peak = Math.max(peak, equity);
-    maxDd = Math.min(maxDd, equity - peak);
-  }
-  return maxDd;
 }
 
 function round(value: number): number {

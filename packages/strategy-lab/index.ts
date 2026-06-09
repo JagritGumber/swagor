@@ -55,6 +55,8 @@ export * from "./reader-candidates/read-reader-candidate";
 export * from "./reader-candidates/build-reader-candidate-tape";
 export * from "./reader-candidate-learner/types";
 export * from "./reader-candidate-learner/learn-reader-candidate-tapes";
+export * from "./reader-candidate-learner/profile-reader-candidate-groups";
+export * from "./reader-candidate-learner/profile-reader-candidate-reactions";
 export type {
   ReaderRadarCandidate,
   ReaderRadarConfig,
@@ -172,6 +174,33 @@ export type {
   ReaderTradeTiming,
 } from "./reader-analysis/types";
 export { analyzeReaderTrades, summarizeReaderTrades } from "./reader-analysis/analyze-reader-trades";
+export type {
+  ReaderBadAttemptGroup,
+  ReaderBadAttemptReport,
+  ReaderBadAttemptSummary,
+  ReaderBadAttemptTrade,
+} from "./reader-analysis/profile-reader-bad-attempts";
+export { profileReaderBadAttempts } from "./reader-analysis/profile-reader-bad-attempts";
+export type {
+  ReaderAttemptHypothesis,
+  ReaderAttemptHypothesisReport,
+  ReaderAttemptHypothesisResult,
+} from "./reader-analysis/compare-reader-attempt-hypotheses";
+export {
+  compareReaderAttemptHypotheses,
+  defaultReaderAttemptHypotheses,
+} from "./reader-analysis/compare-reader-attempt-hypotheses";
+export type {
+  ReaderFragilityOptions,
+  ReaderFragilityPath,
+  ReaderFragilityQuantiles,
+  ReaderFragilitySummary,
+  ReaderFragilityTrade,
+} from "./reader-analysis/summarize-reader-fragility";
+export {
+  summarizeReaderFragility,
+  summarizeReaderTradeFragility,
+} from "./reader-analysis/summarize-reader-fragility";
 export type {
   ReaderReplayReport,
   ReaderReplayReportDiagnostics,

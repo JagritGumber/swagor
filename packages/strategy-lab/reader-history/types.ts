@@ -1,5 +1,5 @@
 import type { OrderflowEvent } from "../orderflow/types";
-import type { LiveReaderRead } from "../reader-live/types";
+import type { LiveReaderConfig, LiveReaderRead } from "../reader-live/types";
 import type { ReaderReplayInput, ReaderReplayResult, ReaderReplayStep } from "../reader-replay/types";
 import type { Candle } from "../types";
 
@@ -15,6 +15,7 @@ export type ReaderHistoryAuctionConfig = {
   profileBins?: number;
   profileTradeWindowMs?: number;
   profileTradeSampleLimit?: number;
+  localRangeCandles?: number;
 };
 
 export type ReaderHistoryInput = {
@@ -29,6 +30,7 @@ export type ReaderHistoryInput = {
   startAt?: number;
   endAt?: number;
   auctionConfig?: ReaderHistoryAuctionConfig;
+  readerConfig?: LiveReaderConfig;
 };
 
 export type ReaderHistoryStep = {

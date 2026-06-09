@@ -4,7 +4,7 @@ import type { ReaderAuctionMode } from "../reader-auction-mode/types";
 import type { ReaderNarrative } from "../reader-narrative/types";
 import type { ReaderActionableTradePlan } from "../trade-plan/types";
 
-export type ReaderResultExitReason = "stop" | "target";
+export type ReaderResultExitReason = "stop" | "target" | "reader-failure";
 
 export type ReaderResultEntry = {
   asset: string;
@@ -16,9 +16,13 @@ export type ReaderResultEntry = {
   side: ReaderActionableTradePlan["side"];
   entryPrice: number;
   entryAt: number;
+  entryAuctionLocation?: string;
+  entryAuctionLevelKind?: string | null;
   stop: number;
   target: number;
   confidence: number;
+  bestFavorableR?: number;
+  pricedReadsAfterEntry?: number;
   auctionMode?: ReaderAuctionMode;
   narrative?: ReaderNarrative;
   narrativeKey?: string | null;
@@ -63,7 +67,7 @@ export type ReaderResultEvent =
       reason: string;
     }
   | {
-      type: "stop-hit" | "target-hit";
+      type: "stop-hit" | "target-hit" | "reader-failure-exit";
       asset: string;
       side: ReaderResultEntry["side"];
       price: number;

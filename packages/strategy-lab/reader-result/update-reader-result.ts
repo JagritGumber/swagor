@@ -2,7 +2,7 @@ import type { ReaderSetupResult } from "../reader-setup/types";
 import { readerNarrativeKeyFor } from "../reader-narrative-state/reader-narrative-key-for";
 import type { ReaderActionableTradePlan } from "../trade-plan/types";
 import { readerResultForPrice } from "./reader-result-for-price";
-import type { ReaderResultEntry, ReaderResultEvent, ReaderResultState, ReaderResultUpdate } from "./types";
+import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultState, ReaderResultUpdate } from "./types";
 
 export function updateReaderResult(input: {
   state: ReaderResultState;
@@ -16,20 +16,23 @@ export function updateReaderResult(input: {
   let closed: ReaderResultUpdate["closed"] = null;
 
   if (input.state.open && price !== null) {
+    input.state.open = markPricedObservation(input.state.open, price);
     const outcome = readerResultForPrice({ entry: input.state.open, price, at: now });
     if (outcome) {
       input.state.open = null;
       input.state.outcomes.push(outcome);
       closed = outcome;
-      events.push({
-        type: outcome.exitReason === "target" ? "target-hit" : "stop-hit",
-        asset: outcome.asset,
-        side: outcome.side,
-        price: outcome.exitPrice,
-        r: outcome.r,
-        at: now,
-        reason: `${outcome.exitReason} hit`,
-      });
+      events.push(outcomeEvent(outcome, now));
+      appendEvents(input.state, events);
+      return { input: input.result, state: input.state, events, opened, closed };
+    }
+
+    const readerFailure = readerFailureOutcomeForPrice(input.state.open, input.result, price, now);
+    if (readerFailure) {
+      input.state.open = null;
+      input.state.outcomes.push(readerFailure);
+      closed = readerFailure;
+      events.push(outcomeEvent(readerFailure, now));
       appendEvents(input.state, events);
       return { input: input.result, state: input.state, events, opened, closed };
     }
@@ -99,6 +102,92 @@ export function updateReaderResult(input: {
   return { input: input.result, state: input.state, events, opened, closed };
 }
 
+function readerFailureOutcomeForPrice(
+  entry: ReaderResultEntry,
+  result: ReaderSetupResult,
+  price: number,
+  at: number,
+): ReaderResultOutcome | null {
+  const risk = Math.abs(entry.entryPrice - entry.stop);
+  if (!Number.isFinite(risk) || risk <= 0) return null;
+  const pnl = entry.side === "long" ? price - entry.entryPrice : entry.entryPrice - price;
+  const structureFailed = readerStructureFailed(entry, result);
+  if (pnl >= 0 && !structureFailed) return null;
+  if (pnl < 0 && !structureFailed && !readerFollowThroughFailed(entry)) return null;
+  return {
+    ...entry,
+    exitPrice: price,
+    exitAt: at,
+    exitReason: "reader-failure",
+    r: Number((pnl / risk).toFixed(4)),
+  };
+}
+
+function markPricedObservation(entry: ReaderResultEntry, price: number): ReaderResultEntry {
+  const risk = Math.abs(entry.entryPrice - entry.stop);
+  const pricedReadsAfterEntry = (entry.pricedReadsAfterEntry ?? 0) + 1;
+  if (!Number.isFinite(risk) || risk <= 0) return { ...entry, pricedReadsAfterEntry };
+  const pnl = entry.side === "long" ? price - entry.entryPrice : entry.entryPrice - price;
+  const moveR = pnl / risk;
+  return {
+    ...entry,
+    pricedReadsAfterEntry,
+    bestFavorableR: Math.max(entry.bestFavorableR ?? 0, moveR),
+  };
+}
+
+function readerFollowThroughFailed(entry: ReaderResultEntry): boolean {
+  return entry.pricedReadsAfterEntry === 1 || (entry.bestFavorableR ?? 0) > 0;
+}
+
+function readerStructureFailed(entry: ReaderResultEntry, result: ReaderSetupResult): boolean {
+  const currentLocation = result.read.auction.location;
+  const currentLevelKind = result.read.auction.level?.kind ?? null;
+  const currentDirection = result.read.narrativeRead?.direction ?? null;
+  if (!auctionZoneSupportsSide(entry.side, currentLocation)) return true;
+  if (currentLevelKind !== null && entry.entryAuctionLevelKind !== null && currentLevelKind !== entry.entryAuctionLevelKind) return true;
+  return currentDirection !== null && currentDirection !== "none" && currentDirection !== entry.side;
+}
+
+function auctionZoneSupportsSide(side: ReaderResultEntry["side"], location: string): boolean {
+  if (side === "long") return location === "below-value" || location === "value-low";
+  return location === "above-value" || location === "value-high";
+}
+
+function outcomeEvent(outcome: ReaderResultOutcome, at: number): ReaderResultEvent {
+  if (outcome.exitReason === "target") {
+    return {
+      type: "target-hit",
+      asset: outcome.asset,
+      side: outcome.side,
+      price: outcome.exitPrice,
+      r: outcome.r,
+      at,
+      reason: "target hit",
+    };
+  }
+  if (outcome.exitReason === "reader-failure") {
+    return {
+      type: "reader-failure-exit",
+      asset: outcome.asset,
+      side: outcome.side,
+      price: outcome.exitPrice,
+      r: outcome.r,
+      at,
+      reason: "reader moved against the open thesis before stop or target",
+    };
+  }
+  return {
+    type: "stop-hit",
+    asset: outcome.asset,
+    side: outcome.side,
+    price: outcome.exitPrice,
+    r: outcome.r,
+    at,
+    reason: "stop hit",
+  };
+}
+
 function entryFromPlan(
   result: ReaderSetupResult,
   plan: ReaderActionableTradePlan,
@@ -119,9 +208,13 @@ function entryFromPlan(
     side: plan.side,
     entryPrice,
     entryAt,
+    entryAuctionLocation: result.read.auction.location,
+    entryAuctionLevelKind: result.read.auction.level?.kind ?? null,
     stop: plan.stop,
     target: plan.target,
     confidence: plan.confidence,
+    bestFavorableR: 0,
+    pricedReadsAfterEntry: 0,
     auctionMode: result.read.auctionMode,
     narrative: plan.narrative,
     narrativeKey: readerNarrativeKeyFor({

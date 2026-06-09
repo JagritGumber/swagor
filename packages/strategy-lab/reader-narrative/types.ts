@@ -4,6 +4,7 @@ export type ReaderNarrativeIntent =
   | "wait"
   | "breakout-watch"
   | "breakout-continuation"
+  | "trend-continuation"
   | "reversal-watch"
   | "reversal-reclaim"
   | "continuation-pullback";

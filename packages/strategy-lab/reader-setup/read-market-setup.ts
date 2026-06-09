@@ -121,7 +121,7 @@ function setupFromPlan(
     status: statusForPlan(plan),
     sequence: plan.sequencePhase
       ? {
-          family: plan.setupFamily === "breakout-acceptance" ? "breakout-acceptance" : "reversal-reclaim",
+          family: plan.setupFamily === "breakout-acceptance" || plan.setupFamily === "trend-continuation" ? plan.setupFamily : "reversal-reclaim",
           phase: plan.sequencePhase,
           reason: plan.sequenceReason ?? "reader sequence updated",
         }
