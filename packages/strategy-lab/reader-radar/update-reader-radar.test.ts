@@ -832,6 +832,68 @@ describe("updateReaderRadar", () => {
     expect(middleRange.events.map((event) => event.type)).toContain("radar-promoted");
   });
 
+  test("execution mode blocks middle-range continuation with unresolved invalidation evidence", () => {
+    const memory = createReaderRadarMemory();
+    updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 1,
+      setup: setupResult(
+        noTradePlan(["fresh read has a continuation candidate"]),
+        readerRead({
+          location: "value-low",
+          pressure: "buy-pressure",
+          lastPrice: 101,
+          poc: 105,
+          continuation: true,
+          largestTradeSide: "buy",
+          localRangeLocation: "middle",
+          regime: "trend-down",
+        }),
+      ),
+    });
+    updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 2,
+      setup: setupResult(
+        noTradePlan(["candidate rotates away from POC before entry"]),
+        readerRead({
+          location: "value-low",
+          pressure: "buy-pressure",
+          lastPrice: 100.5,
+          poc: 105,
+          continuation: true,
+          largestTradeSide: "buy",
+          localRangeLocation: "middle",
+          regime: "trend-down",
+        }),
+      ),
+    });
+    const blocked = updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 3,
+      setup: setupResult(
+        noTradePlan(["middle-range candidate improves again"]),
+        readerRead({
+          location: "value-low",
+          pressure: "buy-pressure",
+          lastPrice: 102,
+          poc: 105,
+          continuation: true,
+          largestTradeSide: "buy",
+          localRangeLocation: "middle",
+          regime: "trend-down",
+        }),
+      ),
+    });
+
+    expect(blocked.candidate?.invalidationEvidence).toContain("price rotated away from POC before entry");
+    expect(blocked.promoted).toBe(false);
+    expect(blocked.events.map((event) => event.reason)).toContain("middle-range continuation has unresolved invalidation evidence");
+  });
+
   test("execution mode blocks middle-range continuation in range regime", () => {
     const memory = createReaderRadarMemory();
     updateReaderRadar({

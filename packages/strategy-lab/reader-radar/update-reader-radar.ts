@@ -345,6 +345,8 @@ function promotionBlockReason(input: {
   if (planBlockReason) return planBlockReason;
   if (input.candidate.status !== "improving") return `candidate status is ${input.candidate.status}`;
   if (input.candidate.adverseReads > 0 && !candidateHasEntryRepairAfterAdverse(input.candidate, input.setup)) return "candidate has unrepaired adverse live reads";
+  const invalidationBlockReason = continuationInvalidationBlockReason(input.candidate, input.setup);
+  if (invalidationBlockReason) return invalidationBlockReason;
   if (!tradeStyleHasSustainedContinuation(input.candidate, input.config.tradeStyle ?? "all")) return "continuation pullback needs sustained favorable live reads";
   if (!hasContinuationPocRotationIntegrity(input.candidate)) return `candidate lacks POC rotation integrity: ${input.candidate.pocRotation}`;
   if (input.tracked) {
@@ -580,6 +582,16 @@ function continuationNarrativeInvalidated(candidate: ReaderRadarCandidate): bool
   if (!isContinuationPullback(candidate.candidate)) return false;
   if (candidateRepairedAfterAdverse(candidate)) return false;
   return candidate.invalidationEvidence.length >= 2;
+}
+
+function continuationInvalidationBlockReason(candidate: ReaderRadarCandidate, setup: ReaderSetupResult): string | null {
+  if (!isContinuationPullback(candidate.candidate)) return null;
+  if (candidate.invalidationEvidence.length === 0) return null;
+  if (candidateRepairedAfterAdverse(candidate) || repairEvidenceSupportsContinuation(candidate.candidate, setup)) return null;
+  if (candidate.candidate.reader.localRangeLocation === "middle") {
+    return "middle-range continuation has unresolved invalidation evidence";
+  }
+  return null;
 }
 
 function continuationStructureInvalidated(candidate: ReaderRadarCandidate, setup: ReaderSetupResult): boolean {
