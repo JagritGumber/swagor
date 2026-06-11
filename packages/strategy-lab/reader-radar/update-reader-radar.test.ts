@@ -1447,6 +1447,72 @@ describe("updateReaderRadar", () => {
     expect(blocked.events.map((event) => event.reason)).toContain("continuation blocked in stable POC chop");
   });
 
+  test("execution mode blocks tracked long continuation at POC support in range regime", () => {
+    const memory = createReaderRadarMemory();
+    updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 1,
+      setup: setupResult(
+        noTradePlan(["fresh read has a continuation candidate"]),
+        readerRead({
+          location: "value-low",
+          pressure: "buy-pressure",
+          lastPrice: 101,
+          poc: 105,
+          continuation: true,
+          largestTradeSide: "buy",
+          localRangeLocation: "lower-edge",
+          regime: "range",
+        }),
+      ),
+    });
+    updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 2,
+      setup: setupResult(
+        noTradePlan(["tracked range candidate rotates toward POC support"]),
+        readerRead({
+          location: "near-poc",
+          levelKind: "support",
+          pressure: "buy-pressure",
+          lastPrice: 102,
+          poc: 105,
+          continuation: true,
+          largestTradeSide: "buy",
+          localRangeLocation: "lower-edge",
+          regime: "range",
+          initiativeConviction: "overwhelming",
+        }),
+      ),
+    });
+    const blocked = updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 3,
+      setup: setupResult(
+        noTradePlan(["tracked range candidate keeps improving at POC support"]),
+        readerRead({
+          location: "near-poc",
+          levelKind: "support",
+          pressure: "buy-pressure",
+          lastPrice: 103,
+          poc: 105,
+          continuation: true,
+          largestTradeSide: "buy",
+          localRangeLocation: "lower-edge",
+          regime: "range",
+          initiativeConviction: "overwhelming",
+        }),
+      ),
+    });
+
+    expect(blocked.candidate?.favorableReads).toBeGreaterThan(0);
+    expect(blocked.promoted).toBe(false);
+    expect(blocked.events.map((event) => event.reason)).toContain("long continuation blocked at POC support in range regime");
+  });
+
   test("execution mode blocks neutral balanced continuation without overwhelming initiative", () => {
     const memory = createReaderRadarMemory();
     updateReaderRadar({

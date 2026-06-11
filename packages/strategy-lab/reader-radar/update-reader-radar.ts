@@ -421,7 +421,9 @@ function continuationObjectiveZoneBlockReason(side: Side | null, setup: ReaderSe
   if (setup.read.auction.location !== "near-poc") return null;
   const levelKind = setup.read.auction.level?.kind ?? null;
   const vpValue = setup.read.vpState?.value ?? null;
+  const regime = setup.read.regime?.mode ?? null;
   if (side === "long") {
+    if (levelKind === "support" && regime === "range") return "long continuation blocked at POC support in range regime";
     if (levelKind === "resistance") return "long continuation blocked after rotating into POC resistance";
     if (vpValue === "value-expanding-down") return "long continuation blocked after rotating into POC while value expands down";
   }
