@@ -43,6 +43,9 @@ const marketStoreRoot = arg("market-store-root", "market-store")!;
 const bucketEventMode = parseBucketEventMode(arg("bucket-event-mode", "split"));
 const auctionLevelCandles = optionalPositiveInteger(arg("auction-level-candles"), "--auction-level-candles");
 const profileTradeSampleLimit = optionalPositiveInteger(arg("profile-trade-sample-limit"), "--profile-trade-sample-limit");
+const readerRadar = arg("reader-radar");
+const readerRadarMaxStaleMs = optionalPositiveInteger(arg("reader-radar-max-stale-ms"), "--reader-radar-max-stale-ms");
+const tradeStyle = arg("trade-style");
 const out = arg("out", join("docs", "strategy-lab", `btcusdt-mode-comparison-${startMonth}-${endMonth}.md`))!;
 const concurrency = parsePositiveInteger(arg("concurrency", "1"), "--concurrency");
 const chunkDays = hasFlag("chunk-days");
@@ -67,6 +70,7 @@ if (jobs.length === 0) {
     await queueWriteResults();
   });
 }
+process.exit(0);
 
 async function runEvaluator(input: {
   mode: string;
@@ -97,6 +101,9 @@ async function runEvaluator(input: {
       input.mode,
       ...(auctionLevelCandles === undefined ? [] : ["--auction-level-candles", String(auctionLevelCandles)]),
       ...(profileTradeSampleLimit === undefined ? [] : ["--profile-trade-sample-limit", String(profileTradeSampleLimit)]),
+      ...(readerRadar === undefined ? [] : ["--reader-radar", readerRadar]),
+      ...(readerRadarMaxStaleMs === undefined ? [] : ["--reader-radar-max-stale-ms", String(readerRadarMaxStaleMs)]),
+      ...(tradeStyle === undefined ? [] : ["--trade-style", tradeStyle]),
       "--summary-only",
       chunkDays ? "--chunk-days" : "--chunk-months",
     ],
@@ -141,7 +148,7 @@ function parseResult(input: {
 async function writeResults(): Promise<void> {
   await mkdir(dirname(out), { recursive: true });
   const sortedResults = sortedResultsForOutput();
-  await writeFile(out.replace(/\.md$/, ".json"), `${JSON.stringify({ symbol, startMonth, endMonth, bucketEventMode, auctionLevelCandles, profileTradeSampleLimit, chunking: chunkDays ? "days" : "months", results: sortedResults }, null, 2)}\n`, "utf8");
+  await writeFile(out.replace(/\.md$/, ".json"), `${JSON.stringify({ symbol, startMonth, endMonth, bucketEventMode, auctionLevelCandles, profileTradeSampleLimit, readerRadar, readerRadarMaxStaleMs, tradeStyle, chunking: chunkDays ? "days" : "months", results: sortedResults }, null, 2)}\n`, "utf8");
   await writeFile(out, markdownFor(), "utf8");
 }
 
@@ -158,6 +165,9 @@ function markdownFor(): string {
     `Bucket event mode: ${bucketEventMode}`,
     `Auction level candles: ${auctionLevelCandles ?? "all"}`,
     `Profile trade sample limit: ${profileTradeSampleLimit ?? "default"}`,
+    `Reader radar: ${readerRadar ?? "default"}`,
+    `Reader radar max stale ms: ${readerRadarMaxStaleMs ?? "default"}`,
+    `Trade style: ${tradeStyle ?? "default"}`,
     `Chunking: ${chunkDays ? "days" : "months"}`,
     "",
   ];
@@ -172,7 +182,7 @@ function markdownFor(): string {
     if (modeResults.length > 0) {
       const summary = summarize(modeResults);
       lines.push("");
-      lines.push(`Aggregate: trades=${summary.trades} wins=${summary.wins} losses=${summary.losses} totalR=${format(summary.totalR)} avgR=${format(summary.averageR)} monthLevelMaxDD=${format(summary.monthLevelMaxDrawdownR)}`);
+      lines.push(`Aggregate: trades=${summary.trades} wins=${summary.wins} losses=${summary.losses} totalR=${format(summary.totalR)} avgR=${format(summary.averageR)} worstMonthMaxDD=${format(summary.worstMonthMaxDrawdownR)} monthLevelMaxDD=${format(summary.monthLevelMaxDrawdownR)}`);
     }
     lines.push("");
   }
@@ -182,10 +192,22 @@ function markdownFor(): string {
 async function loadExistingResults(): Promise<MonthResult[]> {
   const jsonPath = out.replace(/\.md$/, ".json");
   try {
-    const parsed = JSON.parse(await readFile(jsonPath, "utf8")) as { bucketEventMode?: string; auctionLevelCandles?: number; profileTradeSampleLimit?: number; chunking?: string; results?: MonthResult[] };
+    const parsed = JSON.parse(await readFile(jsonPath, "utf8")) as {
+      bucketEventMode?: string;
+      auctionLevelCandles?: number;
+      profileTradeSampleLimit?: number;
+      readerRadar?: string;
+      readerRadarMaxStaleMs?: number;
+      tradeStyle?: string;
+      chunking?: string;
+      results?: MonthResult[];
+    };
     if (parsed.bucketEventMode !== undefined && parsed.bucketEventMode !== bucketEventMode) return [];
     if (parsed.auctionLevelCandles !== auctionLevelCandles) return [];
     if (parsed.profileTradeSampleLimit !== profileTradeSampleLimit) return [];
+    if (parsed.readerRadar !== readerRadar) return [];
+    if (parsed.readerRadarMaxStaleMs !== readerRadarMaxStaleMs) return [];
+    if (parsed.tradeStyle !== tradeStyle) return [];
     if (parsed.chunking !== undefined && parsed.chunking !== (chunkDays ? "days" : "months")) return [];
     return Array.isArray(parsed.results) ? parsed.results : [];
   } catch (error: unknown) {
@@ -242,6 +264,7 @@ function summarize(items: MonthResult[]) {
     losses,
     totalR,
     averageR: trades === 0 ? 0 : totalR / trades,
+    worstMonthMaxDrawdownR: items.reduce((worst, item) => Math.min(worst, item.maxDrawdownR), 0),
     monthLevelMaxDrawdownR: monthLevelMaxDrawdown(items.map((item) => item.totalR)),
   };
 }
