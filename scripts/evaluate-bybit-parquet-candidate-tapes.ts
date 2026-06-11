@@ -30,6 +30,9 @@ const marketStoreRoot = arg("market-store-root", "market-store")!;
 const bucketEventMode = arg("bucket-event-mode", "aggregate")!;
 const auctionLevelCandles = optionalPositiveInteger(arg("auction-level-candles"), "--auction-level-candles");
 const profileTradeSampleLimit = optionalPositiveInteger(arg("profile-trade-sample-limit"), "--profile-trade-sample-limit");
+const readerRadar = arg("reader-radar");
+const readerRadarMaxStaleMs = optionalPositiveInteger(arg("reader-radar-max-stale-ms"), "--reader-radar-max-stale-ms");
+const tradeStyle = arg("trade-style");
 const outDir = arg("out-dir", join("docs", "strategy-lab", "candidate-tapes"))!;
 const chunkDays = hasFlag("chunk-days") || !hasFlag("chunk-months");
 const force = hasFlag("force");
@@ -45,6 +48,7 @@ for (const month of monthRange(startMonth, endMonth)) {
   console.log(`RUN candidate month=${month} out=${tapePath}`);
   await runEvaluator({ month, tapePath });
 }
+process.exit(0);
 
 async function runEvaluator(input: {
   month: string;
@@ -74,6 +78,9 @@ async function runEvaluator(input: {
       mode,
       ...(auctionLevelCandles === undefined ? [] : ["--auction-level-candles", String(auctionLevelCandles)]),
       ...(profileTradeSampleLimit === undefined ? [] : ["--profile-trade-sample-limit", String(profileTradeSampleLimit)]),
+      ...(readerRadar === undefined ? [] : ["--reader-radar", readerRadar]),
+      ...(readerRadarMaxStaleMs === undefined ? [] : ["--reader-radar-max-stale-ms", String(readerRadarMaxStaleMs)]),
+      ...(tradeStyle === undefined ? [] : ["--trade-style", tradeStyle]),
       "--summary-only",
       chunkDays ? "--chunk-days" : "--chunk-months",
       "--candidate-tape-out",
@@ -95,11 +102,28 @@ async function runEvaluator(input: {
 async function hasValidTape(path: string, month: string): Promise<boolean> {
   try {
     const parsed = JSON.parse(await readFile(path, "utf8")) as {
-      run?: { startAt?: string; endAt?: string };
+      run?: {
+        startAt?: string;
+        endAt?: string;
+        venue?: string;
+        dataMode?: string;
+        bucketEventMode?: string;
+        narrativeSessionMode?: string;
+        readerRadar?: string;
+        readerRadarMaxStaleMs?: number;
+        tradeStyle?: string;
+      };
       assets?: unknown[];
     };
     return parsed.run?.startAt === `${month}-01T00:00:00.000Z`
       && parsed.run?.endAt === `${nextMonthStart(month)}T00:00:00.000Z`
+      && parsed.run?.venue === "bybit"
+      && parsed.run?.dataMode === "parquet"
+      && parsed.run?.bucketEventMode === bucketEventMode
+      && parsed.run?.narrativeSessionMode === mode
+      && parsed.run?.readerRadar === readerRadar
+      && parsed.run?.readerRadarMaxStaleMs === readerRadarMaxStaleMs
+      && parsed.run?.tradeStyle === tradeStyle
       && Array.isArray(parsed.assets);
   } catch (error: unknown) {
     if (isMissingFileError(error)) return false;
