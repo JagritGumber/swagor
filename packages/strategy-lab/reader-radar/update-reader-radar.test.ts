@@ -1509,6 +1509,69 @@ describe("updateReaderRadar", () => {
     expect(blocked.events.map((event) => event.reason)).toContain("continuation blocked in stable POC chop");
   });
 
+  test("execution mode blocks tracked continuation in violent chop", () => {
+    const memory = createReaderRadarMemory();
+    updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 1,
+      setup: setupResult(
+        noTradePlan(["fresh read has a continuation candidate"]),
+        readerRead({
+          location: "value-low",
+          pressure: "buy-pressure",
+          lastPrice: 101,
+          poc: 105,
+          continuation: true,
+          largestTradeSide: "buy",
+          localRangeLocation: "lower-edge",
+        }),
+      ),
+    });
+    updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 2,
+      setup: setupResult(
+        noTradePlan(["tracked candidate enters violent chop"]),
+        readerRead({
+          location: "near-poc",
+          pressure: "sell-pressure",
+          lastPrice: 102,
+          poc: 105,
+          auctionMode: "violent-unknown",
+          auctionPhase: "violent-chop",
+          largestTradeSide: "sell",
+          localRangeLocation: "middle",
+          initiativeConviction: "overwhelming",
+        }),
+      ),
+    });
+    const blocked = updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 3,
+      setup: setupResult(
+        noTradePlan(["tracked candidate remains in violent chop"]),
+        readerRead({
+          location: "near-poc",
+          pressure: "sell-pressure",
+          lastPrice: 103,
+          poc: 105,
+          auctionMode: "violent-unknown",
+          auctionPhase: "violent-chop",
+          largestTradeSide: "sell",
+          localRangeLocation: "middle",
+          initiativeConviction: "overwhelming",
+        }),
+      ),
+    });
+
+    expect(blocked.candidate?.favorableReads).toBeGreaterThan(0);
+    expect(blocked.promoted).toBe(false);
+    expect(blocked.events.map((event) => event.reason)).toContain("continuation blocked in violent chop");
+  });
+
   test("execution mode blocks tracked long continuation at POC support in range regime", () => {
     const memory = createReaderRadarMemory();
     updateReaderRadar({
@@ -1873,6 +1936,7 @@ function readerRead(input: {
   continuation?: boolean;
   continuationSide?: "long" | "short";
   auctionMode?: NonNullable<LiveReaderRead["auctionMode"]>["mode"];
+  auctionPhase?: NonNullable<LiveReaderRead["auctionMode"]>["phase"];
   largestTradeSide?: "buy" | "sell";
   localRangeLocation?: NonNullable<LiveReaderRead["localRange"]>["location"];
   absorptionQuality?: LiveReaderRead["absorptionQuality"];
@@ -1912,7 +1976,7 @@ function readerRead(input: {
     auctionMode: input.auctionMode
       ? {
           mode: input.auctionMode,
-          phase: "failed-expansion-fade",
+          phase: input.auctionPhase ?? "failed-expansion-fade",
           allowedDirection: "both",
           reasons: ["test auction mode"],
         }

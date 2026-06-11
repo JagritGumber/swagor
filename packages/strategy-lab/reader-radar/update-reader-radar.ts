@@ -447,6 +447,9 @@ function continuationSupportZoneBlockReason(side: Side | null, setup: ReaderSetu
 }
 
 function continuationChopBlockReason(setup: ReaderSetupResult): string | null {
+  if (setup.read.auctionMode?.mode === "violent-unknown" || setup.read.auctionMode?.phase === "violent-chop") {
+    return "continuation blocked in violent chop";
+  }
   const vp = setup.read.vpState;
   if (vp?.auction === "poc-chop" && vp.poc === "poc-stable") return "continuation blocked in stable POC chop";
   return null;
