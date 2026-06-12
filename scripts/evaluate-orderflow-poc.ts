@@ -437,6 +437,8 @@ function runMetadata() {
     setupTtlMs,
     minCoveragePct,
     dailyLossLimitR,
+    readerRadar,
+    readerRadarMaxStaleMs,
     tradeStyle,
     riskPct,
     feePct,
