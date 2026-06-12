@@ -1,0 +1,366 @@
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+
+type TradeTapeFile = {
+  assets: Array<{
+    trades: ReaderTrade[];
+  }>;
+};
+
+type ReaderTrade = {
+  asset: string;
+  entryAt: string;
+  side: string;
+  setupFamily: string;
+  result: {
+    exitReason?: string;
+    r: number | null;
+  };
+  readerState?: {
+    regime?: string | null;
+    auctionLocation?: string | null;
+    auctionLevelKind?: string | null;
+    auctionMode?: string | null;
+    auctionPhase?: string | null;
+  };
+  absorptionQuality?: {
+    quality?: string | null;
+    side?: string | null;
+    targetMovesTowardPoc?: boolean | null;
+    evidence?: {
+      absorption?: string | null;
+      print?: string | null;
+      followThrough?: string | null;
+    };
+  };
+  narrative?: {
+    intent?: string | null;
+    direction?: string | null;
+    verdict?: string | null;
+    invalidatingEvidence?: string[];
+  };
+  vp?: {
+    auction?: string | null;
+    poc?: string | null;
+    value?: string | null;
+  };
+  orderflow?: {
+    pressure?: string | null;
+    events?: string[];
+    initiative?: {
+      side?: string | null;
+      conviction?: string | null;
+    };
+    evidence?: {
+      pressure?: string | null;
+      absorption?: string | null;
+      print?: string | null;
+      followThrough?: string | null;
+    };
+    tape?: {
+      buyShare?: number | null;
+      deltaShare?: number | null;
+      dominantShare?: number | null;
+      largestTradeShare?: number | null;
+      lastTradeRank?: number | null;
+      priceChange?: number | null;
+    };
+  };
+  diagnostics?: {
+    firstReaction?: string | null;
+    firstReactionR?: number | null;
+    observedMfeR?: number | null;
+    observedMaeR?: number | null;
+    entryTiming?: string | null;
+    pocRotation?: string | null;
+    labels?: string[];
+  };
+  dossierVerdict?: string | null;
+};
+
+type TradeRow = {
+  trade: ReaderTrade;
+  netR: number;
+};
+
+type Group = {
+  key: string;
+  trades: number;
+  wins: number;
+  losses: number;
+  totalR: number;
+  averageR: number;
+  maxDrawdownR: number;
+  adverseFirst: number;
+  confirmedNarrative: number;
+  refs: string[];
+};
+
+function arg(name: string, fallback?: string): string | undefined {
+  const index = process.argv.indexOf(`--${name}`);
+  return index >= 0 && process.argv[index + 1] ? process.argv[index + 1] : fallback;
+}
+
+const tapePaths = await tapePathsForInput();
+const out = arg("out");
+const costRPerTrade = costRPerTradeFor({
+  riskPct: numberArg("risk-pct", 0),
+  feePct: numberArg("fee-pct", 0),
+  slippagePct: numberArg("slippage-pct", 0),
+});
+
+if (tapePaths.length === 0) throw new Error("--tapes or --tape-dir must include one or more trade-tape JSON paths");
+
+const trades = (await Promise.all(tapePaths.map(readTape)))
+  .flatMap((tape) => tape.assets.flatMap((asset) => asset.trades))
+  .filter((trade) => trade.result.r !== null)
+  .map((trade): TradeRow => ({ trade, netR: round((trade.result.r ?? 0) - costRPerTrade) }))
+  .sort((left, right) => Date.parse(left.trade.entryAt) - Date.parse(right.trade.entryAt));
+
+const report = {
+  summary: summarizeRows("all", trades),
+  byResultShape: grouped(trades, resultShapeKeyFor),
+  byNarrativeState: grouped(trades, narrativeStateKeyFor),
+  byReaderState: grouped(trades, readerStateKeyFor),
+  byExecutionRead: grouped(trades, executionReadKeyFor),
+  byMicrostructure: grouped(trades, microstructureKeyFor),
+  worstTrades: trades
+    .slice()
+    .sort((left, right) => left.netR - right.netR)
+    .slice(0, 25)
+    .map(tradeRefFor),
+};
+
+printReport(report);
+if (out) await writeReport(out, report);
+
+async function tapePathsForInput(): Promise<string[]> {
+  const explicit = parseList(arg("tapes"));
+  const tapeDir = arg("tape-dir");
+  if (!tapeDir) return explicit;
+  const pattern = arg("pattern", ".json") ?? ".json";
+  const fromDir = (await readdir(tapeDir))
+    .filter((name) => name.includes(pattern))
+    .sort()
+    .map((name) => join(tapeDir, name));
+  return [...explicit, ...fromDir];
+}
+
+async function readTape(path: string): Promise<TradeTapeFile> {
+  return JSON.parse(await readFile(path, "utf8")) as TradeTapeFile;
+}
+
+function grouped(rows: TradeRow[], keyFor: (row: TradeRow) => string): Group[] {
+  const groups = new Map<string, TradeRow[]>();
+  for (const row of rows) {
+    const key = keyFor(row);
+    const group = groups.get(key);
+    if (group) group.push(row);
+    else groups.set(key, [row]);
+  }
+  return [...groups.entries()]
+    .map(([key, group]) => summarizeRows(key, group))
+    .sort((left, right) => left.totalR - right.totalR || right.trades - left.trades);
+}
+
+function summarizeRows(key: string, rows: TradeRow[]): Group {
+  const totalR = sum(rows.map((row) => row.netR));
+  return {
+    key,
+    trades: rows.length,
+    wins: rows.filter((row) => row.netR > 0).length,
+    losses: rows.filter((row) => row.netR <= 0).length,
+    totalR: round(totalR),
+    averageR: rows.length === 0 ? 0 : round(totalR / rows.length),
+    maxDrawdownR: maxDrawdown(rows.map((row) => row.netR)),
+    adverseFirst: rows.filter((row) => row.trade.diagnostics?.firstReaction === "adverse-first-read").length,
+    confirmedNarrative: rows.filter((row) => row.trade.narrative?.verdict === "confirmed").length,
+    refs: rows.slice(0, 12).map(tradeRefFor),
+  };
+}
+
+function resultShapeKeyFor(row: TradeRow): string {
+  return [
+    row.trade.diagnostics?.firstReaction ?? "unknown-reaction",
+    row.trade.diagnostics?.entryTiming ?? "unknown-entry",
+    row.trade.diagnostics?.pocRotation ?? "unknown-poc-rotation",
+    row.trade.narrative?.verdict ?? "unknown-verdict",
+  ].join("|");
+}
+
+function narrativeStateKeyFor(row: TradeRow): string {
+  const narrative = row.trade.narrative;
+  const invalidation = narrative?.invalidatingEvidence?.length ? narrative.invalidatingEvidence.join("+") : "no-invalidation";
+  return [
+    narrative?.intent ?? "unknown-intent",
+    narrative?.direction ?? "unknown-direction",
+    narrative?.verdict ?? "unknown-verdict",
+    invalidation,
+  ].join("|");
+}
+
+function readerStateKeyFor(row: TradeRow): string {
+  const state = row.trade.readerState;
+  const vp = row.trade.vp;
+  return [
+    state?.regime ?? "unknown-regime",
+    state?.auctionLocation ?? "unknown-location",
+    state?.auctionLevelKind ?? "unknown-level",
+    state?.auctionMode ?? "unknown-mode",
+    state?.auctionPhase ?? "unknown-phase",
+    vp?.auction ?? "unknown-vp-auction",
+    vp?.poc ?? "unknown-vp-poc",
+    vp?.value ?? "unknown-vp-value",
+  ].join("|");
+}
+
+function executionReadKeyFor(row: TradeRow): string {
+  const orderflow = row.trade.orderflow;
+  const absorption = row.trade.absorptionQuality;
+  return [
+    orderflow?.pressure ?? "unknown-pressure",
+    orderflow?.initiative?.conviction ?? "unknown-conviction",
+    eventFamily(orderflow?.events ?? []),
+    absorption?.quality ?? "unknown-absorption",
+    absorption?.targetMovesTowardPoc ? "trap-targets-poc" : "no-trap-target",
+  ].join("|");
+}
+
+function microstructureKeyFor(row: TradeRow): string {
+  const evidence = row.trade.orderflow?.evidence;
+  const absorption = row.trade.absorptionQuality?.evidence;
+  return [
+    evidence?.pressure ?? "unknown-pressure-evidence",
+    evidence?.print ?? "unknown-print",
+    evidence?.followThrough ?? "unknown-followthrough",
+    absorption?.absorption ?? "unknown-absorption-evidence",
+    absorption?.followThrough ?? "unknown-absorption-followthrough",
+  ].join("|");
+}
+
+function tradeRefFor(row: TradeRow): string {
+  const trade = row.trade;
+  return [
+    trade.entryAt,
+    `net=${r(row.netR)}`,
+    `raw=${nullableR(trade.result.r)}`,
+    trade.readerState?.regime ?? "unknown-regime",
+    trade.readerState?.auctionLocation ?? "unknown-location",
+    trade.narrative?.verdict ?? "unknown-verdict",
+    trade.diagnostics?.firstReaction ?? "unknown-reaction",
+    trade.diagnostics?.pocRotation ?? "unknown-poc-rotation",
+  ].join(":");
+}
+
+function printReport(reportForPrint: typeof report): void {
+  console.log("READER TRADE STATE PROFILE");
+  printGroup("summary", reportForPrint.summary);
+  printGroups("worst_result_shape", reportForPrint.byResultShape.slice(0, 12));
+  printGroups("worst_narrative_state", reportForPrint.byNarrativeState.slice(0, 12));
+  printGroups("worst_reader_state", reportForPrint.byReaderState.slice(0, 12));
+  printGroups("worst_execution_read", reportForPrint.byExecutionRead.slice(0, 12));
+  printGroups("worst_microstructure", reportForPrint.byMicrostructure.slice(0, 12));
+  console.log("worst_trades");
+  for (const ref of reportForPrint.worstTrades.slice(0, 15)) console.log(ref);
+}
+
+function printGroups(title: string, rows: Group[]): void {
+  console.log(title);
+  for (const row of rows) printGroup(row.key, row);
+}
+
+function printGroup(label: string, group: Group): void {
+  console.log(`${label} trades=${group.trades} W/L=${group.wins}/${group.losses} net=${r(group.totalR)} avg=${r(group.averageR)} maxDD=${r(group.maxDrawdownR)} adverseFirst=${group.adverseFirst} confirmed=${group.confirmedNarrative}`);
+}
+
+async function writeReport(path: string, reportForWrite: typeof report): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path.replace(/\.md$/i, ".json"), `${JSON.stringify(reportForWrite, null, 2)}\n`, "utf8");
+  await writeFile(path, markdownFor(reportForWrite), "utf8");
+  console.log(`reader_trade_state_profile=${path}`);
+}
+
+function markdownFor(reportForMarkdown: typeof report): string {
+  return [
+    "# Reader Trade State Profile",
+    "",
+    `Cost per trade: ${r(costRPerTrade)}`,
+    "",
+    tableFor("Summary", [reportForMarkdown.summary]),
+    tableFor("Worst Result Shape", reportForMarkdown.byResultShape.slice(0, 20)),
+    tableFor("Worst Narrative State", reportForMarkdown.byNarrativeState.slice(0, 20)),
+    tableFor("Worst Reader State", reportForMarkdown.byReaderState.slice(0, 20)),
+    tableFor("Worst Execution Read", reportForMarkdown.byExecutionRead.slice(0, 20)),
+    tableFor("Worst Microstructure", reportForMarkdown.byMicrostructure.slice(0, 20)),
+    "## Worst Trades",
+    "",
+    ...reportForMarkdown.worstTrades.map((ref) => `- ${ref}`),
+    "",
+  ].join("\n");
+}
+
+function tableFor(title: string, rows: Group[]): string {
+  return [
+    `## ${title}`,
+    "",
+    "| Key | Trades | W/L | Net R | Avg R | Max DD | Adverse First | Confirmed | Refs |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+    ...rows.map((row) => `| ${escapeTable(row.key)} | ${row.trades} | ${row.wins}/${row.losses} | ${r(row.totalR)} | ${r(row.averageR)} | ${r(row.maxDrawdownR)} | ${row.adverseFirst} | ${row.confirmedNarrative} | ${escapeTable(row.refs.join(", "))} |`),
+    "",
+  ].join("\n");
+}
+
+function parseList(value: string | undefined): string[] {
+  return (value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function numberArg(name: string, fallback: number): number {
+  const value = arg(name);
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) throw new Error(`--${name} must be a finite number`);
+  return parsed;
+}
+
+function costRPerTradeFor(input: { riskPct: number; feePct: number; slippagePct: number }): number {
+  if (input.feePct === 0 && input.slippagePct === 0) return 0;
+  if (input.riskPct <= 0) throw new Error("--risk-pct is required and must be positive when fee/slippage costs are provided");
+  return (input.feePct + input.slippagePct) / input.riskPct;
+}
+
+function eventFamily(events: string[]): string {
+  return events.length === 0 ? "no-event" : [...events].sort().join("+");
+}
+
+function maxDrawdown(values: number[]): number {
+  let equity = 0;
+  let peak = 0;
+  let maxDd = 0;
+  for (const value of values) {
+    equity += value;
+    peak = Math.max(peak, equity);
+    maxDd = Math.min(maxDd, equity - peak);
+  }
+  return round(maxDd);
+}
+
+function sum(values: number[]): number {
+  return values.reduce((total, value) => total + value, 0);
+}
+
+function round(value: number): number {
+  const rounded = Math.round(value * 10_000) / 10_000;
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
+
+function r(value: number): string {
+  return `${value.toFixed(4).replace(/\.?0+$/, "")}R`;
+}
+
+function nullableR(value: number | null): string {
+  return value === null ? "n/a" : r(value);
+}
+
+function escapeTable(value: string): string {
+  return value.replaceAll("|", "\\|");
+}
