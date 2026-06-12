@@ -90,6 +90,7 @@ const costRPerTrade = costRPerTradeFor({
   feePct: numberArg("fee-pct", 0),
   slippagePct: numberArg("slippage-pct", 0),
 });
+const minLinkPct = optionalNumberArg("min-link-pct");
 const out = arg("out");
 
 if (updatePaths.length === 0) throw new Error("--updates or --updates-dir must include radar update JSON paths");
@@ -105,7 +106,15 @@ const report = {
   byRepairState: grouped(promotions, repairStateKeyFor),
   byReaderState: grouped(promotions, readerStateKeyFor),
   byOutcomeState: grouped(promotions, outcomeStateKeyFor),
+  unmatchedPromotions: promotions
+    .filter((promotion) => promotion.netR === null)
+    .slice(0, 50)
+    .map(unmatchedPromotionFor),
 };
+
+if (minLinkPct !== undefined && report.summary.linkPct < minLinkPct) {
+  throw new Error(`promotion/trade link coverage ${pct(report.summary.linkPct)} is below --min-link-pct ${pct(minLinkPct)}`);
+}
 
 printReport(report);
 if (out) await writeReport(out, report);
@@ -156,9 +165,12 @@ function promotionFor(
 
 function summarize(items: Promotion[]) {
   const linked = items.filter((item) => item.netR !== null);
+  const linkPct = items.length === 0 ? 1 : linked.length / items.length;
   return {
     promotions: items.length,
     linkedTrades: linked.length,
+    unmatchedPromotions: items.length - linked.length,
+    linkPct: round(linkPct),
     adverseBeforeEntry: items.filter((item) => item.candidate.adverseReads > 0).length,
     unrepairedAdverse: items.filter((item) => item.candidate.adverseReads > 0 && item.candidate.repairReads === 0).length,
     withInvalidationEvidence: items.filter((item) => item.candidate.invalidationEvidence.length > 0).length,
@@ -166,6 +178,15 @@ function summarize(items: Promotion[]) {
     losses: linked.filter((item) => (item.netR ?? 0) <= 0).length,
     totalR: round(sum(linked.map((item) => item.netR ?? 0))),
     costRPerTrade: round(costRPerTrade),
+  };
+}
+
+function unmatchedPromotionFor(item: Promotion) {
+  return {
+    at: item.at,
+    key: readerStateKeyFor(item),
+    repairState: repairStateKeyFor(item),
+    reason: item.candidate.lastReason,
   };
 }
 
@@ -232,7 +253,10 @@ function outcomeStateKeyFor(item: Promotion): string {
 
 function printReport(reportForPrint: typeof report): void {
   console.log("READER RADAR PROMOTION PROFILE");
-  console.log(`promotions=${reportForPrint.summary.promotions} linkedTrades=${reportForPrint.summary.linkedTrades} adverseBefore=${reportForPrint.summary.adverseBeforeEntry} unrepairedAdverse=${reportForPrint.summary.unrepairedAdverse} invalidationEvidence=${reportForPrint.summary.withInvalidationEvidence} net=${r(reportForPrint.summary.totalR)} cost=${r(reportForPrint.summary.costRPerTrade)}`);
+  console.log(`promotions=${reportForPrint.summary.promotions} linkedTrades=${reportForPrint.summary.linkedTrades} unmatched=${reportForPrint.summary.unmatchedPromotions} linkPct=${pct(reportForPrint.summary.linkPct)} adverseBefore=${reportForPrint.summary.adverseBeforeEntry} unrepairedAdverse=${reportForPrint.summary.unrepairedAdverse} invalidationEvidence=${reportForPrint.summary.withInvalidationEvidence} net=${r(reportForPrint.summary.totalR)} cost=${r(reportForPrint.summary.costRPerTrade)}`);
+  if (reportForPrint.summary.unmatchedPromotions > 0) {
+    console.log(`unmatched_sample=${reportForPrint.unmatchedPromotions.map((item) => item.at).join(",")}`);
+  }
   printGroups("by_repair_state", reportForPrint.byRepairState);
   printGroups("by_outcome_state", reportForPrint.byOutcomeState);
   printGroups("worst_reader_state", reportForPrint.byReaderState.slice(0, 12));
@@ -258,15 +282,31 @@ function markdownFor(reportForMarkdown: typeof report): string {
     "",
     `Promotions: ${reportForMarkdown.summary.promotions}`,
     `Linked trades: ${reportForMarkdown.summary.linkedTrades}`,
+    `Unmatched promotions: ${reportForMarkdown.summary.unmatchedPromotions}`,
+    `Link coverage: ${pct(reportForMarkdown.summary.linkPct)}`,
     `Adverse before entry: ${reportForMarkdown.summary.adverseBeforeEntry}`,
     `Unrepaired adverse: ${reportForMarkdown.summary.unrepairedAdverse}`,
     `Invalidation evidence: ${reportForMarkdown.summary.withInvalidationEvidence}`,
     `Net R: ${r(reportForMarkdown.summary.totalR)}`,
     `Cost per trade: ${r(reportForMarkdown.summary.costRPerTrade)}`,
     "",
+    unmatchedTableFor(reportForMarkdown.unmatchedPromotions),
     tableFor("Repair State", reportForMarkdown.byRepairState),
     tableFor("Outcome State", reportForMarkdown.byOutcomeState),
     tableFor("Worst Reader State", reportForMarkdown.byReaderState.slice(0, 20)),
+  ].join("\n");
+}
+
+function unmatchedTableFor(rows: ReturnType<typeof unmatchedPromotionFor>[]): string {
+  return [
+    "## Unmatched Promotions",
+    "",
+    "| At | Repair State | Reader State | Reason |",
+    "| --- | --- | --- | --- |",
+    ...(rows.length === 0
+      ? ["| none | none | none | none |"]
+      : rows.map((row) => `| ${row.at} | ${escapeTable(row.repairState)} | ${escapeTable(row.key)} | ${escapeTable(row.reason)} |`)),
+    "",
   ].join("\n");
 }
 
@@ -293,6 +333,14 @@ function numberArg(name: string, fallback: number): number {
   return parsed;
 }
 
+function optionalNumberArg(name: string): number | undefined {
+  const value = arg(name);
+  if (value === undefined) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) throw new Error(`--${name} must be a finite number`);
+  return parsed;
+}
+
 function costRPerTradeFor(input: { riskPct: number; feePct: number; slippagePct: number }): number {
   if (input.feePct === 0 && input.slippagePct === 0) return 0;
   if (input.riskPct <= 0) throw new Error("--risk-pct is required and must be positive when fee/slippage costs are provided");
@@ -314,6 +362,10 @@ function round(value: number): number {
 
 function r(value: number): string {
   return `${value.toFixed(4).replace(/\.?0+$/, "")}R`;
+}
+
+function pct(value: number): string {
+  return `${(value * 100).toFixed(2).replace(/\.?0+$/, "")}%`;
 }
 
 function escapeTable(value: string): string {
