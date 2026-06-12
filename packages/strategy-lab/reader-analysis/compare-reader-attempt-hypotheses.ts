@@ -21,19 +21,21 @@ export type ReaderAttemptHypothesisReport = {
 export function compareReaderAttemptHypotheses(input: {
   trades: ReaderBadAttemptTrade[];
   hypotheses?: ReaderAttemptHypothesis[];
+  costRPerTrade?: number;
 }): ReaderAttemptHypothesisReport {
   const trades = input.trades.filter((trade) => trade.trust && trade.result.r !== null);
   const hypotheses = input.hypotheses ?? defaultReaderAttemptHypotheses();
+  const costRPerTrade = input.costRPerTrade ?? 0;
   return {
-    baseline: summarize(trades),
+    baseline: summarize(trades, costRPerTrade),
     results: hypotheses.map((hypothesis) => {
       const kept = trades.filter(hypothesis.keep);
       const removed = trades.filter((trade) => !hypothesis.keep(trade));
       return {
         key: hypothesis.key,
         description: hypothesis.description,
-        kept: summarize(kept),
-        removed: summarize(removed),
+        kept: summarize(kept, costRPerTrade),
+        removed: summarize(removed, costRPerTrade),
       };
     }).sort(riskAwareHypothesisFirst),
   };
@@ -139,8 +141,8 @@ function hasInitiativeConviction(trade: ReaderBadAttemptTrade, side: string, con
     && trade.orderflow.initiative?.conviction === conviction;
 }
 
-function summarize(trades: ReaderBadAttemptTrade[]): ReaderBadAttemptSummary {
-  return profileReaderBadAttempts({ trades, minimumGroupSize: 1 }).summary;
+function summarize(trades: ReaderBadAttemptTrade[], costRPerTrade: number): ReaderBadAttemptSummary {
+  return profileReaderBadAttempts({ trades, minimumGroupSize: 1, costRPerTrade }).summary;
 }
 
 function riskAwareHypothesisFirst(

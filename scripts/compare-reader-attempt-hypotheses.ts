@@ -1,5 +1,5 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import {
   compareReaderAttemptHypotheses,
   type ReaderAttemptHypothesisReport,
@@ -19,14 +19,19 @@ function arg(name: string, fallback?: string): string | undefined {
   return index >= 0 && process.argv[index + 1] ? process.argv[index + 1] : fallback;
 }
 
-const tapePaths = parseList(arg("tapes"));
+const tapePaths = await tapePathsForInput();
+const costRPerTrade = costRPerTradeFor({
+  riskPct: numberArg("risk-pct", 0),
+  feePct: numberArg("fee-pct", 0),
+  slippagePct: numberArg("slippage-pct", 0),
+});
 const out = arg("out");
 
-if (tapePaths.length === 0) throw new Error("--tapes must include one or more trade-tape JSON paths");
+if (tapePaths.length === 0) throw new Error("--tapes or --tape-dir must include one or more trade-tape JSON paths");
 
 const tapes = await Promise.all(tapePaths.map(readTape));
 const trades = tapes.flatMap((tape) => tape.assets.flatMap((asset) => asset.trades));
-const report = compareReaderAttemptHypotheses({ trades });
+const report = compareReaderAttemptHypotheses({ trades, costRPerTrade });
 
 printReport(report);
 if (out) await writeReport(out, report);
@@ -35,8 +40,38 @@ function parseList(value: string | undefined): string[] {
   return (value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
 }
 
+async function tapePathsForInput(): Promise<string[]> {
+  const explicit = parseList(arg("tapes"));
+  const tapeDir = arg("tape-dir");
+  if (!tapeDir) return explicit;
+  const pattern = arg("pattern", ".json") ?? ".json";
+  const fromDir = (await readdir(tapeDir))
+    .filter((name) => name.includes(pattern))
+    .sort()
+    .map((name) => join(tapeDir, name));
+  return [...explicit, ...fromDir];
+}
+
 async function readTape(path: string): Promise<TradeTapeFile> {
   return JSON.parse(await readFile(path, "utf8")) as TradeTapeFile;
+}
+
+function numberArg(name: string, fallback: number): number {
+  const value = arg(name);
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) throw new Error(`--${name} must be a finite number`);
+  return parsed;
+}
+
+function costRPerTradeFor(input: {
+  riskPct: number;
+  feePct: number;
+  slippagePct: number;
+}): number {
+  if (input.feePct === 0 && input.slippagePct === 0) return 0;
+  if (input.riskPct <= 0) throw new Error("--risk-pct is required and must be positive when fee/slippage costs are provided");
+  return (input.feePct + input.slippagePct) / input.riskPct;
 }
 
 function printReport(report: ReaderAttemptHypothesisReport): void {
@@ -64,8 +99,8 @@ function markdownFor(report: ReaderAttemptHypothesisReport): string {
     summaryBlock(report.baseline),
     "## Hypotheses",
     "",
-    "| Hypothesis | Kept Trades | Kept W/L | Kept Win Rate | Kept R | Kept Gross W/L | Kept PF | Kept Max DD | Kept Losses-First DD | Removed Trades | Removed W/L | Removed R | Removed Losses-First DD | Description |",
-    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+    "| Hypothesis | Cost | Kept Trades | Kept W/L | Kept Win Rate | Kept Raw R | Kept Net R | Kept Net Gross W/L | Kept PF | Kept Max DD | Kept Losses-First DD | Removed Trades | Removed W/L | Removed Raw R | Removed Net R | Removed Losses-First DD | Description |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ...report.results.map(rowFor),
     "",
   ].join("\n");
@@ -74,9 +109,11 @@ function markdownFor(report: ReaderAttemptHypothesisReport): string {
 function rowFor(result: ReaderAttemptHypothesisResult): string {
   return [
     result.key,
+    r(result.kept.costRPerTrade),
     result.kept.trades,
     `${result.kept.wins}/${result.kept.losses}`,
     pct(result.kept.winRate),
+    r(result.kept.rawTotalR),
     r(result.kept.totalR),
     `${r(result.kept.grossWinR)} / ${r(result.kept.grossLossR)}`,
     profitFactor(result.kept),
@@ -84,6 +121,7 @@ function rowFor(result: ReaderAttemptHypothesisResult): string {
     r(result.kept.lossesFirstMaxDrawdownR),
     result.removed.trades,
     `${result.removed.wins}/${result.removed.losses}`,
+    r(result.removed.rawTotalR),
     r(result.removed.totalR),
     r(result.removed.lossesFirstMaxDrawdownR),
     result.description,
@@ -95,6 +133,8 @@ function summaryBlock(summary: ReaderBadAttemptSummary): string {
     `Trades: ${summary.trades}`,
     `Wins/Losses: ${summary.wins}/${summary.losses}`,
     `Win rate: ${pct(summary.winRate)}`,
+    `Cost per trade: ${r(summary.costRPerTrade)}`,
+    `Raw total R: ${r(summary.rawTotalR)}`,
     `Total R: ${r(summary.totalR)}`,
     `Average R: ${r(summary.averageR)}`,
     `Gross win/loss R: ${r(summary.grossWinR)} / ${r(summary.grossLossR)}`,
@@ -114,6 +154,8 @@ function summaryLine(summary: ReaderBadAttemptSummary): string {
     `wins=${summary.wins}`,
     `losses=${summary.losses}`,
     `winRate=${pct(summary.winRate)}`,
+    `cost=${r(summary.costRPerTrade)}`,
+    `rawTotalR=${r(summary.rawTotalR)}`,
     `totalR=${r(summary.totalR)}`,
     `avgR=${r(summary.averageR)}`,
     `grossWin=${r(summary.grossWinR)}`,

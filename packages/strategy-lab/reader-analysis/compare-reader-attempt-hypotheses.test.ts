@@ -30,6 +30,33 @@ describe("compareReaderAttemptHypotheses", () => {
     expect(report.results[0]?.kept.totalR).toBe(12);
     expect(report.results[1]?.kept.totalR).toBe(7);
   });
+
+  test("ranks hypotheses using net R after explicit costs", () => {
+    const trades = [
+      trade(0.1, "2025-05-01", ["tiny"]),
+      trade(0.5, "2025-05-02", ["room"]),
+    ];
+    const hypotheses: ReaderAttemptHypothesis[] = [
+      {
+        key: "tiny",
+        description: "Raw winner that costs turn negative.",
+        keep: (candidate) => candidate.diagnostics.labels.includes("tiny"),
+      },
+      {
+        key: "room",
+        description: "Larger winner that survives costs.",
+        keep: (candidate) => candidate.diagnostics.labels.includes("room"),
+      },
+    ];
+
+    const report = compareReaderAttemptHypotheses({ trades, hypotheses, costRPerTrade: 0.2 });
+
+    expect(report.baseline.rawTotalR).toBe(0.6);
+    expect(report.baseline.totalR).toBe(0.2);
+    expect(report.results.map((result) => result.key)).toEqual(["room", "tiny"]);
+    expect(report.results[0]?.kept.totalR).toBe(0.3);
+    expect(report.results[1]?.kept.totalR).toBe(-0.1);
+  });
 });
 
 function trade(r: number, day: string, labels: string[]): ReaderBadAttemptTrade {

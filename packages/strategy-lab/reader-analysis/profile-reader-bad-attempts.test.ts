@@ -22,6 +22,26 @@ describe("profileReaderBadAttempts", () => {
     expect(report.summary.lossesFirstMaxDrawdownR).toBe(-3);
     expect(report.summary.lossesFirstMinEquityR).toBe(-3);
   });
+
+  test("nets explicit trade costs before win rate and drawdown are summarized", () => {
+    const report = profileReaderBadAttempts({
+      trades: [
+        trade(0.1, "2025-05-01"),
+        trade(0.3, "2025-05-02"),
+      ],
+      minimumGroupSize: 1,
+      costRPerTrade: 0.2,
+    });
+
+    expect(report.summary.rawTotalR).toBe(0.4);
+    expect(report.summary.totalR).toBe(0);
+    expect(report.summary.wins).toBe(1);
+    expect(report.summary.losses).toBe(1);
+    expect(report.summary.grossWinR).toBe(0.1);
+    expect(report.summary.grossLossR).toBe(-0.1);
+    expect(report.summary.maxDrawdownR).toBe(-0.1);
+    expect(report.summary.lossesFirstMaxDrawdownR).toBe(-0.1);
+  });
 });
 
 function trade(r: number, day: string): ReaderBadAttemptTrade {

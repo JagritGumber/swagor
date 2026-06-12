@@ -1,5 +1,5 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import {
   profileReaderBadAttempts,
   type ReaderBadAttemptGroup,
@@ -18,15 +18,20 @@ function arg(name: string, fallback?: string): string | undefined {
   return index >= 0 && process.argv[index + 1] ? process.argv[index + 1] : fallback;
 }
 
-const tapePaths = parseList(arg("tapes"));
+const tapePaths = await tapePathsForInput();
 const minimumGroupSize = requiredPositiveInteger(arg("minimum-group-size"), "--minimum-group-size");
+const costRPerTrade = costRPerTradeFor({
+  riskPct: numberArg("risk-pct", 0),
+  feePct: numberArg("fee-pct", 0),
+  slippagePct: numberArg("slippage-pct", 0),
+});
 const out = arg("out");
 
-if (tapePaths.length === 0) throw new Error("--tapes must include one or more trade-tape JSON paths");
+if (tapePaths.length === 0) throw new Error("--tapes or --tape-dir must include one or more trade-tape JSON paths");
 
 const tapes = await Promise.all(tapePaths.map(readTape));
 const trades = tapes.flatMap((tape) => tape.assets.flatMap((asset) => asset.trades));
-const report = profileReaderBadAttempts({ trades, minimumGroupSize });
+const report = profileReaderBadAttempts({ trades, minimumGroupSize, costRPerTrade });
 
 printReport(report);
 if (out) await writeReport(out, report);
@@ -35,11 +40,41 @@ function parseList(value: string | undefined): string[] {
   return (value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
 }
 
+async function tapePathsForInput(): Promise<string[]> {
+  const explicit = parseList(arg("tapes"));
+  const tapeDir = arg("tape-dir");
+  if (!tapeDir) return explicit;
+  const pattern = arg("pattern", ".json") ?? ".json";
+  const fromDir = (await readdir(tapeDir))
+    .filter((name) => name.includes(pattern))
+    .sort()
+    .map((name) => join(tapeDir, name));
+  return [...explicit, ...fromDir];
+}
+
 function requiredPositiveInteger(value: string | undefined, name: string): number {
   if (value === undefined || value === "") throw new Error(`${name} is required so this profiler has no hidden sample policy`);
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`${name} must be a positive integer`);
   return parsed;
+}
+
+function numberArg(name: string, fallback: number): number {
+  const value = arg(name);
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) throw new Error(`--${name} must be a finite number`);
+  return parsed;
+}
+
+function costRPerTradeFor(input: {
+  riskPct: number;
+  feePct: number;
+  slippagePct: number;
+}): number {
+  if (input.feePct === 0 && input.slippagePct === 0) return 0;
+  if (input.riskPct <= 0) throw new Error("--risk-pct is required and must be positive when fee/slippage costs are provided");
+  return (input.feePct + input.slippagePct) / input.riskPct;
 }
 
 async function readTape(path: string): Promise<TradeTapeFile> {
@@ -91,14 +126,16 @@ function sectionFor(title: string, groups: ReaderBadAttemptGroup[]): string {
     lines.push("None.", "");
     return lines.join("\n");
   }
-  lines.push("| Key | Trades | W/L | Win Rate | Total R | Gross W/L | Profit Factor | Avg R | Max DD R | Losses-First DD R | Max Loss Streak | Refs |");
-  lines.push("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
+  lines.push("| Key | Trades | W/L | Win Rate | Cost | Raw R | Net R | Net Gross W/L | Profit Factor | Avg R | Max DD R | Losses-First DD R | Max Loss Streak | Refs |");
+  lines.push("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
   for (const group of groups) {
     lines.push([
       escapeTable(group.key),
       group.summary.trades,
       `${group.summary.wins}/${group.summary.losses}`,
       formatPct(group.summary.winRate),
+      formatR(group.summary.costRPerTrade),
+      formatR(group.summary.rawTotalR),
       formatR(group.summary.totalR),
       `${formatR(group.summary.grossWinR)} / ${formatR(group.summary.grossLossR)}`,
       profitFactor(group.summary),
@@ -118,6 +155,8 @@ function summaryBlock(summary: ReaderBadAttemptReport["summary"]): string {
     `Trades: ${summary.trades}`,
     `Wins/Losses: ${summary.wins}/${summary.losses}`,
     `Win rate: ${formatPct(summary.winRate)}`,
+    `Cost per trade: ${formatR(summary.costRPerTrade)}`,
+    `Raw total R: ${formatR(summary.rawTotalR)}`,
     `Total R: ${formatR(summary.totalR)}`,
     `Average R: ${formatR(summary.averageR)}`,
     `Gross win/loss R: ${formatR(summary.grossWinR)} / ${formatR(summary.grossLossR)}`,
@@ -138,6 +177,8 @@ function summaryLine(summary: ReaderBadAttemptReport["summary"]): string {
     `wins=${summary.wins}`,
     `losses=${summary.losses}`,
     `winRate=${formatPct(summary.winRate)}`,
+    `cost=${formatR(summary.costRPerTrade)}`,
+    `rawTotalR=${formatR(summary.rawTotalR)}`,
     `totalR=${formatR(summary.totalR)}`,
     `avgR=${formatR(summary.averageR)}`,
     `grossWin=${formatR(summary.grossWinR)}`,

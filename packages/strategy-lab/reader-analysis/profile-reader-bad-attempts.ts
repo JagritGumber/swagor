@@ -58,6 +58,8 @@ export type ReaderBadAttemptSummary = {
   wins: number;
   losses: number;
   winRate: number;
+  costRPerTrade: number;
+  rawTotalR: number;
   grossWinR: number;
   grossLossR: number;
   profitFactor: number | null;
@@ -88,23 +90,26 @@ export type ReaderBadAttemptReport = {
 export function profileReaderBadAttempts(input: {
   trades: ReaderBadAttemptTrade[];
   minimumGroupSize: number;
+  costRPerTrade?: number;
 }): ReaderBadAttemptReport {
   const trades = input.trades.filter((trade) => trade.trust && trade.result.r !== null);
+  const costRPerTrade = input.costRPerTrade ?? 0;
   return {
-    summary: summarize(trades),
-    badAttemptGroups: groupsFor(trades, badAttemptKey)
+    summary: summarize(trades, costRPerTrade),
+    badAttemptGroups: groupsFor(trades, badAttemptKey, costRPerTrade)
       .filter((group) => group.summary.trades >= input.minimumGroupSize && group.summary.totalR < 0)
       .sort(worstFirst),
-    winnerGroups: groupsFor(trades, badAttemptKey)
+    winnerGroups: groupsFor(trades, badAttemptKey, costRPerTrade)
       .filter((group) => group.summary.trades >= input.minimumGroupSize && group.summary.totalR > 0)
       .sort(bestFirst),
-    featureGroups: featureGroupsFor(trades, input.minimumGroupSize),
+    featureGroups: featureGroupsFor(trades, input.minimumGroupSize, costRPerTrade),
   };
 }
 
 function featureGroupsFor(
   trades: ReaderBadAttemptTrade[],
   minimumGroupSize: number,
+  costRPerTrade: number,
 ): ReaderBadAttemptGroup[] {
   const keyed: Array<[string, (trade: ReaderBadAttemptTrade) => string]> = [
     ["side", (trade) => trade.side],
@@ -122,7 +127,7 @@ function featureGroupsFor(
   ];
 
   return keyed
-    .flatMap(([prefix, keyFor]) => groupsFor(trades, (trade) => `${prefix}|${keyFor(trade)}`))
+    .flatMap(([prefix, keyFor]) => groupsFor(trades, (trade) => `${prefix}|${keyFor(trade)}`, costRPerTrade))
     .filter((group) => group.summary.trades >= minimumGroupSize)
     .sort(worstFirst);
 }
@@ -130,6 +135,7 @@ function featureGroupsFor(
 function groupsFor(
   trades: ReaderBadAttemptTrade[],
   keyFor: (trade: ReaderBadAttemptTrade) => string,
+  costRPerTrade: number,
 ): ReaderBadAttemptGroup[] {
   const groups = new Map<string, ReaderBadAttemptTrade[]>();
   for (const trade of trades) {
@@ -140,7 +146,7 @@ function groupsFor(
   }
   return [...groups.entries()].map(([key, groupTrades]) => ({
     key,
-    summary: summarize(groupTrades),
+    summary: summarize(groupTrades, costRPerTrade),
     refs: groupTrades.slice(0, 12).map(refFor),
   }));
 }
@@ -169,10 +175,11 @@ function badAttemptKey(trade: ReaderBadAttemptTrade): string {
   ].join("|");
 }
 
-function summarize(trades: ReaderBadAttemptTrade[]): ReaderBadAttemptSummary {
-  const rValues = trades.map((trade) => trade.result.r).filter((r): r is number => r !== null && Number.isFinite(r));
+function summarize(trades: ReaderBadAttemptTrade[], costRPerTrade: number): ReaderBadAttemptSummary {
+  const rawRValues = trades.map((trade) => trade.result.r).filter((r): r is number => r !== null && Number.isFinite(r));
+  const rValues = rawRValues.map((r) => r - costRPerTrade);
   const path = [...trades].sort((left, right) => Date.parse(left.entryAt) - Date.parse(right.entryAt));
-  const chronological = equityPath(path.map((trade) => trade.result.r ?? 0));
+  const chronological = equityPath(path.map((trade) => trade.result.r === null ? 0 : trade.result.r - costRPerTrade));
   const lossesFirst = equityPath([...rValues].sort((left, right) => left - right));
   const wins = rValues.filter((r) => r > 0).length;
   const losses = rValues.filter((r) => r < 0).length;
@@ -184,6 +191,8 @@ function summarize(trades: ReaderBadAttemptTrade[]): ReaderBadAttemptSummary {
     wins,
     losses,
     winRate: rValues.length === 0 ? 0 : round(wins / rValues.length),
+    costRPerTrade: round(costRPerTrade),
+    rawTotalR: round(sum(rawRValues)),
     grossWinR: round(grossWinR),
     grossLossR: round(grossLossR),
     profitFactor: grossLossR === 0 ? (grossWinR > 0 ? null : 0) : round(grossWinR / Math.abs(grossLossR)),
@@ -279,5 +288,6 @@ function sum(values: number[]): number {
 }
 
 function round(value: number): number {
-  return Math.round(value * 10_000) / 10_000;
+  const rounded = Math.round(value * 10_000) / 10_000;
+  return Object.is(rounded, -0) ? 0 : rounded;
 }
