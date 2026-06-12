@@ -1,5 +1,5 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import {
   summarizeReaderTradeFragility,
   type ReaderBadAttemptTrade,
@@ -17,13 +17,13 @@ function arg(name: string, fallback?: string): string | undefined {
   return index >= 0 && process.argv[index + 1] ? process.argv[index + 1] : fallback;
 }
 
-const tapePaths = parseList(arg("tapes"));
+const tapePaths = await tapePathsForInput();
 const out = arg("out");
 const riskPct = numberArg("risk-pct", 0.25);
 const monteCarloRuns = integerArg("monte-carlo-runs", 2_000);
 const seed = integerArg("seed", 13_371);
 
-if (tapePaths.length === 0) throw new Error("--tapes must include one or more trade-tape JSON paths");
+if (tapePaths.length === 0) throw new Error("--tapes or --tape-dir must include one or more trade-tape JSON paths");
 
 const tapes = await Promise.all(tapePaths.map(readTape));
 const trades = tapes.flatMap((tape) => tape.assets.flatMap((asset) => asset.trades));
@@ -41,6 +41,18 @@ if (out) await writeReport(out, summary);
 
 function parseList(value: string | undefined): string[] {
   return (value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+async function tapePathsForInput(): Promise<string[]> {
+  const explicit = parseList(arg("tapes"));
+  const tapeDir = arg("tape-dir");
+  if (!tapeDir) return explicit;
+  const pattern = arg("pattern", ".json") ?? ".json";
+  const fromDir = (await readdir(tapeDir))
+    .filter((name) => name.includes(pattern))
+    .sort()
+    .map((name) => join(tapeDir, name));
+  return [...explicit, ...fromDir];
 }
 
 function numberArg(name: string, fallback: number): number {
