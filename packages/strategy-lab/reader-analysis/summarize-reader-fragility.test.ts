@@ -44,6 +44,27 @@ describe("summarizeReaderFragility", () => {
     expect(summary.monteCarlo.maxLossStreak.worst).toBe(3);
   });
 
+  test("nets fee and slippage from each trade in R space", () => {
+    const summary = summarizeReaderFragility([
+      trade(1, "2025-05-01"),
+      trade(0.05, "2025-05-02"),
+      trade(-0.5, "2025-05-03"),
+    ], {
+      riskPct: 0.25,
+      feePct: 0.025,
+      slippagePct: 0.025,
+      monteCarloRuns: 20,
+      seed: 3,
+    });
+
+    expect(summary.risk.costRPerTrade).toBe(0.2);
+    expect(summary.totalR).toBe(-0.05);
+    expect(summary.wins).toBe(1);
+    expect(summary.losses).toBe(2);
+    expect(summary.chronological.maxDrawdownR).toBe(-0.85);
+    expect(summary.risk.returnPct).toBe(-0.0125);
+  });
+
   test("handles empty trade lists", () => {
     const summary = summarizeReaderFragility([], { monteCarloRuns: 10 });
 

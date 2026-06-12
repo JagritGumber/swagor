@@ -20,6 +20,8 @@ function arg(name: string, fallback?: string): string | undefined {
 const tapePaths = await tapePathsForInput();
 const out = arg("out");
 const riskPct = numberArg("risk-pct", 0.25);
+const feePct = numberArg("fee-pct", 0);
+const slippagePct = numberArg("slippage-pct", 0);
 const monteCarloRuns = integerArg("monte-carlo-runs", 2_000);
 const seed = integerArg("seed", 13_371);
 
@@ -31,6 +33,8 @@ const summary = summarizeReaderTradeFragility({
   trades,
   options: {
     riskPct,
+    feePct,
+    slippagePct,
     monteCarloRuns,
     seed,
   },
@@ -81,6 +85,7 @@ function printSummary(summary: ReaderFragilitySummary): void {
   console.log(`chronological maxDD=${r(summary.chronological.maxDrawdownR)} minEquity=${r(summary.chronological.minEquityR)} maxLossStreak=${summary.chronological.maxLossStreak}`);
   console.log(`lossesFirst maxDD=${r(summary.lossesFirst.maxDrawdownR)} minEquity=${r(summary.lossesFirst.minEquityR)} maxLossStreak=${summary.lossesFirst.maxLossStreak}`);
   console.log(`monteCarlo runs=${summary.monteCarlo.runs} p95MaxDD=${r(summary.monteCarlo.maxDrawdownR.p95)} worstMaxDD=${r(summary.monteCarlo.maxDrawdownR.worst)} p95LossStreak=${summary.monteCarlo.maxLossStreak.p95}`);
+  console.log(`costs feePct=${summary.risk.feePct}% slippagePct=${summary.risk.slippagePct}% costRPerTrade=${r(summary.risk.costRPerTrade)}`);
   console.log(`risk riskPct=${summary.risk.riskPct}% return=${pctNumber(summary.risk.returnPct)} chronologicalMaxDD=${pctNumber(summary.risk.chronologicalMaxDrawdownPct)} lossesFirstMaxDD=${pctNumber(summary.risk.lossesFirstMaxDrawdownPct)} monteCarloP95MaxDD=${pctNumber(summary.risk.monteCarloP95MaxDrawdownPct)}`);
 }
 
@@ -130,6 +135,9 @@ function markdownFor(summary: ReaderFragilitySummary): string {
     "## Portfolio Projection",
     "",
     `Risk per trade: ${summary.risk.riskPct}%`,
+    `Fee: ${summary.risk.feePct}%`,
+    `Slippage: ${summary.risk.slippagePct}%`,
+    `Cost per trade: ${r(summary.risk.costRPerTrade)}`,
     `Return: ${pctNumber(summary.risk.returnPct)}`,
     `Chronological max DD: ${pctNumber(summary.risk.chronologicalMaxDrawdownPct)}`,
     `Losses-first max DD: ${pctNumber(summary.risk.lossesFirstMaxDrawdownPct)}`,

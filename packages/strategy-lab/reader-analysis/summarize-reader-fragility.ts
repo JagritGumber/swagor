@@ -7,6 +7,8 @@ export type ReaderFragilityTrade = {
 
 export type ReaderFragilityOptions = {
   riskPct?: number;
+  feePct?: number;
+  slippagePct?: number;
   monteCarloRuns?: number;
   seed?: number;
 };
@@ -53,6 +55,9 @@ export type ReaderFragilitySummary = {
   };
   risk: {
     riskPct: number;
+    feePct: number;
+    slippagePct: number;
+    costRPerTrade: number;
     returnPct: number;
     chronologicalMaxDrawdownPct: number;
     lossesFirstMaxDrawdownPct: number;
@@ -68,13 +73,17 @@ export function summarizeReaderFragility(
   trades: ReaderFragilityTrade[],
   options: ReaderFragilityOptions = {},
 ): ReaderFragilitySummary {
+  const riskPct = options.riskPct ?? 0;
+  const feePct = options.feePct ?? 0;
+  const slippagePct = options.slippagePct ?? 0;
+  const costRPerTrade = riskPct > 0 ? (feePct + slippagePct) / riskPct : 0;
   const values = trades
-    .map((trade) => trade.r)
+    .map((trade) => trade.r - costRPerTrade)
     .filter((r) => Number.isFinite(r));
   const chronological = [...trades]
     .filter((trade) => Number.isFinite(trade.r))
     .sort((left, right) => timeFor(left) - timeFor(right))
-    .map((trade) => trade.r);
+    .map((trade) => trade.r - costRPerTrade);
   const lossesFirst = [...values].sort((left, right) => left - right);
   const monteCarloRuns = options.monteCarloRuns ?? DEFAULT_MONTE_CARLO_RUNS;
   const paths = shuffledPaths(values, monteCarloRuns, options.seed ?? DEFAULT_SEED);
@@ -86,7 +95,6 @@ export function summarizeReaderFragility(
   const totalR = sum(values);
   const topWinR = winValues[0] ?? null;
   const topThreeWinR = sum(winValues.slice(0, 3));
-  const riskPct = options.riskPct ?? 0;
   const maxDrawdowns = paths.map((path) => path.maxDrawdownR);
   const minEquities = paths.map((path) => path.minEquityR);
   const lossStreaks = paths.map((path) => path.maxLossStreak);
@@ -117,6 +125,9 @@ export function summarizeReaderFragility(
     },
     risk: {
       riskPct,
+      feePct,
+      slippagePct,
+      costRPerTrade: round(costRPerTrade),
       returnPct: round(totalR * riskPct),
       chronologicalMaxDrawdownPct: round(pathFor(chronological).maxDrawdownR * riskPct),
       lossesFirstMaxDrawdownPct: round(pathFor(lossesFirst).maxDrawdownR * riskPct),
