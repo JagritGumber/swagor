@@ -30,31 +30,38 @@ const marketStoreRoot = arg("market-store-root", "market-store")!;
 const bucketEventMode = arg("bucket-event-mode", "aggregate")!;
 const auctionLevelCandles = optionalPositiveInteger(arg("auction-level-candles"), "--auction-level-candles");
 const profileTradeSampleLimit = optionalPositiveInteger(arg("profile-trade-sample-limit"), "--profile-trade-sample-limit");
-const readerRadar = arg("reader-radar");
+const readerRadar = arg("reader-radar", "execute");
 const readerRadarMaxStaleMs = optionalPositiveInteger(arg("reader-radar-max-stale-ms"), "--reader-radar-max-stale-ms");
 const tradeStyle = arg("trade-style");
-const outDir = arg("out-dir", join("docs", "strategy-lab", "trade-tapes"))!;
-const learnerOut = arg("learner-out");
+const outDir = arg("out-dir", join("docs", "strategy-lab", "radar-updates"))!;
+const tradeTapeDir = arg("trade-tape-dir");
+const profileOut = arg("profile-out");
+const riskPct = arg("risk-pct");
+const feePct = arg("fee-pct");
+const slippagePct = arg("slippage-pct");
 const chunkDays = hasFlag("chunk-days") || !hasFlag("chunk-months");
 const force = hasFlag("force");
 
 await mkdir(outDir, { recursive: true });
 const months = monthRange(startMonth, endMonth);
-const tapePaths: string[] = [];
+const updatePaths: string[] = [];
 
 for (const month of months) {
-  const tapePath = join(outDir, `${symbol.toLowerCase()}-${mode}-${month}.json`);
-  if (!force && await hasValidTape(tapePath, month)) {
-    console.log(`SKIP tape month=${month} out=${tapePath}`);
-    tapePaths.push(tapePath);
+  const updatePath = join(outDir, `${symbol.toLowerCase()}-${mode}-${month}.json`);
+  if (!force && await hasValidUpdates(updatePath, month)) {
+    console.log(`SKIP radar-updates month=${month} out=${updatePath}`);
+    updatePaths.push(updatePath);
     continue;
   }
-  console.log(`RUN tape month=${month} out=${tapePath}`);
-  await runEvaluator({ month, tapePath });
-  tapePaths.push(tapePath);
+  console.log(`RUN radar-updates month=${month} out=${updatePath}`);
+  await runEvaluator({ month, updatePath });
+  updatePaths.push(updatePath);
 }
 
-async function hasValidTape(path: string, month: string): Promise<boolean> {
+if (profileOut) await runPromotionProfile(updatePaths);
+process.exit(0);
+
+async function hasValidUpdates(path: string, month: string): Promise<boolean> {
   try {
     const parsed = JSON.parse(await readFile(path, "utf8")) as {
       run?: {
@@ -88,14 +95,9 @@ async function hasValidTape(path: string, month: string): Promise<boolean> {
   }
 }
 
-if (learnerOut) {
-  await runLearner(tapePaths);
-}
-process.exit(0);
-
 async function runEvaluator(input: {
   month: string;
-  tapePath: string;
+  updatePath: string;
 }): Promise<void> {
   const proc = Bun.spawn({
     cmd: [
@@ -124,11 +126,10 @@ async function runEvaluator(input: {
       ...(readerRadar === undefined ? [] : ["--reader-radar", readerRadar]),
       ...(readerRadarMaxStaleMs === undefined ? [] : ["--reader-radar-max-stale-ms", String(readerRadarMaxStaleMs)]),
       ...(tradeStyle === undefined ? [] : ["--trade-style", tradeStyle]),
-      "--trades-limit",
-      "0",
+      "--summary-only",
       chunkDays ? "--chunk-days" : "--chunk-months",
-      "--trade-tape-out",
-      input.tapePath,
+      "--radar-updates-out",
+      input.updatePath,
     ],
     stdout: "pipe",
     stderr: "pipe",
@@ -138,24 +139,26 @@ async function runEvaluator(input: {
     new Response(proc.stderr).text(),
     proc.exited,
   ]);
-  if (exitCode !== 0) {
-    throw new Error(`trade-tape evaluation failed month=${input.month}: ${stderr || stdout}`);
-  }
-  const final = stdout.match(/FINAL\s+judgeable_trades=(\d+) unjudgeable_trades=(\d+) wins=(\d+) losses=(\d+) totalR=([-\d.]+)/m);
-  console.log(final ? `DONE ${input.month} judgeable=${final[1]} wins=${final[3]} losses=${final[4]} totalR=${final[5]}` : `DONE ${input.month}`);
+  if (exitCode !== 0) throw new Error(`radar update evaluation failed month=${input.month}: ${stderr || stdout}`);
+  const promoted = stdout.match(/radar_promoted=(\d+)/);
+  console.log(promoted ? `DONE ${input.month} promoted=${promoted[1]}` : `DONE ${input.month}`);
 }
 
-async function runLearner(tapePaths: string[]): Promise<void> {
+async function runPromotionProfile(updatePaths: string[]): Promise<void> {
   const proc = Bun.spawn({
     cmd: [
       "bun",
       "--conditions",
       "react-server",
-      "scripts/learn-reader-trade-tapes.ts",
-      "--tapes",
-      tapePaths.join(","),
+      "scripts/profile-reader-radar-promotions.ts",
+      "--updates",
+      updatePaths.join(","),
+      ...(tradeTapeDir === undefined ? [] : ["--trade-tape-dir", tradeTapeDir]),
+      ...(riskPct === undefined ? [] : ["--risk-pct", riskPct]),
+      ...(feePct === undefined ? [] : ["--fee-pct", feePct]),
+      ...(slippagePct === undefined ? [] : ["--slippage-pct", slippagePct]),
       "--out",
-      learnerOut!,
+      profileOut!,
     ],
     stdout: "pipe",
     stderr: "pipe",
@@ -165,9 +168,7 @@ async function runLearner(tapePaths: string[]): Promise<void> {
     new Response(proc.stderr).text(),
     proc.exited,
   ]);
-  if (exitCode !== 0) {
-    throw new Error(`learner failed: ${stderr || stdout}`);
-  }
+  if (exitCode !== 0) throw new Error(`radar promotion profile failed: ${stderr || stdout}`);
   console.log(stdout.trim());
 }
 

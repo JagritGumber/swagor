@@ -112,6 +112,7 @@ async function hasValidTape(path: string, month: string): Promise<boolean> {
         readerRadar?: string;
         readerRadarMaxStaleMs?: number;
         tradeStyle?: string;
+        chunking?: string;
       };
       assets?: unknown[];
     };
@@ -124,6 +125,7 @@ async function hasValidTape(path: string, month: string): Promise<boolean> {
       && parsed.run?.readerRadar === readerRadar
       && parsed.run?.readerRadarMaxStaleMs === readerRadarMaxStaleMs
       && parsed.run?.tradeStyle === tradeStyle
+      && parsed.run?.chunking === chunkingMode()
       && Array.isArray(parsed.assets);
   } catch (error: unknown) {
     if (isMissingFileError(error)) return false;
@@ -158,6 +160,10 @@ function nextMonthStart(month: string): string {
   const date = new Date(`${month}-01T00:00:00.000Z`);
   date.setUTCMonth(date.getUTCMonth() + 1);
   return date.toISOString().slice(0, 10);
+}
+
+function chunkingMode(): string {
+  return chunkDays ? "days" : "months";
 }
 
 function isMissingFileError(error: unknown): boolean {
