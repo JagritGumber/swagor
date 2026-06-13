@@ -37,6 +37,7 @@ const outDir = arg("out-dir", join("docs", "strategy-lab", "trade-tapes"))!;
 const learnerOut = arg("learner-out");
 const chunkDays = hasFlag("chunk-days") || !hasFlag("chunk-months");
 const force = hasFlag("force");
+const includeFormationTransition = hasFlag("include-formation-transition");
 
 await mkdir(outDir, { recursive: true });
 const months = monthRange(startMonth, endMonth);
@@ -68,6 +69,7 @@ async function hasValidTape(path: string, month: string): Promise<boolean> {
         readerRadarMaxStaleMs?: number;
         tradeStyle?: string;
         chunking?: string;
+        includeFormationTransition?: boolean;
       };
       assets?: unknown[];
     };
@@ -81,6 +83,7 @@ async function hasValidTape(path: string, month: string): Promise<boolean> {
       && parsed.run?.readerRadarMaxStaleMs === readerRadarMaxStaleMs
       && parsed.run?.tradeStyle === tradeStyle
       && parsed.run?.chunking === chunkingMode()
+      && (parsed.run?.includeFormationTransition ?? false) === includeFormationTransition
       && Array.isArray(parsed.assets);
   } catch (error: unknown) {
     if (isMissingFileError(error)) return false;
@@ -127,6 +130,7 @@ async function runEvaluator(input: {
       "--trades-limit",
       "0",
       chunkDays ? "--chunk-days" : "--chunk-months",
+      ...(includeFormationTransition ? ["--include-formation-transition"] : []),
       "--trade-tape-out",
       input.tapePath,
     ],

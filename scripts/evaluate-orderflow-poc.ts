@@ -159,6 +159,7 @@ const radarEventsOut = arg("radar-events-out", process.env.RADAR_EVENTS_OUT);
 const summaryOnly = hasFlag("summary-only");
 const chunkMonths = hasFlag("chunk-months");
 const chunkDays = hasFlag("chunk-days");
+const includeFormationTransition = hasFlag("include-formation-transition");
 
 validateInput();
 
@@ -449,6 +450,7 @@ function runMetadata() {
     profileTradeSampleLimit: profileTradeSampleLimit ?? null,
     localRangeCandles: localRangeCandles ?? null,
     chunking: chunkDays ? "days" : chunkMonths ? "months" : "none",
+    includeFormationTransition,
   };
 }
 
@@ -615,6 +617,79 @@ function tradeTapeRecord(asset: string, index: number, trade: ReaderAnalyzedTrad
     reviewVerdict: null,
     reviewNotes: null,
     dossierVerdict: dossier.verdict,
+    ...(includeFormationTransition ? { formationTransition: formationTransitionFor(trade) } : {}),
+  };
+}
+
+function formationTransitionFor(trade: ReaderAnalyzedTrade) {
+  const dossier = trade.dossier;
+  const before = dossier.formation.significantBeforeEntry[dossier.formation.significantBeforeEntry.length - 1] ?? null;
+  const firstPricedAfter = dossier.formation.afterEntry.find((read) => read.lastPrice !== null) ?? null;
+  return {
+    beforeEntry: before ? compactFormationRead(before) : null,
+    firstPricedAfterEntry: firstPricedAfter ? compactFormationRead(firstPricedAfter) : null,
+  };
+}
+
+function compactFormationRead(read: ReaderAnalyzedTrade["dossier"]["formation"]["afterEntry"][number]) {
+  return {
+    at: iso(read.at),
+    stance: read.stance,
+    lastPrice: read.lastPrice,
+    narrative: read.narrative
+      ? {
+          intent: read.narrative.intent,
+          direction: read.narrative.direction,
+          participation: read.narrative.participation,
+          levelStory: read.narrative.levelStory,
+        }
+      : null,
+    auction: {
+      location: read.auction.location,
+      levelKind: read.auction.levelKind,
+      levelPrice: read.auction.levelPrice,
+      poc: read.auction.poc,
+    },
+    vp: read.vp
+      ? {
+          auction: read.vp.auction,
+          poc: read.vp.poc,
+          value: read.vp.value,
+        }
+      : null,
+    absorptionQuality: read.absorptionQuality
+      ? {
+          quality: read.absorptionQuality.quality,
+          side: read.absorptionQuality.side,
+          targetMovesTowardPoc: read.absorptionQuality.targetMovesTowardPoc,
+        }
+      : null,
+    orderflow: {
+      pressure: read.orderflow.pressure,
+      events: read.orderflow.events,
+      delta: read.orderflow.delta,
+      tradeCount: read.orderflow.tradeCount,
+      largestTradeSide: read.orderflow.largestTrade?.side ?? null,
+      initiative: read.orderflow.initiative
+        ? {
+            side: read.orderflow.initiative.side,
+            conviction: read.orderflow.initiative.conviction,
+          }
+        : null,
+      tape: read.orderflow.tape
+        ? {
+            buyShare: read.orderflow.tape.buyShare,
+            sellShare: read.orderflow.tape.sellShare,
+            deltaShare: read.orderflow.tape.deltaShare,
+            dominantShare: read.orderflow.tape.dominantShare,
+            largestTradeShare: read.orderflow.tape.largestTradeShare,
+            lastTradeRank: read.orderflow.tape.lastTradeRank,
+            priceChange: read.orderflow.tape.priceChange,
+          }
+        : null,
+    },
+    setupEvents: read.setup.eventTypes,
+    resultEvents: read.resultEventTypes,
   };
 }
 

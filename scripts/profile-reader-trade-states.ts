@@ -76,6 +76,55 @@ type ReaderTrade = {
     labels?: string[];
   };
   dossierVerdict?: string | null;
+  formationTransition?: {
+    beforeEntry: FormationRead | null;
+    firstPricedAfterEntry: FormationRead | null;
+  };
+};
+
+type FormationRead = {
+  stance?: string | null;
+  lastPrice?: number | null;
+  narrative?: {
+    intent?: string | null;
+    direction?: string | null;
+    participation?: string | null;
+    levelStory?: string | null;
+  } | null;
+  auction?: {
+    location?: string | null;
+    levelKind?: string | null;
+    poc?: number | null;
+  } | null;
+  vp?: {
+    auction?: string | null;
+    poc?: string | null;
+    value?: string | null;
+  } | null;
+  absorptionQuality?: {
+    quality?: string | null;
+    side?: string | null;
+    targetMovesTowardPoc?: boolean | null;
+  } | null;
+  orderflow?: {
+    pressure?: string | null;
+    events?: string[];
+    delta?: number | null;
+    largestTradeSide?: string | null;
+    initiative?: {
+      side?: string | null;
+      conviction?: string | null;
+    } | null;
+    tape?: {
+      buyShare?: number | null;
+      sellShare?: number | null;
+      deltaShare?: number | null;
+      dominantShare?: number | null;
+      largestTradeShare?: number | null;
+      lastTradeRank?: number | null;
+      priceChange?: number | null;
+    } | null;
+  } | null;
 };
 
 type TradeRow = {
@@ -140,6 +189,8 @@ const report = {
   byMicrostructure: grouped(trades, microstructureKeyFor),
   byEntryReaderDecision: grouped(trades, entryReaderDecisionKeyFor),
   byPocDecisionContext: grouped(trades, pocDecisionContextKeyFor),
+  byFormationTransition: grouped(trades, formationTransitionKeyFor),
+  byFirstPricedRead: grouped(trades, firstPricedReadKeyFor),
   avoidance: {
     resultShape: avoidanceFor(trades, resultShapeKeyFor),
     narrativeState: avoidanceFor(trades, narrativeStateKeyFor),
@@ -147,6 +198,8 @@ const report = {
     executionRead: avoidanceFor(trades, executionReadKeyFor),
     entryReaderDecision: avoidanceFor(trades, entryReaderDecisionKeyFor),
     pocDecisionContext: avoidanceFor(trades, pocDecisionContextKeyFor),
+    formationTransition: avoidanceFor(trades, formationTransitionKeyFor),
+    firstPricedRead: avoidanceFor(trades, firstPricedReadKeyFor),
   },
   worstTrades: trades
     .slice()
@@ -326,6 +379,41 @@ function pocDecisionContextKeyFor(row: TradeRow): string {
   ].join("|");
 }
 
+function formationTransitionKeyFor(row: TradeRow): string {
+  const before = row.trade.formationTransition?.beforeEntry ?? null;
+  const first = row.trade.formationTransition?.firstPricedAfterEntry ?? null;
+  if (!before || !first) return "no-transition";
+  return [
+    transitionValue(before.narrative?.intent, first.narrative?.intent, "intent"),
+    transitionValue(before.narrative?.direction, first.narrative?.direction, "direction"),
+    transitionValue(before.auction?.location, first.auction?.location, "location"),
+    transitionValue(before.vp?.poc, first.vp?.poc, "poc"),
+    transitionValue(before.orderflow?.pressure, first.orderflow?.pressure, "pressure"),
+    transitionValue(before.orderflow?.initiative?.conviction, first.orderflow?.initiative?.conviction, "initiative"),
+    transitionValue(eventFamily(before.orderflow?.events ?? []), eventFamily(first.orderflow?.events ?? []), "events"),
+  ].join("|");
+}
+
+function firstPricedReadKeyFor(row: TradeRow): string {
+  const first = row.trade.formationTransition?.firstPricedAfterEntry ?? null;
+  if (!first) return "no-first-priced-read";
+  return [
+    first.narrative?.intent ?? "no-intent",
+    first.narrative?.direction ?? "no-direction",
+    first.auction?.location ?? "unknown-location",
+    first.vp?.poc ?? "unknown-poc",
+    first.orderflow?.pressure ?? "unknown-pressure",
+    first.orderflow?.initiative?.conviction ?? "unknown-initiative",
+    eventFamily(first.orderflow?.events ?? []),
+  ].join("|");
+}
+
+function transitionValue(before: string | null | undefined, after: string | null | undefined, label: string): string {
+  const left = before ?? `no-${label}`;
+  const right = after ?? `no-${label}`;
+  return left === right ? `${label}:${left}` : `${label}:${left}->${right}`;
+}
+
 function tradeRefFor(row: TradeRow): string {
   const trade = row.trade;
   return [
@@ -350,12 +438,16 @@ function printReport(reportForPrint: typeof report): void {
   printGroups("worst_microstructure", reportForPrint.byMicrostructure.slice(0, 12));
   printGroups("worst_entry_reader_decision", reportForPrint.byEntryReaderDecision.slice(0, 12));
   printGroups("worst_poc_decision_context", reportForPrint.byPocDecisionContext.slice(0, 12));
+  printGroups("worst_formation_transition", reportForPrint.byFormationTransition.slice(0, 12));
+  printGroups("worst_first_priced_read", reportForPrint.byFirstPricedRead.slice(0, 12));
   printAvoidance("best_avoid_result_shape", reportForPrint.avoidance.resultShape.slice(0, 8));
   printAvoidance("best_avoid_narrative_state", reportForPrint.avoidance.narrativeState.slice(0, 8));
   printAvoidance("best_avoid_reader_state", reportForPrint.avoidance.readerState.slice(0, 8));
   printAvoidance("best_avoid_execution_read", reportForPrint.avoidance.executionRead.slice(0, 8));
   printAvoidance("best_avoid_entry_reader_decision", reportForPrint.avoidance.entryReaderDecision.slice(0, 8));
   printAvoidance("best_avoid_poc_decision_context", reportForPrint.avoidance.pocDecisionContext.slice(0, 8));
+  printAvoidance("best_avoid_formation_transition", reportForPrint.avoidance.formationTransition.slice(0, 8));
+  printAvoidance("best_avoid_first_priced_read", reportForPrint.avoidance.firstPricedRead.slice(0, 8));
   console.log("worst_trades");
   for (const ref of reportForPrint.worstTrades.slice(0, 15)) console.log(ref);
 }
@@ -397,12 +489,16 @@ function markdownFor(reportForMarkdown: typeof report): string {
     tableFor("Worst Microstructure", reportForMarkdown.byMicrostructure.slice(0, 20)),
     tableFor("Worst Entry Reader Decision", reportForMarkdown.byEntryReaderDecision.slice(0, 20)),
     tableFor("Worst POC Decision Context", reportForMarkdown.byPocDecisionContext.slice(0, 20)),
+    tableFor("Worst Formation Transition", reportForMarkdown.byFormationTransition.slice(0, 20)),
+    tableFor("Worst First Priced Read", reportForMarkdown.byFirstPricedRead.slice(0, 20)),
     avoidanceTableFor("Best Avoid Result Shape", reportForMarkdown.avoidance.resultShape.slice(0, 20)),
     avoidanceTableFor("Best Avoid Narrative State", reportForMarkdown.avoidance.narrativeState.slice(0, 20)),
     avoidanceTableFor("Best Avoid Reader State", reportForMarkdown.avoidance.readerState.slice(0, 20)),
     avoidanceTableFor("Best Avoid Execution Read", reportForMarkdown.avoidance.executionRead.slice(0, 20)),
     avoidanceTableFor("Best Avoid Entry Reader Decision", reportForMarkdown.avoidance.entryReaderDecision.slice(0, 20)),
     avoidanceTableFor("Best Avoid POC Decision Context", reportForMarkdown.avoidance.pocDecisionContext.slice(0, 20)),
+    avoidanceTableFor("Best Avoid Formation Transition", reportForMarkdown.avoidance.formationTransition.slice(0, 20)),
+    avoidanceTableFor("Best Avoid First Priced Read", reportForMarkdown.avoidance.firstPricedRead.slice(0, 20)),
     "## Worst Trades",
     "",
     ...reportForMarkdown.worstTrades.map((ref) => `- ${ref}`),
