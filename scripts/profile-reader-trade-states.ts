@@ -96,6 +96,20 @@ type Group = {
   refs: string[];
 };
 
+type Avoidance = {
+  groupKey: string;
+  skippedTrades: number;
+  skippedR: number;
+  keptTrades: number;
+  keptWins: number;
+  keptLosses: number;
+  keptTotalR: number;
+  keptAverageR: number;
+  keptMaxDrawdownR: number;
+  keptWinRate: number;
+  refs: string[];
+};
+
 function arg(name: string, fallback?: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
   return index >= 0 && process.argv[index + 1] ? process.argv[index + 1] : fallback;
@@ -124,6 +138,16 @@ const report = {
   byReaderState: grouped(trades, readerStateKeyFor),
   byExecutionRead: grouped(trades, executionReadKeyFor),
   byMicrostructure: grouped(trades, microstructureKeyFor),
+  byEntryReaderDecision: grouped(trades, entryReaderDecisionKeyFor),
+  byPocDecisionContext: grouped(trades, pocDecisionContextKeyFor),
+  avoidance: {
+    resultShape: avoidanceFor(trades, resultShapeKeyFor),
+    narrativeState: avoidanceFor(trades, narrativeStateKeyFor),
+    readerState: avoidanceFor(trades, readerStateKeyFor),
+    executionRead: avoidanceFor(trades, executionReadKeyFor),
+    entryReaderDecision: avoidanceFor(trades, entryReaderDecisionKeyFor),
+    pocDecisionContext: avoidanceFor(trades, pocDecisionContextKeyFor),
+  },
   worstTrades: trades
     .slice()
     .sort((left, right) => left.netR - right.netR)
@@ -176,6 +200,41 @@ function summarizeRows(key: string, rows: TradeRow[]): Group {
     adverseFirst: rows.filter((row) => row.trade.diagnostics?.firstReaction === "adverse-first-read").length,
     confirmedNarrative: rows.filter((row) => row.trade.narrative?.verdict === "confirmed").length,
     refs: rows.slice(0, 12).map(tradeRefFor),
+  };
+}
+
+function avoidanceFor(rows: TradeRow[], keyFor: (row: TradeRow) => string): Avoidance[] {
+  const groups = new Map<string, TradeRow[]>();
+  for (const row of rows) {
+    const key = keyFor(row);
+    const group = groups.get(key);
+    if (group) group.push(row);
+    else groups.set(key, [row]);
+  }
+  return [...groups.entries()]
+    .map(([key, group]) => avoidanceRowFor(key, rows, group))
+    .sort((left, right) => right.keptTotalR - left.keptTotalR || right.keptTrades - left.keptTrades);
+}
+
+function avoidanceRowFor(key: string, allRows: TradeRow[], skippedRows: TradeRow[]): Avoidance {
+  const skipped = new Set(skippedRows);
+  const kept = allRows.filter((row) => !skipped.has(row));
+  const keptTotalR = sum(kept.map((row) => row.netR));
+  const skippedR = sum(skippedRows.map((row) => row.netR));
+  const keptWins = kept.filter((row) => row.netR > 0).length;
+  const keptLosses = kept.filter((row) => row.netR <= 0).length;
+  return {
+    groupKey: key,
+    skippedTrades: skippedRows.length,
+    skippedR: round(skippedR),
+    keptTrades: kept.length,
+    keptWins,
+    keptLosses,
+    keptTotalR: round(keptTotalR),
+    keptAverageR: kept.length === 0 ? 0 : round(keptTotalR / kept.length),
+    keptMaxDrawdownR: maxDrawdown(kept.map((row) => row.netR)),
+    keptWinRate: kept.length === 0 ? 0 : round(keptWins / kept.length),
+    refs: skippedRows.slice(0, 12).map(tradeRefFor),
   };
 }
 
@@ -238,6 +297,35 @@ function microstructureKeyFor(row: TradeRow): string {
   ].join("|");
 }
 
+function entryReaderDecisionKeyFor(row: TradeRow): string {
+  const state = row.trade.readerState;
+  const vp = row.trade.vp;
+  const orderflow = row.trade.orderflow;
+  return [
+    state?.regime ?? "unknown-regime",
+    state?.auctionLocation ?? "unknown-location",
+    state?.auctionMode ?? "unknown-mode",
+    state?.auctionPhase ?? "unknown-phase",
+    vp?.poc ?? "unknown-vp-poc",
+    row.trade.diagnostics?.entryTiming ?? "unknown-entry",
+    orderflow?.pressure ?? "unknown-pressure",
+    orderflow?.initiative?.conviction ?? "unknown-conviction",
+  ].join("|");
+}
+
+function pocDecisionContextKeyFor(row: TradeRow): string {
+  const state = row.trade.readerState;
+  const vp = row.trade.vp;
+  return [
+    state?.regime ?? "unknown-regime",
+    state?.auctionLocation ?? "unknown-location",
+    vp?.auction ?? "unknown-vp-auction",
+    vp?.poc ?? "unknown-vp-poc",
+    vp?.value ?? "unknown-vp-value",
+    row.trade.diagnostics?.entryTiming ?? "unknown-entry",
+  ].join("|");
+}
+
 function tradeRefFor(row: TradeRow): string {
   const trade = row.trade;
   return [
@@ -260,6 +348,14 @@ function printReport(reportForPrint: typeof report): void {
   printGroups("worst_reader_state", reportForPrint.byReaderState.slice(0, 12));
   printGroups("worst_execution_read", reportForPrint.byExecutionRead.slice(0, 12));
   printGroups("worst_microstructure", reportForPrint.byMicrostructure.slice(0, 12));
+  printGroups("worst_entry_reader_decision", reportForPrint.byEntryReaderDecision.slice(0, 12));
+  printGroups("worst_poc_decision_context", reportForPrint.byPocDecisionContext.slice(0, 12));
+  printAvoidance("best_avoid_result_shape", reportForPrint.avoidance.resultShape.slice(0, 8));
+  printAvoidance("best_avoid_narrative_state", reportForPrint.avoidance.narrativeState.slice(0, 8));
+  printAvoidance("best_avoid_reader_state", reportForPrint.avoidance.readerState.slice(0, 8));
+  printAvoidance("best_avoid_execution_read", reportForPrint.avoidance.executionRead.slice(0, 8));
+  printAvoidance("best_avoid_entry_reader_decision", reportForPrint.avoidance.entryReaderDecision.slice(0, 8));
+  printAvoidance("best_avoid_poc_decision_context", reportForPrint.avoidance.pocDecisionContext.slice(0, 8));
   console.log("worst_trades");
   for (const ref of reportForPrint.worstTrades.slice(0, 15)) console.log(ref);
 }
@@ -271,6 +367,13 @@ function printGroups(title: string, rows: Group[]): void {
 
 function printGroup(label: string, group: Group): void {
   console.log(`${label} trades=${group.trades} W/L=${group.wins}/${group.losses} net=${r(group.totalR)} avg=${r(group.averageR)} maxDD=${r(group.maxDrawdownR)} adverseFirst=${group.adverseFirst} confirmed=${group.confirmedNarrative}`);
+}
+
+function printAvoidance(title: string, rows: Avoidance[]): void {
+  console.log(title);
+  for (const row of rows) {
+    console.log(`${row.groupKey} skipped=${row.skippedTrades} skippedR=${r(row.skippedR)} kept=${row.keptTrades} W/L=${row.keptWins}/${row.keptLosses} keptNet=${r(row.keptTotalR)} keptAvg=${r(row.keptAverageR)} keptMaxDD=${r(row.keptMaxDrawdownR)} keptWinRate=${pct(row.keptWinRate)}`);
+  }
 }
 
 async function writeReport(path: string, reportForWrite: typeof report): Promise<void> {
@@ -292,9 +395,28 @@ function markdownFor(reportForMarkdown: typeof report): string {
     tableFor("Worst Reader State", reportForMarkdown.byReaderState.slice(0, 20)),
     tableFor("Worst Execution Read", reportForMarkdown.byExecutionRead.slice(0, 20)),
     tableFor("Worst Microstructure", reportForMarkdown.byMicrostructure.slice(0, 20)),
+    tableFor("Worst Entry Reader Decision", reportForMarkdown.byEntryReaderDecision.slice(0, 20)),
+    tableFor("Worst POC Decision Context", reportForMarkdown.byPocDecisionContext.slice(0, 20)),
+    avoidanceTableFor("Best Avoid Result Shape", reportForMarkdown.avoidance.resultShape.slice(0, 20)),
+    avoidanceTableFor("Best Avoid Narrative State", reportForMarkdown.avoidance.narrativeState.slice(0, 20)),
+    avoidanceTableFor("Best Avoid Reader State", reportForMarkdown.avoidance.readerState.slice(0, 20)),
+    avoidanceTableFor("Best Avoid Execution Read", reportForMarkdown.avoidance.executionRead.slice(0, 20)),
+    avoidanceTableFor("Best Avoid Entry Reader Decision", reportForMarkdown.avoidance.entryReaderDecision.slice(0, 20)),
+    avoidanceTableFor("Best Avoid POC Decision Context", reportForMarkdown.avoidance.pocDecisionContext.slice(0, 20)),
     "## Worst Trades",
     "",
     ...reportForMarkdown.worstTrades.map((ref) => `- ${ref}`),
+    "",
+  ].join("\n");
+}
+
+function avoidanceTableFor(title: string, rows: Avoidance[]): string {
+  return [
+    `## ${title}`,
+    "",
+    "| Skipped Key | Skipped | Skipped R | Kept Trades | Kept W/L | Kept Win Rate | Kept Net R | Kept Avg R | Kept Max DD | Skipped Refs |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+    ...rows.map((row) => `| ${escapeTable(row.groupKey)} | ${row.skippedTrades} | ${r(row.skippedR)} | ${row.keptTrades} | ${row.keptWins}/${row.keptLosses} | ${pct(row.keptWinRate)} | ${r(row.keptTotalR)} | ${r(row.keptAverageR)} | ${r(row.keptMaxDrawdownR)} | ${escapeTable(row.refs.join(", "))} |`),
     "",
   ].join("\n");
 }
@@ -355,6 +477,10 @@ function round(value: number): number {
 
 function r(value: number): string {
   return `${value.toFixed(4).replace(/\.?0+$/, "")}R`;
+}
+
+function pct(value: number): string {
+  return `${(value * 100).toFixed(2).replace(/\.?0+$/, "")}%`;
 }
 
 function nullableR(value: number | null): string {
