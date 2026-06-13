@@ -189,6 +189,7 @@ const report = {
   byMicrostructure: grouped(trades, microstructureKeyFor),
   byEntryReaderDecision: grouped(trades, entryReaderDecisionKeyFor),
   byPocDecisionContext: grouped(trades, pocDecisionContextKeyFor),
+  byBeforeEntryRead: grouped(trades, beforeEntryReadKeyFor),
   byFormationTransition: grouped(trades, formationTransitionKeyFor),
   byFirstPricedRead: grouped(trades, firstPricedReadKeyFor),
   avoidance: {
@@ -198,6 +199,7 @@ const report = {
     executionRead: avoidanceFor(trades, executionReadKeyFor),
     entryReaderDecision: avoidanceFor(trades, entryReaderDecisionKeyFor),
     pocDecisionContext: avoidanceFor(trades, pocDecisionContextKeyFor),
+    beforeEntryRead: avoidanceFor(trades, beforeEntryReadKeyFor),
     formationTransition: avoidanceFor(trades, formationTransitionKeyFor),
     firstPricedRead: avoidanceFor(trades, firstPricedReadKeyFor),
   },
@@ -379,6 +381,21 @@ function pocDecisionContextKeyFor(row: TradeRow): string {
   ].join("|");
 }
 
+function beforeEntryReadKeyFor(row: TradeRow): string {
+  const before = row.trade.formationTransition?.beforeEntry ?? null;
+  if (!before) return "no-before-entry-read";
+  return [
+    before.stance ?? "unknown-stance",
+    before.narrative?.intent ?? "no-intent",
+    before.narrative?.direction ?? "no-direction",
+    before.auction?.location ?? "unknown-location",
+    before.vp?.poc ?? "unknown-poc",
+    before.orderflow?.pressure ?? "unknown-pressure",
+    before.orderflow?.initiative?.conviction ?? "unknown-initiative",
+    eventFamily(before.orderflow?.events ?? []),
+  ].join("|");
+}
+
 function formationTransitionKeyFor(row: TradeRow): string {
   const before = row.trade.formationTransition?.beforeEntry ?? null;
   const first = row.trade.formationTransition?.firstPricedAfterEntry ?? null;
@@ -438,6 +455,7 @@ function printReport(reportForPrint: typeof report): void {
   printGroups("worst_microstructure", reportForPrint.byMicrostructure.slice(0, 12));
   printGroups("worst_entry_reader_decision", reportForPrint.byEntryReaderDecision.slice(0, 12));
   printGroups("worst_poc_decision_context", reportForPrint.byPocDecisionContext.slice(0, 12));
+  printGroups("worst_before_entry_read", reportForPrint.byBeforeEntryRead.slice(0, 12));
   printGroups("worst_formation_transition", reportForPrint.byFormationTransition.slice(0, 12));
   printGroups("worst_first_priced_read", reportForPrint.byFirstPricedRead.slice(0, 12));
   printAvoidance("best_avoid_result_shape", reportForPrint.avoidance.resultShape.slice(0, 8));
@@ -446,6 +464,7 @@ function printReport(reportForPrint: typeof report): void {
   printAvoidance("best_avoid_execution_read", reportForPrint.avoidance.executionRead.slice(0, 8));
   printAvoidance("best_avoid_entry_reader_decision", reportForPrint.avoidance.entryReaderDecision.slice(0, 8));
   printAvoidance("best_avoid_poc_decision_context", reportForPrint.avoidance.pocDecisionContext.slice(0, 8));
+  printAvoidance("best_avoid_before_entry_read", reportForPrint.avoidance.beforeEntryRead.slice(0, 8));
   printAvoidance("best_avoid_formation_transition", reportForPrint.avoidance.formationTransition.slice(0, 8));
   printAvoidance("best_avoid_first_priced_read", reportForPrint.avoidance.firstPricedRead.slice(0, 8));
   console.log("worst_trades");
@@ -489,6 +508,7 @@ function markdownFor(reportForMarkdown: typeof report): string {
     tableFor("Worst Microstructure", reportForMarkdown.byMicrostructure.slice(0, 20)),
     tableFor("Worst Entry Reader Decision", reportForMarkdown.byEntryReaderDecision.slice(0, 20)),
     tableFor("Worst POC Decision Context", reportForMarkdown.byPocDecisionContext.slice(0, 20)),
+    tableFor("Worst Before Entry Read", reportForMarkdown.byBeforeEntryRead.slice(0, 20)),
     tableFor("Worst Formation Transition", reportForMarkdown.byFormationTransition.slice(0, 20)),
     tableFor("Worst First Priced Read", reportForMarkdown.byFirstPricedRead.slice(0, 20)),
     avoidanceTableFor("Best Avoid Result Shape", reportForMarkdown.avoidance.resultShape.slice(0, 20)),
@@ -497,6 +517,7 @@ function markdownFor(reportForMarkdown: typeof report): string {
     avoidanceTableFor("Best Avoid Execution Read", reportForMarkdown.avoidance.executionRead.slice(0, 20)),
     avoidanceTableFor("Best Avoid Entry Reader Decision", reportForMarkdown.avoidance.entryReaderDecision.slice(0, 20)),
     avoidanceTableFor("Best Avoid POC Decision Context", reportForMarkdown.avoidance.pocDecisionContext.slice(0, 20)),
+    avoidanceTableFor("Best Avoid Before Entry Read", reportForMarkdown.avoidance.beforeEntryRead.slice(0, 20)),
     avoidanceTableFor("Best Avoid Formation Transition", reportForMarkdown.avoidance.formationTransition.slice(0, 20)),
     avoidanceTableFor("Best Avoid First Priced Read", reportForMarkdown.avoidance.firstPricedRead.slice(0, 20)),
     "## Worst Trades",

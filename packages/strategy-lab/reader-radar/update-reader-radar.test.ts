@@ -1764,6 +1764,71 @@ describe("updateReaderRadar", () => {
     expect(promoted.events.map((event) => event.type)).toContain("radar-promoted");
   });
 
+  test("execution mode blocks neutral balanced continuation when current read says avoid", () => {
+    const memory = createReaderRadarMemory();
+    updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 1,
+      setup: setupResult(
+        noTradePlan(["fresh read has a continuation candidate"]),
+        readerRead({
+          location: "value-low",
+          pressure: "buy-pressure",
+          lastPrice: 101,
+          poc: 105,
+          continuation: true,
+          largestTradeSide: "buy",
+          localRangeLocation: "lower-edge",
+        }),
+      ),
+    });
+    updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 2,
+      setup: setupResult(
+        noTradePlan(["neutral balanced read improves the tracked candidate"]),
+        readerRead({
+          stance: "avoid-balanced-auction",
+          location: "near-poc",
+          pressure: "buy-pressure",
+          lastPrice: 102,
+          poc: 105,
+          auctionMode: "balanced-value",
+          largestTradeSide: "buy",
+          localRangeLocation: "lower-edge",
+          vpValue: "value-stable",
+          initiativeConviction: "overwhelming",
+        }),
+      ),
+    });
+    const blocked = updateReaderRadar({
+      memory,
+      config: { mode: "execute", tradeStyle: "trend-long-pullback-only" },
+      now: 3,
+      setup: setupResult(
+        noTradePlan(["neutral balanced avoid read keeps improving"]),
+        readerRead({
+          stance: "avoid-balanced-auction",
+          location: "near-poc",
+          pressure: "buy-pressure",
+          lastPrice: 103,
+          poc: 105,
+          auctionMode: "balanced-value",
+          largestTradeSide: "buy",
+          localRangeLocation: "lower-edge",
+          vpValue: "value-stable",
+          initiativeConviction: "overwhelming",
+        }),
+      ),
+    });
+
+    expect(blocked.candidate?.favorableReads).toBeGreaterThan(0);
+    expect(blocked.promoted).toBe(false);
+    expect(blocked.events.map((event) => event.reason)).toContain("continuation blocked because current read avoids balanced auction near POC");
+  });
+
   test("execution mode can promote tracked continuation even when current auction target revalidation disagrees", () => {
     const memory = createReaderRadarMemory();
     updateReaderRadar({
@@ -1945,10 +2010,11 @@ function readerRead(input: {
   vpPoc?: NonNullable<LiveReaderRead["vpState"]>["poc"];
   vpValue?: NonNullable<LiveReaderRead["vpState"]>["value"];
   initiativeConviction?: NonNullable<NonNullable<LiveReaderRead["orderflow"]>["initiative"]>["conviction"];
+  stance?: LiveReaderRead["stance"];
 }): LiveReaderRead {
   return {
     asset: "BTC",
-    stance: "wait",
+    stance: input.stance ?? "wait",
     narrativeRead: input.continuation
       ? {
           intent: "continuation-pullback",

@@ -343,6 +343,8 @@ function promotionBlockReason(input: {
   if (styleBlockReason) return styleBlockReason;
   const planBlockReason = promotablePlanBlockReason(input.setup, input.candidate);
   if (planBlockReason) return planBlockReason;
+  const currentReadBlockReason = continuationCurrentReadBlockReason(input.candidate, input.setup);
+  if (currentReadBlockReason) return currentReadBlockReason;
   if (input.candidate.status !== "improving") return `candidate status is ${input.candidate.status}`;
   if (input.candidate.adverseReads > 0 && !candidateHasEntryRepairAfterAdverse(input.candidate, input.setup)) return "candidate has unrepaired adverse live reads";
   const invalidationBlockReason = continuationInvalidationBlockReason(input.candidate, input.setup);
@@ -468,6 +470,20 @@ function neutralTrackedContinuationBlockReason(side: Side | null, setup: ReaderS
   const initiative = setup.read.orderflow.initiative;
   if (setup.read.auctionMode?.mode === "balanced-value" && initiative?.side === sideSide(side) && initiative.conviction !== "overwhelming") {
     return "neutral balanced continuation needs overwhelming initiative";
+  }
+  return null;
+}
+
+function continuationCurrentReadBlockReason(candidate: ReaderRadarCandidate, setup: ReaderSetupResult): string | null {
+  if (!isContinuationPullback(candidate.candidate)) return null;
+  const narrative = setup.read.narrativeRead;
+  const neutralNarrative = (narrative?.intent ?? "wait") === "wait" && (narrative?.direction ?? "none") === "none";
+  if (
+    neutralNarrative
+    && setup.read.stance === "avoid-balanced-auction"
+    && setup.read.auction.location === "near-poc"
+  ) {
+    return "continuation blocked because current read avoids balanced auction near POC";
   }
   return null;
 }
