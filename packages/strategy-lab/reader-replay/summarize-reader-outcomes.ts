@@ -1,4 +1,4 @@
-import { maxDrawdown } from "../backtest/max-drawdown";
+import { maxDrawdown } from "../bt-core/backtest/max-drawdown";
 import type { ReaderResultOutcome } from "../reader-result/types";
 import type { ReaderReplaySummary } from "./types";
 
