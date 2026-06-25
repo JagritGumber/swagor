@@ -54,6 +54,8 @@ references/
 .claude/
 
 # local backtest / scratch artifacts (not source)
+artifacts/
+.worktrees/
 agent-2mo-result.json
 run_result*.json
 codex_review_request.md

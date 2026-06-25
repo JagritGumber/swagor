@@ -6,6 +6,11 @@
 - The old watcher/trader flow is a submitted artifact, not the foundation for new strategy research.
 - Keep internal packages brand-neutral. Do not prefix package names, database tables, or strategy code with the product name unless the surface is explicitly UI or marketing.
 - Tangent remains a separate venue/infrastructure track. Do not put strategy logic in Tangent.
+- For current strategy-lab context, read `docs/strategy-lab/selbo-agent-handoff.md`.
+- Repo-local opencode skills live under `.opencode/skills`:
+  - `selbo-reader-research` for reader hypothesis evaluation and result integrity.
+  - `selbo-context-reader` for context-first live reader/narrative architecture.
+  - `selbo-integration-handoff` for moving benchmark readers into Selbo shadow mode.
 
 ## Strategy Lab
 

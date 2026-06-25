@@ -58,6 +58,29 @@ export * from "./reader-candidate-learner/learn-reader-candidate-tapes";
 export * from "./reader-candidate-learner/profile-reader-candidate-groups";
 export * from "./reader-candidate-learner/profile-reader-candidate-reactions";
 export type {
+  ReaderHypothesis,
+  ReaderHypothesisConfirmation,
+  ReaderHypothesisConfirmationType,
+  ReaderHypothesisEvaluationOptions,
+  ReaderHypothesisFilters,
+  ReaderHypothesisGroupResult,
+  ReaderHypothesisReport,
+  ReaderHypothesisReportResult,
+  ReaderHypothesisResult,
+  ReaderHypothesisSummary,
+  ReaderHypothesisStabilityGroup,
+  ReaderHypothesisStabilityReport,
+  ReaderHypothesisStabilityResult,
+  ReaderHypothesisSweepBand,
+  ReaderHypothesisSweepInput,
+  ReaderHypothesisSweepReport,
+} from "./reader-hypotheses/types";
+export { defaultReaderHypotheses } from "./reader-hypotheses/default-reader-hypotheses";
+export { evaluateReaderHypothesis, evaluateReaderHypotheses } from "./reader-hypotheses/evaluate-reader-hypotheses";
+export { buildReaderHypothesisReport } from "./reader-hypotheses/build-reader-hypothesis-report";
+export { buildReaderHypothesisSweep } from "./reader-hypotheses/build-reader-hypothesis-sweep";
+export { buildReaderHypothesisStabilityReport } from "./reader-hypotheses/build-reader-hypothesis-stability-report";
+export type {
   ReaderRadarCandidate,
   ReaderRadarConfig,
   ReaderRadarEvent,
