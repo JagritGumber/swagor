@@ -6,3 +6,4 @@ export function sma(values: number[], length: number): number | null {
   }
   return sum / length;
 }
+

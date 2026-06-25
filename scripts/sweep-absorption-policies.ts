@@ -1,23 +1,23 @@
 import { readOrderflowBuckets, intervalMs } from "../packages/market-data";
-import { buildReaderHistoryReads } from "../packages/strategy-lab/reader-history/build-reader-history-reads";
-import { createReaderRadarMemory } from "../packages/strategy-lab/reader-radar/create-reader-radar-memory";
-import { createReaderResultState } from "../packages/strategy-lab/reader-result/create-reader-result-state";
-import { createReaderSetupMemory } from "../packages/strategy-lab/reader-setup/create-reader-setup-memory";
-import { createReaderNarrativeStateMemory } from "../packages/strategy-lab/reader-narrative-state/create-reader-narrative-state-memory";
-import { readReaderNarrative } from "../packages/strategy-lab/reader-narrative/read-reader-narrative";
-import { readMarketSetup } from "../packages/strategy-lab/reader-setup/read-market-setup";
-import { updateReaderNarrativeState } from "../packages/strategy-lab/reader-narrative-state/update-reader-narrative-state";
-import { updateReaderRadar } from "../packages/strategy-lab/reader-radar/update-reader-radar";
-import { updateReaderResult } from "../packages/strategy-lab/reader-result/update-reader-result";
-import { READER_ABSORPTION_POLICIES, type ReaderAbsorptionPolicy } from "../packages/strategy-lab/reader-absorption-quality/types";
-import { summarizeReaderEquity } from "../packages/strategy-lab/reader-analysis/summarize-reader-equity";
+import { buildReaderHistoryReads } from "../packages/strategy-lab/reader/reader-history/build-reader-history-reads";
+import { createReaderRadarMemory } from "../packages/strategy-lab/reader/reader-radar/create-reader-radar-memory";
+import { createReaderResultState } from "../packages/strategy-lab/reader/reader-result/create-reader-result-state";
+import { createReaderSetupMemory } from "../packages/strategy-lab/reader/reader-setup/create-reader-setup-memory";
+import { createReaderNarrativeStateMemory } from "../packages/strategy-lab/reader/reader-narrative-state/create-reader-narrative-state-memory";
+import { readReaderNarrative } from "../packages/strategy-lab/reader/reader-narrative/read-reader-narrative";
+import { readMarketSetup } from "../packages/strategy-lab/reader/reader-setup/read-market-setup";
+import { updateReaderNarrativeState } from "../packages/strategy-lab/reader/reader-narrative-state/update-reader-narrative-state";
+import { updateReaderRadar } from "../packages/strategy-lab/reader/reader-radar/update-reader-radar";
+import { updateReaderResult } from "../packages/strategy-lab/reader/reader-result/update-reader-result";
+import { READER_ABSORPTION_POLICIES, type ReaderAbsorptionPolicy } from "../packages/strategy-lab/reader/reader-absorption-quality/types";
+import { summarizeReaderEquity } from "../packages/strategy-lab/reader/reader-analysis/summarize-reader-equity";
 import type { OrderflowBucket } from "../packages/market-data";
 import type { OrderflowEvent } from "../packages/strategy-lab/read-core/orderflow/types";
-import type { ReaderHistoryStep } from "../packages/strategy-lab/reader-history/types";
-import type { LiveReaderRead, LiveReaderStance } from "../packages/strategy-lab/reader-live/types";
-import type { ReaderNarrative } from "../packages/strategy-lab/reader-narrative/types";
-import type { ReaderRadarConfig } from "../packages/strategy-lab/reader-radar/types";
-import type { ReaderResultOutcome } from "../packages/strategy-lab/reader-result/types";
+import type { ReaderHistoryStep } from "../packages/strategy-lab/reader/reader-history/types";
+import type { LiveReaderRead, LiveReaderStance } from "../packages/strategy-lab/reader/reader-live/types";
+import type { ReaderNarrative } from "../packages/strategy-lab/reader/reader-narrative/types";
+import type { ReaderRadarConfig } from "../packages/strategy-lab/reader/reader-radar/types";
+import type { ReaderResultOutcome } from "../packages/strategy-lab/reader/reader-result/types";
 import type { Candle, Side } from "../packages/strategy-lab/types";
 
 type BucketEventMode = "split" | "aggregate";
@@ -516,3 +516,4 @@ function formatNumber(value: number): string {
 function iso(time: number): string {
   return new Date(time).toISOString();
 }
+

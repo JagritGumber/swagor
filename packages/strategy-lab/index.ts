@@ -39,24 +39,24 @@ export * from "./read-core/orderflow/create-orderflow-window";
 export * from "./read-core/orderflow/expire-orderflow-window";
 export * from "./read-core/orderflow/update-orderflow-window";
 export * from "./read-core/orderflow/read-orderflow-window";
-export * from "./reader-narrative/types";
-export * from "./reader-narrative/read-reader-narrative";
-export * from "./reader-session/types";
-export * from "./reader-session/reader-session-for";
-export * from "./reader-vp-state/types";
-export * from "./reader-vp-state/create-reader-vp-state-memory";
-export * from "./reader-vp-state/read-reader-vp-state";
-export * from "./reader-vp-playbook/types";
-export * from "./reader-vp-playbook/read-reader-vp-playbook";
-export * from "./rd-learn/reader-learner/types";
-export * from "./rd-learn/reader-learner/learn-reader-trade-tapes";
-export * from "./reader-candidates/types";
-export * from "./reader-candidates/read-reader-candidate";
-export * from "./reader-candidates/build-reader-candidate-tape";
-export * from "./reader-candidate-learner/types";
-export * from "./reader-candidate-learner/learn-reader-candidate-tapes";
-export * from "./reader-candidate-learner/profile-reader-candidate-groups";
-export * from "./reader-candidate-learner/profile-reader-candidate-reactions";
+export * from "./reader/reader-narrative/types";
+export * from "./reader/reader-narrative/read-reader-narrative";
+export * from "./reader/reader-session/types";
+export * from "./reader/reader-session/reader-session-for";
+export * from "./reader/reader-vp-state/types";
+export * from "./reader/reader-vp-state/create-reader-vp-state-memory";
+export * from "./reader/reader-vp-state/read-reader-vp-state";
+export * from "./reader/reader-vp-playbook/types";
+export * from "./reader/reader-vp-playbook/read-reader-vp-playbook";
+export * from "./reader/reader-learner/types";
+export * from "./reader/reader-learner/learn-reader-trade-tapes";
+export * from "./reader/reader-candidates/types";
+export * from "./reader/reader-candidates/read-reader-candidate";
+export * from "./reader/reader-candidates/build-reader-candidate-tape";
+export * from "./reader/reader-candidate-learner/types";
+export * from "./reader/reader-candidate-learner/learn-reader-candidate-tapes";
+export * from "./reader/reader-candidate-learner/profile-reader-candidate-groups";
+export * from "./reader/reader-candidate-learner/profile-reader-candidate-reactions";
 export type {
   ReaderHypothesis,
   ReaderHypothesisConfirmation,
@@ -74,12 +74,12 @@ export type {
   ReaderHypothesisSweepBand,
   ReaderHypothesisSweepInput,
   ReaderHypothesisSweepReport,
-} from "./reader-hypotheses/types";
-export { defaultReaderHypotheses } from "./reader-hypotheses/default-reader-hypotheses";
-export { evaluateReaderHypothesis, evaluateReaderHypotheses } from "./reader-hypotheses/evaluate-reader-hypotheses";
-export { buildReaderHypothesisReport } from "./reader-hypotheses/build-reader-hypothesis-report";
-export { buildReaderHypothesisSweep } from "./reader-hypotheses/build-reader-hypothesis-sweep";
-export { buildReaderHypothesisStabilityReport } from "./reader-hypotheses/build-reader-hypothesis-stability-report";
+} from "./reader/reader-hypotheses/types";
+export { defaultReaderHypotheses } from "./reader/reader-hypotheses/default-reader-hypotheses";
+export { evaluateReaderHypothesis, evaluateReaderHypotheses } from "./reader/reader-hypotheses/evaluate-reader-hypotheses";
+export { buildReaderHypothesisReport } from "./reader/reader-hypotheses/build-reader-hypothesis-report";
+export { buildReaderHypothesisSweep } from "./reader/reader-hypotheses/build-reader-hypothesis-sweep";
+export { buildReaderHypothesisStabilityReport } from "./reader/reader-hypotheses/build-reader-hypothesis-stability-report";
 export type {
   ReaderRadarCandidate,
   ReaderRadarConfig,
@@ -89,18 +89,18 @@ export type {
   ReaderRadarMode,
   ReaderRadarStatus,
   ReaderRadarUpdate,
-} from "./reader-radar/types";
-export { createReaderRadarMemory } from "./reader-radar/create-reader-radar-memory";
-export { readerRadarKeyFor } from "./reader-radar/reader-radar-key-for";
-export { updateReaderRadar } from "./reader-radar/update-reader-radar";
-export * from "./reader-live/types";
-export * from "./reader-live/reader-rejection-edge-for";
-export * from "./reader-live/combine-auction-orderflow";
-export type { ReaderSequence, ReaderSequencePhase } from "./reader-sequence/types";
-export { blocksImmediateEntry, sequenceForPlan } from "./reader-sequence/sequence-phase-for-plan";
-export type { ReaderAuctionMode, ReaderAuctionModeName, ReaderAuctionModeState, ReaderAuctionPhase } from "./reader-auction-mode/types";
-export { createReaderAuctionModeState } from "./reader-auction-mode/create-reader-auction-mode-state";
-export { readReaderAuctionMode } from "./reader-auction-mode/read-reader-auction-mode";
+} from "./reader/reader-radar/types";
+export { createReaderRadarMemory } from "./reader/reader-radar/create-reader-radar-memory";
+export { readerRadarKeyFor } from "./reader/reader-radar/reader-radar-key-for";
+export { updateReaderRadar } from "./reader/reader-radar/update-reader-radar";
+export * from "./reader/reader-live/types";
+export * from "./reader/reader-live/reader-rejection-edge-for";
+export * from "./reader/reader-live/combine-auction-orderflow";
+export type { ReaderSequence, ReaderSequencePhase } from "./reader/reader-sequence/types";
+export { blocksImmediateEntry, sequenceForPlan } from "./reader/reader-sequence/sequence-phase-for-plan";
+export type { ReaderAuctionMode, ReaderAuctionModeName, ReaderAuctionModeState, ReaderAuctionPhase } from "./reader/reader-auction-mode/types";
+export { createReaderAuctionModeState } from "./reader/reader-auction-mode/create-reader-auction-mode-state";
+export { readReaderAuctionMode } from "./reader/reader-auction-mode/read-reader-auction-mode";
 export type {
   ReaderSetupConfig,
   ReaderSetupEvent,
@@ -109,10 +109,10 @@ export type {
   ReaderSetupResult,
   ReaderSetupState,
   ReaderSetupStatus,
-} from "./reader-setup/types";
-export { readerSetupKeyFor } from "./reader-setup/reader-setup-key-for";
-export { createReaderSetupMemory } from "./reader-setup/create-reader-setup-memory";
-export { readMarketSetup } from "./reader-setup/read-market-setup";
+} from "./reader/reader-setup/types";
+export { readerSetupKeyFor } from "./reader/reader-setup/reader-setup-key-for";
+export { createReaderSetupMemory } from "./reader/reader-setup/create-reader-setup-memory";
+export { readMarketSetup } from "./reader/reader-setup/read-market-setup";
 export type {
   ReaderResultEntry,
   ReaderResultEvent,
@@ -120,35 +120,35 @@ export type {
   ReaderResultOutcome,
   ReaderResultState,
   ReaderResultUpdate,
-} from "./reader-result/types";
-export { createReaderResultState } from "./reader-result/create-reader-result-state";
-export { readerResultForPrice } from "./reader-result/reader-result-for-price";
-export { updateReaderResult } from "./reader-result/update-reader-result";
+} from "./reader/reader-result/types";
+export { createReaderResultState } from "./reader/reader-result/create-reader-result-state";
+export { readerResultForPrice } from "./reader/reader-result/reader-result-for-price";
+export { updateReaderResult } from "./reader/reader-result/update-reader-result";
 export type {
   ReaderReplayInput,
   ReaderReplayResult,
   ReaderReplayStep,
   ReaderReplaySummary,
-} from "./reader-replay/types";
-export { runReaderReplay } from "./reader-replay/run-reader-replay";
-export { summarizeReaderOutcomes } from "./reader-replay/summarize-reader-outcomes";
+} from "./reader/reader-replay/types";
+export { runReaderReplay } from "./reader/reader-replay/run-reader-replay";
+export { summarizeReaderOutcomes } from "./reader/reader-replay/summarize-reader-outcomes";
 export type {
   ReaderHistoryAuctionConfig,
   ReaderHistoryInput,
   ReaderHistoryReplayInput,
   ReaderHistoryReplayResult,
   ReaderHistoryStep,
-} from "./reader-history/types";
-export { buildReaderHistoryReads } from "./reader-history/build-reader-history-reads";
-export { runReaderHistoryReplay } from "./reader-history/run-reader-history-replay";
+} from "./reader/reader-history/types";
+export { buildReaderHistoryReads } from "./reader/reader-history/build-reader-history-reads";
+export { runReaderHistoryReplay } from "./reader/reader-history/run-reader-history-replay";
 export type {
   ReaderExecutionDiagnosis,
   ReaderExecutionQuality,
   ReaderExecutionQualityInput,
   ReaderExecutionQualityReport,
   ReaderTradeExecutionQualityReport,
-} from "./reader-execution-quality/types";
-export { analyzeReaderExecutionQuality } from "./reader-execution-quality/analyze-reader-execution-quality";
+} from "./reader/reader-execution-quality/types";
+export { analyzeReaderExecutionQuality } from "./reader/reader-execution-quality/analyze-reader-execution-quality";
 export type {
   ReaderNarrativeKeyInput,
   ReaderNarrativeState,
@@ -156,17 +156,17 @@ export type {
   ReaderNarrativeStateMemory,
   ReaderNarrativeStatePlanInput,
   ReaderNarrativeStateStatus,
-} from "./reader-narrative-state/types";
-export { applyReaderNarrativeStateToPlan } from "./reader-narrative-state/apply-reader-narrative-state-to-plan";
-export { createReaderNarrativeStateMemory } from "./reader-narrative-state/create-reader-narrative-state-memory";
-export { readerNarrativeKeyFor } from "./reader-narrative-state/reader-narrative-key-for";
-export { updateReaderNarrativeState } from "./reader-narrative-state/update-reader-narrative-state";
+} from "./reader/reader-narrative-state/types";
+export { applyReaderNarrativeStateToPlan } from "./reader/reader-narrative-state/apply-reader-narrative-state-to-plan";
+export { createReaderNarrativeStateMemory } from "./reader/reader-narrative-state/create-reader-narrative-state-memory";
+export { readerNarrativeKeyFor } from "./reader/reader-narrative-state/reader-narrative-key-for";
+export { updateReaderNarrativeState } from "./reader/reader-narrative-state/update-reader-narrative-state";
 export type {
   ReaderFormationInput,
   ReaderFormationRead,
   ReaderFormationTape,
-} from "./reader-formation/types";
-export { buildReaderFormationTape } from "./reader-formation/build-reader-formation-tape";
+} from "./reader/reader-formation/types";
+export { buildReaderFormationTape } from "./reader/reader-formation/build-reader-formation-tape";
 export type {
   ReaderCandleEvidence,
   ReaderCandleStats,
@@ -176,10 +176,10 @@ export type {
   ReaderTradeDossier,
   ReaderTradeExecutionQuality,
   ReaderTradeVerdict,
-} from "./reader-evidence/types";
-export { candleIndexForTime } from "./reader-evidence/candle-index-for-time";
-export { candleWindowForTrade } from "./reader-evidence/candle-window-for-trade";
-export { buildReaderEvidenceReport } from "./reader-evidence/build-reader-evidence-report";
+} from "./reader/reader-evidence/types";
+export { candleIndexForTime } from "./reader/reader-evidence/candle-index-for-time";
+export { candleWindowForTrade } from "./reader/reader-evidence/candle-window-for-trade";
+export { buildReaderEvidenceReport } from "./reader/reader-evidence/build-reader-evidence-report";
 export type {
   AnalyzeReaderTradesInput,
   ReaderAnalyzedTrade,
@@ -195,45 +195,46 @@ export type {
   ReaderTradeQualityLabel,
   ReaderTradeReaction,
   ReaderTradeTiming,
-} from "./reader-analysis/types";
-export { analyzeReaderTrades, summarizeReaderTrades } from "./reader-analysis/analyze-reader-trades";
+} from "./reader/reader-analysis/types";
+export { analyzeReaderTrades, summarizeReaderTrades } from "./reader/reader-analysis/analyze-reader-trades";
 export type {
   ReaderBadAttemptGroup,
   ReaderBadAttemptReport,
   ReaderBadAttemptSummary,
   ReaderBadAttemptTrade,
-} from "./reader-analysis/profile-reader-bad-attempts";
-export { profileReaderBadAttempts } from "./reader-analysis/profile-reader-bad-attempts";
+} from "./reader/reader-analysis/profile-reader-bad-attempts";
+export { profileReaderBadAttempts } from "./reader/reader-analysis/profile-reader-bad-attempts";
 export type {
   ReaderAttemptHypothesis,
   ReaderAttemptHypothesisReport,
   ReaderAttemptHypothesisResult,
-} from "./reader-analysis/compare-reader-attempt-hypotheses";
+} from "./reader/reader-analysis/compare-reader-attempt-hypotheses";
 export {
   compareReaderAttemptHypotheses,
   defaultReaderAttemptHypotheses,
-} from "./reader-analysis/compare-reader-attempt-hypotheses";
+} from "./reader/reader-analysis/compare-reader-attempt-hypotheses";
 export type {
   ReaderFragilityOptions,
   ReaderFragilityPath,
   ReaderFragilityQuantiles,
   ReaderFragilitySummary,
   ReaderFragilityTrade,
-} from "./reader-analysis/summarize-reader-fragility";
+} from "./reader/reader-analysis/summarize-reader-fragility";
 export {
   summarizeReaderFragility,
   summarizeReaderTradeFragility,
-} from "./reader-analysis/summarize-reader-fragility";
+} from "./reader/reader-analysis/summarize-reader-fragility";
 export type {
   ReaderReplayReport,
   ReaderReplayReportDiagnostics,
   ReaderReplayReportInput,
-} from "./reader-report/types";
-export { orderflowFileTimesFor } from "./reader-report/orderflow-file-times-for";
-export { readReportOrderflowEvents } from "./reader-report/read-report-orderflow-events";
-export { runReaderReplayReport } from "./reader-report/run-reader-replay-report";
+} from "./reader/reader-report/types";
+export { orderflowFileTimesFor } from "./reader/reader-report/orderflow-file-times-for";
+export { readReportOrderflowEvents } from "./reader/reader-report/read-report-orderflow-events";
+export { runReaderReplayReport } from "./reader/reader-report/run-reader-replay-report";
 export * from "./bt-core/trade-plan/types";
 export * from "./bt-core/trade-plan/build-reader-trade-plan";
 export * from "./bt-core/strategies/value-low-reclaim";
 export * from "./bt-core/strategies/momentum-breakout";
 export * from "./bt-core/strategies/starter-strategies";
+

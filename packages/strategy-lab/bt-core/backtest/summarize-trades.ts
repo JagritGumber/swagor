@@ -16,3 +16,4 @@ export function summarizeTrades(trades: Trade[]): BacktestMetrics {
     maxDrawdownPct: maxDrawdown(equityCurve),
   };
 }
+

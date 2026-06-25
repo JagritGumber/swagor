@@ -8,3 +8,4 @@ export function rollingLowAt(candles: Candle[], index: number, length: number): 
   }
   return low;
 }
+

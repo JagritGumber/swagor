@@ -14,3 +14,4 @@ export function atrAt(candles: Candle[], index: number, length: number): number 
   }
   return sum / length;
 }
+

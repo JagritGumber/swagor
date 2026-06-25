@@ -1,6 +1,6 @@
-import { runReaderReplayReport } from "../packages/strategy-lab/reader-report/run-reader-replay-report";
+import { runReaderReplayReport } from "../packages/strategy-lab/reader/reader-report/run-reader-replay-report";
 import type { CandleInterval, HyperliquidNetwork } from "../packages/market-data";
-import type { ReaderTradeDossier } from "../packages/strategy-lab/reader-evidence/types";
+import type { ReaderTradeDossier } from "../packages/strategy-lab/reader/reader-evidence/types";
 
 const vmUrl = process.env.VM_URL ?? "http://localhost:8428";
 const orderflowRootDir = process.env.ORDERFLOW_ROOT_DIR ?? "orderflow-data";
@@ -168,3 +168,4 @@ function iso(time: number): string {
 function nullableIso(time: number | null): string | null {
   return time === null ? null : iso(time);
 }
+

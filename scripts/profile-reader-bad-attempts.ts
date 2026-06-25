@@ -212,3 +212,4 @@ function profitFactor(summary: ReaderBadAttemptReport["summary"]): string {
 function escapeTable(value: string): string {
   return value.replaceAll("|", "\\|");
 }
+

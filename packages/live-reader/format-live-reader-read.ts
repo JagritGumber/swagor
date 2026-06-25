@@ -67,3 +67,4 @@ export function formatReaderTradePlan(plan: ReaderTradePlan): object {
     reasons: plan.reasons,
   };
 }
+

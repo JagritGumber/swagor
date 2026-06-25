@@ -5,3 +5,4 @@ export function tradePnl(side: Side, entry: number, exit: number, costs: MarketC
   const roundTripCost = ((costs.feeBps + costs.slippageBps) / 10_000) * 2;
   return (gross - roundTripCost) * 100;
 }
+

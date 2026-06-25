@@ -371,3 +371,4 @@ function pct(value: number): string {
 function escapeTable(value: string): string {
   return value.replaceAll("|", "\\|");
 }
+

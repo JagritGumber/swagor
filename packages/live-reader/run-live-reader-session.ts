@@ -5,10 +5,10 @@ import { readOrderflowWindow } from "../strategy-lab/read-core/orderflow/read-or
 import { updateOrderflowWindow } from "../strategy-lab/read-core/orderflow/update-orderflow-window";
 import { readMarketRegime } from "../strategy-lab/read-core/market-regime/read-market-regime";
 import { readMarketAuction } from "../strategy-lab/read-core/read/read-market-auction";
-import { createReaderAuctionModeState } from "../strategy-lab/reader-auction-mode/create-reader-auction-mode-state";
-import { combineAuctionOrderflow } from "../strategy-lab/reader-live/combine-auction-orderflow";
-import { createReaderSetupMemory } from "../strategy-lab/reader-setup/create-reader-setup-memory";
-import { readMarketSetup } from "../strategy-lab/reader-setup/read-market-setup";
+import { createReaderAuctionModeState } from "../strategy-lab/reader/reader-auction-mode/create-reader-auction-mode-state";
+import { combineAuctionOrderflow } from "../strategy-lab/reader/reader-live/combine-auction-orderflow";
+import { createReaderSetupMemory } from "../strategy-lab/reader/reader-setup/create-reader-setup-memory";
+import { readMarketSetup } from "../strategy-lab/reader/reader-setup/read-market-setup";
 import { loadAuctionCandles } from "./load-auction-candles";
 import type { LiveReaderSessionInput } from "./types";
 
@@ -123,3 +123,4 @@ export async function runLiveReaderSession(input: LiveReaderSessionInput): Promi
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
+

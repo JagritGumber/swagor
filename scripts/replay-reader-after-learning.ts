@@ -96,3 +96,4 @@ function formatNullable(value: number | null): string {
 function format(value: number): string {
   return value.toFixed(4).replace(/\.?0+$/, "");
 }
+

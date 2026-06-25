@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { LiveReaderRead } from "../../reader-live/types";
+import type { LiveReaderRead } from "../../reader/reader-live/types";
 import { buildReaderTradePlan } from "./build-reader-trade-plan";
 
 describe("buildReaderTradePlan", () => {
@@ -260,3 +260,4 @@ function readerRead(input: {
     },
   };
 }
+

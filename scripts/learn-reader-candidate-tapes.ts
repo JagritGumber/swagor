@@ -188,3 +188,4 @@ function formatNullableR(value: number | null): string {
 function formatNullableBps(value: number | null): string {
   return value === null ? "n/a" : `${format(value)}bps`;
 }
+

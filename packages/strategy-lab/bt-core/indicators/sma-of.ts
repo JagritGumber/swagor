@@ -6,3 +6,4 @@ export function smaOf(values: number[]): number | null {
   }
   return sum / values.length;
 }
+

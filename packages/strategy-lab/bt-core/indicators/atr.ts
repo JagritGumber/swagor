@@ -15,3 +15,4 @@ export function atr(candles: Candle[], length: number): number | null {
   }
   return sma(ranges, length);
 }
+

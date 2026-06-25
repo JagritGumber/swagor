@@ -129,3 +129,4 @@ function sectionFor(title: string, groups: ReturnType<typeof grouped>): string {
 function escapeTable(value: string): string {
   return value.replaceAll("|", "\\|");
 }
+

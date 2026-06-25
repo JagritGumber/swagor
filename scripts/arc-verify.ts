@@ -42,3 +42,4 @@ const allHashes = [...dp.map((r) => r.hash), ...tr.map((r) => r.h), ...tr.map((r
 const realMined = allHashes.find((h) => h && !h.startsWith("failed:"));
 console.log("\nVERDICT:", realMined ? `anchoring works end-to-end (sample on-chain hash: ${realMined})` : "NO real on-chain hash found - anchoring has never completed end-to-end");
 process.exit(0);
+

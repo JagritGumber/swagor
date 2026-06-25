@@ -469,3 +469,4 @@ function escapeHtml(value: string): string {
     "'": "&#039;",
   }[char]!));
 }
+

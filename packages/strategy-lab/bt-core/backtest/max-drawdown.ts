@@ -7,3 +7,4 @@ export function maxDrawdown(curve: number[]): number {
   }
   return worst;
 }
+

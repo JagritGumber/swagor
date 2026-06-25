@@ -68,3 +68,4 @@ export function runBacktest(input: {
     ...summarizeTrades(trades),
   };
 }
+

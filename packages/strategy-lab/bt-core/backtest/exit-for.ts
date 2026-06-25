@@ -10,3 +10,4 @@ export function exitFor(open: OpenTrade, candle: Candle): { price: number; reaso
   }
   return null;
 }
+

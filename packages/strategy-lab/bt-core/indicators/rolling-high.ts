@@ -8,3 +8,4 @@ export function rollingHigh(candles: Candle[], length: number): number | null {
   }
   return high;
 }
+

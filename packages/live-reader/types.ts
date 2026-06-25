@@ -1,6 +1,6 @@
 import type { CandleInterval, HyperliquidNetwork } from "../market-data";
-import type { LiveReaderRead } from "../strategy-lab/reader-live/types";
-import type { ReaderSetupConfig, ReaderSetupMemory, ReaderSetupResult, ReaderSetupStatus } from "../strategy-lab/reader-setup/types";
+import type { LiveReaderRead } from "../strategy-lab/reader/reader-live/types";
+import type { ReaderSetupConfig, ReaderSetupMemory, ReaderSetupResult, ReaderSetupStatus } from "../strategy-lab/reader/reader-setup/types";
 import type { ReaderTradePlan, ReaderTradePlanConfig } from "../strategy-lab/bt-core/trade-plan/types";
 
 export type LiveReaderSessionInput = {
@@ -40,3 +40,4 @@ export type LiveReaderSessionEvent =
       planSource: ReaderSetupResult["planSource"];
       at: number;
     };
+

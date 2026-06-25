@@ -1,29 +1,29 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { runReaderReplayReport } from "../packages/strategy-lab/reader-report/run-reader-replay-report";
+import { runReaderReplayReport } from "../packages/strategy-lab/reader/reader-report/run-reader-replay-report";
 import { intervalMs, readOrderflowBuckets, readOrderflowEvents } from "../packages/market-data";
-import { analyzeReaderExecutionQuality } from "../packages/strategy-lab/reader-execution-quality/analyze-reader-execution-quality";
-import { buildReaderEvidenceReport } from "../packages/strategy-lab/reader-evidence/build-reader-evidence-report";
-import { buildReaderCandidateTape } from "../packages/strategy-lab/reader-candidates/build-reader-candidate-tape";
-import { analyzeReaderTrades, summarizeReaderTrades } from "../packages/strategy-lab/reader-analysis/analyze-reader-trades";
-import { runReaderHistoryReplay } from "../packages/strategy-lab/reader-history/run-reader-history-replay";
-import { createReaderNarrativeStateMemory } from "../packages/strategy-lab/reader-narrative-state/create-reader-narrative-state-memory";
-import { createReaderRadarMemory } from "../packages/strategy-lab/reader-radar/create-reader-radar-memory";
-import { createReaderResultState } from "../packages/strategy-lab/reader-result/create-reader-result-state";
-import { createReaderSetupMemory } from "../packages/strategy-lab/reader-setup/create-reader-setup-memory";
-import { summarizeReaderOutcomes } from "../packages/strategy-lab/reader-replay/summarize-reader-outcomes";
+import { analyzeReaderExecutionQuality } from "../packages/strategy-lab/reader/reader-execution-quality/analyze-reader-execution-quality";
+import { buildReaderEvidenceReport } from "../packages/strategy-lab/reader/reader-evidence/build-reader-evidence-report";
+import { buildReaderCandidateTape } from "../packages/strategy-lab/reader/reader-candidates/build-reader-candidate-tape";
+import { analyzeReaderTrades, summarizeReaderTrades } from "../packages/strategy-lab/reader/reader-analysis/analyze-reader-trades";
+import { runReaderHistoryReplay } from "../packages/strategy-lab/reader/reader-history/run-reader-history-replay";
+import { createReaderNarrativeStateMemory } from "../packages/strategy-lab/reader/reader-narrative-state/create-reader-narrative-state-memory";
+import { createReaderRadarMemory } from "../packages/strategy-lab/reader/reader-radar/create-reader-radar-memory";
+import { createReaderResultState } from "../packages/strategy-lab/reader/reader-result/create-reader-result-state";
+import { createReaderSetupMemory } from "../packages/strategy-lab/reader/reader-setup/create-reader-setup-memory";
+import { summarizeReaderOutcomes } from "../packages/strategy-lab/reader/reader-replay/summarize-reader-outcomes";
 import type { CandleInterval, HyperliquidNetwork } from "../packages/market-data";
 import type { OrderflowBucket } from "../packages/market-data";
 import type { OrderflowEvent } from "../packages/strategy-lab/read-core/orderflow/types";
-import type { ReaderExecutionQualityReport } from "../packages/strategy-lab/reader-execution-quality/types";
-import type { ReaderEvidenceReport } from "../packages/strategy-lab/reader-evidence/types";
-import type { ReaderAnalyzedTrade, ReaderAnalysisGroup, ReaderAnalysisReport, ReaderAnalysisSummary } from "../packages/strategy-lab/reader-analysis/types";
-import type { ReaderHistoryReplayResult } from "../packages/strategy-lab/reader-history/types";
-import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultUpdate } from "../packages/strategy-lab/reader-result/types";
-import type { ReaderSetupEvent, ReaderSetupResult } from "../packages/strategy-lab/reader-setup/types";
-import type { ReaderNarrativeSessionMode } from "../packages/strategy-lab/reader-narrative-state/types";
-import type { ReaderRadarConfig, ReaderRadarEvent, ReaderRadarUpdate } from "../packages/strategy-lab/reader-radar/types";
-import { READER_ABSORPTION_POLICIES, type ReaderAbsorptionPolicy } from "../packages/strategy-lab/reader-absorption-quality/types";
+import type { ReaderExecutionQualityReport } from "../packages/strategy-lab/reader/reader-execution-quality/types";
+import type { ReaderEvidenceReport } from "../packages/strategy-lab/reader/reader-evidence/types";
+import type { ReaderAnalyzedTrade, ReaderAnalysisGroup, ReaderAnalysisReport, ReaderAnalysisSummary } from "../packages/strategy-lab/reader/reader-analysis/types";
+import type { ReaderHistoryReplayResult } from "../packages/strategy-lab/reader/reader-history/types";
+import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultUpdate } from "../packages/strategy-lab/reader/reader-result/types";
+import type { ReaderSetupEvent, ReaderSetupResult } from "../packages/strategy-lab/reader/reader-setup/types";
+import type { ReaderNarrativeSessionMode } from "../packages/strategy-lab/reader/reader-narrative-state/types";
+import type { ReaderRadarConfig, ReaderRadarEvent, ReaderRadarUpdate } from "../packages/strategy-lab/reader/reader-radar/types";
+import { READER_ABSORPTION_POLICIES, type ReaderAbsorptionPolicy } from "../packages/strategy-lab/reader/reader-absorption-quality/types";
 import type { Candle } from "../packages/strategy-lab/types";
 
 type Venue = "hyperliquid" | "bybit";
@@ -1327,3 +1327,4 @@ function isMissingFileError(error: unknown): boolean {
     && "code" in error
     && (error as NodeJS.ErrnoException).code === "ENOENT";
 }
+

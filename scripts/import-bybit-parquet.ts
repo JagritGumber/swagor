@@ -81,3 +81,4 @@ function lastDayOfMonth(value: string): string {
 function dateString(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
+

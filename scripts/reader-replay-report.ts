@@ -1,4 +1,4 @@
-import { runReaderReplayReport } from "../packages/strategy-lab/reader-report/run-reader-replay-report";
+import { runReaderReplayReport } from "../packages/strategy-lab/reader/reader-report/run-reader-replay-report";
 import type { CandleInterval, HyperliquidNetwork } from "../packages/market-data";
 
 const vmUrl = process.env.VM_URL ?? "http://localhost:8428";
@@ -71,3 +71,4 @@ console.log(JSON.stringify(compact, null, 2));
 function toIso(time: number | null): string | null {
   return time === null ? null : new Date(time).toISOString();
 }
+

@@ -1,9 +1,9 @@
 import type { ReaderMarketRegime } from "../../read-core/market-regime/types";
-import { readReaderNarrative } from "../../reader-narrative/read-reader-narrative";
-import type { ReaderNarrative } from "../../reader-narrative/types";
+import { readReaderNarrative } from "../../reader/reader-narrative/read-reader-narrative";
+import type { ReaderNarrative } from "../../reader/reader-narrative/types";
 import type { Side } from "../../types";
-import type { LiveReaderRead } from "../../reader-live/types";
-import { readReaderVpPlaybook } from "../../reader-vp-playbook/read-reader-vp-playbook";
+import type { LiveReaderRead } from "../../reader/reader-live/types";
+import { readReaderVpPlaybook } from "../../reader/reader-vp-playbook/read-reader-vp-playbook";
 import type { ReaderActionableTradePlan, ReaderSetupFamily, ReaderTradePlan, ReaderTradePlanConfig } from "./types";
 
 export function buildReaderTradePlan(read: LiveReaderRead, _config: ReaderTradePlanConfig = {}): ReaderTradePlan {
@@ -456,3 +456,4 @@ function regimeFor(read: LiveReaderRead): ReaderMarketRegime {
 function dedupe(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
+

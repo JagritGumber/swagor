@@ -120,3 +120,4 @@ function markdownLessons(title: string, lessons: ReaderLearnerLesson[]): string 
 function format(value: number): string {
   return value.toFixed(4).replace(/\.?0+$/, "");
 }
+

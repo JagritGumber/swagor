@@ -343,3 +343,4 @@ function formatR(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "n/a";
   return `${round(value).toFixed(4).replace(/\.?0+$/, "")}R`;
 }
+

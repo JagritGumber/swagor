@@ -8,3 +8,4 @@ export function smaAt(candles: Candle[], index: number, length: number): number 
   }
   return sum / length;
 }
+
