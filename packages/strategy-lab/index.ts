@@ -234,6 +234,6 @@ export { readReportOrderflowEvents } from "./reader-report/read-report-orderflow
 export { runReaderReplayReport } from "./reader-report/run-reader-replay-report";
 export * from "./trade-plan/types";
 export * from "./trade-plan/build-reader-trade-plan";
-export * from "./strategies/value-low-reclaim";
-export * from "./strategies/momentum-breakout";
-export * from "./strategies/starter-strategies";
+export * from "./bt-core/strategies/value-low-reclaim";
+export * from "./bt-core/strategies/momentum-breakout";
+export * from "./bt-core/strategies/starter-strategies";
