@@ -13,3 +13,4 @@ export async function loadAuctionRead(input: {
   return readMarketAuction({ asset: input.asset, interval: input.interval, candles });
 }
 
+

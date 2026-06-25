@@ -8,3 +8,4 @@ export type ReaderMarketRegime = {
   directionalEfficiency: number;
   reason: string;
 };
+

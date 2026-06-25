@@ -36,3 +36,4 @@ export type VictoriaMetricsExportSeries = {
   values: number[];
   timestamps: number[];
 };
+

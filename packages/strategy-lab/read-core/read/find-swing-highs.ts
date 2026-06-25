@@ -19,3 +19,4 @@ export function findSwingHighs(input: {
   }
   return swings;
 }
+

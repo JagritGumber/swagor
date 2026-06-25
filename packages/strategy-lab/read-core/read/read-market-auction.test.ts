@@ -54,3 +54,4 @@ function levelCandles(): Candle[] {
 function candle(t: number, o: number, h: number, l: number, c: number): Candle {
   return { t, o, h, l, c, v: 100 };
 }
+

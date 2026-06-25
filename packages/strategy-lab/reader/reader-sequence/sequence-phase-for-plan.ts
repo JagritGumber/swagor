@@ -1,4 +1,4 @@
-import type { ReaderActionableTradePlan } from "../../bt-core/trade-plan/types";
+import type { ReaderActionableTradePlan } from "../../backtest/trade-plan/types";
 import type { ReaderSequence } from "./types";
 
 export function sequenceForPlan(plan: ReaderActionableTradePlan): ReaderSequence {
@@ -33,5 +33,6 @@ export function sequenceForPlan(plan: ReaderActionableTradePlan): ReaderSequence
 export function blocksImmediateEntry(phase: ReaderSequence["phase"]): boolean {
   return phase !== "trade-ready";
 }
+
 
 

@@ -14,3 +14,4 @@ export const HyperliquidCandleSchema = Type.Object({
 }, { additionalProperties: true });
 
 export const HyperliquidCandlesSchema = Type.Array(HyperliquidCandleSchema);
+

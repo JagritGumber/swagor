@@ -54,3 +54,4 @@ function isCompleteCandle(candle: PartialCandle): candle is Candle {
     && Number.isFinite(candle.c)
     && Number.isFinite(candle.v);
 }
+

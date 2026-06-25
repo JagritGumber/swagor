@@ -16,3 +16,4 @@ export async function loadMarketStoreManifest(input: {
   if (parsed.symbol !== input.symbol.toUpperCase()) throw new Error(`market store manifest symbol mismatch at ${path}`);
   return parsed;
 }
+

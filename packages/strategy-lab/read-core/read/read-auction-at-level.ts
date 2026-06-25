@@ -66,3 +66,4 @@ export function readAuctionAtLevel(input: {
     price: input.price ?? last.c,
   });
 }
+

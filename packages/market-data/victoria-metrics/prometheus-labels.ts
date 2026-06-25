@@ -7,3 +7,4 @@ export function prometheusLabels(labels: Record<string, string>): string {
 function escapeLabelValue(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
 }
+

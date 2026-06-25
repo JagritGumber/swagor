@@ -73,3 +73,4 @@ function subscribe(ws: WebSocketLike, type: "trades" | "bbo", asset: string): vo
     subscription: { type, coin: asset.toUpperCase() },
   }));
 }
+

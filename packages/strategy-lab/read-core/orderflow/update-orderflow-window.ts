@@ -11,3 +11,4 @@ export function updateOrderflowWindow(window: OrderflowWindow, event: OrderflowE
   window.bboHistory.push(event.bbo);
   expireOrderflowWindow(window, event.bbo.time);
 }
+

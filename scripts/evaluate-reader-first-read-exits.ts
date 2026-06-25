@@ -344,3 +344,4 @@ function formatR(value: number | null): string {
   return `${round(value).toFixed(4).replace(/\.?0+$/, "")}R`;
 }
 
+

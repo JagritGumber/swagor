@@ -2,7 +2,7 @@ import type { ReaderSetupResult } from "../reader-setup/types";
 import type { ReaderMarketRegime } from "../../read-core/market-regime/types";
 import type { ReaderAuctionMode } from "../reader-auction-mode/types";
 import type { ReaderNarrative } from "../reader-narrative/types";
-import type { ReaderActionableTradePlan } from "../../bt-core/trade-plan/types";
+import type { ReaderActionableTradePlan } from "../../backtest/trade-plan/types";
 
 export type ReaderResultExitReason = "stop" | "target" | "reader-failure";
 
@@ -90,5 +90,6 @@ export type ReaderResultUpdate = {
   opened: ReaderResultEntry | null;
   closed: ReaderResultOutcome | null;
 };
+
 
 

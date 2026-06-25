@@ -35,3 +35,4 @@ export async function fetchHyperliquidCandlesPaginated(query: CandleQuery): Prom
   out.sort((a, b) => a.t - b.t);
   return out;
 }
+

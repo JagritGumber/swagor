@@ -34,3 +34,4 @@ export async function ingestHyperliquidCandles(input: {
   }
   return results;
 }
+

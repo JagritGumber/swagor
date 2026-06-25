@@ -17,3 +17,4 @@ console.log("errorReason:", tx?.errorReason ?? tx?.errorDetails ?? "(none)");
 console.log("blockchain:", tx?.blockchain, "| feeLevel:", JSON.stringify(tx?.feeLevel ?? tx?.fee));
 process.exit(0);
 
+

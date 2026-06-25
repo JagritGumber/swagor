@@ -28,3 +28,4 @@ function validationErrors(errors: Iterable<{ path: string; message: string }>): 
   }
   return out.length === 0 ? "unknown schema mismatch" : out.join("; ");
 }
+

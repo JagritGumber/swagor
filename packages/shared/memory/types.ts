@@ -52,3 +52,4 @@ export type MemoryStore<T> = {
   snapshot(): Array<MemoryEntry<T>>;
   size(): number;
 };
+

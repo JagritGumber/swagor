@@ -32,3 +32,4 @@ export function aggregateVolumeProfileBuckets(input: {
 
   return [...profiles.values()].sort((left, right) => left.startMs - right.startMs || left.binLow - right.binLow);
 }
+

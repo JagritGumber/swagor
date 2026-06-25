@@ -25,3 +25,4 @@ export function buildVmCandleLines(input: {
   }
   return `${lines.join("\n")}\n`;
 }
+

@@ -26,3 +26,4 @@ export function marketStoreMonthFileName(kind: "buckets-1s" | "profiles-5m", mon
 export function monthKeyFor(timeMs: number): string {
   return new Date(timeMs).toISOString().slice(0, 7);
 }
+

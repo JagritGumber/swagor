@@ -71,3 +71,4 @@ export type BacktestResult = BacktestMetrics & {
   symbol: string;
   trades: Trade[];
 };
+

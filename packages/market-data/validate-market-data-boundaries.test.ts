@@ -51,3 +51,4 @@ describe("market-data validation boundaries", () => {
     expect(events[0]?.type).toBe("trade");
   });
 });
+

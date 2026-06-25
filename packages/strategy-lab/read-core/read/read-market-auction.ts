@@ -83,3 +83,4 @@ function levelDetectionCandles(input: {
   if (input.candles.length <= input.limit) return input.candles;
   return input.candles.slice(input.candles.length - input.limit);
 }
+

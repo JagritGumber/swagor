@@ -10,3 +10,4 @@ export async function writeVmLines(input: {
   });
   if (!res.ok) throw new Error(`VictoriaMetrics import ${res.status}: ${await res.text()}`);
 }
+

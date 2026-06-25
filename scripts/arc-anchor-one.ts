@@ -29,3 +29,4 @@ for (let i = 0; i < 24; i++) {
 console.log("anchorTx is set; mine not yet confirmed - the /api/watcher/tick poller will resolve it.");
 process.exit(0);
 
+

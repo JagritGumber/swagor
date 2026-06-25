@@ -10,3 +10,4 @@ export function createOrderflowWindow(windowMs: number): OrderflowWindow {
     bboStartIndex: 0,
   };
 }
+

@@ -89,3 +89,4 @@ function trade(r: number, day: string): ReaderBadAttemptTrade {
 }
 
 
+

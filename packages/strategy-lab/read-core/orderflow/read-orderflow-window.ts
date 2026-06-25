@@ -291,3 +291,4 @@ function narrativeFor(
   if (pressure === "sell-pressure") return `${asset} tape is sell-heavy with sell share ${tape.sellShare.toFixed(2)}.`;
   return `${asset} tape is balanced in the current window.`;
 }
+

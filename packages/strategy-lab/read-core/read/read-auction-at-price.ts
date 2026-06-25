@@ -65,3 +65,4 @@ function target(bias: AuctionRead["bias"], profile: LocalVolumeProfile): string 
   if (bias === "long" || bias === "short") return `First target is rotation to POC ${profile.poc.toFixed(2)}.`;
   return null;
 }
+

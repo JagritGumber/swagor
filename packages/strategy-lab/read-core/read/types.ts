@@ -42,3 +42,4 @@ export type AuctionRead = {
   invalidation: string | null;
   target: string | null;
 };
+

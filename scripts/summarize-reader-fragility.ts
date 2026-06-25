@@ -191,3 +191,4 @@ function profitFactor(summary: ReaderFragilitySummary): string {
   return summary.profitFactor === null ? "n/a" : summary.profitFactor.toFixed(4).replace(/\.?0+$/, "");
 }
 
+

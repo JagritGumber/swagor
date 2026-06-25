@@ -7,3 +7,4 @@ const validator = createValidator(HyperliquidCandlesSchema, "Hyperliquid candles
 export function validateHyperliquidCandles(value: unknown): HyperliquidCandle[] {
   return validator.parse(value);
 }
+

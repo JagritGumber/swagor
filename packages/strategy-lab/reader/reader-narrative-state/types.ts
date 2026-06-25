@@ -1,7 +1,7 @@
 import type { MemoryStore } from "../../../shared";
 import type { ReaderSessionConfig } from "../reader-session/types";
 import type { ReaderNarrative } from "../reader-narrative/types";
-import type { ReaderActionableTradePlan } from "../../bt-core/trade-plan/types";
+import type { ReaderActionableTradePlan } from "../../backtest/trade-plan/types";
 
 export type ReaderNarrativeStateStatus =
   | "forming"
@@ -51,5 +51,6 @@ export type ReaderNarrativeStatePlanInput = {
   plan: ReaderActionableTradePlan;
   state: ReaderNarrativeState | null;
 };
+
 
 

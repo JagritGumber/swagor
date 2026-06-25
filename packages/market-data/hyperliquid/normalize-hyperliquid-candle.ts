@@ -22,3 +22,4 @@ export function normalizeHyperliquidCandle(candle: HyperliquidCandle): Candle {
   }
   return normalized;
 }
+

@@ -62,3 +62,4 @@ function parquetRowWindow(input: {
     limit: Math.max(0, endOffset - offset),
   };
 }
+

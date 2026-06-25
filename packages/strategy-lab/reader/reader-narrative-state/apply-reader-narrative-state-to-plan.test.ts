@@ -3,7 +3,7 @@ import { applyReaderNarrativeStateToPlan } from "./apply-reader-narrative-state-
 import type { ReaderNarrativeState } from "./types";
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderNarrative } from "../reader-narrative/types";
-import type { ReaderActionableTradePlan } from "../../bt-core/trade-plan/types";
+import type { ReaderActionableTradePlan } from "../../backtest/trade-plan/types";
 
 describe("applyReaderNarrativeStateToPlan", () => {
   test("deteriorating thesis downgrades direct ready entry to reclaim watch", () => {
@@ -119,5 +119,6 @@ function narrative(): ReaderNarrative {
     target: null,
   };
 }
+
 
 

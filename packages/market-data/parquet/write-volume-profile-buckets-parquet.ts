@@ -41,3 +41,4 @@ function freeWasm(value: { free(): void }): void {
     if (!message.includes("null pointer")) throw error;
   }
 }
+

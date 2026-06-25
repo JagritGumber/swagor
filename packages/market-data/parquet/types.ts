@@ -48,3 +48,4 @@ export type MarketStoreManifest = {
   schemaVersion: number;
   months: Record<string, MarketStoreMonthManifest>;
 };
+

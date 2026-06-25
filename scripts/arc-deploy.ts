@@ -19,3 +19,4 @@ const result = await deployAnchorContract(inst.wallet);
 console.log("DEPLOYED + REGISTERED:", JSON.stringify(result, null, 2));
 process.exit(0);
 
+

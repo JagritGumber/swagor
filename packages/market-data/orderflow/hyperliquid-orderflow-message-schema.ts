@@ -35,3 +35,4 @@ export const HyperliquidBboMessageSchema = Type.Object({
   channel: Type.Literal("bbo"),
   data: HyperliquidWsBboSchema,
 }, { additionalProperties: true });
+

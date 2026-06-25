@@ -13,3 +13,4 @@ export function classifyAuctionLocation(input: {
   if (input.price >= input.profile.valueAreaHigh - input.profile.binSize) return "value-high";
   return "near-poc";
 }
+

@@ -13,3 +13,4 @@ export function parseOrderflowEventLine(line: string): OrderflowEvent[] {
   }
   return [orderflowEventValidator.parse(parsed) as OrderflowEvent];
 }
+

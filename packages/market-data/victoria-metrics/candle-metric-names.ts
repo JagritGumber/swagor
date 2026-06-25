@@ -7,3 +7,4 @@ export const CANDLE_METRIC_NAMES = {
 } as const;
 
 export type CandleMetricField = keyof typeof CANDLE_METRIC_NAMES;
+

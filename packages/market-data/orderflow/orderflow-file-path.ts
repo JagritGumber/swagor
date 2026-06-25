@@ -11,3 +11,4 @@ export function orderflowFilePath(input: {
   const date = new Date(input.time).toISOString().slice(0, 10);
   return join(input.rootDir, "hyperliquid", input.network, asset, `${date}.ndjson`);
 }
+

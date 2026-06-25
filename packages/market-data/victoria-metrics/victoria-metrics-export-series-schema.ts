@@ -5,3 +5,4 @@ export const VictoriaMetricsExportSeriesSchema = Type.Object({
   values: Type.Array(Type.Number()),
   timestamps: Type.Array(Type.Number()),
 }, { additionalProperties: true });
+

@@ -8,3 +8,4 @@ export function bybitTradeUrl(input: {
   if (market === "spot") return `https://public.bybit.com/spot/${symbol}/${symbol}_${input.date}.csv.gz`;
   return `https://public.bybit.com/trading/${symbol}/${symbol}${input.date}.csv.gz`;
 }
+

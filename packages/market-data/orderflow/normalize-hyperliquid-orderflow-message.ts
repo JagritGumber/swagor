@@ -57,3 +57,4 @@ function normalizeBbo(data: HyperliquidWsBbo, receivedAt: number): OrderflowEven
 function nullableFinite(value: number | null): boolean {
   return value === null || Number.isFinite(value);
 }
+

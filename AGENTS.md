@@ -18,7 +18,7 @@
 - Keep TypeScript in this package dependency-light and Perry-compatible where practical.
 - Use meaningful folders plus grep-first filenames. File names should match the exported function, strategy, or concept.
 - Current folders:
-  - `bt-core` (backtest, indicators, signals, strategies, trade-plan)
+  - `backtest` (indicators, signals, strategies, trade-plan, and backtest)
   - `read-core` (read, orderflow, market-regime)
   - `reader` (all 23 reader-* packages)
 - Backtest hot paths should be cursor-based. Prefer `ctx.candles` plus

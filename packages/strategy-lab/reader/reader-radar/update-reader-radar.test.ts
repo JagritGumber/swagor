@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderSetupResult } from "../reader-setup/types";
-import type { ReaderTradePlan } from "../../bt-core/trade-plan/types";
+import type { ReaderTradePlan } from "../../backtest/trade-plan/types";
 import { createReaderRadarMemory } from "./create-reader-radar-memory";
 import { updateReaderRadar } from "./update-reader-radar";
 
@@ -2124,5 +2124,6 @@ function readerRead(input: {
     },
   };
 }
+
 
 

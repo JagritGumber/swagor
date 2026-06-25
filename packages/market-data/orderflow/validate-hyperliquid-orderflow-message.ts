@@ -21,3 +21,4 @@ function isChannel(value: unknown, channel: string): boolean {
     && "channel" in value
     && (value as { channel?: unknown }).channel === channel;
 }
+

@@ -25,3 +25,4 @@ export async function fetchHyperliquidCandles(input: {
   if (!res.ok) throw new Error(`Hyperliquid ${input.network} ${res.status}: ${await res.text()}`);
   return validateHyperliquidCandles(await res.json());
 }
+

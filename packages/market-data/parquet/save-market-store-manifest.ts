@@ -18,3 +18,4 @@ export async function saveMarketStoreManifest(input: {
   await writeFile(tmp, `${JSON.stringify(input.manifest, null, 2)}\n`, "utf8");
   await rename(tmp, path);
 }
+
