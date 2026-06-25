@@ -1,9 +1,9 @@
-import { atrAt } from "../../indicators/atr-at";
-import { closeAt } from "../../indicators/close-at";
-import { crossedAboveAt } from "../../indicators/crossed-above-at";
+import { atrAt } from "../indicators/atr-at";
+import { closeAt } from "../indicators/close-at";
+import { crossedAboveAt } from "../indicators/crossed-above-at";
 import { enterLong } from "../signals/enter-long";
 import { hold } from "../signals/hold";
-import { rollingLowAt } from "../../indicators/rolling-low-at";
+import { rollingLowAt } from "../indicators/rolling-low-at";
 import type { Strategy } from "../../types";
 
 export const valueLowReclaim: Strategy = {
