@@ -1,6 +1,6 @@
-import type { AuctionRead } from "../read/types";
-import type { OrderflowRead } from "../orderflow/types";
-import type { ReaderMarketRegime } from "../market-regime/types";
+import type { AuctionRead } from "../read-core/read/types";
+import type { OrderflowRead } from "../read-core/orderflow/types";
+import type { ReaderMarketRegime } from "../read-core/market-regime/types";
 import type { Side } from "../types";
 import type { ReaderAuctionMode, ReaderAuctionModeState } from "./types";
 

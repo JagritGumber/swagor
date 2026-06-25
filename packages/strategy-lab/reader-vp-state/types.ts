@@ -1,4 +1,4 @@
-import type { AuctionRead } from "../read/types";
+import type { AuctionRead } from "../read-core/read/types";
 
 export type ReaderVpPocState =
   | "unknown"

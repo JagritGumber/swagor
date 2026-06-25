@@ -1,4 +1,4 @@
-import type { Candle } from "../types";
+import type { Candle } from "../../types";
 import type { ReaderMarketRegime } from "./types";
 
 const MIN_CANDLES = 12;

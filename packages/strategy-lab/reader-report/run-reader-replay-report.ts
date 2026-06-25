@@ -4,7 +4,7 @@ import { buildReaderEvidenceReport } from "../reader-evidence/build-reader-evide
 import { runReaderHistoryReplay } from "../reader-history/run-reader-history-replay";
 import { readReportOrderflowEvents } from "./read-report-orderflow-events";
 import type { ReaderReplayReport, ReaderReplayReportInput } from "./types";
-import type { OrderflowEvent } from "../orderflow/types";
+import type { OrderflowEvent } from "../read-core/orderflow/types";
 import type { Candle } from "../types";
 
 export async function runReaderReplayReport(input: ReaderReplayReportInput): Promise<ReaderReplayReport> {

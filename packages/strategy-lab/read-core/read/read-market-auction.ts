@@ -1,4 +1,4 @@
-import type { Candle } from "../types";
+import type { Candle } from "../../types";
 import type { OrderflowTrade } from "../orderflow/types";
 import { clusterPriceLevels } from "./cluster-price-levels";
 import { findSwingHighs } from "./find-swing-highs";

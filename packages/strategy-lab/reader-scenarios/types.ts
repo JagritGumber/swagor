@@ -1,4 +1,4 @@
-import type { OrderflowEvent } from "../orderflow/types";
+import type { OrderflowEvent } from "../read-core/orderflow/types";
 import type { ReaderHistoryAuctionConfig } from "../reader-history/types";
 import type { Candle } from "../types";
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { OrderflowRead } from "../orderflow/types";
-import type { AuctionRead } from "../read/types";
+import type { OrderflowRead } from "../read-core/orderflow/types";
+import type { AuctionRead } from "../read-core/read/types";
 import type { ReaderAbsorptionQuality } from "../reader-absorption-quality/types";
 import { readReaderNarrative } from "./read-reader-narrative";
 

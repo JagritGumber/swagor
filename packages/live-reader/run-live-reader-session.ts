@@ -1,10 +1,10 @@
 import { connectHyperliquidOrderflow, createOrderflowNdjsonWriter, intervalMs } from "../market-data";
 import { sleep } from "../shared";
-import { createOrderflowWindow } from "../strategy-lab/orderflow/create-orderflow-window";
-import { readOrderflowWindow } from "../strategy-lab/orderflow/read-orderflow-window";
-import { updateOrderflowWindow } from "../strategy-lab/orderflow/update-orderflow-window";
-import { readMarketRegime } from "../strategy-lab/market-regime/read-market-regime";
-import { readMarketAuction } from "../strategy-lab/read/read-market-auction";
+import { createOrderflowWindow } from "../strategy-lab/read-core/orderflow/create-orderflow-window";
+import { readOrderflowWindow } from "../strategy-lab/read-core/orderflow/read-orderflow-window";
+import { updateOrderflowWindow } from "../strategy-lab/read-core/orderflow/update-orderflow-window";
+import { readMarketRegime } from "../strategy-lab/read-core/market-regime/read-market-regime";
+import { readMarketAuction } from "../strategy-lab/read-core/read/read-market-auction";
 import { createReaderAuctionModeState } from "../strategy-lab/reader-auction-mode/create-reader-auction-mode-state";
 import { combineAuctionOrderflow } from "../strategy-lab/reader-live/combine-auction-orderflow";
 import { createReaderSetupMemory } from "../strategy-lab/reader-setup/create-reader-setup-memory";

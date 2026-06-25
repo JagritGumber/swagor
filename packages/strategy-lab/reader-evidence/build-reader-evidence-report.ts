@@ -1,6 +1,6 @@
 import { candleWindowForTrade } from "./candle-window-for-trade";
 import type { ReaderEvidenceInput, ReaderEvidenceReport, ReaderTradeDossier, ReaderTradeExecutionQuality, ReaderTradeVerdict } from "./types";
-import type { AuctionRead } from "../read/types";
+import type { AuctionRead } from "../read-core/read/types";
 import { analyzeReaderExecutionQuality } from "../reader-execution-quality/analyze-reader-execution-quality";
 import type { ReaderExecutionQualityReport } from "../reader-execution-quality/types";
 import { buildReaderFormationTape } from "../reader-formation/build-reader-formation-tape";

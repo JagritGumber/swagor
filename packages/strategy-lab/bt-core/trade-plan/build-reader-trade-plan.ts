@@ -1,4 +1,4 @@
-import type { ReaderMarketRegime } from "../../market-regime/types";
+import type { ReaderMarketRegime } from "../../read-core/market-regime/types";
 import { readReaderNarrative } from "../../reader-narrative/read-reader-narrative";
 import type { ReaderNarrative } from "../../reader-narrative/types";
 import type { Side } from "../../types";

@@ -14,7 +14,7 @@ import { createReaderSetupMemory } from "../packages/strategy-lab/reader-setup/c
 import { summarizeReaderOutcomes } from "../packages/strategy-lab/reader-replay/summarize-reader-outcomes";
 import type { CandleInterval, HyperliquidNetwork } from "../packages/market-data";
 import type { OrderflowBucket } from "../packages/market-data";
-import type { OrderflowEvent } from "../packages/strategy-lab/orderflow/types";
+import type { OrderflowEvent } from "../packages/strategy-lab/read-core/orderflow/types";
 import type { ReaderExecutionQualityReport } from "../packages/strategy-lab/reader-execution-quality/types";
 import type { ReaderEvidenceReport } from "../packages/strategy-lab/reader-evidence/types";
 import type { ReaderAnalyzedTrade, ReaderAnalysisGroup, ReaderAnalysisReport, ReaderAnalysisSummary } from "../packages/strategy-lab/reader-analysis/types";

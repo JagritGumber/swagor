@@ -1,5 +1,5 @@
 import type { LiveReaderRead } from "../reader-live/types";
-import type { AuctionLocation, PriceLevel } from "../read/types";
+import type { AuctionLocation, PriceLevel } from "../read-core/read/types";
 import type { ReaderAuctionMode } from "../reader-auction-mode/types";
 import type { ReaderExecutionDiagnosis, ReaderExecutionQuality, ReaderExecutionQualityReport } from "../reader-execution-quality/types";
 import type { ReaderFormationRead } from "../reader-formation/types";

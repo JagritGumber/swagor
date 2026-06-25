@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Candle } from "../types";
+import type { Candle } from "../../types";
 import { readMarketAuction } from "./read-market-auction";
 
 describe("readMarketAuction", () => {

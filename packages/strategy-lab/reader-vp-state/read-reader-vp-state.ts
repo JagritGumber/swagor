@@ -1,5 +1,5 @@
-import type { AuctionRead } from "../read/types";
-import type { OrderflowRead } from "../orderflow/types";
+import type { AuctionRead } from "../read-core/read/types";
+import type { OrderflowRead } from "../read-core/orderflow/types";
 import type {
   ReaderVpAuctionState,
   ReaderVpPocState,

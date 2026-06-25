@@ -1,4 +1,4 @@
-import type { OrderflowEvent } from "../orderflow/types";
+import type { OrderflowEvent } from "../read-core/orderflow/types";
 import type { Candle } from "../types";
 
 export function candle(t: number, o: number, h: number, l: number, c: number, v = 10): Candle {

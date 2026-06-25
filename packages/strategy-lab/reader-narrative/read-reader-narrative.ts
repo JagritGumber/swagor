@@ -1,5 +1,5 @@
-import type { AuctionRead } from "../read/types";
-import type { OrderflowRead } from "../orderflow/types";
+import type { AuctionRead } from "../read-core/read/types";
+import type { OrderflowRead } from "../read-core/orderflow/types";
 import type { Candle, Side } from "../types";
 import { absorptionPolicyAllowsReclaim } from "../reader-absorption-quality/read-reader-absorption-quality";
 import type { ReaderAbsorptionPolicy, ReaderAbsorptionQuality } from "../reader-absorption-quality/types";

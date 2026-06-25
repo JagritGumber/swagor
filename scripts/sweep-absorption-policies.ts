@@ -12,7 +12,7 @@ import { updateReaderResult } from "../packages/strategy-lab/reader-result/updat
 import { READER_ABSORPTION_POLICIES, type ReaderAbsorptionPolicy } from "../packages/strategy-lab/reader-absorption-quality/types";
 import { summarizeReaderEquity } from "../packages/strategy-lab/reader-analysis/summarize-reader-equity";
 import type { OrderflowBucket } from "../packages/market-data";
-import type { OrderflowEvent } from "../packages/strategy-lab/orderflow/types";
+import type { OrderflowEvent } from "../packages/strategy-lab/read-core/orderflow/types";
 import type { ReaderHistoryStep } from "../packages/strategy-lab/reader-history/types";
 import type { LiveReaderRead, LiveReaderStance } from "../packages/strategy-lab/reader-live/types";
 import type { ReaderNarrative } from "../packages/strategy-lab/reader-narrative/types";

@@ -1,4 +1,4 @@
-import type { AuctionLocation } from "../read/types";
+import type { AuctionLocation } from "../read-core/read/types";
 import type { Side } from "../types";
 
 export type ReaderAuctionModeName =
