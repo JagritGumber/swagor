@@ -1,6 +1,6 @@
 import { closeAt } from "../indicators/close-at";
-import { enterLong } from "../signals/enter-long";
-import { hold } from "../signals/hold";
+import { enterLong } from "../bt-core/signals/enter-long";
+import { hold } from "../bt-core/signals/hold";
 import { rollingHighAt } from "../indicators/rolling-high-at";
 import { smaAt } from "../indicators/sma-at";
 import type { Strategy } from "../types";
