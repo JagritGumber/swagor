@@ -41,7 +41,7 @@
   - `orderflow`
   - `victoria-metrics`
   - `ingest`
-- Raw orderflow feed files are written under `orderflow-data/` as local NDJSON
+- Raw orderflow feed files are written under `.data/orderflow/` as local NDJSON
   and are ignored by git. Keep raw trades/BBO out of VictoriaMetrics; use
   VictoriaMetrics for candle data and later summaries.
 - For multi-month local backfills, start VictoriaMetrics with an explicit

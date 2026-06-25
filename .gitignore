@@ -56,14 +56,11 @@ references/
 # local backtest / scratch artifacts (not source)
 artifacts/
 .worktrees/
+.data/
 agent-2mo-result.json
 run_result*.json
 codex_review_request.md
 .perry-cache/
-victoria-metrics-data/
-orderflow-data/
-raw-data/
-market-store/
 
 # Tangent deploy helpers live locally in this project (needs Selbo's Circle
 # SDK + DB + env) but are NOT part of Selbo's product. Run from disk; never
