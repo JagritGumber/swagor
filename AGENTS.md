@@ -19,9 +19,8 @@
 - Use meaningful folders plus grep-first filenames. File names should match the exported function, strategy, or concept.
 - Current folders:
   - `bt-core` (backtest, indicators, signals, strategies, trade-plan)
-  - `orderflow`
-  - `rd-learn` (reader-learner, reader-candidates, reader-candidate-learner, reader-hypotheses)
-  - `read`
+  - `read-core` (read, orderflow, market-regime)
+  - `reader` (all 23 reader-* packages)
 - Backtest hot paths should be cursor-based. Prefer `ctx.candles` plus
   `ctx.index` and `*At` indicators over slicing arrays per tick.
 - Prefer explicit strategy definitions and deterministic backtests before adding UI, workers, or deployment.
