@@ -64,9 +64,23 @@ export type {
   ReaderHypothesisEvaluationOptions,
   ReaderHypothesisFilters,
   ReaderHypothesisGroupResult,
+  ReaderHypothesisInspectionEntry,
+  ReaderHypothesisInspectionGroup,
+  ReaderHypothesisInspectionReport,
+  ReaderHypothesisInspectionResult,
+  ReaderHypothesisMonteCarloOptions,
+  ReaderHypothesisMonteCarloPathStats,
+  ReaderHypothesisMonteCarloReport,
+  ReaderHypothesisMonteCarloResult,
   ReaderHypothesisReport,
   ReaderHypothesisReportResult,
   ReaderHypothesisResult,
+  ReaderHypothesisBootstrapMetrics,
+  ReaderHypothesisMetricRanks,
+  ReaderHypothesisPathMetrics,
+  ReaderHypothesisScoreOptions,
+  ReaderHypothesisScoreReport,
+  ReaderHypothesisScoreResult,
   ReaderHypothesisSummary,
   ReaderHypothesisStabilityGroup,
   ReaderHypothesisStabilityReport,
@@ -80,6 +94,9 @@ export { evaluateReaderHypothesis, evaluateReaderHypotheses } from "./reader/rea
 export { buildReaderHypothesisReport } from "./reader/reader-hypotheses/build-reader-hypothesis-report";
 export { buildReaderHypothesisSweep } from "./reader/reader-hypotheses/build-reader-hypothesis-sweep";
 export { buildReaderHypothesisStabilityReport } from "./reader/reader-hypotheses/build-reader-hypothesis-stability-report";
+export { buildReaderHypothesisInspectionReport } from "./reader/reader-hypotheses/build-reader-hypothesis-inspection-report";
+export { buildReaderHypothesisMonteCarloReport } from "./reader/reader-hypotheses/build-reader-hypothesis-monte-carlo-report";
+export { buildReaderHypothesisScoreReport } from "./reader/reader-hypotheses/build-reader-hypothesis-score-report";
 export type {
   ReaderRadarCandidate,
   ReaderRadarConfig,

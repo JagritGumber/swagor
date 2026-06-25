@@ -65,6 +65,20 @@ export type ReaderHypothesisGroupResult = {
   summary: ReaderHypothesisSummary;
 };
 
+export type {
+  ReaderHypothesisInspectionEntry,
+  ReaderHypothesisInspectionGroup,
+  ReaderHypothesisInspectionReport,
+  ReaderHypothesisInspectionResult,
+} from "./build-reader-hypothesis-inspection-report";
+
+export type {
+  ReaderHypothesisMonteCarloOptions,
+  ReaderHypothesisMonteCarloPathStats,
+  ReaderHypothesisMonteCarloReport,
+  ReaderHypothesisMonteCarloResult,
+} from "./build-reader-hypothesis-monte-carlo-report";
+
 export type ReaderHypothesisReportResult = ReaderHypothesisResult & {
   byMonth: ReaderHypothesisGroupResult[];
   byFamily: ReaderHypothesisGroupResult[];
@@ -147,5 +161,75 @@ export type ReaderHypothesisStabilityReport = {
   ranked: ReaderHypothesisStabilityResult[];
 };
 
+export type ReaderHypothesisScoreOptions = ReaderHypothesisEvaluationOptions & {
+  bootstrapSamples?: number;
+  bootstrapSeed?: number;
+  bootstrapPercentile?: number;
+};
 
+export type ReaderHypothesisPathMetrics = {
+  evaluatedDays: number;
+  opportunityDays: number;
+  entryDays: number;
+  entries: number;
+  tradesPerEvaluatedDay: number;
+  tradesPerEntryDay: number;
+  totalR: number;
+  rPerEvaluatedDay: number;
+  rPerOpportunityDay: number;
+  rPerTrade: number;
+  winRate: number;
+  winRateLowerBound: number;
+  maxDrawdownR: number;
+  maxDrawdownDurationDays: number;
+  ulcerIndexR: number;
+  painIndexR: number;
+  positiveMonths: number;
+  negativeMonths: number;
+  flatMonths: number;
+  evaluatedMonths: number;
+  profitableMonthRate: number;
+  worstMonthR: number | null;
+};
+
+export type ReaderHypothesisBootstrapMetrics = {
+  samples: number;
+  percentile: number;
+  totalRLowerBound: number;
+  rPerDayLowerBound: number;
+  maxDrawdownRPessimistic: number;
+  positiveReturnProbability: number;
+};
+
+export type ReaderHypothesisMetricRanks = {
+  productivity: number;
+  activity: number;
+  winConfidence: number;
+  risk: number;
+  stability: number;
+  bootstrap: number;
+};
+
+export type ReaderHypothesisScoreResult = {
+  hypothesis: ReaderHypothesis;
+  summary: ReaderHypothesisSummary;
+  path: ReaderHypothesisPathMetrics;
+  bootstrap: ReaderHypothesisBootstrapMetrics;
+  paretoTier: number;
+  aggregateRank: number;
+  metricRanks: ReaderHypothesisMetricRanks;
+};
+
+export type ReaderHypothesisScoreReport = {
+  summary: {
+    candidates: number;
+    hypotheses: number;
+    roundTripCostBps: number;
+    evaluatedDays: number;
+    bootstrapSamples: number;
+    bootstrapSeed: number;
+    bootstrapPercentile: number;
+  };
+  ranked: ReaderHypothesisScoreResult[];
+};
 

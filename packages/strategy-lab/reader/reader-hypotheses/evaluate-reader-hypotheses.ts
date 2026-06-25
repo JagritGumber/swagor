@@ -25,7 +25,7 @@ export function evaluateReaderHypothesis(input: {
   hypothesis: ReaderHypothesis;
   options?: ReaderHypothesisEvaluationOptions;
 }): ReaderHypothesisResult {
-  const filtered = input.candidates.filter((candidate) => matchesFilters(candidate, input.hypothesis));
+  const filtered = input.candidates.filter((candidate) => readerCandidateMatchesHypothesisFilters(candidate, input.hypothesis));
   const entries = filtered
     .filter((candidate) => matchesConfirmation(candidate, input.hypothesis))
     .map((candidate) => {
@@ -47,7 +47,7 @@ export function evaluateReaderHypothesis(input: {
   };
 }
 
-function matchesFilters(candidate: ReaderCandidate, hypothesis: ReaderHypothesis): boolean {
+export function readerCandidateMatchesHypothesisFilters(candidate: ReaderCandidate, hypothesis: ReaderHypothesis): boolean {
   const filters = hypothesis.filters;
   const resultR = finite(candidate.outcome.resultR);
   const targetR = finite(candidate.outcome.targetR);
