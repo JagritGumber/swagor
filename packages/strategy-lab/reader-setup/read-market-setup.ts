@@ -1,8 +1,8 @@
 import type { LiveReaderRead } from "../reader-live/types";
 import { applyReaderNarrativeStateToPlan } from "../reader-narrative-state/apply-reader-narrative-state-to-plan";
 import { readerNarrativeKeyFor } from "../reader-narrative-state/reader-narrative-key-for";
-import { buildReaderTradePlan } from "../trade-plan/build-reader-trade-plan";
-import type { ReaderActionableTradePlan, ReaderNoTradePlan, ReaderTradePlan } from "../trade-plan/types";
+import { buildReaderTradePlan } from "../bt-core/trade-plan/build-reader-trade-plan";
+import type { ReaderActionableTradePlan, ReaderNoTradePlan, ReaderTradePlan } from "../bt-core/trade-plan/types";
 import { readerSetupKeyFor } from "./reader-setup-key-for";
 import type { ReaderSetupConfig, ReaderSetupEvent, ReaderSetupMemory, ReaderSetupResult, ReaderSetupState } from "./types";
 

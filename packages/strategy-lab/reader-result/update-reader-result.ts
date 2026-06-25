@@ -1,6 +1,6 @@
 import type { ReaderSetupResult } from "../reader-setup/types";
 import { readerNarrativeKeyFor } from "../reader-narrative-state/reader-narrative-key-for";
-import type { ReaderActionableTradePlan } from "../trade-plan/types";
+import type { ReaderActionableTradePlan } from "../bt-core/trade-plan/types";
 import { readerResultForPrice } from "./reader-result-for-price";
 import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultState, ReaderResultUpdate } from "./types";
 

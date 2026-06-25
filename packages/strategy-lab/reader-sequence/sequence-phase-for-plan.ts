@@ -1,4 +1,4 @@
-import type { ReaderActionableTradePlan } from "../trade-plan/types";
+import type { ReaderActionableTradePlan } from "../bt-core/trade-plan/types";
 import type { ReaderSequence } from "./types";
 
 export function sequenceForPlan(plan: ReaderActionableTradePlan): ReaderSequence {

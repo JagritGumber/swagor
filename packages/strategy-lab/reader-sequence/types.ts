@@ -1,4 +1,4 @@
-import type { ReaderSetupFamily } from "../trade-plan/types";
+import type { ReaderSetupFamily } from "../bt-core/trade-plan/types";
 
 export type ReaderSequencePhase =
   | "observing"

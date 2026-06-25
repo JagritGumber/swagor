@@ -1,7 +1,7 @@
 import type { MemoryStore } from "../../shared";
 import type { ReaderCandidateDraft } from "../reader-candidates/read-reader-candidate";
 import type { ReaderSetupResult } from "../reader-setup/types";
-import type { ReaderActionableTradePlan, ReaderTradeStyle } from "../trade-plan/types";
+import type { ReaderActionableTradePlan, ReaderTradeStyle } from "../bt-core/trade-plan/types";
 
 export type ReaderRadarMode = "shadow" | "execute";
 

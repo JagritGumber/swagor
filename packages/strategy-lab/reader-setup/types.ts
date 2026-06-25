@@ -3,7 +3,7 @@ import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderNarrativeStateConfig } from "../reader-narrative-state/types";
 import type { ReaderSequence } from "../reader-sequence/types";
 import type { Side } from "../types";
-import type { ReaderActionableTradePlan, ReaderTradePlan, ReaderTradePlanConfig } from "../trade-plan/types";
+import type { ReaderActionableTradePlan, ReaderTradePlan, ReaderTradePlanConfig } from "../bt-core/trade-plan/types";
 
 export type ReaderSetupStatus = "watching" | "waiting-reclaim" | "ready";
 

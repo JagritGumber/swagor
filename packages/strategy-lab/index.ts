@@ -232,8 +232,8 @@ export type {
 export { orderflowFileTimesFor } from "./reader-report/orderflow-file-times-for";
 export { readReportOrderflowEvents } from "./reader-report/read-report-orderflow-events";
 export { runReaderReplayReport } from "./reader-report/run-reader-replay-report";
-export * from "./trade-plan/types";
-export * from "./trade-plan/build-reader-trade-plan";
+export * from "./bt-core/trade-plan/types";
+export * from "./bt-core/trade-plan/build-reader-trade-plan";
 export * from "./bt-core/strategies/value-low-reclaim";
 export * from "./bt-core/strategies/momentum-breakout";
 export * from "./bt-core/strategies/starter-strategies";

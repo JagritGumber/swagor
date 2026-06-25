@@ -1,5 +1,5 @@
 import type { LiveReaderRead } from "../reader-live/types";
-import type { ReaderActionableTradePlan, ReaderNoTradePlan, ReaderTradePlan } from "../trade-plan/types";
+import type { ReaderActionableTradePlan, ReaderNoTradePlan, ReaderTradePlan } from "../bt-core/trade-plan/types";
 import type { ReaderNarrativeState } from "./types";
 
 export function applyReaderNarrativeStateToPlan(input: {

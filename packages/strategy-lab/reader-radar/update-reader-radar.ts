@@ -1,6 +1,6 @@
 import { readReaderCandidate, type ReaderCandidateDraft } from "../reader-candidates/read-reader-candidate";
 import type { ReaderSetupResult, ReaderSetupState } from "../reader-setup/types";
-import type { ReaderActionableTradePlan } from "../trade-plan/types";
+import type { ReaderActionableTradePlan } from "../bt-core/trade-plan/types";
 import type { Side } from "../types";
 import { readerRadarKeyFor } from "./reader-radar-key-for";
 import type {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderSetupResult } from "../reader-setup/types";
-import type { ReaderTradePlan } from "../trade-plan/types";
+import type { ReaderTradePlan } from "../bt-core/trade-plan/types";
 import { createReaderResultState } from "./create-reader-result-state";
 import { updateReaderResult } from "./update-reader-result";
 

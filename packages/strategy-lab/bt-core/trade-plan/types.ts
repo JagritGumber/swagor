@@ -1,7 +1,7 @@
-import type { Side } from "../types";
-import type { ReaderMarketRegime } from "../market-regime/types";
-import type { ReaderNarrative } from "../reader-narrative/types";
-import type { ReaderSequencePhase } from "../reader-sequence/types";
+import type { Side } from "../../types";
+import type { ReaderMarketRegime } from "../../market-regime/types";
+import type { ReaderNarrative } from "../../reader-narrative/types";
+import type { ReaderSequencePhase } from "../../reader-sequence/types";
 
 export type ReaderTradePlanStatus = "no-trade" | "watch" | "ready-if-reclaim" | "ready";
 export type ReaderSetupFamily = "none" | "reversal-reclaim" | "breakout-acceptance" | "trend-continuation";
