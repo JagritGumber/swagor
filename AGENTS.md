@@ -51,5 +51,7 @@
   whole-flow live reader.
 - Do not add module smoke commands for strategy-lab, market-data, orderflow, or
   live-reader. The system should work as package code first.
+- `scripts/` is for operational automation only (backtest, deploy, ingest). No
+  research scripts — run research via module tests or a dedicated runner.
 - Use `tsgo`, not `tsc`, for typechecking.
 - Do not read `.env.local` or production env files.
