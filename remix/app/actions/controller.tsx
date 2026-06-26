@@ -2,7 +2,7 @@ import { createController } from 'remix/router'
 
 import { assetServer } from '../assets.ts'
 import { routes } from '../routes.ts'
-import { PortfolioPage } from '../ui/portfolio-page.tsx'
+import { PortfolioPage } from '../pages/portfolio.tsx'
 import { fetchCandles } from '../data/hyperliquid.ts'
 import { readMarketRegime } from '../../../packages/strategy-lab/read-core/market-regime/read-market-regime.ts'
 import { readMarketAuction } from '../../../packages/strategy-lab/read-core/read/read-market-auction.ts'
@@ -187,7 +187,13 @@ export default createController(routes, {
         (await assetServer.fetch(context.request)) ?? new Response('Not Found', { status: 404 })
       )
     },
-    async home(context) {
+    async home() {
+      return new Response(null, {
+        status: 302,
+        headers: { Location: routes.portfolio.href() },
+      })
+    },
+    async portfolio(context) {
       const url = new URL(context.request.url)
       const read = await buildReaderRead(url)
       return context.render(<PortfolioPage read={read} />)

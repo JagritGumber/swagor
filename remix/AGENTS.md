@@ -20,28 +20,26 @@ Refer to ./.agents/skills/remix/SKILL.md
 
 ## Starter Layout
 
-- `app/actions/controller.tsx` owns the top-level route actions
-- `app/routes.ts` defines the route contract
-- `app/router.ts` wires routes to route handlers
-- `app/middleware/render.tsx` installs the request-scoped renderer used by actions
-- `app/ui/` holds the shared document shell and home page UI
-- `app/assets.ts` owns the server-side asset pipeline used by the asset route and renderer
-- `public/` contains static files served from the app root
+- `app/pages/` — one file per route, thin composition only (e.g. `portfolio.tsx` → `/portfolio`)
+- `app/components/` — UI components, with subdirs per domain (e.g. `portfolio/`) or type (e.g. `widgets/`)
+- `app/components/widget-holder.tsx` — generic widget grid that accepts `{ key, render }[]` for swappable widgets
+- `app/types/` — shared type definitions
+- `app/constants/` — shared constants and style objects
+- `app/actions/controller.tsx` — top-level route actions
+- `app/routes.ts` — route contract
+- `app/router.ts` — wires routes to handlers
+- `app/middleware/render.tsx` — request-scoped renderer
+- `app/document.tsx` — shared HTML document shell
+- `app/data/` — Remix-native data sources (e.g. `hyperliquid.ts`)
+- `app/assets.ts` — server-side asset pipeline
+- `public/` — static files served from app root
 
 ## Route Ownership
 
-- Start from `app/routes.ts` and map each route to the narrowest owner on disk.
+- Start from `app/routes.ts` and map each route to a page in `app/pages/`.
 - Put top-level route actions in `app/actions/controller.tsx`.
-- Add `app/actions/<route-key>/controller.tsx` for nested route maps that need their own actions or middleware.
-- Keep route-owned page modules next to the route that owns them.
-- Move shared UI to `app/ui/`, not `app/actions/`.
-
-## Build-Out Notes
-
-- This starter intentionally begins small; add directories like `app/data/` and `test/` only when you need them.
-- Prefer putting code in the narrowest owner before introducing shared modules.
-- Avoid generic dumping-ground directories like `app/lib/` or `app/components/`.
-- `app/data/` holds Remix-native data sources (e.g. `hyperliquid.ts`) that avoid Next.js-specific fetch options.
+- Page modules in `app/pages/` should be thin — import the real component from `app/components/`.
+- Shared shell goes in `app/document.tsx`, not in pages.
 - Import strategy-lab functions individually from `../../../packages/strategy-lab/` to avoid barrel import chains that pull in optional deps.
 - `/api/reader-read` is a Remix resource route mirroring the v2 reading engine (regime + auction) for client-side polling.
 
@@ -52,6 +50,7 @@ Refer to ./.agents/skills/remix/SKILL.md
 
 ## Routes
 
-- `home (/)` — portfolio dashboard (regime, auction, thesis cards)
+- `home (/)` — redirects to `/portfolio`
+- `portfolio (/portfolio)` — portfolio dashboard (regime, auction, position widgets)
 - `readerRead (/api/reader-read)` — JSON resource route for client-side polling
 - `assets (/assets/*path)` — Remix asset server
