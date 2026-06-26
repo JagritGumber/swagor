@@ -2,7 +2,7 @@ import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 
 import type { ReaderReadSuccess } from '../../types/reader.ts'
-import { FONT_STACK } from '../../constants/theme.ts'
+import { FONT_UI } from '../../constants/theme.ts'
 import { WidgetHolder } from '../widget-holder.tsx'
 import { Header } from './header.tsx'
 import { RegimeWidget } from '../widgets/regime.tsx'
@@ -26,9 +26,9 @@ export function Dashboard(handle: Handle<DashboardProps>) {
     <div
       mix={css({
         minHeight: '100vh',
-        background: '#000',
-        color: '#e6edf3',
-        fontFamily: FONT_STACK,
+        background: 'oklch(0.12 0.006 260)',
+        color: 'oklch(0.88 0.01 260)',
+        fontFamily: FONT_UI,
         fontSize: '13px',
         lineHeight: 1.5,
         WebkitFontSmoothing: 'antialiased',
