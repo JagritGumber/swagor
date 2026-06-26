@@ -6,10 +6,13 @@ This app was scaffolded with `remix new`. Use these conventions when continuing 
 
 ```sh
 npm i
-npm run start
+npm run dev       # node --watch --import tsx/esm server.ts (port 44100)
+npm run start     # production start
 npm test
-npm run typecheck
+npm run typecheck # tsc --noEmit
 ```
+
+The dev server uses `tsx/esm` (not `remix/node-tsx`). `tsx` handles extensionless imports so packages in `packages/` and `lib/` can be imported directly.
 
 ## Building Features
 
@@ -38,3 +41,17 @@ Refer to ./.agents/skills/remix/SKILL.md
 - This starter intentionally begins small; add directories like `app/data/` and `test/` only when you need them.
 - Prefer putting code in the narrowest owner before introducing shared modules.
 - Avoid generic dumping-ground directories like `app/lib/` or `app/components/`.
+- `app/data/` holds Remix-native data sources (e.g. `hyperliquid.ts`) that avoid Next.js-specific fetch options.
+- Import strategy-lab functions individually from `../../../packages/strategy-lab/` to avoid barrel import chains that pull in optional deps.
+- `/api/reader-read` is a Remix resource route mirroring the v2 reading engine (regime + auction) for client-side polling.
+
+## Runtime Modules
+
+- Uses `tsx/esm` instead of `remix/node-tsx` because strategy-lab and lib use extensionless imports that `remix/node-tsx`'s `oxc-transform` doesn't resolve.
+- `packages/package.json` has `"type": "module"` so Node ESM loader treats packages as ES modules (no CJS-ESM cycle).
+
+## Routes
+
+- `home (/)` — portfolio dashboard (regime, auction, thesis cards)
+- `readerRead (/api/reader-read)` — JSON resource route for client-side polling
+- `assets (/assets/*path)` — Remix asset server

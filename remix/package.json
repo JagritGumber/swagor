@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch --import remix/node-tsx server.ts",
-    "start": "node --import remix/node-tsx server.ts",
-    "test": "node --import remix/node-tsx --test",
+"dev": "node --watch --import tsx/esm server.ts",
+"start": "node --import tsx/esm server.ts",
+"test": "node --import tsx/esm --test",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

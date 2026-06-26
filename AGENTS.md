@@ -1,5 +1,12 @@
 # Agent Notes
 
+## Git Workflow
+
+- `main` is the default branch. Feature branches branch from `main`.
+- Work happens on feature branches. Merge to `dev` when ready.
+- `dev` is the integration branch. `main` stays stable.
+- Keep local branches short-lived. Delete after merge.
+
 ## Project Direction
 
 - Work on `dev` for post-hackathon strategy-lab work.
@@ -25,6 +32,8 @@
   `ctx.index` and `*At` indicators over slicing arrays per tick.
 - Prefer explicit strategy definitions and deterministic backtests before adding UI, workers, or deployment.
 - Every backtest must model costs before results are treated as meaningful.
+- `packages/package.json` has `"type": "module"` so the Remix v3 frontend at `remix/` can import
+  strategy-lab sources directly via `tsx/esm` without CJS-ESM cycle errors.
 - `packages/market-data` owns ingestion and storage adapters. Keep network,
   VictoriaMetrics, filesystem, and DB APIs out of the Perry-compatible strategy
   package.
