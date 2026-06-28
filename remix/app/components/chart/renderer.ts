@@ -1,27 +1,32 @@
 import type { Candle } from '../../types/candles.ts'
 import type { ChartConfig, OverlaySegment, Scale } from './types.ts'
+import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'
 import { rect, line, text } from './draw.ts'
 
 const MONO_FONT = '10px "JetBrains Mono", ui-monospace, monospace'
 
-function css(name: string, fallback: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
+function css(name: string): string {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  if (value === '') throw new Error(`Missing CSS custom property: ${name}`)
+  return value
+}
+
+const segColors: Record<ReaderMarketRegimeMode, string> = {
+  'trend-up': css('--seg-trend-up'),
+  'trend-down': css('--seg-trend-down'),
+  'high-vol': css('--seg-high-vol'),
+  'range': css('--seg-range'),
+  'unknown': css('--seg-unknown'),
 }
 
 const C = {
-  bg: css('--chart-bg', 'oklch(0 0 0)'),
-  up: css('--candle-up', '#00ff85'),
-  down: css('--candle-down', 'oklch(0.55 0.2 30)'),
-  label: css('--chart-label', 'oklch(1 0 0 / 0.5)'),
-  dash: css('--chart-dash', 'oklch(1 0 0 / 0.4)'),
-  vaBg: css('--chart-va-bg', 'oklch(1 0 0 / 0.08)'),
-  seg: {
-    'trend-up': css('--seg-trend-up', 'oklch(0.6 0.2 150 / 0.15)'),
-    'trend-down': css('--seg-trend-down', 'oklch(0.6 0.2 30 / 0.15)'),
-    'high-vol': css('--seg-high-vol', 'oklch(0.7 0.15 80 / 0.15)'),
-    'range': css('--seg-range', 'oklch(0.5 0.05 260 / 0.08)'),
-    'unknown': css('--seg-unknown', 'oklch(0.5 0.05 260 / 0.08)'),
-  } as Record<string, string>,
+  bg: css('--chart-bg'),
+  up: css('--candle-up'),
+  down: css('--candle-down'),
+  label: css('--chart-label'),
+  dash: css('--chart-dash'),
+  vaBg: css('--chart-va-bg'),
+  seg: segColors,
 }
 
 function buildScale(
@@ -120,7 +125,7 @@ export function renderChart(
 
     if (segHigh !== -Infinity) {
       const pad = (segHigh - segLow) * 0.05 || 1
-      rect(ctx).x(x1).y(scale.y(segHigh + pad)).w(w).h(scale.y(segLow - pad) - scale.y(segHigh + pad)).color(C.seg[seg.mode] ?? C.seg.unknown).fill()
+      rect(ctx).x(x1).y(scale.y(segHigh + pad)).w(w).h(scale.y(segLow - pad) - scale.y(segHigh + pad)).color(C.seg[seg.mode]).fill()
     }
 
     if (seg.valueAreaHigh && seg.valueAreaLow) {
