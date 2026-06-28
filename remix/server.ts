@@ -1,4 +1,4 @@
-import { XMLHttpRequest as XHR2 } from 'xhr2'
+import XHR2 from 'xhr2'
 if (typeof globalThis.XMLHttpRequest === 'undefined') {
   globalThis.XMLHttpRequest = XHR2 as typeof globalThis.XMLHttpRequest
 }
