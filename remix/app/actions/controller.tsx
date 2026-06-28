@@ -205,11 +205,8 @@ async function buildCandles(url: URL): Promise<Response> {
   }
 
   const now = Date.now()
-  const lookbackDays = Math.min(
-    Math.max(Number(url.searchParams.get('lookbackDays') ?? '3'), 1),
-    14,
-  )
-  const lookbackMs = Math.min(lookbackDays * 86_400_000, INTERVAL_MS[interval] * 200)
+  const lookback = Math.min(Math.max(Number(url.searchParams.get('lookback') ?? '200'), 20), 800)
+  const lookbackMs = INTERVAL_MS[interval] * lookback
 
   const rawCandles = await fetchCandles(asset, interval, now - lookbackMs, now).catch(() => [])
   if (rawCandles.length === 0) {
