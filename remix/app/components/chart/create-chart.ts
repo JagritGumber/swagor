@@ -99,13 +99,18 @@ export function createChart(options: {
     isLoading = true
     const end = first.t - intervalMs
     const start = end - intervalMs * batchSize
+    const t0 = performance.now()
     fetchCandles(asset, interval, start, end).then(newCandles => {
+      const t1 = performance.now()
       if (newCandles.length === 0) { isLoading = false; return }
       const existing = new Set(options.candles.map(c => c.t))
       const uniqueCandles = newCandles.filter(c => !existing.has(c.t))
       if (uniqueCandles.length === 0) { isLoading = false; return }
+      const tSeg = performance.now()
       const uniqueSegments: OverlaySegment[] = readRegimeSegments({ candles: uniqueCandles, lookback: 200 })
       cacheSegmentPriceRange(uniqueSegments, uniqueCandles)
+      const tDone = performance.now()
+      console.log(`[loadOlder] fetch=${(t1 - t0).toFixed(0)}ms dedup=${(tSeg - t1).toFixed(0)}ms segments=${(tDone - tSeg).toFixed(0)}ms total=${(tDone - t0).toFixed(0)}ms`)
       options.segments = options.segments.map(s => ({
         ...s,
         startIndex: s.startIndex + uniqueCandles.length,

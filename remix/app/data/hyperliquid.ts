@@ -4,7 +4,7 @@ import { ApiError } from '../lib/api/error.ts'
 
 const hlApi = createAlova({
   baseURL: 'https://api.hyperliquid-testnet.xyz',
-  requestAdapter: xhrRequestAdapter(),
+  requestAdapter: xhrRequestAdapter({ onCreate: xhr => { xhr.timeout = 10_000 } }),
   responded: {
     onSuccess: async (response) => {
       if (response.status >= 400) {
