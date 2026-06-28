@@ -49,6 +49,8 @@ export function createChart(options: {
 
   let pxPerCandle = 0
   let scrollPx = 0
+  let yMin = 0
+  let yMax = 0
   let crosshair: { x: number; y: number } | null = null
   let toolbar: HTMLDivElement | null = null
   let observer: ResizeObserver | null = null
@@ -60,6 +62,12 @@ export function createChart(options: {
     pxPerCandle = count > 0 ? totalW / count : totalW
     const totalPx = count * pxPerCandle
     scrollPx = Math.max(0, totalPx - totalW)
+
+    const allHighs = options.candles.map(c => c.h)
+    const allLows = options.candles.map(c => c.l)
+    yMin = Math.min(...allLows)
+    yMax = Math.max(...allHighs)
+    if (yMax === yMin) { yMax = yMin + 1 }
   }
 
   function totalWidth(viewW: number): number {
@@ -168,7 +176,7 @@ export function createChart(options: {
       width: rect.width,
       height: rect.height,
       padding: PADDING,
-    }, pxPerCandle, scrollPx, crosshair ?? undefined)
+    }, pxPerCandle, scrollPx, crosshair ?? undefined, yMin, yMax)
 
     checkEdges()
   }

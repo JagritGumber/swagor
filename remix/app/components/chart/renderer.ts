@@ -34,6 +34,8 @@ function buildScale(
   config: ChartConfig,
   pxPerCandle: number,
   scrollPx: number,
+  fixedMin?: number,
+  fixedMax?: number,
 ): Scale {
   const { width, height, padding } = config
   const totalW = width - padding.left - padding.right
@@ -43,14 +45,22 @@ function buildScale(
   const firstVisible = Math.max(0, Math.floor(scrollPx / pxPerCandle))
   const lastVisible = Math.min(count - 1, Math.ceil((scrollPx + totalW) / pxPerCandle))
 
-  let maxPrice = -Infinity
-  let minPrice = Infinity
-  for (let i = firstVisible; i <= lastVisible && i < count; i++) {
-    const c = candles[i]
-    if (c.h > maxPrice) maxPrice = c.h
-    if (c.l < minPrice) minPrice = c.l
+  let maxPrice: number
+  let minPrice: number
+
+  if (fixedMin !== undefined && fixedMax !== undefined) {
+    maxPrice = fixedMax
+    minPrice = fixedMin
+  } else {
+    maxPrice = -Infinity
+    minPrice = Infinity
+    for (let i = firstVisible; i <= lastVisible && i < count; i++) {
+      const c = candles[i]
+      if (c.h > maxPrice) maxPrice = c.h
+      if (c.l < minPrice) minPrice = c.l
+    }
+    if (maxPrice === -Infinity) { maxPrice = 0; minPrice = 0 }
   }
-  if (maxPrice === -Infinity) { maxPrice = 0; minPrice = 0 }
 
   const priceRange = maxPrice - minPrice || 1
   const paddedMin = minPrice - priceRange * 0.05
@@ -94,8 +104,10 @@ export function renderChart(
   pxPerCandle: number,
   scrollPx: number,
   crosshair?: { x: number; y: number },
+  yMin?: number,
+  yMax?: number,
 ): void {
-  const scale = buildScale(candles, config, pxPerCandle, scrollPx)
+  const scale = buildScale(candles, config, pxPerCandle, scrollPx, yMin, yMax)
   const { width, height, padding } = config
   const totalW = width - padding.left - padding.right
   const plotBottom = height - padding.bottom
