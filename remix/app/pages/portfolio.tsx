@@ -1,18 +1,16 @@
 import type { Handle } from 'remix/ui'
 
 import type { ReaderReadResult } from '../types/reader.ts'
-import type { Candle } from '../types/candles.ts'
 import { Document } from '../document.tsx'
 import { ErrorState } from '../components/portfolio/error-state.tsx'
 import { Dashboard } from '../components/portfolio/dashboard.tsx'
 
 interface PortfolioPageProps {
   read: ReaderReadResult
-  candles: Candle[]
 }
 
 export function PortfolioPage(handle: Handle<PortfolioPageProps>) {
-  const { read, candles } = handle.props
+  const { read } = handle.props
 
   return () => (
     <Document
@@ -29,7 +27,7 @@ export function PortfolioPage(handle: Handle<PortfolioPageProps>) {
         </>
       }
     >
-      {'error' in read ? <ErrorState message={read.error} /> : <Dashboard read={read} candles={candles} />}
+      {'error' in read ? <ErrorState message={read.error} /> : <Dashboard />}
     </Document>
   )
 }

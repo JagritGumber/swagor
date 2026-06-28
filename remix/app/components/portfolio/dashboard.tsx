@@ -1,29 +1,11 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 
-import type { ReaderReadSuccess } from '../../types/reader.ts'
-import type { Candle } from '../../types/candles.ts'
-import type { OverlayData } from '../chart/types.ts'
 import { FONT_UI, SURFACE_BODY, TEXT_PRIMARY } from '../../constants/theme.ts'
+import { routes } from '../../routes.ts'
 import { Navbar } from '../navbar.tsx'
-import { CandleChart } from '../chart/candle-chart.tsx'
 
-interface DashboardProps {
-  read: ReaderReadSuccess
-  candles: Candle[]
-}
-
-export function Dashboard(handle: Handle<DashboardProps>) {
-  const { read, candles } = handle.props
-
-  const overlays: OverlayData = {
-    valueAreaLow: read.auction.profile?.valueAreaLow,
-    valueAreaHigh: read.auction.profile?.valueAreaHigh,
-    poc: read.auction.profile?.poc,
-    regimeMode: read.regime.mode,
-    currentPrice: read.lastPrice,
-  }
-
+export function Dashboard(handle: Handle) {
   return () => (
     <div
       mix={css({
@@ -39,7 +21,14 @@ export function Dashboard(handle: Handle<DashboardProps>) {
       })}
     >
       <Navbar />
-      <CandleChart candles={candles} overlays={overlays} />
+      <canvas
+        id="candle-chart-canvas"
+        style={{ display: 'block', width: '100%', height: 'calc(100vh - 48px)' }}
+      />
+      <script
+        type="module"
+        src={routes.assets.href({ path: 'app/assets/candle-chart-client.ts' })}
+      />
     </div>
   )
 }

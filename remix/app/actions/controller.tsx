@@ -235,8 +235,8 @@ export default createController(routes, {
     },
     async portfolio(context) {
       const url = new URL(context.request.url)
-      const { read, candles } = await buildReaderRead(url)
-      return context.render(<PortfolioPage read={read} candles={candles} />)
+      const { read } = await buildReaderRead(url)
+      return context.render(<PortfolioPage read={read} />)
     },
     async candles(context) {
       return buildCandles(new URL(context.request.url))
