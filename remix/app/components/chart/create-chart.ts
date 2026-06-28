@@ -1,8 +1,8 @@
 import { renderChart } from './chart-canvas.ts'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from './types.ts'
-import { api } from '../../lib/api-client.ts'
-import { tryCatch } from '../../lib/try-catch.ts'
+import { api } from '../../lib/api/client.ts'
+import { tryCatch } from '../../lib/api/try-catch.ts'
 
 const ZOOM_LEVELS = [50, 100, 200, 400, 600, 800] as const
 

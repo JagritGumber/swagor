@@ -1,8 +1,17 @@
 import { createAlova } from 'alova'
 import { xhrRequestAdapter } from '@alova/adapter-xhr'
-import { ApiError } from './api-error.ts'
 
-export { ApiError }
+export class ApiError extends Error {
+  status: number
+  code: string
+
+  constructor(message: string, status: number, code?: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.code = code ?? 'UNKNOWN'
+  }
+}
 
 export const api = createAlova({
   baseURL: '',
