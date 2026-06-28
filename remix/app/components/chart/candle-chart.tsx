@@ -1,4 +1,4 @@
-import { clientEntry, css, type Handle } from 'remix/ui'
+import { clientEntry, type Handle } from 'remix/ui'
 
 import type { Candle } from '../../types/candles.ts'
 import type { OverlayData } from './types.ts'
@@ -15,16 +15,18 @@ export const CandleChart = clientEntry(
     let observer: ResizeObserver | null = null
 
     function setupCanvas() {
-      const canvas = document.getElementById('candle-chart-canvas') as HTMLCanvasElement | null
-      if (!canvas) return
+      const el = document.getElementById('candle-chart-canvas') as HTMLCanvasElement | null
+      if (!el) return
 
       function render() {
+        const cvs = document.getElementById('candle-chart-canvas') as HTMLCanvasElement | null
+        if (!cvs) return
         const dpr = window.devicePixelRatio || 1
-        const rect = canvas.getBoundingClientRect()
-        canvas.width = rect.width * dpr
-        canvas.height = rect.height * dpr
+        const rect = cvs.getBoundingClientRect()
+        cvs.width = rect.width * dpr
+        cvs.height = rect.height * dpr
 
-        const ctx = canvas.getContext('2d')
+        const ctx = cvs.getContext('2d')
         if (!ctx) return
 
         ctx.scale(dpr, dpr)
@@ -40,7 +42,7 @@ export const CandleChart = clientEntry(
 
       render()
       observer = new ResizeObserver(() => render())
-      observer.observe(canvas)
+      observer.observe(el)
     }
 
     return () => {
@@ -55,5 +57,5 @@ export const CandleChart = clientEntry(
         />
       )
     }
-  },
+  } as any,
 )
