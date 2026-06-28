@@ -222,10 +222,7 @@ export default createController(routes, {
         return Response.json({ candles: [], error: `Invalid interval: ${interval}` }, { status: 400 })
       }
 
-      const t0 = performance.now()
       const { data: raw, error } = await tryCatch(fetchCandles(asset, interval, start, end))
-      const t1 = performance.now()
-      if (process.env.NODE_ENV === 'development') console.log(`[api/candles] fetchCandles: ${(t1 - t0).toFixed(0)}ms asset=${asset} interval=${interval}`)
       if (error) {
         return Response.json({ candles: [], error: error.message }, { status: 502 })
       }
