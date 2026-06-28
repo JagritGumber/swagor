@@ -1,14 +1,20 @@
-import { renderChart } from './chart-canvas.ts'
+import { renderChart } from './renderer.ts'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from './types.ts'
-
-export const ZOOM_LEVELS = [50, 100, 200, 400, 600, 800] as const
+import { fetchCandles } from '../../data/fetch-candles.ts'
 
 export interface ChartInstance {
   render(): void
-  zoomIn(): void
-  zoomOut(): void
   destroy(): void
+}
+
+const INTERVAL_MS: Record<string, number> = {
+  '1m': 60_000,
+  '5m': 300_000,
+  '15m': 900_000,
+  '1h': 3_600_000,
+  '4h': 14_400_000,
+  '1d': 86_400_000,
 }
 
 export function createChart(options: {
@@ -27,48 +33,176 @@ export function createChart(options: {
   const container: HTMLElement = rawContainer
 
   const canvas = document.createElement('canvas')
-  canvas.style.cssText = 'display:block;width:100%;height:100%'
+  canvas.style.cssText = 'display:block;width:100%;height:100%;cursor:grab'
   container.appendChild(canvas)
 
   const params = new URLSearchParams(window.location.search)
-  const rawLookback = Number(params.get('lookback') ?? '200')
-  let zoomIndex = ZOOM_LEVELS.indexOf(rawLookback as (typeof ZOOM_LEVELS)[number])
-  if (zoomIndex === -1) zoomIndex = 2
+  const asset = params.get('asset') ?? 'ETH'
+  const interval = params.get('interval') ?? '1h'
+  const intervalMs = INTERVAL_MS[interval] ?? 3_600_000
+  const batchSize = 200
 
-  const path = window.location.pathname
-  const query = new URLSearchParams(window.location.search)
+  const PADDING = { top: 16, right: 60, bottom: 28, left: 8 }
+  const MIN_PX = 2
+  const MAX_PX = 1000
+  const DRAG_THRESHOLD = 3
 
-  let candles: Candle[] = options.candles
-  let segments: OverlaySegment[] = options.segments
+  let pxPerCandle = 0
+  let scrollPx = 0
+  let crosshair: { x: number; y: number } | null = null
   let toolbar: HTMLDivElement | null = null
   let observer: ResizeObserver | null = null
+  let isLoading = false
 
-  function navigate(level: number): void {
-    query.set('lookback', String(level))
-    window.location.href = path + '?' + query.toString()
+  function initViewport(width: number): void {
+    const totalW = width - PADDING.left - PADDING.right
+    const count = options.candles.length
+    pxPerCandle = count > 0 ? totalW / count : totalW
+    const totalPx = count * pxPerCandle
+    scrollPx = Math.max(0, totalPx - totalW)
+  }
+
+  function totalWidth(viewW: number): number {
+    return viewW - PADDING.left - PADDING.right
+  }
+
+  function loadOlder(): void {
+    if (isLoading) return
+    const first = options.candles[0]
+    if (!first) return
+    isLoading = true
+    const end = first.t - intervalMs
+    const start = end - intervalMs * batchSize
+    fetchCandles(asset, interval, start, end).then(newCandles => {
+      if (newCandles.length === 0) { isLoading = false; return }
+      const existing = new Set(options.candles.map(c => c.t))
+      const unique = newCandles.filter(c => !existing.has(c.t))
+      if (unique.length === 0) { isLoading = false; return }
+      options.candles = [...unique, ...options.candles]
+      scrollPx += unique.length * pxPerCandle
+      isLoading = false
+      paint()
+    })
+  }
+
+  function loadNewer(): void {
+    if (isLoading) return
+    const last = options.candles[options.candles.length - 1]
+    if (!last) return
+    isLoading = true
+    const start = last.t + intervalMs
+    const end = start + intervalMs * batchSize
+    fetchCandles(asset, interval, start, end).then(newCandles => {
+      if (newCandles.length === 0) { isLoading = false; return }
+      const existing = new Set(options.candles.map(c => c.t))
+      const unique = newCandles.filter(c => !existing.has(c.t))
+      if (unique.length === 0) { isLoading = false; return }
+      options.candles = [...options.candles, ...unique]
+      isLoading = false
+      paint()
+    })
+  }
+
+  let edgeDebounce: ReturnType<typeof setTimeout> | null = null
+
+  function checkEdges(): void {
+    if (isLoading) return
+    const count = options.candles.length
+    if (count === 0) return
+    const totalPx = count * pxPerCandle
+    const tw = totalWidth(canvas.getBoundingClientRect().width)
+    const threshold = Math.max(50, pxPerCandle * 3)
+
+    if (scrollPx < threshold) {
+      if (edgeDebounce !== null) clearTimeout(edgeDebounce)
+      edgeDebounce = setTimeout(loadOlder, 150)
+    } else if (scrollPx + tw > totalPx - threshold) {
+      if (edgeDebounce !== null) clearTimeout(edgeDebounce)
+      edgeDebounce = setTimeout(loadNewer, 150)
+    }
   }
 
   function paint(): void {
-    if (candles.length === 0) return
+    if (options.candles.length === 0) return
 
     const dpr = window.devicePixelRatio || 1
     const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
+    canvas.width = Math.max(1, rect.width * dpr)
+    canvas.height = Math.max(1, rect.height * dpr)
+
+    if (pxPerCandle === 0) initViewport(rect.width)
 
     const ctx = canvas.getContext('2d')
     if (ctx === null) return
-
     ctx.scale(dpr, dpr)
-    renderChart(ctx, candles, {
-      segments,
-      currentPrice: candles[candles.length - 1].c,
-    }, {
+
+    renderChart(ctx, options.candles, options.segments, options.candles[options.candles.length - 1].c, {
       width: rect.width,
       height: rect.height,
-      padding: { top: 16, right: 60, bottom: 8, left: 8 },
-    })
+      padding: PADDING,
+    }, pxPerCandle, scrollPx, crosshair ?? undefined)
+
+    checkEdges()
   }
+
+  let isDragging = false
+  let dragStartPx = 0
+  let dragStartMouseX = 0
+  let dragStartMouseY = 0
+
+  function onDocMove(e: MouseEvent): void {
+    const dx = e.clientX - dragStartMouseX
+    const dy = e.clientY - dragStartMouseY
+    if (!isDragging && Math.abs(dx) <= DRAG_THRESHOLD && Math.abs(dy) <= DRAG_THRESHOLD) return
+    if (!isDragging) {
+      isDragging = true
+      canvas.style.cursor = 'grabbing'
+      crosshair = null
+    }
+    scrollPx = dragStartPx - dx
+    paint()
+  }
+
+  function onDocUp(): void {
+    isDragging = false
+    canvas.style.cursor = 'grab'
+    document.removeEventListener('mousemove', onDocMove)
+    document.removeEventListener('mouseup', onDocUp)
+  }
+
+  canvas.addEventListener('mousedown', (e) => {
+    dragStartPx = scrollPx
+    dragStartMouseX = e.clientX
+    dragStartMouseY = e.clientY
+    document.addEventListener('mousemove', onDocMove)
+    document.addEventListener('mouseup', onDocUp)
+  })
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (isDragging) return
+    const rect = canvas.getBoundingClientRect()
+    crosshair = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    paint()
+  })
+
+  canvas.addEventListener('mouseleave', () => {
+    if (isDragging) return
+    crosshair = null
+    paint()
+  })
+
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault()
+    const rect = canvas.getBoundingClientRect()
+    const tw = totalWidth(rect.width)
+    const mouseX = e.clientX - rect.left - PADDING.left
+
+    const candleAtMouse = (mouseX + scrollPx) / pxPerCandle
+    const factor = e.deltaY > 0 ? 1 / 1.12 : 1.12
+    pxPerCandle = Math.max(MIN_PX, Math.min(MAX_PX, pxPerCandle * factor))
+    scrollPx = candleAtMouse * pxPerCandle - mouseX
+    paint()
+  }, { passive: false })
 
   function buildToolbar(): void {
     if (toolbar !== null) toolbar.remove()
@@ -83,17 +217,19 @@ export function createChart(options: {
       return b
     }
 
-    toolbar.appendChild(makeBtn('−', zoomOut))
-    toolbar.appendChild(makeBtn('+', zoomIn))
+    const zoomFn = (dir: number) => () => {
+      const rect = canvas.getBoundingClientRect()
+      const tw = totalWidth(rect.width)
+      const midPx = scrollPx + tw / 2
+      const candleAtCenter = midPx / pxPerCandle
+      pxPerCandle = Math.max(MIN_PX, Math.min(MAX_PX, pxPerCandle * dir))
+      scrollPx = candleAtCenter * pxPerCandle - tw / 2
+      paint()
+    }
+
+    toolbar.appendChild(makeBtn('−', zoomFn(1 / 1.12)))
+    toolbar.appendChild(makeBtn('+', zoomFn(1.12)))
     container.appendChild(toolbar)
-  }
-
-  function zoomIn(): void {
-    if (zoomIndex > 0) { zoomIndex -= 1; navigate(ZOOM_LEVELS[zoomIndex]) }
-  }
-
-  function zoomOut(): void {
-    if (zoomIndex < ZOOM_LEVELS.length - 1) { zoomIndex += 1; navigate(ZOOM_LEVELS[zoomIndex]) }
   }
 
   return {
@@ -103,8 +239,6 @@ export function createChart(options: {
       buildToolbar()
       paint()
     },
-    zoomIn,
-    zoomOut,
     destroy(): void {
       if (observer !== null) observer.disconnect()
       if (toolbar !== null) toolbar.remove()
