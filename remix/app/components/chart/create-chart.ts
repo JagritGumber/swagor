@@ -2,6 +2,7 @@ import { renderChart } from './chart-canvas.ts'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from './types.ts'
 import { api } from '../../lib/api-client.ts'
+import { tryCatch } from '../../lib/try-catch.ts'
 
 const ZOOM_LEVELS = [50, 100, 200, 400, 600, 800] as const
 
@@ -39,16 +40,18 @@ export function createChart(options: {
   let toolbar: HTMLDivElement | null = null
   let observer: ResizeObserver | null = null
 
-  async function fetchData(): Promise<void> {
+  async function fetchData(): Promise<{ ok: boolean }> {
     const lookback = ZOOM_LEVELS[zoomIndex]
-    const params = { asset, interval, lookback }
-    const [cd, sd] = await Promise.all([
-      api.Get<{ candles: Candle[] }>('/api/candles', { params }),
-      api.Get<{ segments: OverlaySegment[] }>('/api/regime-segments', { params }),
+    const req = { asset, interval, lookback }
+    const [candlesRes, segRes] = await Promise.all([
+      tryCatch(api.Get<{ candles: Candle[] }>('/api/candles', { params: req })),
+      tryCatch(api.Get<{ segments: OverlaySegment[] }>('/api/regime-segments', { params: req })),
     ])
-    if (cd.candles.length === 0) throw new Error('createChart: empty candle response')
-    candles = cd.candles
-    segments = sd.segments
+    if (candlesRes.error !== null || segRes.error !== null) return { ok: false }
+    if (candlesRes.data.candles.length === 0) return { ok: false }
+    candles = candlesRes.data.candles
+    segments = segRes.data.segments
+    return { ok: true }
   }
 
   function paint(): void {
@@ -90,11 +93,11 @@ export function createChart(options: {
   }
 
   function zoomIn(): void {
-    if (zoomIndex > 0) { zoomIndex -= 1; fetchData().then(paint) }
+    if (zoomIndex > 0) { zoomIndex -= 1; fetchData().then((r) => { if (r.ok) paint() }) }
   }
 
   function zoomOut(): void {
-    if (zoomIndex < ZOOM_LEVELS.length - 1) { zoomIndex += 1; fetchData().then(paint) }
+    if (zoomIndex < ZOOM_LEVELS.length - 1) { zoomIndex += 1; fetchData().then((r) => { if (r.ok) paint() }) }
   }
 
   observer = new ResizeObserver(paint)
@@ -102,7 +105,8 @@ export function createChart(options: {
 
   return {
     async render(): Promise<void> {
-      await fetchData()
+      const { ok } = await fetchData()
+      if (!ok) return
       buildToolbar()
       paint()
     },
