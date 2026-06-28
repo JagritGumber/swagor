@@ -1,4 +1,7 @@
 import { createChart } from '../components/chart/create-chart.ts'
 
-const chart = createChart({ container: '#chart-container' })
-chart.render()
+const container = document.getElementById('chart-container')
+if (container !== null && container.querySelector('canvas') === null) {
+  const chart = createChart({ container })
+  chart.render()
+}
