@@ -73,18 +73,20 @@ export function createChart(options: {
     isLoading = true
     const end = first.t - intervalMs
     const start = end - intervalMs * batchSize
-    fetchCandles(asset, interval, start, end).then(newCandles => {
-      if (newCandles.length === 0) { isLoading = false; return }
+    fetchCandles(asset, interval, start, end).then(result => {
+      if (result.candles.length === 0) { isLoading = false; return }
       const existing = new Set(options.candles.map(c => c.t))
-      const unique = newCandles.filter(c => !existing.has(c.t))
-      if (unique.length === 0) { isLoading = false; return }
+      const uniqueCandles = result.candles.filter(c => !existing.has(c.t))
+      const uniqueSegments = result.segments.filter(s => s.startIndex < uniqueCandles.length)
+      if (uniqueCandles.length === 0) { isLoading = false; return }
       options.segments = options.segments.map(s => ({
         ...s,
-        startIndex: s.startIndex + unique.length,
-        endIndex: s.endIndex + unique.length,
+        startIndex: s.startIndex + uniqueCandles.length,
+        endIndex: s.endIndex + uniqueCandles.length,
       }))
-      options.candles = [...unique, ...options.candles]
-      scrollPx += unique.length * pxPerCandle
+      options.segments = [...uniqueSegments, ...options.segments]
+      options.candles = [...uniqueCandles, ...options.candles]
+      scrollPx += uniqueCandles.length * pxPerCandle
       isLoading = false
       paint()
     })
@@ -97,12 +99,17 @@ export function createChart(options: {
     isLoading = true
     const start = last.t + intervalMs
     const end = start + intervalMs * batchSize
-    fetchCandles(asset, interval, start, end).then(newCandles => {
-      if (newCandles.length === 0) { isLoading = false; return }
+    fetchCandles(asset, interval, start, end).then(result => {
+      if (result.candles.length === 0) { isLoading = false; return }
       const existing = new Set(options.candles.map(c => c.t))
-      const unique = newCandles.filter(c => !existing.has(c.t))
-      if (unique.length === 0) { isLoading = false; return }
-      options.candles = [...options.candles, ...unique]
+      const uniqueCandles = result.candles.filter(c => !existing.has(c.t))
+      const offset = options.candles.length
+      const uniqueSegments = result.segments
+        .filter(s => s.startIndex < uniqueCandles.length)
+        .map(s => ({ ...s, startIndex: s.startIndex + offset, endIndex: s.endIndex + offset }))
+      if (uniqueCandles.length === 0) { isLoading = false; return }
+      options.segments = [...options.segments, ...uniqueSegments]
+      options.candles = [...options.candles, ...uniqueCandles]
       isLoading = false
       paint()
     })
