@@ -1,6 +1,7 @@
 import { renderChart } from './chart-canvas.ts'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from './types.ts'
+import { api } from '../../lib/api-client.ts'
 
 const ZOOM_LEVELS = [50, 100, 200, 400, 600, 800] as const
 
@@ -38,28 +39,13 @@ export function createChart(options: {
   let toolbar: HTMLDivElement | null = null
   let observer: ResizeObserver | null = null
 
-  async function fetchCandlesJson(): Promise<{ candles: Candle[] }> {
-    const url = `/api/candles?asset=${asset}&interval=${interval}&lookback=${ZOOM_LEVELS[zoomIndex]}`
-    const res = await fetch(url)
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      throw new Error(body.error ?? `GET ${url} → ${res.status}`)
-    }
-    return res.json()
-  }
-
-  async function fetchSegmentsJson(): Promise<{ segments: OverlaySegment[] }> {
-    const url = `/api/regime-segments?asset=${asset}&interval=${interval}&lookback=${ZOOM_LEVELS[zoomIndex]}`
-    const res = await fetch(url)
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      throw new Error(body.error ?? `GET ${url} → ${res.status}`)
-    }
-    return res.json()
-  }
-
   async function fetchData(): Promise<void> {
-    const [cd, sd] = await Promise.all([fetchCandlesJson(), fetchSegmentsJson()])
+    const lookback = ZOOM_LEVELS[zoomIndex]
+    const params = { asset, interval, lookback }
+    const [cd, sd] = await Promise.all([
+      api.Get<{ candles: Candle[] }>('/api/candles', { params }),
+      api.Get<{ segments: OverlaySegment[] }>('/api/regime-segments', { params }),
+    ])
     if (cd.candles.length === 0) throw new Error('createChart: empty candle response')
     candles = cd.candles
     segments = sd.segments
