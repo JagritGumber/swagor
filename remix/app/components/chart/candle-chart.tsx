@@ -1,6 +1,4 @@
-import type { Handle } from 'remix/ui'
-import { css } from 'remix/ui'
-import { useRef, useEffect } from 'react'
+import { clientEntry, css, type Handle } from 'remix/ui'
 
 import type { Candle } from '../../types/candles.ts'
 import type { OverlayData } from './types.ts'
@@ -11,24 +9,22 @@ interface CandleChartProps {
   overlays: OverlayData
 }
 
-export function CandleChart(handle: Handle<CandleChartProps>) {
-  return () => {
-    const ref = useRef<HTMLCanvasElement>(null)
-    const { candles, overlays } = handle.props
+export const CandleChart = clientEntry(
+  import.meta.url,
+  function CandleChart(handle: Handle<CandleChartProps>) {
+    let observer: ResizeObserver | null = null
 
-    useEffect(() => {
-      const canvas = ref.current
-      if (!canvas || candles.length === 0) return
+    function setupCanvas() {
+      const canvas = document.getElementById('candle-chart-canvas') as HTMLCanvasElement | null
+      if (!canvas) return
 
       function render() {
-        const cvs = ref.current
-        if (!cvs) return
         const dpr = window.devicePixelRatio || 1
-        const rect = cvs.getBoundingClientRect()
-        cvs.width = rect.width * dpr
-        cvs.height = rect.height * dpr
+        const rect = canvas.getBoundingClientRect()
+        canvas.width = rect.width * dpr
+        canvas.height = rect.height * dpr
 
-        const ctx = cvs.getContext('2d')
+        const ctx = canvas.getContext('2d')
         if (!ctx) return
 
         ctx.scale(dpr, dpr)
@@ -39,21 +35,25 @@ export function CandleChart(handle: Handle<CandleChartProps>) {
           padding: { top: 16, right: 60, bottom: 8, left: 8 },
         }
 
-        renderChart(ctx, candles, overlays, config)
+        renderChart(ctx, handle.props.candles, handle.props.overlays, config)
       }
 
       render()
-
-      const observer = new ResizeObserver(() => render())
+      observer = new ResizeObserver(() => render())
       observer.observe(canvas)
-      return () => observer.disconnect()
-    }, [candles, overlays])
+    }
 
-    return (
-      <canvas
-        ref={ref}
-        style={{ display: 'block', width: '100%', height: 'calc(100vh - 48px)' }}
-      />
-    )
-  }
-}
+    return () => {
+      if (typeof document !== 'undefined' && !observer) {
+        setTimeout(setupCanvas, 0)
+      }
+
+      return (
+        <canvas
+          id="candle-chart-canvas"
+          style={{ display: 'block', width: '100%', height: 'calc(100vh - 48px)' }}
+        />
+      )
+    }
+  },
+)
