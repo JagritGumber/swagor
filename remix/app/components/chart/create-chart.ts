@@ -2,6 +2,7 @@ import { renderChart } from './renderer.ts'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from './types.ts'
 import { fetchCandles } from '../../data/fetch-candles.ts'
+import { readRegimeSegments } from '@packages/strategy-lab/read-core/market-regime/read-regime-segments'
 
 export interface ChartInstance {
   render(): void
@@ -96,12 +97,12 @@ export function createChart(options: {
     isLoading = true
     const end = first.t - intervalMs
     const start = end - intervalMs * batchSize
-    fetchCandles(asset, interval, start, end).then(result => {
-      if (result.candles.length === 0) { isLoading = false; return }
+    fetchCandles(asset, interval, start, end).then(newCandles => {
+      if (newCandles.length === 0) { isLoading = false; return }
       const existing = new Set(options.candles.map(c => c.t))
-      const uniqueCandles = result.candles.filter(c => !existing.has(c.t))
-      const uniqueSegments = result.segments.filter(s => s.startIndex < uniqueCandles.length)
+      const uniqueCandles = newCandles.filter(c => !existing.has(c.t))
       if (uniqueCandles.length === 0) { isLoading = false; return }
+      const uniqueSegments: OverlaySegment[] = readRegimeSegments({ candles: uniqueCandles, lookback: 200 })
       cacheSegmentPriceRange(uniqueSegments, uniqueCandles)
       options.segments = options.segments.map(s => ({
         ...s,
@@ -123,15 +124,14 @@ export function createChart(options: {
     isLoading = true
     const start = last.t + intervalMs
     const end = start + intervalMs * batchSize
-    fetchCandles(asset, interval, start, end).then(result => {
-      if (result.candles.length === 0) { isLoading = false; return }
+    fetchCandles(asset, interval, start, end).then(newCandles => {
+      if (newCandles.length === 0) { isLoading = false; return }
       const existing = new Set(options.candles.map(c => c.t))
-      const uniqueCandles = result.candles.filter(c => !existing.has(c.t))
-      const offset = options.candles.length
-      const uniqueSegments = result.segments
-        .filter(s => s.startIndex < uniqueCandles.length)
-        .map(s => ({ ...s, startIndex: s.startIndex + offset, endIndex: s.endIndex + offset }))
+      const uniqueCandles = newCandles.filter(c => !existing.has(c.t))
       if (uniqueCandles.length === 0) { isLoading = false; return }
+      const offset = options.candles.length
+      const uniqueSegments: OverlaySegment[] = readRegimeSegments({ candles: uniqueCandles, lookback: 200 })
+        .map(s => ({ ...s, startIndex: s.startIndex + offset, endIndex: s.endIndex + offset }))
       cacheSegmentPriceRange(uniqueSegments, options.candles.concat(uniqueCandles))
       options.segments = [...options.segments, ...uniqueSegments]
       options.candles = [...options.candles, ...uniqueCandles]

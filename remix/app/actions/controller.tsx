@@ -228,8 +228,7 @@ export default createController(routes, {
       }
 
       const candles = raw.map(toCandle)
-      const segments = candles.length >= 12 ? readRegimeSegments({ candles, lookback: 200 }) : []
-      return Response.json({ candles, segments })
+      return Response.json({ candles })
     },
     async portfolio(context) {
       const url = new URL(context.request.url)
