@@ -23,6 +23,8 @@ export interface OverlaySegment {
   poc: number
   valueAreaLow: number
   valueAreaHigh: number
+  high?: number
+  low?: number
 }
 
 export interface OverlayData {

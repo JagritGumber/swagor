@@ -66,6 +66,20 @@ export function createChart(options: {
     return viewW - PADDING.left - PADDING.right
   }
 
+  function cacheSegmentPriceRange(segments: OverlaySegment[], candles: Candle[]): void {
+    for (const seg of segments) {
+      let h = -Infinity
+      let l = Infinity
+      for (let i = seg.startIndex; i <= seg.endIndex && i < candles.length; i++) {
+        const c = candles[i]
+        if (c.h > h) h = c.h
+        if (c.l < l) l = c.l
+      }
+      seg.high = h
+      seg.low = l
+    }
+  }
+
   function loadOlder(): void {
     if (isLoading) return
     const first = options.candles[0]
@@ -79,6 +93,7 @@ export function createChart(options: {
       const uniqueCandles = result.candles.filter(c => !existing.has(c.t))
       const uniqueSegments = result.segments.filter(s => s.startIndex < uniqueCandles.length)
       if (uniqueCandles.length === 0) { isLoading = false; return }
+      cacheSegmentPriceRange(uniqueSegments, uniqueCandles)
       options.segments = options.segments.map(s => ({
         ...s,
         startIndex: s.startIndex + uniqueCandles.length,
@@ -108,6 +123,7 @@ export function createChart(options: {
         .filter(s => s.startIndex < uniqueCandles.length)
         .map(s => ({ ...s, startIndex: s.startIndex + offset, endIndex: s.endIndex + offset }))
       if (uniqueCandles.length === 0) { isLoading = false; return }
+      cacheSegmentPriceRange(uniqueSegments, options.candles.concat(uniqueCandles))
       options.segments = [...options.segments, ...uniqueSegments]
       options.candles = [...options.candles, ...uniqueCandles]
       isLoading = false
@@ -127,10 +143,10 @@ export function createChart(options: {
 
     if (scrollPx < threshold) {
       if (edgeDebounce !== null) clearTimeout(edgeDebounce)
-      edgeDebounce = setTimeout(loadOlder, 150)
+      edgeDebounce = setTimeout(loadOlder, 500)
     } else if (scrollPx + tw > totalPx - threshold) {
       if (edgeDebounce !== null) clearTimeout(edgeDebounce)
-      edgeDebounce = setTimeout(loadNewer, 150)
+      edgeDebounce = setTimeout(loadNewer, 500)
     }
   }
 
@@ -246,6 +262,7 @@ export function createChart(options: {
 
   return {
     render(): void {
+      cacheSegmentPriceRange(options.segments, options.candles)
       observer = new ResizeObserver(paint)
       observer.observe(canvas)
       buildToolbar()

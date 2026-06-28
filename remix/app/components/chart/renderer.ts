@@ -107,13 +107,16 @@ export function renderChart(
     const w = x2 - x1
     if (x2 < padding.left || x1 > width - padding.right) continue
 
-    let segHigh = -Infinity
-    let segLow = Infinity
-    for (let i = seg.startIndex; i <= seg.endIndex && i < count; i++) {
-      const c = candles[i]
-      if (c.h > segHigh) segHigh = c.h
-      if (c.l < segLow) segLow = c.l
-    }
+    const segHigh = seg.high ?? (() => {
+      let h = -Infinity
+      for (let i = seg.startIndex; i <= seg.endIndex && i < count; i++) { if (candles[i].h > h) h = candles[i].h }
+      return h
+    })()
+    const segLow = seg.low ?? (() => {
+      let l = Infinity
+      for (let i = seg.startIndex; i <= seg.endIndex && i < count; i++) { if (candles[i].l < l) l = candles[i].l }
+      return l
+    })()
 
     if (segHigh !== -Infinity) {
       const pad = (segHigh - segLow) * 0.05 || 1
