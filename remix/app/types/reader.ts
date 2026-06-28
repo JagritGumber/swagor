@@ -41,7 +41,15 @@ export interface ReaderReadSuccess {
   candleCount: number
   regime: ReaderRegime
   auction: ReaderAuction
+  reasoning: SelboReasoning
   summary: string
+}
+
+export interface SelboReasoning {
+  intent: string
+  context: string
+  focus: string
+  confidence: 'low' | 'medium' | 'high'
 }
 
 export type ReaderReadResult = ReaderReadSuccess | { error: string }

@@ -2,7 +2,7 @@ import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 
 import type { ReaderReadSuccess } from '../../types/reader.ts'
-import { widget, FONT_DATA } from '../../constants/theme.ts'
+import { widget, FONT_DATA, POSITIVE, NEGATIVE } from '../../constants/theme.ts'
 
 interface AuctionWidgetProps {
   read: ReaderReadSuccess
@@ -26,9 +26,9 @@ export function AuctionWidget(handle: Handle<AuctionWidgetProps>) {
               fontFamily: FONT_DATA,
               fontWeight: 600,
               color: read.auction.bias === 'long'
-                ? 'oklch(0.62 0.19 145)'
+                ? POSITIVE
                 : read.auction.bias === 'short'
-                  ? 'oklch(0.55 0.2 30)'
+                  ? NEGATIVE
                   : undefined,
             })}
           >

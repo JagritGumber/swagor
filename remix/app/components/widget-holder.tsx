@@ -18,8 +18,8 @@ export function WidgetHolder(handle: Handle<WidgetHolderProps>) {
       mix={css({
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '12px',
-        padding: '16px',
+        gap: '16px',
+        padding: '24px',
       })}
     >
       {widgets.map((w) => (

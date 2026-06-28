@@ -3,27 +3,41 @@ import { css } from 'remix/ui'
 export const FONT_UI = "'Inter', system-ui, -apple-system, sans-serif"
 export const FONT_DATA = "'JetBrains Mono', ui-monospace, monospace"
 
+export const SURFACE_BODY = 'oklch(0 0 0)'
+export const SURFACE_HEADER = 'oklch(0.08 0.015 260)'
+export const SURFACE_WIDGET_HEADER = 'oklch(0.14 0.03 260)'
+export const SURFACE_WIDGET = 'oklch(0.11 0.025 260)'
+export const BORDER_DEFAULT = 'oklch(0.2 0.035 260)'
+export const BORDER_HEADER = 'oklch(0.2 0.035 260)'
+export const TEXT_PRIMARY = 'oklch(1 0 0)'
+export const TEXT_SECONDARY = 'oklch(1 0 0)'
+export const TEXT_MUTED = 'oklch(1 0 0)'
+export const TEXT_DATA = 'oklch(1 0 0)'
+export const ACCENT_GREEN = '#00ff85'
+export const POSITIVE = '#00ff85'
+export const NEGATIVE = 'oklch(0.55 0.2 30)'
+
 const widgetBg = css({
-  background: 'oklch(0.2 0.008 260)',
-  border: '1px solid oklch(0.28 0.01 260)',
-  borderRadius: '8px',
+  background: SURFACE_WIDGET,
+  border: `1px solid ${BORDER_DEFAULT}`,
+  borderRadius: '24px',
   overflow: 'hidden',
 })
 
 const widgetHeaderBg = css({
-  background: 'oklch(0.16 0.008 260)',
-  padding: '8px 14px',
-  borderBottom: '1px solid oklch(0.28 0.01 260)',
+  background: SURFACE_WIDGET_HEADER,
+  padding: '8px 16px',
+  borderBottom: `1px solid ${BORDER_DEFAULT}`,
   fontFamily: FONT_UI,
   fontSize: '10px',
   fontWeight: 600,
-  color: 'oklch(0.55 0.03 260)',
+  color: TEXT_SECONDARY,
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
 })
 
 const widgetContentStyle = css({
-  padding: '14px',
+  padding: '16px',
   fontSize: '12px',
   lineHeight: 1.6,
   fontFamily: FONT_UI,
@@ -37,11 +51,11 @@ const dataRowStyle = css({
 })
 
 const sectionDividerStyle = css({
-  marginTop: '10px',
-  paddingTop: '10px',
-  borderTop: '1px solid oklch(0.28 0.01 260)',
+  marginTop: '12px',
+  paddingTop: '12px',
+  borderTop: `1px solid ${BORDER_DEFAULT}`,
   fontSize: '10px',
-  color: 'oklch(0.5 0.02 260)',
+  color: TEXT_MUTED,
   lineHeight: 1.5,
 })
 

@@ -1,7 +1,7 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 
-import { FONT_UI } from '../../constants/theme.ts'
+import { FONT_UI, SURFACE_BODY, NEGATIVE, TEXT_SECONDARY } from '../../constants/theme.ts'
 
 interface ErrorStateProps {
   message: string
@@ -18,14 +18,14 @@ export function ErrorState(handle: Handle<ErrorStateProps>) {
         minHeight: '100vh',
         gap: '16px',
         padding: '24px',
-        background: 'oklch(0.12 0.006 260)',
+        background: SURFACE_BODY,
         fontFamily: FONT_UI,
       })}
     >
       <span
         mix={css({
           fontSize: '20px',
-          color: 'oklch(0.55 0.2 30)',
+          color: NEGATIVE,
           fontWeight: 700,
           letterSpacing: '0.05em',
         })}
@@ -34,7 +34,7 @@ export function ErrorState(handle: Handle<ErrorStateProps>) {
       </span>
       <span
         mix={css({
-          color: 'oklch(0.55 0.03 260)',
+          color: TEXT_SECONDARY,
           textAlign: 'center',
           maxWidth: '480px',
           fontSize: '12px',

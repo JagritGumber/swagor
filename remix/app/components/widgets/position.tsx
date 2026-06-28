@@ -2,7 +2,7 @@ import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 
 import type { ReaderReadSuccess } from '../../types/reader.ts'
-import { widget, FONT_DATA } from '../../constants/theme.ts'
+import { widget, FONT_DATA, TEXT_SECONDARY, TEXT_MUTED } from '../../constants/theme.ts'
 
 interface PositionWidgetProps {
   read: ReaderReadSuccess
@@ -29,19 +29,19 @@ export function PositionWidget(handle: Handle<PositionWidgetProps>) {
         </div>
         <div mix={widget.row}>
           <span>STATUS</span>
-          <span mix={css({ fontFamily: FONT_DATA, color: 'oklch(0.55 0.03 260)' })}>WAITING</span>
+          <span mix={css({ fontFamily: FONT_DATA, color: TEXT_SECONDARY })}>WAITING</span>
         </div>
         <div mix={widget.row}>
           <span>ENTRY</span>
-          <span mix={css({ fontFamily: FONT_DATA, color: 'oklch(0.5 0.02 260)' })}>-</span>
+          <span mix={css({ fontFamily: FONT_DATA, color: TEXT_MUTED })}>-</span>
         </div>
         <div mix={widget.row}>
           <span>STOP</span>
-          <span mix={css({ fontFamily: FONT_DATA, color: 'oklch(0.5 0.02 260)' })}>-</span>
+          <span mix={css({ fontFamily: FONT_DATA, color: TEXT_MUTED })}>-</span>
         </div>
         <div mix={widget.row}>
           <span>TARGET</span>
-          <span mix={css({ fontFamily: FONT_DATA, color: 'oklch(0.5 0.02 260)' })}>-</span>
+          <span mix={css({ fontFamily: FONT_DATA, color: TEXT_MUTED })}>-</span>
         </div>
         <div mix={widget.divider}>{read.summary}</div>
       </div>

@@ -2,7 +2,7 @@ import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 
 import type { ReaderReadSuccess } from '../../types/reader.ts'
-import { widget, FONT_DATA } from '../../constants/theme.ts'
+import { widget, FONT_DATA, POSITIVE, NEGATIVE } from '../../constants/theme.ts'
 
 interface RegimeWidgetProps {
   read: ReaderReadSuccess
@@ -22,7 +22,7 @@ export function RegimeWidget(handle: Handle<RegimeWidgetProps>) {
         <div mix={widget.row}>
           <span>RANGE</span>
           <span
-            mix={css({ fontFamily: FONT_DATA, color: read.regime.rangePct > 0.5 ? 'oklch(0.62 0.19 145)' : undefined })}
+            mix={css({ fontFamily: FONT_DATA,           color: read.regime.rangePct > 0.5 ? POSITIVE : undefined })}
           >
             {read.regime.rangePct}%
           </span>
@@ -33,9 +33,9 @@ export function RegimeWidget(handle: Handle<RegimeWidgetProps>) {
             mix={css({
               fontFamily: FONT_DATA,
               color: read.regime.driftPct > 0.5
-                ? 'oklch(0.62 0.19 145)'
+                ? POSITIVE
                 : read.regime.driftPct < -0.5
-                  ? 'oklch(0.55 0.2 30)'
+                  ? NEGATIVE
                   : undefined,
             })}
           >
