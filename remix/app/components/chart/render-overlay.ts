@@ -1,7 +1,8 @@
 import type { ChartConfig, Scale, OverlaySegment } from './types.ts'
+import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'
 import { ACCENT_GREEN } from '../../constants/theme.ts'
 
-const MODE_BG: Record<string, string> = {
+const MODE_BG: Record<ReaderMarketRegimeMode, string> = {
   'trend-up': 'oklch(0.6 0.2 150 / 0.05)',
   'trend-down': 'oklch(0.6 0.2 30 / 0.05)',
   'high-vol': 'oklch(0.7 0.15 80 / 0.05)',

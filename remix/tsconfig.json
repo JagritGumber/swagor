@@ -5,6 +5,10 @@
     "types": ["node"],
 "module": "ESNext",
 "moduleResolution": "bundler",
+"paths": {
+  "@/*": ["./app/*"],
+  "@packages/*": ["../packages/*"]
+},
     "target": "ESNext",
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,

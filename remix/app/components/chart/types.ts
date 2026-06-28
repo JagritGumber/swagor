@@ -1,3 +1,5 @@
+import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'
+
 export interface ChartConfig {
   width: number
   height: number
@@ -17,7 +19,7 @@ export interface Scale {
 export interface OverlaySegment {
   startIndex: number
   endIndex: number
-  mode: string
+  mode: ReaderMarketRegimeMode
   poc: number
   valueAreaLow: number
   valueAreaHigh: number

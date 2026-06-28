@@ -4,12 +4,12 @@ import { assetServer } from '../assets.ts'
 import { routes } from '../routes.ts'
 import { PortfolioPage } from '../pages/portfolio.tsx'
 import { fetchCandles } from '../data/hyperliquid.ts'
-import type { SelboReasoning } from '../types/reader.ts'
+import type { SelboReasoning, ReaderReadResult } from '../types/reader.ts'
 import type { Candle } from '../types/candles.ts'
 import { buildSelboReasoning } from '../data/selbo-reasoning.ts'
-import { readMarketRegime } from '../../../packages/strategy-lab/read-core/market-regime/read-market-regime.ts'
-import { readMarketAuction } from '../../../packages/strategy-lab/read-core/read/read-market-auction.ts'
-import { readRegimeSegments } from '../../../packages/strategy-lab/read-core/market-regime/read-regime-segments.ts'
+import { readMarketRegime } from '@packages/strategy-lab/read-core/market-regime/read-market-regime'
+import { readMarketAuction } from '@packages/strategy-lab/read-core/read/read-market-auction'
+import { readRegimeSegments } from '@packages/strategy-lab/read-core/market-regime/read-regime-segments'
 
 const VALID_INTERVALS = new Set(['1m', '5m', '15m', '1h', '4h', '1d'])
 const INTERVAL_MS: Record<string, number> = {
@@ -108,10 +108,8 @@ interface ReaderReadSuccess {
   summary: string
 }
 
-type ReaderReadResult = ReaderReadSuccess | { error: string }
-
 interface BuildReaderResult {
-  read: ReaderReadSuccess | { error: string }
+  read: ReaderReadResult
   candles: Candle[]
 }
 
@@ -120,7 +118,7 @@ async function buildReaderRead(url: URL): Promise<BuildReaderResult> {
   const interval = url.searchParams.get('interval') ?? '1h'
 
   if (!VALID_INTERVALS.has(interval)) {
-    return { read: { error: `Invalid interval. Use: ${Array.from(VALID_INTERVALS).join(', ')}` }, candles: [] }
+    return { read: { ok: false, error: `Invalid interval. Use: ${Array.from(VALID_INTERVALS).join(', ')}` }, candles: [] }
   }
 
   const now = Date.now()
@@ -132,7 +130,7 @@ async function buildReaderRead(url: URL): Promise<BuildReaderResult> {
 
   const rawCandles = await fetchCandles(asset, interval, now - lookbackMs, now).catch(() => [])
   if (rawCandles.length === 0) {
-    return { read: { error: 'No candle data available for this asset' }, candles: [] }
+    return { read: { ok: false, error: 'No candle data available for this asset' }, candles: [] }
   }
 
   const candles: Candle[] = rawCandles.map(toCandle)
@@ -180,7 +178,7 @@ async function buildReaderRead(url: URL): Promise<BuildReaderResult> {
       : null,
   }
 
-  const read: ReaderReadSuccess = {
+  const data: ReaderReadSuccess = {
     asset,
     interval,
     lastPrice: lastCandle.c,
@@ -193,7 +191,7 @@ async function buildReaderRead(url: URL): Promise<BuildReaderResult> {
     summary: `${asset} is ${formatRegime(rawRegime.mode)}. Price is ${formatAuctionLocation(rawAuction.location)} at $${round(lastCandle.c)}. Bias: ${rawAuction.bias}.`,
   }
 
-  return { read, candles }
+  return { read: { ok: true, data }, candles }
 }
 
 async function buildCandles(url: URL): Promise<Response> {

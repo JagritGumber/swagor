@@ -21,9 +21,9 @@ export function Dashboard(handle: Handle) {
       })}
     >
       <Navbar />
-      <canvas
-        id="candle-chart-canvas"
-        style={{ display: 'block', width: '100%', height: 'calc(100vh - 48px)' }}
+      <div
+        id="chart-container"
+        style={{ position: 'relative', display: 'block', width: '100%', height: 'calc(100vh - 48px)' }}
       />
       <script
         type="module"

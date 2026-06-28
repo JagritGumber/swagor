@@ -52,4 +52,6 @@ export interface SelboReasoning {
   confidence: 'low' | 'medium' | 'high'
 }
 
-export type ReaderReadResult = ReaderReadSuccess | { error: string }
+export type ReaderReadResult =
+  | { ok: true; data: ReaderReadSuccess }
+  | { ok: false; error: string }
