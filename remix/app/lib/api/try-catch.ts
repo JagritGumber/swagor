@@ -1,4 +1,4 @@
-import { ApiError } from './client.ts'
+import { ApiError } from './error.ts'
 
 export async function tryCatch<T>(
   promise: Promise<T>,

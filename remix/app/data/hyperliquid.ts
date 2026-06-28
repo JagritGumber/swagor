@@ -1,24 +1,29 @@
-const HL = "https://api.hyperliquid-testnet.xyz/info";
+import { createAlova } from 'alova'
+import { xhrRequestAdapter } from '@alova/adapter-xhr'
+import { ApiError } from '../lib/api/error.ts'
 
-async function post<T>(body: unknown): Promise<T> {
-  const res = await fetch(HL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`HL ${res.status}: ${await res.text()}`);
-  return res.json() as Promise<T>;
-}
+const hlApi = createAlova({
+  baseURL: 'https://api.hyperliquid-testnet.xyz',
+  requestAdapter: xhrRequestAdapter(),
+  responded: {
+    onSuccess: async (response) => {
+      if (response.status >= 400) {
+        throw new ApiError(`HL ${response.status}: ${String(response.data ?? '')}`, response.status, 'HL_ERROR')
+      }
+      return response.data
+    },
+  },
+})
 
 export type Candle = {
-  t: number;
-  o: string;
-  c: string;
-  h: string;
-  l: string;
-  v: string;
-  n: number;
-};
+  t: number
+  o: string
+  c: string
+  h: string
+  l: string
+  v: string
+  n: number
+}
 
 export function fetchCandles(
   coin: string,
@@ -26,8 +31,8 @@ export function fetchCandles(
   startMs: number,
   endMs: number,
 ): Promise<Candle[]> {
-  return post<Candle[]>({
-    type: "candleSnapshot",
+  return hlApi.Post<Candle[]>('/info', {
+    type: 'candleSnapshot',
     req: { coin, interval, startTime: startMs, endTime: endMs },
-  });
+  })
 }
