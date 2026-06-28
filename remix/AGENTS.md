@@ -41,7 +41,10 @@ Refer to ./.agents/skills/remix/SKILL.md
 - Page modules in `app/pages/` should be thin — import the real component from `app/components/`.
 - Shared shell goes in `app/document.tsx`, not in pages.
 - Import strategy-lab functions individually from `../../../packages/strategy-lab/` to avoid barrel import chains that pull in optional deps.
-- `/api/reader-read` is a Remix resource route mirroring the v2 reading engine (regime + auction) for client-side polling.
+- Chart data is fetched server-side in the portfolio action and embedded in HTML as `<script id="chart-data" type="application/json">`. Client reads it via `JSON.parse(dataEl.textContent)`.
+- `create-chart.ts` accepts SSR-initialized `candles` and `segments`. Zoom controls navigate via URL params (full page reload with `?lookback=N`).
+- `candle-chart-client.ts` (asset) is the 4-line mount point: read data from DOM, call `createChart`, call `.render()`.
+- `app/lib/api/try-catch.ts` + `error.ts` are server-side only (for controller + hyperliquid.ts). No client-side alova/XHR instance exists.
 
 ## Runtime Modules
 
@@ -51,6 +54,5 @@ Refer to ./.agents/skills/remix/SKILL.md
 ## Routes
 
 - `home (/)` — redirects to `/portfolio`
-- `portfolio (/portfolio)` — portfolio dashboard (regime, auction, position widgets)
-- `readerRead (/api/reader-read)` — JSON resource route for client-side polling
+- `portfolio (/portfolio)` — portfolio dashboard (regime, auction, chart); chart data embedded in SSR
 - `assets (/assets/*path)` — Remix asset server

@@ -31,6 +31,7 @@ export function Dashboard(handle: Handle<DashboardProps>) {
       })}
     >
       <Navbar />
+      <link rel="stylesheet" href={routes.assets.href({ path: 'app/assets/chart.css' })} />
       <div
         id="chart-container"
         style={{ position: 'relative', display: 'block', width: '100%', height: 'calc(100vh - 48px)' }}
