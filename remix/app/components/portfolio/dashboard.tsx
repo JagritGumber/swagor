@@ -2,42 +2,44 @@ import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 
 import type { ReaderReadSuccess } from '../../types/reader.ts'
-import { FONT_UI } from '../../constants/theme.ts'
-import { WidgetHolder } from '../widget-holder.tsx'
-import { Header } from './header.tsx'
-import { RegimeWidget } from '../widgets/regime.tsx'
-import { AuctionWidget } from '../widgets/auction.tsx'
-import { PositionWidget } from '../widgets/position.tsx'
+import type { Candle } from '../../types/candles.ts'
+import type { OverlayData } from '../chart/types.ts'
+import { FONT_UI, SURFACE_BODY, TEXT_PRIMARY } from '../../constants/theme.ts'
+import { Navbar } from '../navbar.tsx'
+import { CandleChart } from '../chart/candle-chart.tsx'
 
 interface DashboardProps {
   read: ReaderReadSuccess
+  candles: Candle[]
 }
 
 export function Dashboard(handle: Handle<DashboardProps>) {
-  const { read } = handle.props
+  const { read, candles } = handle.props
 
-  const widgets = [
-    { key: 'regime', render: () => <RegimeWidget read={read} /> },
-    { key: 'auction', render: () => <AuctionWidget read={read} /> },
-    { key: 'position', render: () => <PositionWidget read={read} /> },
-  ]
+  const overlays: OverlayData = {
+    valueAreaLow: read.auction.profile?.valueAreaLow,
+    valueAreaHigh: read.auction.profile?.valueAreaHigh,
+    poc: read.auction.profile?.poc,
+    regimeMode: read.regime.mode,
+    currentPrice: read.lastPrice,
+  }
 
   return () => (
     <div
       mix={css({
         minHeight: '100vh',
-        background: 'oklch(0.12 0.006 260)',
-        color: 'oklch(0.88 0.01 260)',
+        background: SURFACE_BODY,
+        color: TEXT_PRIMARY,
         fontFamily: FONT_UI,
-        fontSize: '13px',
+        fontSize: '14px',
         lineHeight: 1.5,
         WebkitFontSmoothing: 'antialiased',
         MozOsxFontSmoothing: 'grayscale',
         '& *, & *::before, & *::after': { boxSizing: 'border-box' },
       })}
     >
-      <Header read={read} />
-      <WidgetHolder widgets={widgets} />
+      <Navbar />
+      <CandleChart candles={candles} overlays={overlays} />
     </div>
   )
 }

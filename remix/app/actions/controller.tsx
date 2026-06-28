@@ -4,9 +4,11 @@ import { assetServer } from '../assets.ts'
 import { routes } from '../routes.ts'
 import { PortfolioPage } from '../pages/portfolio.tsx'
 import { fetchCandles } from '../data/hyperliquid.ts'
+import type { SelboReasoning } from '../types/reader.ts'
+import type { Candle } from '../types/candles.ts'
+import { buildSelboReasoning } from '../data/selbo-reasoning.ts'
 import { readMarketRegime } from '../../../packages/strategy-lab/read-core/market-regime/read-market-regime.ts'
 import { readMarketAuction } from '../../../packages/strategy-lab/read-core/read/read-market-auction.ts'
-import type { Candle } from '../../../packages/strategy-lab/types.ts'
 
 const VALID_INTERVALS = new Set(['1m', '5m', '15m', '1h', '4h', '1d'])
 const INTERVAL_MS: Record<string, number> = {
@@ -101,17 +103,23 @@ interface ReaderReadSuccess {
   candleCount: number
   regime: ReaderRegime
   auction: ReaderAuction
+  reasoning: SelboReasoning
   summary: string
 }
 
 type ReaderReadResult = ReaderReadSuccess | { error: string }
 
-async function buildReaderRead(url: URL): Promise<ReaderReadResult> {
+interface BuildReaderResult {
+  read: ReaderReadSuccess | { error: string }
+  candles: Candle[]
+}
+
+async function buildReaderRead(url: URL): Promise<BuildReaderResult> {
   const asset = (url.searchParams.get('asset') ?? 'ETH').toUpperCase()
   const interval = url.searchParams.get('interval') ?? '1h'
 
   if (!VALID_INTERVALS.has(interval)) {
-    return { error: `Invalid interval. Use: ${Array.from(VALID_INTERVALS).join(', ')}` }
+    return { read: { error: `Invalid interval. Use: ${Array.from(VALID_INTERVALS).join(', ')}` }, candles: [] }
   }
 
   const now = Date.now()
@@ -123,61 +131,93 @@ async function buildReaderRead(url: URL): Promise<ReaderReadResult> {
 
   const rawCandles = await fetchCandles(asset, interval, now - lookbackMs, now).catch(() => [])
   if (rawCandles.length === 0) {
-    return { error: 'No candle data available for this asset' }
+    return { read: { error: 'No candle data available for this asset' }, candles: [] }
   }
 
   const candles: Candle[] = rawCandles.map(toCandle)
   const lastCandle = candles[candles.length - 1]
 
-  const regime = readMarketRegime({ candles, now })
-  const auction = readMarketAuction({
+  const rawRegime = readMarketRegime({ candles, now })
+  const rawAuction = readMarketAuction({
     asset,
     interval,
     candles,
     price: lastCandle.c,
   })
 
-  return {
+  const formattedRegime: ReaderRegime = {
+    mode: rawRegime.mode,
+    label: formatRegime(rawRegime.mode),
+    highVol: rawRegime.highVol,
+    rangePct: round(rawRegime.rangePct * 100, 2),
+    driftPct: round(rawRegime.driftPct * 100, 2),
+    directionalEfficiency: round(rawRegime.directionalEfficiency, 2),
+    reason: rawRegime.reason,
+  }
+
+  const formattedAuction: ReaderAuction = {
+    location: rawAuction.location,
+    locationLabel: formatAuctionLocation(rawAuction.location),
+    bias: rawAuction.bias,
+    narrative: rawAuction.narrative,
+    invalidation: rawAuction.invalidation,
+    target: rawAuction.target,
+    profile: rawAuction.profile
+      ? {
+          poc: round(rawAuction.profile.poc),
+          valueAreaLow: round(rawAuction.profile.valueAreaLow),
+          valueAreaHigh: round(rawAuction.profile.valueAreaHigh),
+          binCount: rawAuction.profile.bins.length,
+        }
+      : null,
+    level: rawAuction.level
+      ? {
+          price: round(rawAuction.level.price),
+          kind: rawAuction.level.kind,
+          touches: rawAuction.level.touches,
+        }
+      : null,
+  }
+
+  const read: ReaderReadSuccess = {
     asset,
     interval,
     lastPrice: lastCandle.c,
     lastCandleAt: new Date(lastCandle.t).toISOString(),
     readAt: new Date(now).toISOString(),
     candleCount: candles.length,
-    regime: {
-      mode: regime.mode,
-      label: formatRegime(regime.mode),
-      highVol: regime.highVol,
-      rangePct: round(regime.rangePct * 100, 2),
-      driftPct: round(regime.driftPct * 100, 2),
-      directionalEfficiency: round(regime.directionalEfficiency, 2),
-      reason: regime.reason,
-    },
-    auction: {
-      location: auction.location,
-      locationLabel: formatAuctionLocation(auction.location),
-      bias: auction.bias,
-      narrative: auction.narrative,
-      invalidation: auction.invalidation,
-      target: auction.target,
-      profile: auction.profile
-        ? {
-            poc: round(auction.profile.poc),
-            valueAreaLow: round(auction.profile.valueAreaLow),
-            valueAreaHigh: round(auction.profile.valueAreaHigh),
-            binCount: auction.profile.bins.length,
-          }
-        : null,
-      level: auction.level
-        ? {
-            price: round(auction.level.price),
-            kind: auction.level.kind,
-            touches: auction.level.touches,
-          }
-        : null,
-    },
-    summary: `${asset} is ${formatRegime(regime.mode)}. Price is ${formatAuctionLocation(auction.location)} at $${round(lastCandle.c)}. Bias: ${auction.bias}.`,
+    regime: formattedRegime,
+    auction: formattedAuction,
+    reasoning: buildSelboReasoning(asset, formattedRegime, formattedAuction),
+    summary: `${asset} is ${formatRegime(rawRegime.mode)}. Price is ${formatAuctionLocation(rawAuction.location)} at $${round(lastCandle.c)}. Bias: ${rawAuction.bias}.`,
   }
+
+  return { read, candles }
+}
+
+async function buildCandles(url: URL): Promise<Response> {
+  const asset = (url.searchParams.get('asset') ?? 'ETH').toUpperCase()
+  const interval = url.searchParams.get('interval') ?? '1h'
+
+  if (!VALID_INTERVALS.has(interval)) {
+    return Response.json({ error: `Invalid interval. Use: ${Array.from(VALID_INTERVALS).join(', ')}` }, { status: 400 })
+  }
+
+  const now = Date.now()
+  const lookbackDays = Math.min(
+    Math.max(Number(url.searchParams.get('lookbackDays') ?? '3'), 1),
+    14,
+  )
+  const lookbackMs = Math.min(lookbackDays * 86_400_000, INTERVAL_MS[interval] * 200)
+
+  const rawCandles = await fetchCandles(asset, interval, now - lookbackMs, now).catch(() => [])
+  if (rawCandles.length === 0) {
+    return Response.json({ error: 'No candle data available for this asset' }, { status: 404 })
+  }
+
+  const candles = rawCandles.map(toCandle)
+
+  return Response.json({ asset, interval, candles })
 }
 
 export default createController(routes, {
@@ -195,12 +235,15 @@ export default createController(routes, {
     },
     async portfolio(context) {
       const url = new URL(context.request.url)
-      const read = await buildReaderRead(url)
-      return context.render(<PortfolioPage read={read} />)
+      const { read, candles } = await buildReaderRead(url)
+      return context.render(<PortfolioPage read={read} candles={candles} />)
+    },
+    async candles(context) {
+      return buildCandles(new URL(context.request.url))
     },
     async readerRead(context) {
       const url = new URL(context.request.url)
-      const read = await buildReaderRead(url)
+      const { read } = await buildReaderRead(url)
       return Response.json(read)
     },
   },
