@@ -55,6 +55,8 @@ export function createChart(options: {
   }
 
   function paint(): void {
+    if (candles.length === 0) return
+
     const dpr = window.devicePixelRatio || 1
     const rect = canvas.getBoundingClientRect()
     canvas.width = rect.width * dpr
@@ -100,13 +102,12 @@ export function createChart(options: {
     if (zoomIndex < ZOOM_LEVELS.length - 1) { zoomIndex += 1; fetchData().then((r) => { if (r.ok) paint() }) }
   }
 
-  observer = new ResizeObserver(paint)
-  observer.observe(canvas)
-
   return {
     async render(): Promise<void> {
       const { ok } = await fetchData()
       if (!ok) return
+      observer = new ResizeObserver(paint)
+      observer.observe(canvas)
       buildToolbar()
       paint()
     },
