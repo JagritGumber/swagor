@@ -9,12 +9,14 @@ export const api = createAlova({
   requestAdapter: xhrRequestAdapter(),
   responded: {
     onSuccess: async (response) => {
-      const text = String(response.data ?? '')
+      const data = response.data
       if (response.status >= 400) {
-        const body = text ? JSON.parse(text) : {}
-        throw new ApiError(body.error ?? `HTTP ${response.status}`, response.status, body.code)
+        const msg = typeof data === 'object' && data !== null
+          ? String((data as Record<string, unknown>).error ?? `HTTP ${response.status}`)
+          : `HTTP ${response.status}`
+        throw new ApiError(msg, response.status)
       }
-      return text ? JSON.parse(text) : null
+      return data
     },
   },
 })
