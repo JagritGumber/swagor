@@ -9,6 +9,7 @@ import type { Candle } from '../types/candles.ts'
 import { buildSelboReasoning } from '../data/selbo-reasoning.ts'
 import { readMarketRegime } from '../../../packages/strategy-lab/read-core/market-regime/read-market-regime.ts'
 import { readMarketAuction } from '../../../packages/strategy-lab/read-core/read/read-market-auction.ts'
+import { readRegimeSegments } from '../../../packages/strategy-lab/read-core/market-regime/read-regime-segments.ts'
 
 const VALID_INTERVALS = new Set(['1m', '5m', '15m', '1h', '4h', '1d'])
 const INTERVAL_MS: Record<string, number> = {
@@ -245,6 +246,23 @@ export default createController(routes, {
       const url = new URL(context.request.url)
       const { read } = await buildReaderRead(url)
       return Response.json(read)
+    },
+    async regimeSegments(context) {
+      const url = new URL(context.request.url)
+      const asset = url.searchParams.get('asset') ?? 'HYPE'
+      const interval = url.searchParams.get('interval') ?? '1h'
+      const windowSize = Number(url.searchParams.get('windowSize')) || 20
+      const lookback = Number(url.searchParams.get('lookback')) || 200
+
+      const now = Date.now()
+      const lookbackMs = Math.min(30 * 86_400_000, INTERVAL_MS[interval] * lookback)
+      const rawCandles = await fetchCandles(asset, interval, now - lookbackMs, now).catch(() => [])
+      if (rawCandles.length === 0) {
+        return Response.json({ error: 'No candle data' }, { status: 404 })
+      }
+      const candles = rawCandles.map(toCandle)
+      const segments = readRegimeSegments({ candles, windowSize, lookback })
+      return Response.json({ asset, interval, segments })
     },
   },
 })

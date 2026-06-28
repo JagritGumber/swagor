@@ -1,69 +1,47 @@
-import type { ChartConfig, Scale } from './types.ts'
+import type { ChartConfig, Scale, OverlaySegment } from './types.ts'
 import { ACCENT_GREEN } from '../../constants/theme.ts'
 
-export function renderValueArea(
-  ctx: CanvasRenderingContext2D,
-  vaLow: number,
-  vaHigh: number,
-  scale: Scale,
-  config: ChartConfig,
-): void {
-  const yLow = scale.y(vaLow)
-  const yHigh = scale.y(vaHigh)
-  ctx.fillStyle = 'oklch(1 0 0 / 0.03)'
-  ctx.fillRect(
-    config.padding.left,
-    yHigh,
-    config.width - config.padding.left - config.padding.right,
-    yLow - yHigh,
-  )
+const MODE_BG: Record<string, string> = {
+  'trend-up': 'oklch(0.6 0.2 150 / 0.05)',
+  'trend-down': 'oklch(0.6 0.2 30 / 0.05)',
+  'high-vol': 'oklch(0.7 0.15 80 / 0.05)',
+  'range': 'oklch(0.5 0.05 260 / 0.03)',
+  'unknown': 'oklch(0.5 0.05 260 / 0.03)',
 }
 
-export function renderPoc(
+export function renderSegments(
   ctx: CanvasRenderingContext2D,
-  poc: number,
+  segments: OverlaySegment[],
   scale: Scale,
   config: ChartConfig,
 ): void {
-  const y = scale.y(poc)
-  ctx.strokeStyle = 'oklch(1 0 0 / 0.4)'
-  ctx.lineWidth = 1
-  ctx.setLineDash([4, 4])
-  ctx.beginPath()
-  ctx.moveTo(config.padding.left, y)
-  ctx.lineTo(config.width - config.padding.right, y)
-  ctx.stroke()
-  ctx.setLineDash([])
-}
+  for (const seg of segments) {
+    const x1 = scale.x(seg.startIndex)
+    const x2 = scale.x(seg.endIndex) + scale.candleWidth
+    const w = x2 - x1
 
-export function renderRegimeBands(
-  ctx: CanvasRenderingContext2D,
-  regimeMode: string,
-  scale: Scale,
-  config: ChartConfig,
-): void {
-  let color: string
-  switch (regimeMode) {
-    case 'trend-up':
-      color = 'oklch(0.6 0.2 150 / 0.05)'
-      break
-    case 'trend-down':
-      color = 'oklch(0.6 0.2 30 / 0.05)'
-      break
-    case 'high-vol':
-      color = 'oklch(0.7 0.15 80 / 0.05)'
-      break
-    default:
-      color = 'oklch(0.5 0.05 260 / 0.03)'
-      break
+    ctx.fillStyle = MODE_BG[seg.mode] ?? MODE_BG.unknown
+    ctx.fillRect(x1, config.padding.top, w, config.height - config.padding.top - config.padding.bottom)
+
+    if (seg.valueAreaHigh && seg.valueAreaLow) {
+      const vyLow = scale.y(seg.valueAreaLow)
+      const vyHigh = scale.y(seg.valueAreaHigh)
+      ctx.fillStyle = 'oklch(1 0 0 / 0.03)'
+      ctx.fillRect(x1, vyHigh, w, vyLow - vyHigh)
+    }
+
+    if (seg.poc) {
+      const py = scale.y(seg.poc)
+      ctx.strokeStyle = 'oklch(1 0 0 / 0.4)'
+      ctx.lineWidth = 1
+      ctx.setLineDash([4, 4])
+      ctx.beginPath()
+      ctx.moveTo(x1, py)
+      ctx.lineTo(x2, py)
+      ctx.stroke()
+      ctx.setLineDash([])
+    }
   }
-  ctx.fillStyle = color
-  ctx.fillRect(
-    config.padding.left,
-    config.padding.top,
-    config.width - config.padding.left - config.padding.right,
-    config.height - config.padding.top - config.padding.bottom,
-  )
 }
 
 export function renderPriceMarker(

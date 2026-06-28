@@ -9,3 +9,13 @@ export type ReaderMarketRegime = {
   reason: string;
 };
 
+export type RegimeSegment = {
+  startIndex: number;
+  endIndex: number;
+  startTime: number;
+  endTime: number;
+  mode: ReaderMarketRegimeMode;
+  poc: number;
+  valueAreaLow: number;
+  valueAreaHigh: number;
+};

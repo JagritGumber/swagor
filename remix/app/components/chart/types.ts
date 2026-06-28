@@ -14,10 +14,16 @@ export interface Scale {
   maxPrice: number
 }
 
+export interface OverlaySegment {
+  startIndex: number
+  endIndex: number
+  mode: string
+  poc: number
+  valueAreaLow: number
+  valueAreaHigh: number
+}
+
 export interface OverlayData {
-  valueAreaLow?: number
-  valueAreaHigh?: number
-  poc?: number
-  regimeMode?: string
+  segments: OverlaySegment[]
   currentPrice?: number
 }

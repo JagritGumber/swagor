@@ -1,6 +1,6 @@
 import { renderChart } from '../components/chart/chart-canvas.ts'
 import type { Candle } from '../types/candles.ts'
-import type { OverlayData } from '../components/chart/types.ts'
+import type { OverlayData, OverlaySegment } from '../components/chart/types.ts'
 
 async function main() {
   const canvas = document.getElementById('candle-chart-canvas') as HTMLCanvasElement | null
@@ -10,30 +10,27 @@ async function main() {
   const asset = params.get('asset') || 'ETH'
   const interval = params.get('interval') || '1h'
 
-  const [candlesRes, readerRes] = await Promise.all([
+  const [candlesRes, segRes] = await Promise.all([
     fetch(`/api/candles?asset=${asset}&interval=${interval}`),
-    fetch(`/api/reader-read?asset=${asset}&interval=${interval}`),
+    fetch(`/api/regime-segments?asset=${asset}&interval=${interval}`),
   ])
 
-  if (!candlesRes.ok || !readerRes.ok) return
+  if (!candlesRes.ok || !segRes.ok) return
 
-  type ReaderResponse = { error: string } | {
-    auction: { profile?: { valueAreaLow: number; valueAreaHigh: number; poc: number } | null }
-    regime: { mode: string }
-    lastPrice: number
+  type SegmentsResponse = { error: string } | {
+    asset: string
+    interval: string
+    segments: OverlaySegment[]
   }
 
   const candlesData = await candlesRes.json() as { candles: Candle[] }
-  const readerData = await readerRes.json() as ReaderResponse
-  if ('error' in readerData || !candlesData.candles.length) return
+  const segData = await segRes.json() as SegmentsResponse
+  if ('error' in segData || !candlesData.candles.length) return
 
   const { candles } = candlesData
   const overlays: OverlayData = {
-    valueAreaLow: readerData.auction.profile?.valueAreaLow,
-    valueAreaHigh: readerData.auction.profile?.valueAreaHigh,
-    poc: readerData.auction.profile?.poc,
-    regimeMode: readerData.regime.mode,
-    currentPrice: readerData.lastPrice,
+    segments: segData.segments,
+    currentPrice: candles[candles.length - 1].c,
   }
 
   const config = {

@@ -6,4 +6,5 @@ export const routes = route({
   portfolio: '/portfolio',
   candles: get('/api/candles'),
   readerRead: get('/api/reader-read'),
+  regimeSegments: get('/api/regime-segments'),
 })
