@@ -57,6 +57,8 @@ export function createChart(options: {
   let toolbar: HTMLDivElement | null = null
   let observer: ResizeObserver | null = null
   let isLoading = false
+  let lastCanvasW = 0
+  let lastCanvasH = 0
 
   function initViewport(width: number): void {
     const totalW = width - PADDING.left - PADDING.right
@@ -142,12 +144,12 @@ export function createChart(options: {
 
   let edgeDebounce: ReturnType<typeof setTimeout> | null = null
 
-  function checkEdges(): void {
+  function checkEdges(viewW: number): void {
     if (isLoading) return
     const count = options.candles.length
     if (count === 0) return
     const totalPx = count * pxPerCandle
-    const tw = totalWidth(canvas.getBoundingClientRect().width)
+    const tw = totalWidth(viewW)
     const threshold = Math.max(50, pxPerCandle * 3)
 
     if (scrollPx < threshold) {
@@ -164,14 +166,22 @@ export function createChart(options: {
 
     const dpr = window.devicePixelRatio || 1
     const rect = canvas.getBoundingClientRect()
-    canvas.width = Math.max(1, rect.width * dpr)
-    canvas.height = Math.max(1, rect.height * dpr)
+    const cw = Math.max(1, rect.width * dpr)
+    const ch = Math.max(1, rect.height * dpr)
+
+    if (cw !== lastCanvasW || ch !== lastCanvasH) {
+      canvas.width = cw
+      canvas.height = ch
+      lastCanvasW = cw
+      lastCanvasH = ch
+    }
 
     if (pxPerCandle === 0) initViewport(rect.width)
 
     const ctx = canvas.getContext('2d')
     if (ctx === null) return
-    ctx.scale(dpr, dpr)
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     renderChart(ctx, options.candles, options.segments, options.candles[options.candles.length - 1].c, {
       width: rect.width,
@@ -179,7 +189,7 @@ export function createChart(options: {
       padding: PADDING,
     }, pxPerCandle, scrollPx, crosshair ?? undefined, yMin, yMax, yScrollPx)
 
-    checkEdges()
+    checkEdges(rect.width)
   }
 
   let isDragging = false
