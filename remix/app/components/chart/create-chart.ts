@@ -78,6 +78,11 @@ export function createChart(options: {
       const existing = new Set(options.candles.map(c => c.t))
       const unique = newCandles.filter(c => !existing.has(c.t))
       if (unique.length === 0) { isLoading = false; return }
+      options.segments = options.segments.map(s => ({
+        ...s,
+        startIndex: s.startIndex + unique.length,
+        endIndex: s.endIndex + unique.length,
+      }))
       options.candles = [...unique, ...options.candles]
       scrollPx += unique.length * pxPerCandle
       isLoading = false
