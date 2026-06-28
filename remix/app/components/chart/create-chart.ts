@@ -40,18 +40,18 @@ export function createChart(options: {
   let toolbar: HTMLDivElement | null = null
   let observer: ResizeObserver | null = null
 
-  async function fetchData(): Promise<{ ok: boolean }> {
+  async function loadData(): Promise<{ loaded: boolean }> {
     const lookback = ZOOM_LEVELS[zoomIndex]
     const req = { asset, interval, lookback }
     const [candlesRes, segRes] = await Promise.all([
       tryCatch(api.Get<{ candles: Candle[] }>('/api/candles', { params: req })),
       tryCatch(api.Get<{ segments: OverlaySegment[] }>('/api/regime-segments', { params: req })),
     ])
-    if (candlesRes.error !== null || segRes.error !== null) return { ok: false }
-    if (candlesRes.data.candles.length === 0) return { ok: false }
+    if (candlesRes.error !== null || segRes.error !== null) return { loaded: false }
+    if (candlesRes.data.candles.length === 0) return { loaded: false }
     candles = candlesRes.data.candles
     segments = segRes.data.segments
-    return { ok: true }
+    return { loaded: true }
   }
 
   function paint(): void {
@@ -95,17 +95,17 @@ export function createChart(options: {
   }
 
   function zoomIn(): void {
-    if (zoomIndex > 0) { zoomIndex -= 1; fetchData().then((r) => { if (r.ok) paint() }) }
+    if (zoomIndex > 0) { zoomIndex -= 1; loadData().then((r) => { if (r.loaded) paint() }) }
   }
 
   function zoomOut(): void {
-    if (zoomIndex < ZOOM_LEVELS.length - 1) { zoomIndex += 1; fetchData().then((r) => { if (r.ok) paint() }) }
+    if (zoomIndex < ZOOM_LEVELS.length - 1) { zoomIndex += 1; loadData().then((r) => { if (r.loaded) paint() }) }
   }
 
   return {
     async render(): Promise<void> {
-      const { ok } = await fetchData()
-      if (!ok) return
+      const { loaded } = await loadData()
+      if (!loaded) return
       observer = new ResizeObserver(paint)
       observer.observe(canvas)
       buildToolbar()
