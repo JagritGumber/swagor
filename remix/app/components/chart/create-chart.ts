@@ -49,6 +49,7 @@ export function createChart(options: {
 
   let pxPerCandle = 0
   let scrollPx = 0
+  let yScrollPx = 0
   let yMin = 0
   let yMax = 0
   let crosshair: { x: number; y: number } | null = null
@@ -176,13 +177,14 @@ export function createChart(options: {
       width: rect.width,
       height: rect.height,
       padding: PADDING,
-    }, pxPerCandle, scrollPx, crosshair ?? undefined, yMin, yMax)
+    }, pxPerCandle, scrollPx, crosshair ?? undefined, yMin, yMax, yScrollPx)
 
     checkEdges()
   }
 
   let isDragging = false
   let dragStartPx = 0
+  let dragStartPy = 0
   let dragStartMouseX = 0
   let dragStartMouseY = 0
 
@@ -196,6 +198,7 @@ export function createChart(options: {
       crosshair = null
     }
     scrollPx = dragStartPx - dx
+    yScrollPx = dragStartPy - dy
     paint()
   }
 
@@ -208,6 +211,7 @@ export function createChart(options: {
 
   canvas.addEventListener('mousedown', (e) => {
     dragStartPx = scrollPx
+    dragStartPy = yScrollPx
     dragStartMouseX = e.clientX
     dragStartMouseY = e.clientY
     document.addEventListener('mousemove', onDocMove)
