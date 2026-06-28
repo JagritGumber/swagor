@@ -51,6 +51,7 @@ export function createChart(options: {
   let pxPerCandle = 0
   let scrollPx = 0
   let yScrollPx = 0
+  let yZoom = 1
   let yMin = 0
   let yMax = 0
   let crosshair: { x: number; y: number } | null = null
@@ -189,7 +190,7 @@ export function createChart(options: {
       width: rect.width,
       height: rect.height,
       padding: PADDING,
-    }, pxPerCandle, scrollPx, crosshair ?? undefined, yMin, yMax, yScrollPx)
+    }, pxPerCandle, scrollPx, crosshair ?? undefined, yMin, yMax, yScrollPx, yZoom)
 
     checkEdges(rect.width)
   }
@@ -246,14 +247,18 @@ export function createChart(options: {
 
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault()
-    const rect = canvas.getBoundingClientRect()
-    const tw = totalWidth(rect.width)
-    const mouseX = e.clientX - rect.left - PADDING.left
-
-    const candleAtMouse = (mouseX + scrollPx) / pxPerCandle
     const factor = e.deltaY > 0 ? 1 / 1.12 : 1.12
-    pxPerCandle = Math.max(MIN_PX, Math.min(MAX_PX, pxPerCandle * factor))
-    scrollPx = candleAtMouse * pxPerCandle - mouseX
+    if (e.shiftKey) {
+      const oldZoom = yZoom
+      yZoom = Math.max(0.1, Math.min(50, yZoom * factor))
+      yScrollPx *= yZoom / oldZoom
+    } else {
+      const rect = canvas.getBoundingClientRect()
+      const mouseX = e.clientX - rect.left - PADDING.left
+      const candleAtMouse = (mouseX + scrollPx) / pxPerCandle
+      pxPerCandle = Math.max(MIN_PX, Math.min(MAX_PX, pxPerCandle * factor))
+      scrollPx = candleAtMouse * pxPerCandle - mouseX
+    }
     paint()
   }, { passive: false })
 
@@ -282,6 +287,18 @@ export function createChart(options: {
 
     toolbar.appendChild(makeBtn('−', zoomFn(1 / 1.12)))
     toolbar.appendChild(makeBtn('+', zoomFn(1.12)))
+    toolbar.appendChild(makeBtn('Y−', () => {
+      const oldZoom = yZoom
+      yZoom = Math.max(0.1, Math.min(50, yZoom / 1.12))
+      yScrollPx *= yZoom / oldZoom
+      paint()
+    }))
+    toolbar.appendChild(makeBtn('Y+', () => {
+      const oldZoom = yZoom
+      yZoom = Math.max(0.1, Math.min(50, yZoom * 1.12))
+      yScrollPx *= yZoom / oldZoom
+      paint()
+    }))
     container.appendChild(toolbar)
   }
 

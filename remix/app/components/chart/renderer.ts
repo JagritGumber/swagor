@@ -37,6 +37,7 @@ function buildScale(
   fixedMin?: number,
   fixedMax?: number,
   yScrollPx?: number,
+  yZoom?: number,
 ): Scale {
   const { width, height, padding } = config
   const totalW = width - padding.left - padding.right
@@ -66,6 +67,13 @@ function buildScale(
   const priceRange = maxPrice - minPrice || 1
   let paddedMin = minPrice - priceRange * 0.05
   let paddedMax = maxPrice + priceRange * 0.05
+
+  const center = (paddedMin + paddedMax) / 2
+  const halfRange = (paddedMax - paddedMin) / 2
+  const zoom = yZoom ?? 1
+  const zoomedHalf = halfRange / zoom
+  paddedMin = center - zoomedHalf
+  paddedMax = center + zoomedHalf
 
   if (yScrollPx !== undefined && yScrollPx !== 0) {
     const shiftPerPx = (paddedMax - paddedMin) / totalH
@@ -115,8 +123,9 @@ export function renderChart(
   yMin?: number,
   yMax?: number,
   yScrollPx?: number,
+  yZoom?: number,
 ): void {
-  const scale = buildScale(candles, config, pxPerCandle, scrollPx, yMin, yMax, yScrollPx)
+  const scale = buildScale(candles, config, pxPerCandle, scrollPx, yMin, yMax, yScrollPx, yZoom)
   const { width, height, padding } = config
   const totalW = width - padding.left - padding.right
   const plotBottom = height - padding.bottom
