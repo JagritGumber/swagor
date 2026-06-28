@@ -1,16 +1,20 @@
 import type { Handle } from 'remix/ui'
 
 import type { ReaderReadResult } from '../types/reader.ts'
+import type { Candle } from '../types/candles.ts'
+import type { OverlaySegment } from '../components/chart/types.ts'
 import { Document } from '../document.tsx'
 import { ErrorState } from '../components/portfolio/error-state.tsx'
 import { Dashboard } from '../components/portfolio/dashboard.tsx'
 
 interface PortfolioPageProps {
   read: ReaderReadResult
+  candles: Candle[]
+  segments: OverlaySegment[]
 }
 
 export function PortfolioPage(handle: Handle<PortfolioPageProps>) {
-  const { read } = handle.props
+  const { read, candles, segments } = handle.props
 
   return () => (
     <Document
@@ -27,7 +31,7 @@ export function PortfolioPage(handle: Handle<PortfolioPageProps>) {
         </>
       }
     >
-      {read.ok ? <Dashboard /> : <ErrorState message={read.error} />}
+      {read.ok ? <Dashboard candles={candles} segments={segments} /> : <ErrorState message={read.error} />}
     </Document>
   )
 }

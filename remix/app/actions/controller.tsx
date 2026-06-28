@@ -6,6 +6,7 @@ import { PortfolioPage } from '../pages/portfolio.tsx'
 import { fetchCandles } from '../data/hyperliquid.ts'
 import type { SelboReasoning, ReaderReadResult } from '../types/reader.ts'
 import type { Candle } from '../types/candles.ts'
+import type { OverlaySegment } from '../components/chart/types.ts'
 import { buildSelboReasoning } from '../data/selbo-reasoning.ts'
 import { tryCatch } from '../lib/api/try-catch.ts'
 import { readMarketRegime } from '@packages/strategy-lab/read-core/market-regime/read-market-regime'
@@ -114,7 +115,7 @@ interface BuildReaderResult {
   candles: Candle[]
 }
 
-async function buildReaderRead(url: URL): Promise<BuildReaderResult> {
+async function buildReaderRead(url: URL, lookback?: number, existingCandles?: Candle[]): Promise<BuildReaderResult> {
   const asset = (url.searchParams.get('asset') ?? 'ETH').toUpperCase()
   const interval = url.searchParams.get('interval') ?? '1h'
 
@@ -123,21 +124,20 @@ async function buildReaderRead(url: URL): Promise<BuildReaderResult> {
   }
 
   const now = Date.now()
-  const lookbackDays = Math.min(
-    Math.max(Number(url.searchParams.get('lookbackDays') ?? '3'), 1),
-    14,
-  )
-  const lookbackMs = Math.min(lookbackDays * 86_400_000, INTERVAL_MS[interval] * 200)
-
-  const { data: rawCandles, error: err } = await tryCatch(fetchCandles(asset, interval, now - lookbackMs, now))
-  if (err !== null) {
-    return { read: { ok: false, error: err.message }, candles: [] }
+  let candles: Candle[]
+  if (existingCandles !== undefined) {
+    candles = existingCandles
+  } else {
+    const lb = lookback ?? Math.min(Math.max(Number(url.searchParams.get('lookback') ?? '200'), 20), 800)
+    const { data: rawCandles, error: err } = await tryCatch(fetchCandles(asset, interval, now - INTERVAL_MS[interval] * lb, now))
+    if (err !== null) {
+      return { read: { ok: false, error: err.message }, candles: [] }
+    }
+    if (rawCandles.length === 0) {
+      return { read: { ok: false, error: 'No candle data available for this asset' }, candles: [] }
+    }
+    candles = rawCandles.map(toCandle)
   }
-  if (rawCandles.length === 0) {
-    return { read: { ok: false, error: 'No candle data available for this asset' }, candles: [] }
-  }
-
-  const candles: Candle[] = rawCandles.map(toCandle)
   const lastCandle = candles[candles.length - 1]
 
   const rawRegime = readMarketRegime({ candles, now })
@@ -198,31 +198,6 @@ async function buildReaderRead(url: URL): Promise<BuildReaderResult> {
   return { read: { ok: true, data }, candles }
 }
 
-async function buildCandles(url: URL): Promise<Response> {
-  const asset = (url.searchParams.get('asset') ?? 'ETH').toUpperCase()
-  const interval = url.searchParams.get('interval') ?? '1h'
-
-  if (!VALID_INTERVALS.has(interval)) {
-    return Response.json({ error: `Invalid interval. Use: ${Array.from(VALID_INTERVALS).join(', ')}` }, { status: 400 })
-  }
-
-  const now = Date.now()
-  const lookback = Math.min(Math.max(Number(url.searchParams.get('lookback') ?? '200'), 20), 800)
-  const lookbackMs = INTERVAL_MS[interval] * lookback
-
-  const { data: rawCandles, error: err } = await tryCatch(fetchCandles(asset, interval, now - lookbackMs, now))
-  if (err !== null) {
-    return Response.json({ error: err.message }, { status: 502 })
-  }
-  if (rawCandles.length === 0) {
-    return Response.json({ error: 'No candle data available for this asset' }, { status: 404 })
-  }
-
-  const candles = rawCandles.map(toCandle)
-
-  return Response.json({ asset, interval, candles })
-}
-
 export default createController(routes, {
   actions: {
     async assets(context) {
@@ -238,36 +213,38 @@ export default createController(routes, {
     },
     async portfolio(context) {
       const url = new URL(context.request.url)
-      const { read } = await buildReaderRead(url)
-      return context.render(<PortfolioPage read={read} />)
-    },
-    async candles(context) {
-      return buildCandles(new URL(context.request.url))
-    },
-    async readerRead(context) {
-      const url = new URL(context.request.url)
-      const { read } = await buildReaderRead(url)
-      return Response.json(read)
-    },
-    async regimeSegments(context) {
-      const url = new URL(context.request.url)
-      const asset = url.searchParams.get('asset') ?? 'HYPE'
+      const lookback = Math.min(Math.max(Number(url.searchParams.get('lookback') ?? '200'), 20), 800)
+      const asset = (url.searchParams.get('asset') ?? 'ETH').toUpperCase()
       const interval = url.searchParams.get('interval') ?? '1h'
-      const windowSize = Number(url.searchParams.get('windowSize')) || 20
-      const lookback = Number(url.searchParams.get('lookback')) || 200
+
+      if (!VALID_INTERVALS.has(interval)) {
+        return context.render(
+          <PortfolioPage read={{ ok: false, error: `Invalid interval: ${interval}` }} candles={[]} segments={[]} />,
+        )
+      }
 
       const now = Date.now()
-      const lookbackMs = Math.min(30 * 86_400_000, INTERVAL_MS[interval] * lookback)
-      const { data: rawCandles, error: err } = await tryCatch(fetchCandles(asset, interval, now - lookbackMs, now))
+      const { data: rawCandles, error: err } = await tryCatch(
+        fetchCandles(asset, interval, now - INTERVAL_MS[interval] * lookback, now),
+      )
       if (err !== null) {
-        return Response.json({ error: err.message }, { status: 502 })
+        return context.render(
+          <PortfolioPage read={{ ok: false, error: err.message }} candles={[]} segments={[]} />,
+        )
       }
       if (rawCandles.length === 0) {
-        return Response.json({ error: 'No candle data' }, { status: 404 })
+        return context.render(
+          <PortfolioPage read={{ ok: false, error: 'No candle data' }} candles={[]} segments={[]} />,
+        )
       }
+
       const candles = rawCandles.map(toCandle)
-      const segments = readRegimeSegments({ candles, windowSize, lookback })
-      return Response.json({ asset, interval, segments })
+      const readerResult = await buildReaderRead(url, lookback, candles)
+      const segments = readRegimeSegments({ candles, lookback })
+
+      return context.render(
+        <PortfolioPage read={readerResult.read} candles={candles} segments={segments} />,
+      )
     },
   },
 })

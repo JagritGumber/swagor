@@ -1,13 +1,11 @@
 import { renderChart } from './chart-canvas.ts'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from './types.ts'
-import { api } from '../../lib/api/client.ts'
-import { tryCatch } from '../../lib/api/try-catch.ts'
 
-const ZOOM_LEVELS = [50, 100, 200, 400, 600, 800] as const
+export const ZOOM_LEVELS = [50, 100, 200, 400, 600, 800] as const
 
 export interface ChartInstance {
-  render(): Promise<void>
+  render(): void
   zoomIn(): void
   zoomOut(): void
   destroy(): void
@@ -15,6 +13,8 @@ export interface ChartInstance {
 
 export function createChart(options: {
   container: HTMLElement | string
+  candles: Candle[]
+  segments: OverlaySegment[]
 }): ChartInstance {
   const rawContainer =
     typeof options.container === 'string'
@@ -31,27 +31,21 @@ export function createChart(options: {
   container.appendChild(canvas)
 
   const params = new URLSearchParams(window.location.search)
-  const asset = params.get('asset') || 'ETH'
-  const interval = params.get('interval') || '1h'
+  const rawLookback = Number(params.get('lookback') ?? '200')
+  let zoomIndex = ZOOM_LEVELS.indexOf(rawLookback as (typeof ZOOM_LEVELS)[number])
+  if (zoomIndex === -1) zoomIndex = 2
 
-  let zoomIndex = 2
-  let candles: Candle[] = []
-  let segments: OverlaySegment[] = []
+  const path = window.location.pathname
+  const query = new URLSearchParams(window.location.search)
+
+  let candles: Candle[] = options.candles
+  let segments: OverlaySegment[] = options.segments
   let toolbar: HTMLDivElement | null = null
   let observer: ResizeObserver | null = null
 
-  async function loadData(): Promise<{ loaded: boolean }> {
-    const lookback = ZOOM_LEVELS[zoomIndex]
-    const req = { asset, interval, lookback }
-    const [candlesRes, segRes] = await Promise.all([
-      tryCatch(api.Get<{ candles: Candle[] }>('/api/candles', { params: req })),
-      tryCatch(api.Get<{ segments: OverlaySegment[] }>('/api/regime-segments', { params: req })),
-    ])
-    if (candlesRes.error !== null || segRes.error !== null) return { loaded: false }
-    if (candlesRes.data.candles.length === 0) return { loaded: false }
-    candles = candlesRes.data.candles
-    segments = segRes.data.segments
-    return { loaded: true }
+  function navigate(level: number): void {
+    query.set('lookback', String(level))
+    window.location.href = path + '?' + query.toString()
   }
 
   function paint(): void {
@@ -95,17 +89,15 @@ export function createChart(options: {
   }
 
   function zoomIn(): void {
-    if (zoomIndex > 0) { zoomIndex -= 1; loadData().then((r) => { if (r.loaded) paint() }) }
+    if (zoomIndex > 0) { zoomIndex -= 1; navigate(ZOOM_LEVELS[zoomIndex]) }
   }
 
   function zoomOut(): void {
-    if (zoomIndex < ZOOM_LEVELS.length - 1) { zoomIndex += 1; loadData().then((r) => { if (r.loaded) paint() }) }
+    if (zoomIndex < ZOOM_LEVELS.length - 1) { zoomIndex += 1; navigate(ZOOM_LEVELS[zoomIndex]) }
   }
 
   return {
-    async render(): Promise<void> {
-      const { loaded } = await loadData()
-      if (!loaded) return
+    render(): void {
       observer = new ResizeObserver(paint)
       observer.observe(canvas)
       buildToolbar()
