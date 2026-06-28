@@ -7,6 +7,7 @@ import { fetchCandles } from '../data/hyperliquid.ts'
 import type { SelboReasoning, ReaderReadResult } from '../types/reader.ts'
 import type { Candle } from '../types/candles.ts'
 import { buildSelboReasoning } from '../data/selbo-reasoning.ts'
+import { tryCatch } from '../lib/try-catch.ts'
 import { readMarketRegime } from '@packages/strategy-lab/read-core/market-regime/read-market-regime'
 import { readMarketAuction } from '@packages/strategy-lab/read-core/read/read-market-auction'
 import { readRegimeSegments } from '@packages/strategy-lab/read-core/market-regime/read-regime-segments'
@@ -128,7 +129,10 @@ async function buildReaderRead(url: URL): Promise<BuildReaderResult> {
   )
   const lookbackMs = Math.min(lookbackDays * 86_400_000, INTERVAL_MS[interval] * 200)
 
-  const rawCandles = await fetchCandles(asset, interval, now - lookbackMs, now).catch(() => [])
+  const { data: rawCandles, error: err } = await tryCatch(fetchCandles(asset, interval, now - lookbackMs, now))
+  if (err !== null) {
+    return { read: { ok: false, error: err.message }, candles: [] }
+  }
   if (rawCandles.length === 0) {
     return { read: { ok: false, error: 'No candle data available for this asset' }, candles: [] }
   }
@@ -206,7 +210,10 @@ async function buildCandles(url: URL): Promise<Response> {
   const lookback = Math.min(Math.max(Number(url.searchParams.get('lookback') ?? '200'), 20), 800)
   const lookbackMs = INTERVAL_MS[interval] * lookback
 
-  const rawCandles = await fetchCandles(asset, interval, now - lookbackMs, now).catch(() => [])
+  const { data: rawCandles, error: err } = await tryCatch(fetchCandles(asset, interval, now - lookbackMs, now))
+  if (err !== null) {
+    return Response.json({ error: err.message }, { status: 502 })
+  }
   if (rawCandles.length === 0) {
     return Response.json({ error: 'No candle data available for this asset' }, { status: 404 })
   }
@@ -251,7 +258,10 @@ export default createController(routes, {
 
       const now = Date.now()
       const lookbackMs = Math.min(30 * 86_400_000, INTERVAL_MS[interval] * lookback)
-      const rawCandles = await fetchCandles(asset, interval, now - lookbackMs, now).catch(() => [])
+      const { data: rawCandles, error: err } = await tryCatch(fetchCandles(asset, interval, now - lookbackMs, now))
+      if (err !== null) {
+        return Response.json({ error: err.message }, { status: 502 })
+      }
       if (rawCandles.length === 0) {
         return Response.json({ error: 'No candle data' }, { status: 404 })
       }
