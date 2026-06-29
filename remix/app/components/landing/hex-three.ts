@@ -22,7 +22,7 @@ export function createHexCoin(container: HTMLElement) {
   container.appendChild(renderer.domElement)
   
   // Hexagonal prism (coin)
-  const geometry = new THREE.CylinderGeometry(1, 1, 0.8, 6)
+  const geometry = new THREE.CylinderGeometry(1, 1, 0.8, 12)
   const material = new THREE.MeshPhongMaterial({
     color: 0x0d2535,
     emissive: 0x1e4050,
