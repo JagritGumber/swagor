@@ -79,19 +79,19 @@ export function Hero(handle: Handle<Record<string, never>>) {
           <div mix={hexContainer}>
             <svg viewBox="0 0 280 280" mix={hexShape}>
               <defs>
-                <linearGradient id="coinFace" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="coinFace" x1="100%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor="#1e4050" />
                   <stop offset="100%" stopColor="#0d2535" />
                 </linearGradient>
-                <linearGradient id="coinRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="coinTop" x1="0%" y1="100%" x2="0%" y2="0%">
                   <stop offset="0%" stopColor="#0c1e28" />
-                  <stop offset="100%" stopColor="#060f16" />
+                  <stop offset="100%" stopColor="#081520" />
                 </linearGradient>
-                <linearGradient id="coinLeft" x1="100%" y1="0%" x2="0%" y2="100%">
+                <linearGradient id="coinRight" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#0a1920" />
                   <stop offset="100%" stopColor="#050d12" />
                 </linearGradient>
-                <linearGradient id="edgeGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient id="edgeGlow" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.3" />
                   <stop offset="50%" stopColor="#00d4ff" stopOpacity="0.8" />
                   <stop offset="100%" stopColor="#00d4ff" stopOpacity="0.3" />
@@ -106,29 +106,29 @@ export function Hero(handle: Handle<Record<string, never>>) {
               </defs>
               
               {/* Shadow */}
-              <ellipse cx="140" cy="240" rx="70" ry="15" fill="#00d4ff" opacity="0.04" />
+              <ellipse cx="120" cy="240" rx="60" ry="12" fill="#00d4ff" opacity="0.04" />
               
-              {/* LEFT FACE (depth going down-left) */}
+              {/* TOP FACE (flat top surface) */}
               <path
-                d="M70 130 L70 170 L140 210 L140 170 Z"
-                fill="url(#coinLeft)"
+                d="M70 100 L140 60 L210 100 L140 140 Z"
+                fill="url(#coinTop)"
                 stroke="#00d4ff"
                 strokeWidth="0.5"
                 strokeOpacity="0.3"
               />
               
-              {/* RIGHT FACE (depth going down-right) */}
+              {/* RIGHT FACE (depth going right) */}
               <path
-                d="M140 170 L140 210 L210 170 L210 130 Z"
+                d="M140 140 L210 100 L210 170 L140 210 Z"
                 fill="url(#coinRight)"
                 stroke="#00d4ff"
                 strokeWidth="0.5"
                 strokeOpacity="0.3"
               />
               
-              {/* TOP FACE (hexagon - isometric) */}
+              {/* LEFT FACE (hexagon - the main face) */}
               <path
-                d="M140 60 L210 100 L210 130 L140 170 L70 130 L70 100 Z"
+                d="M70 100 L140 60 L140 140 L70 180 L30 140 L30 100 Z"
                 fill="url(#coinFace)"
                 stroke="url(#edgeGlow)"
                 strokeWidth="1.5"
@@ -137,7 +137,7 @@ export function Hero(handle: Handle<Record<string, never>>) {
               
               {/* Inner hexagon pattern */}
               <path
-                d="M140 85 L185 108 L185 122 L140 145 L95 122 L95 108 Z"
+                d="M70 115 L105 95 L105 135 L70 155 L50 135 L50 95 Z"
                 fill="none"
                 stroke="#00d4ff"
                 strokeWidth="0.5"
@@ -146,7 +146,7 @@ export function Hero(handle: Handle<Record<string, never>>) {
               
               {/* Chart line on face */}
               <polyline
-                points="95,125 115,115 135,120 155,105 175,112 195,100"
+                points="45,140 60,130 75,135 90,118 105,125 120,112"
                 fill="none"
                 stroke="#00d4ff"
                 strokeWidth="2"
@@ -155,9 +155,9 @@ export function Hero(handle: Handle<Record<string, never>>) {
               />
               
               {/* Data dots */}
-              <circle cx="115" cy="115" r="2" fill="#00d4ff" />
-              <circle cx="155" cy="105" r="2" fill="#00d4ff" />
-              <circle cx="195" cy="100" r="2" fill="#00d4ff" />
+              <circle cx="60" cy="130" r="2" fill="#00d4ff" />
+              <circle cx="90" cy="118" r="2" fill="#00d4ff" />
+              <circle cx="120" cy="112" r="2" fill="#00d4ff" />
             </svg>
           </div>
 
