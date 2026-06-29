@@ -34,7 +34,7 @@ export function createHexCoin(container: HTMLElement) {
   // Static front view
   coin.rotation.x = 1.5
   coin.rotation.y = 0
-  coin.rotation.z = -0.3
+  coin.rotation.z = 0.4
   
   scene.add(coin)
   
