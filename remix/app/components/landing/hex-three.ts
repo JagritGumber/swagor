@@ -3,8 +3,17 @@ import * as THREE from 'three'
 export function createHexCoin(container: HTMLElement) {
   const scene = new THREE.Scene()
   
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000)
-  camera.position.set(0, 2, 5)
+  const aspect = 1
+  const frustumSize = 4
+  const camera = new THREE.OrthographicCamera(
+    frustumSize * aspect / -2,
+    frustumSize * aspect / 2,
+    frustumSize / 2,
+    frustumSize / -2,
+    0.1,
+    1000
+  )
+  camera.position.set(-3, 2, 4)
   camera.lookAt(0, 0, 0)
   
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
@@ -13,7 +22,7 @@ export function createHexCoin(container: HTMLElement) {
   container.appendChild(renderer.domElement)
   
   // Hexagonal prism (coin)
-  const geometry = new THREE.CylinderGeometry(1, 1, 2, 6)
+  const geometry = new THREE.CylinderGeometry(1, 1, 0.8, 6)
   const material = new THREE.MeshPhongMaterial({
     color: 0x0d2535,
     emissive: 0x1e4050,
@@ -58,8 +67,12 @@ export function createHexCoin(container: HTMLElement) {
   const onResize = () => {
     const width = container.clientWidth
     const height = container.clientHeight
+    const aspect = width / height
     renderer.setSize(width, height)
-    camera.aspect = width / height
+    camera.left = frustumSize * aspect / -2
+    camera.right = frustumSize * aspect / 2
+    camera.top = frustumSize / 2
+    camera.bottom = frustumSize / -2
     camera.updateProjectionMatrix()
   }
   
