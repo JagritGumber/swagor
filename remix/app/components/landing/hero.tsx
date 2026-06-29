@@ -77,88 +77,45 @@ export function Hero(handle: Handle<Record<string, never>>) {
 
         <div mix={heroVisual}>
           <div mix={hexContainer}>
-            <svg viewBox="0 0 280 280" mix={hexShape}>
-              <defs>
-                <linearGradient id="coinFace" x1="100%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#1e4050" />
-                  <stop offset="100%" stopColor="#0d2535" />
-                </linearGradient>
-                <linearGradient id="coinTop" x1="0%" y1="100%" x2="0%" y2="0%">
-                  <stop offset="0%" stopColor="#0c1e28" />
-                  <stop offset="100%" stopColor="#081520" />
-                </linearGradient>
-                <linearGradient id="coinRight" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#0a1920" />
-                  <stop offset="100%" stopColor="#050d12" />
-                </linearGradient>
-                <linearGradient id="edgeGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.3" />
-                  <stop offset="50%" stopColor="#00d4ff" stopOpacity="0.8" />
-                  <stop offset="100%" stopColor="#00d4ff" stopOpacity="0.3" />
-                </linearGradient>
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              
-              {/* Shadow */}
-              <ellipse cx="120" cy="240" rx="60" ry="12" fill="#00d4ff" opacity="0.04" />
-              
-              {/* TOP FACE (flat top surface) */}
-              <path
-                d="M70 100 L140 60 L210 100 L140 140 Z"
-                fill="url(#coinTop)"
-                stroke="#00d4ff"
-                strokeWidth="0.5"
-                strokeOpacity="0.3"
-              />
-              
-              {/* RIGHT FACE (depth going right) */}
-              <path
-                d="M140 140 L210 100 L210 170 L140 210 Z"
-                fill="url(#coinRight)"
-                stroke="#00d4ff"
-                strokeWidth="0.5"
-                strokeOpacity="0.3"
-              />
-              
-              {/* LEFT FACE (hexagon - the main face) */}
-              <path
-                d="M70 100 L140 60 L140 140 L70 180 L30 140 L30 100 Z"
-                fill="url(#coinFace)"
-                stroke="url(#edgeGlow)"
-                strokeWidth="1.5"
-                filter="url(#glow)"
-              />
-              
-              {/* Inner hexagon pattern */}
-              <path
-                d="M70 115 L105 95 L105 135 L70 155 L50 135 L50 95 Z"
-                fill="none"
-                stroke="#00d4ff"
-                strokeWidth="0.5"
-                strokeOpacity="0.2"
-              />
-              
-              {/* Chart line on face */}
-              <polyline
-                points="45,140 60,130 75,135 90,118 105,125 120,112"
-                fill="none"
-                stroke="#00d4ff"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              
-              {/* Data dots */}
-              <circle cx="60" cy="130" r="2" fill="#00d4ff" />
-              <circle cx="90" cy="118" r="2" fill="#00d4ff" />
-              <circle cx="120" cy="112" r="2" fill="#00d4ff" />
-            </svg>
+            <div mix={hexScene}>
+              <div mix={hexCoin}>
+                {/* Left face (main hexagon) */}
+                <div mix={[hexFace, hexFaceLeft]}>
+                  <svg viewBox="0 0 100 115" style={{ width: '100%', height: '100%' }}>
+                    <defs>
+                      <linearGradient id="faceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#1e4050" />
+                        <stop offset="100%" stopColor="#0d2535" />
+                      </linearGradient>
+                    </defs>
+                    <polygon
+                      points="50,0 100,28 100,86 50,115 0,86 0,28"
+                      fill="url(#faceGrad)"
+                      stroke="#00d4ff"
+                      strokeWidth="1.5"
+                    />
+                    <polyline
+                      points="15,75 30,65 45,70 60,55 75,62 90,50"
+                      fill="none"
+                      stroke="#00d4ff"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <circle cx="30" cy="65" r="2" fill="#00d4ff" />
+                    <circle cx="60" cy="55" r="2" fill="#00d4ff" />
+                    <circle cx="90" cy="50" r="2" fill="#00d4ff" />
+                  </svg>
+                </div>
+                {/* Top face */}
+                <div mix={[hexFace, hexFaceTop]}>
+                  <div mix={hexFaceTopInner} />
+                </div>
+                {/* Right face */}
+                <div mix={[hexFace, hexFaceRight]}>
+                  <div mix={hexFaceRightInner} />
+                </div>
+              </div>
+            </div>
           </div>
 
           <svg mix={connectionLines} viewBox="0 0 400 250">
@@ -427,16 +384,67 @@ const heroVisual = css({
 })
 
 const hexContainer = css({
-  width: '280px',
-  height: '280px',
+  width: '300px',
+  height: '300px',
   position: 'relative',
   zIndex: 2,
 })
 
-const hexShape = css({
+const hexScene = css({
   width: '100%',
   height: '100%',
-  filter: 'drop-shadow(0 0 20px rgba(0, 212, 255, 0.3))',
+  perspective: '800px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+})
+
+const hexCoin = css({
+  width: '150px',
+  height: '173px',
+  position: 'relative',
+  transformStyle: 'preserve-3d',
+  transform: 'rotateX(-30deg) rotateY(30deg)',
+})
+
+const hexFace = css({
+  position: 'absolute',
+  width: '100%',
+  height: '100%',
+  backfaceVisibility: 'hidden',
+})
+
+const hexFaceLeft = css({
+  transform: 'translateZ(20px)',
+  filter: 'drop-shadow(0 0 15px rgba(0, 212, 255, 0.4))',
+})
+
+const hexFaceTop = css({
+  transform: 'rotateX(90deg) translateZ(86px)',
+  transformOrigin: 'bottom',
+  background: 'linear-gradient(180deg, #0c1e28 0%, #081520 100%)',
+  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+})
+
+const hexFaceTopInner = css({
+  width: '100%',
+  height: '100%',
+  border: '1px solid rgba(0, 212, 255, 0.3)',
+  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+})
+
+const hexFaceRight = css({
+  transform: 'rotateY(-90deg) translateZ(75px)',
+  transformOrigin: 'left',
+  background: 'linear-gradient(90deg, #0a1920 0%, #050d12 100%)',
+  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+})
+
+const hexFaceRightInner = css({
+  width: '100%',
+  height: '100%',
+  border: '1px solid rgba(0, 212, 255, 0.2)',
+  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
 })
 
 const connectionLines = css({
