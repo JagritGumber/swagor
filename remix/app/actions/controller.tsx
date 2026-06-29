@@ -2,6 +2,7 @@ import { createController } from 'remix/router'
 
 import { assetServer } from '../assets.ts'
 import { routes } from '../routes.ts'
+import { LandingPage } from '../pages/landing.tsx'
 import { PortfolioPage } from '../pages/portfolio.tsx'
 import { fetchCandles } from '../data/hyperliquid.ts'
 import type { SelboReasoning, ReaderReadResult } from '../types/reader.ts'
@@ -205,11 +206,8 @@ export default createController(routes, {
         (await assetServer.fetch(context.request)) ?? new Response('Not Found', { status: 404 })
       )
     },
-    async home() {
-      return new Response(null, {
-        status: 302,
-        headers: { Location: routes.portfolio.href() },
-      })
+    async home(context) {
+      return context.render(<LandingPage />)
     },
     async candles(context) {
       const url = new URL(context.request.url)
