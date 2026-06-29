@@ -55,7 +55,7 @@ export function createHexCoin(container: HTMLElement) {
   const coin = new THREE.Mesh(geometry, material)
   
   // Static view
-  coin.rotation.x = -Math.PI / 2
+  coin.rotation.x = 0
   coin.rotation.y = 0
   coin.rotation.z = 0
   
