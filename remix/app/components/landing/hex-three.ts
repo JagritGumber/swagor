@@ -58,10 +58,51 @@ export function createHexCoin(container: HTMLElement) {
   
   scene.add(coin)
   
-  // Platform
+  // Platform with texture
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')!
+  
+  // Dark background
+  ctx.fillStyle = '#0a1018'
+  ctx.fillRect(0, 0, 512, 512)
+  
+  // Grid lines
+  ctx.strokeStyle = '#00d4ff'
+  ctx.lineWidth = 0.5
+  ctx.globalAlpha = 0.15
+  
+  for (let i = 0; i <= 512; i += 32) {
+    ctx.beginPath()
+    ctx.moveTo(i, 0)
+    ctx.lineTo(i, 512)
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.moveTo(0, i)
+    ctx.lineTo(512, i)
+    ctx.stroke()
+  }
+  
+  // Glow dots at intersections
+  ctx.globalAlpha = 0.3
+  ctx.fillStyle = '#00d4ff'
+  for (let x = 0; x <= 512; x += 64) {
+    for (let y = 0; y <= 512; y += 64) {
+      ctx.beginPath()
+      ctx.arc(x, y, 2, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+  
+  const platformTexture = new THREE.CanvasTexture(canvas)
+  platformTexture.wrapS = THREE.RepeatWrapping
+  platformTexture.wrapT = THREE.RepeatWrapping
+  
   const platformGeometry = new THREE.BoxGeometry(4, 0.2, 4)
   const platformMaterial = new THREE.MeshPhongMaterial({
-    color: 0x0a1018,
+    map: platformTexture,
     emissive: 0x050810,
     emissiveIntensity: 0.1,
     shininess: 50,
