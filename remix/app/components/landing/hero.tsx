@@ -191,8 +191,8 @@ const nav = css({
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '20px 48px',
-  position: 'relative',
-  zIndex: 10,
+  maxWidth: '1280px',
+  margin: '0 auto',
 })
 
 const navLogo = css({
