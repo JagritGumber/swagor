@@ -77,24 +77,26 @@ export function Hero(handle: Handle<Record<string, never>>) {
 
         <div mix={heroVisual}>
           <div mix={hexContainer}>
-            <svg viewBox="0 0 240 260" mix={hexShape}>
+            <svg viewBox="0 0 300 320" mix={hexShape}>
               <defs>
-                <linearGradient id="hexTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="coinTop" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#1a3a4a" />
-                  <stop offset="100%" stopColor="#0d1f2d" />
+                  <stop offset="50%" stopColor="#0f2a38" />
+                  <stop offset="100%" stopColor="#0a1e2a" />
                 </linearGradient>
-                <linearGradient id="hexLeft" x1="0%" y1="0%" x2="0%" y2="100%">
+                <linearGradient id="coinSideRight" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor="#0a1a24" />
-                  <stop offset="100%" stopColor="#060f16" />
+                  <stop offset="100%" stopColor="#050e14" />
                 </linearGradient>
-                <linearGradient id="hexRight" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#0d2230" />
-                  <stop offset="100%" stopColor="#081820" />
+                <linearGradient id="coinSideBottom" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#081820" />
+                  <stop offset="100%" stopColor="#050e14" />
                 </linearGradient>
-                <linearGradient id="hexEdge" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.4" />
-                  <stop offset="50%" stopColor="#00d4ff" stopOpacity="0.8" />
-                  <stop offset="100%" stopColor="#00d4ff" stopOpacity="0.4" />
+                <linearGradient id="coinEdge" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.2" />
+                  <stop offset="30%" stopColor="#00d4ff" stopOpacity="0.6" />
+                  <stop offset="70%" stopColor="#00d4ff" stopOpacity="0.6" />
+                  <stop offset="100%" stopColor="#00d4ff" stopOpacity="0.2" />
                 </linearGradient>
                 <filter id="glow">
                   <feGaussianBlur stdDeviation="4" result="coloredBlur" />
@@ -103,64 +105,81 @@ export function Hero(handle: Handle<Record<string, never>>) {
                     <feMergeNode in="SourceGraphic" />
                   </feMerge>
                 </filter>
-                <filter id="innerGlow">
+                <filter id="softGlow">
                   <feGaussianBlur stdDeviation="2" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
               </defs>
               
-              {/* Bottom depth layer */}
+              {/* Shadow on ground */}
+              <ellipse cx="150" cy="290" rx="80" ry="20" fill="#00d4ff" opacity="0.05" />
+              
+              {/* Bottom edge - thickness (right side) */}
               <path
-                d="M120 180 L190 220 L190 260 L120 300 L50 260 L50 220 Z"
-                fill="#060f16"
-                opacity="0.8"
+                d="M230 160 L230 195 L150 235 L150 200 Z"
+                fill="url(#coinSideRight)"
               />
               
-              {/* Left side face */}
+              {/* Bottom edge - thickness (bottom side) */}
               <path
-                d="M120 160 L50 200 L50 260 L120 300 Z"
-                fill="url(#hexLeft)"
+                d="M150 200 L150 235 L70 195 L70 160 Z"
+                fill="url(#coinSideBottom)"
               />
               
-              {/* Right side face */}
+              {/* Edge highlight - right side */}
               <path
-                d="M120 160 L190 200 L190 260 L120 300 Z"
-                fill="url(#hexRight)"
+                d="M230 160 L230 195"
+                stroke="url(#coinEdge)"
+                strokeWidth="1"
+                fill="none"
               />
               
-              {/* Top face - main */}
+              {/* Edge highlight - bottom */}
               <path
-                d="M120 80 L190 120 L190 200 L120 240 L50 200 L50 120 Z"
-                fill="url(#hexTop)"
-                stroke="url(#hexEdge)"
+                d="M230 195 L150 235 L70 195"
+                stroke="url(#coinEdge)"
+                strokeWidth="1"
+                fill="none"
+              />
+              
+              {/* Top face - isometric hexagon */}
+              <path
+                d="M150 80 L230 120 L230 160 L150 200 L70 160 L70 120 Z"
+                fill="url(#coinTop)"
+                stroke="url(#coinEdge)"
                 strokeWidth="1.5"
                 filter="url(#glow)"
               />
               
               {/* Inner hexagon detail */}
               <path
-                d="M120 110 L160 135 L160 185 L120 210 L80 185 L80 135 Z"
+                d="M150 105 L200 130 L200 155 L150 180 L100 155 L100 130 Z"
                 fill="none"
                 stroke="#00d4ff"
                 strokeWidth="0.5"
-                strokeOpacity="0.3"
+                strokeOpacity="0.25"
               />
               
-              {/* Chart line */}
+              {/* Chart line on top face */}
               <polyline
-                points="85,175 100,160 115,170 130,145 145,155 160,140"
+                points="105,155 125,140 140,148 160,128 180,138 195,125"
                 fill="none"
                 stroke="#00d4ff"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                filter="url(#innerGlow)"
+                filter="url(#softGlow)"
               />
               
-              {/* Glow dots on chart line */}
-              <circle cx="100" cy="160" r="2" fill="#00d4ff" opacity="0.8" />
-              <circle cx="130" cy="145" r="2" fill="#00d4ff" opacity="0.8" />
-              <circle cx="160" cy="140" r="2" fill="#00d4ff" opacity="0.8" />
+              {/* Data points */}
+              <circle cx="125" cy="140" r="2.5" fill="#00d4ff" opacity="0.9" />
+              <circle cx="160" cy="128" r="2.5" fill="#00d4ff" opacity="0.9" />
+              <circle cx="195" cy="125" r="2.5" fill="#00d4ff" opacity="0.9" />
+              
+              {/* Corner accent dots */}
+              <circle cx="150" cy="80" r="2" fill="#00d4ff" opacity="0.6" />
+              <circle cx="230" cy="120" r="2" fill="#00d4ff" opacity="0.4" />
+              <circle cx="230" cy="160" r="2" fill="#00d4ff" opacity="0.4" />
             </svg>
           </div>
 
@@ -430,8 +449,8 @@ const heroVisual = css({
 })
 
 const hexContainer = css({
-  width: '240px',
-  height: '260px',
+  width: '300px',
+  height: '320px',
   position: 'relative',
   zIndex: 2,
 })
