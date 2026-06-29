@@ -77,41 +77,90 @@ export function Hero(handle: Handle<Record<string, never>>) {
 
         <div mix={heroVisual}>
           <div mix={hexContainer}>
-            <div mix={hexScene}>
-              <div mix={hexCoin}>
-                {/* Left face (main hexagon) */}
-                <div mix={[hexFace, hexFaceLeft]}>
-                  <svg viewBox="0 0 100 115" style={{ width: '100%', height: '100%' }}>
-                    <defs>
-                      <linearGradient id="faceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#1e4050" />
-                        <stop offset="100%" stopColor="#0d2535" />
-                      </linearGradient>
-                    </defs>
-                    <polygon
-                      points="50,0 100,28 100,86 50,115 0,86 0,28"
-                      fill="url(#faceGrad)"
-                      stroke="#00d4ff"
-                      strokeWidth="1.5"
-                    />
-                    <polyline
-                      points="15,75 30,65 45,70 60,55 75,62 90,50"
-                      fill="none"
-                      stroke="#00d4ff"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="30" cy="65" r="2" fill="#00d4ff" />
-                    <circle cx="60" cy="55" r="2" fill="#00d4ff" />
-                    <circle cx="90" cy="50" r="2" fill="#00d4ff" />
-                  </svg>
-                </div>
-                {/* Top face */}
-                <div mix={[hexFace, hexFaceTop]} />
-                {/* Right face */}
-                <div mix={[hexFace, hexFaceRight]} />
-              </div>
-            </div>
+            <svg viewBox="0 0 300 300" mix={hexShape}>
+              <defs>
+                <linearGradient id="faceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#1e4050" />
+                  <stop offset="100%" stopColor="#0d2535" />
+                </linearGradient>
+                <linearGradient id="topGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" stopColor="#0c1e28" />
+                  <stop offset="100%" stopColor="#081520" />
+                </linearGradient>
+                <linearGradient id="rightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0a1920" />
+                  <stop offset="100%" stopColor="#050d12" />
+                </linearGradient>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              
+              {/* Shadow */}
+              <ellipse cx="110" cy="260" rx="50" ry="10" fill="#00d4ff" opacity="0.04" />
+              
+              {/* 
+                Isometric hexagon facing LEFT.
+                Hex vertices (flat-top hex, radius 70):
+                v0: top-left, v1: top-right, v2: right, v3: bottom-right, v4: bottom-left, v5: left
+                
+                Facing left = we see left face + depth on top-right edges
+              */}
+              
+              {/* Depth: top face (connects front top edge to back) */}
+              <path
+                d="M40 105 L110 65 L180 105 L180 85 L110 45 L40 85 Z"
+                fill="url(#topGrad)"
+                stroke="#00d4ff"
+                strokeWidth="0.5"
+                strokeOpacity="0.3"
+              />
+              
+              {/* Depth: right face (connects front right edge to back) */}
+              <path
+                d="M180 105 L180 85 L200 97 L200 117 Z"
+                fill="url(#rightGrad)"
+                stroke="#00d4ff"
+                strokeWidth="0.5"
+                strokeOpacity="0.3"
+              />
+              
+              {/* Front face: hexagon */}
+              <path
+                d="M40 125 L110 85 L180 125 L180 185 L110 225 L40 185 Z"
+                fill="url(#faceGrad)"
+                stroke="#00d4ff"
+                strokeWidth="1.5"
+                filter="url(#glow)"
+              />
+              
+              {/* Inner hex detail */}
+              <path
+                d="M70 140 L110 115 L150 140 L150 170 L110 195 L70 170 Z"
+                fill="none"
+                stroke="#00d4ff"
+                strokeWidth="0.5"
+                strokeOpacity="0.2"
+              />
+              
+              {/* Chart line */}
+              <polyline
+                points="60,175 85,160 110,168 135,150 155,158 175,145"
+                fill="none"
+                stroke="#00d4ff"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              
+              {/* Data dots */}
+              <circle cx="85" cy="160" r="2" fill="#00d4ff" />
+              <circle cx="135" cy="150" r="2" fill="#00d4ff" />
+              <circle cx="175" cy="145" r="2" fill="#00d4ff" />
+            </svg>
           </div>
 
           <svg mix={connectionLines} viewBox="0 0 400 250">
@@ -386,57 +435,10 @@ const hexContainer = css({
   zIndex: 2,
 })
 
-const hexScene = css({
+const hexShape = css({
   width: '100%',
   height: '100%',
-  perspective: '400px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-})
-
-const hexCoin = css({
-  width: '150px',
-  height: '173px',
-  position: 'relative',
-  transformStyle: 'preserve-3d',
-  transform: 'rotateX(-35deg) rotateY(-35deg)',
-})
-
-const hexFace = css({
-  position: 'absolute',
-  width: '100%',
-  height: '100%',
-  backfaceVisibility: 'hidden',
-})
-
-const hexFaceLeft = css({
-  transform: 'translateZ(25px)',
-  filter: 'drop-shadow(0 0 15px rgba(0, 212, 255, 0.4))',
-})
-
-const hexFaceTop = css({
-  position: 'absolute',
-  width: '100%',
-  height: '50px',
-  bottom: '100%',
-  left: 0,
-  transformOrigin: 'bottom',
-  transform: 'rotateX(60deg)',
-  background: 'linear-gradient(0deg, #0c1e28 0%, #081520 100%)',
-  borderBottom: '1px solid rgba(0, 212, 255, 0.3)',
-})
-
-const hexFaceRight = css({
-  position: 'absolute',
-  width: '50px',
-  height: '100%',
-  left: '100%',
-  top: 0,
-  transformOrigin: 'left',
-  transform: 'rotateY(-60deg)',
-  background: 'linear-gradient(90deg, #0a1920 0%, #050d12 100%)',
-  borderLeft: '1px solid rgba(0, 212, 255, 0.2)',
+  filter: 'drop-shadow(0 0 20px rgba(0, 212, 255, 0.3))',
 })
 
 const connectionLines = css({
