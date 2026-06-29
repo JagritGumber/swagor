@@ -65,7 +65,7 @@ export function Hero(handle: Handle<Record<string, never>>) {
 
           <div mix={trustIndicators}>
             <span mix={trustItem}>
-              <span mix={trustIcon}>🛡️</span>
+              <i class="ph ph-shield-check" mix={trustIcon}></i>
               Non-custodial
             </span>
             <span mix={trustDot}>•</span>
@@ -364,7 +364,8 @@ const trustItem = css({
 })
 
 const trustIcon = css({
-  fontSize: '14px',
+  fontSize: '16px',
+  color: '#00d4ff',
 })
 
 const trustDot = css({

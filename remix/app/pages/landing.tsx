@@ -15,6 +15,10 @@ export function LandingPage(handle: Handle<Record<string, never>>) {
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
           />
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css"
+          />
         </>
       }
     >
