@@ -77,42 +77,90 @@ export function Hero(handle: Handle<Record<string, never>>) {
 
         <div mix={heroVisual}>
           <div mix={hexContainer}>
-            <svg viewBox="0 0 200 200" mix={hexShape}>
+            <svg viewBox="0 0 240 260" mix={hexShape}>
               <defs>
-                <linearGradient id="hexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#0066cc" stopOpacity="0.1" />
+                <linearGradient id="hexTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#1a3a4a" />
+                  <stop offset="100%" stopColor="#0d1f2d" />
+                </linearGradient>
+                <linearGradient id="hexLeft" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#0a1a24" />
+                  <stop offset="100%" stopColor="#060f16" />
+                </linearGradient>
+                <linearGradient id="hexRight" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#0d2230" />
+                  <stop offset="100%" stopColor="#081820" />
+                </linearGradient>
+                <linearGradient id="hexEdge" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.4" />
+                  <stop offset="50%" stopColor="#00d4ff" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="#00d4ff" stopOpacity="0.4" />
                 </linearGradient>
                 <filter id="glow">
-                  <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                  <feGaussianBlur stdDeviation="4" result="coloredBlur" />
                   <feMerge>
                     <feMergeNode in="coloredBlur" />
                     <feMergeNode in="SourceGraphic" />
                   </feMerge>
                 </filter>
+                <filter id="innerGlow">
+                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
               </defs>
+              
+              {/* Bottom depth layer */}
               <path
-                d="M100 10 L180 50 L180 130 L100 170 L20 130 L20 50 Z"
-                fill="url(#hexGrad)"
-                stroke="#00d4ff"
-                strokeWidth="1"
+                d="M120 180 L190 220 L190 260 L120 300 L50 260 L50 220 Z"
+                fill="#060f16"
+                opacity="0.8"
+              />
+              
+              {/* Left side face */}
+              <path
+                d="M120 160 L50 200 L50 260 L120 300 Z"
+                fill="url(#hexLeft)"
+              />
+              
+              {/* Right side face */}
+              <path
+                d="M120 160 L190 200 L190 260 L120 300 Z"
+                fill="url(#hexRight)"
+              />
+              
+              {/* Top face - main */}
+              <path
+                d="M120 80 L190 120 L190 200 L120 240 L50 200 L50 120 Z"
+                fill="url(#hexTop)"
+                stroke="url(#hexEdge)"
+                strokeWidth="1.5"
                 filter="url(#glow)"
               />
+              
+              {/* Inner hexagon detail */}
               <path
-                d="M100 40 L140 65 L140 115 L100 140 L60 115 L60 65 Z"
+                d="M120 110 L160 135 L160 185 L120 210 L80 185 L80 135 Z"
                 fill="none"
                 stroke="#00d4ff"
                 strokeWidth="0.5"
-                strokeOpacity="0.4"
+                strokeOpacity="0.3"
               />
+              
+              {/* Chart line */}
               <polyline
-                points="70,100 85,85 100,95 115,70 130,80"
+                points="85,175 100,160 115,170 130,145 145,155 160,140"
                 fill="none"
                 stroke="#00d4ff"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                filter="url(#innerGlow)"
               />
+              
+              {/* Glow dots on chart line */}
+              <circle cx="100" cy="160" r="2" fill="#00d4ff" opacity="0.8" />
+              <circle cx="130" cy="145" r="2" fill="#00d4ff" opacity="0.8" />
+              <circle cx="160" cy="140" r="2" fill="#00d4ff" opacity="0.8" />
             </svg>
           </div>
 
@@ -382,8 +430,8 @@ const heroVisual = css({
 })
 
 const hexContainer = css({
-  width: '200px',
-  height: '200px',
+  width: '240px',
+  height: '260px',
   position: 'relative',
   zIndex: 2,
 })
