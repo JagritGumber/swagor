@@ -393,7 +393,7 @@ const hexContainer = css({
 const hexScene = css({
   width: '100%',
   height: '100%',
-  perspective: '800px',
+  perspective: '400px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -404,7 +404,7 @@ const hexCoin = css({
   height: '173px',
   position: 'relative',
   transformStyle: 'preserve-3d',
-  transform: 'rotateX(-30deg) rotateY(30deg)',
+  transform: 'rotateX(-35deg) rotateY(35deg)',
 })
 
 const hexFace = css({
