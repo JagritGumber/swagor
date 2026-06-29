@@ -13,7 +13,7 @@ export function createHexCoin(container: HTMLElement) {
     0.1,
     1000
   )
-  camera.position.set(3, 2, 4)
+  camera.position.set(3, 4, 4)
   camera.lookAt(0, 0, 0)
   
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
