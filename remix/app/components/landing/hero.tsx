@@ -79,23 +79,23 @@ export function Hero(handle: Handle<Record<string, never>>) {
           <div mix={hexContainer}>
             <svg viewBox="0 0 300 320" mix={hexShape}>
               <defs>
-                <linearGradient id="coinTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="coinTop" x1="0%" y1="100%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#1a3a4a" />
                   <stop offset="50%" stopColor="#0f2a38" />
                   <stop offset="100%" stopColor="#0a1e2a" />
                 </linearGradient>
-                <linearGradient id="coinSideRight" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#0a1a24" />
-                  <stop offset="100%" stopColor="#050e14" />
-                </linearGradient>
-                <linearGradient id="coinSideBottom" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient id="coinSideLeft" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor="#081820" />
                   <stop offset="100%" stopColor="#050e14" />
                 </linearGradient>
+                <linearGradient id="coinSideTop" x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" stopColor="#0a1a24" />
+                  <stop offset="100%" stopColor="#06101a" />
+                </linearGradient>
                 <linearGradient id="coinEdge" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.2" />
-                  <stop offset="30%" stopColor="#00d4ff" stopOpacity="0.6" />
-                  <stop offset="70%" stopColor="#00d4ff" stopOpacity="0.6" />
+                  <stop offset="30%" stopColor="#00d4ff" stopOpacity="0.7" />
+                  <stop offset="70%" stopColor="#00d4ff" stopOpacity="0.7" />
                   <stop offset="100%" stopColor="#00d4ff" stopOpacity="0.2" />
                 </linearGradient>
                 <filter id="glow">
@@ -114,37 +114,37 @@ export function Hero(handle: Handle<Record<string, never>>) {
               {/* Shadow on ground */}
               <ellipse cx="150" cy="290" rx="80" ry="20" fill="#00d4ff" opacity="0.05" />
               
-              {/* Bottom edge - thickness (right side) */}
+              {/* Top thickness edge (visible because coin faces bottom-left) */}
               <path
-                d="M230 160 L230 195 L150 235 L150 200 Z"
-                fill="url(#coinSideRight)"
+                d="M70 100 L150 60 L230 100 L230 120 L150 80 L70 120 Z"
+                fill="url(#coinSideTop)"
               />
               
-              {/* Bottom edge - thickness (bottom side) */}
+              {/* Left thickness edge (visible because coin faces bottom-left) */}
               <path
-                d="M150 200 L150 235 L70 195 L70 160 Z"
-                fill="url(#coinSideBottom)"
+                d="M70 100 L70 160 L110 185 L110 125 Z"
+                fill="url(#coinSideLeft)"
               />
               
-              {/* Edge highlight - right side */}
+              {/* Edge highlight - top */}
               <path
-                d="M230 160 L230 195"
+                d="M70 100 L150 60 L230 100"
+                stroke="url(#coinEdge)"
+                strokeWidth="1.5"
+                fill="none"
+              />
+              
+              {/* Edge highlight - left */}
+              <path
+                d="M70 100 L70 160"
                 stroke="url(#coinEdge)"
                 strokeWidth="1"
                 fill="none"
               />
               
-              {/* Edge highlight - bottom */}
+              {/* Top face - isometric hexagon (facing bottom-left) */}
               <path
-                d="M230 195 L150 235 L70 195"
-                stroke="url(#coinEdge)"
-                strokeWidth="1"
-                fill="none"
-              />
-              
-              {/* Top face - isometric hexagon */}
-              <path
-                d="M150 80 L230 120 L230 160 L150 200 L70 160 L70 120 Z"
+                d="M70 160 L150 200 L230 160 L230 120 L150 80 L70 120 Z"
                 fill="url(#coinTop)"
                 stroke="url(#coinEdge)"
                 strokeWidth="1.5"
@@ -153,7 +153,7 @@ export function Hero(handle: Handle<Record<string, never>>) {
               
               {/* Inner hexagon detail */}
               <path
-                d="M150 105 L200 130 L200 155 L150 180 L100 155 L100 130 Z"
+                d="M110 155 L150 175 L190 155 L190 130 L150 110 L110 130 Z"
                 fill="none"
                 stroke="#00d4ff"
                 strokeWidth="0.5"
@@ -162,7 +162,7 @@ export function Hero(handle: Handle<Record<string, never>>) {
               
               {/* Chart line on top face */}
               <polyline
-                points="105,155 125,140 140,148 160,128 180,138 195,125"
+                points="115,150 135,140 155,145 170,128 185,135 200,125"
                 fill="none"
                 stroke="#00d4ff"
                 strokeWidth="2"
@@ -172,14 +172,14 @@ export function Hero(handle: Handle<Record<string, never>>) {
               />
               
               {/* Data points */}
-              <circle cx="125" cy="140" r="2.5" fill="#00d4ff" opacity="0.9" />
-              <circle cx="160" cy="128" r="2.5" fill="#00d4ff" opacity="0.9" />
-              <circle cx="195" cy="125" r="2.5" fill="#00d4ff" opacity="0.9" />
+              <circle cx="135" cy="140" r="2.5" fill="#00d4ff" opacity="0.9" />
+              <circle cx="170" cy="128" r="2.5" fill="#00d4ff" opacity="0.9" />
+              <circle cx="200" cy="125" r="2.5" fill="#00d4ff" opacity="0.9" />
               
               {/* Corner accent dots */}
-              <circle cx="150" cy="80" r="2" fill="#00d4ff" opacity="0.6" />
-              <circle cx="230" cy="120" r="2" fill="#00d4ff" opacity="0.4" />
-              <circle cx="230" cy="160" r="2" fill="#00d4ff" opacity="0.4" />
+              <circle cx="150" cy="200" r="2" fill="#00d4ff" opacity="0.6" />
+              <circle cx="70" cy="160" r="2" fill="#00d4ff" opacity="0.4" />
+              <circle cx="70" cy="100" r="2" fill="#00d4ff" opacity="0.4" />
             </svg>
           </div>
 
