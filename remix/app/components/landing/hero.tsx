@@ -107,13 +107,9 @@ export function Hero(handle: Handle<Record<string, never>>) {
                   </svg>
                 </div>
                 {/* Top face */}
-                <div mix={[hexFace, hexFaceTop]}>
-                  <div mix={hexFaceTopInner} />
-                </div>
+                <div mix={[hexFace, hexFaceTop]} />
                 {/* Right face */}
-                <div mix={[hexFace, hexFaceRight]}>
-                  <div mix={hexFaceRightInner} />
-                </div>
+                <div mix={[hexFace, hexFaceRight]} />
               </div>
             </div>
           </div>
@@ -415,36 +411,32 @@ const hexFace = css({
 })
 
 const hexFaceLeft = css({
-  transform: 'translateZ(20px)',
+  transform: 'translateZ(25px)',
   filter: 'drop-shadow(0 0 15px rgba(0, 212, 255, 0.4))',
 })
 
 const hexFaceTop = css({
-  transform: 'rotateX(90deg) translateZ(86px)',
-  transformOrigin: 'bottom',
-  background: 'linear-gradient(180deg, #0c1e28 0%, #081520 100%)',
-  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-})
-
-const hexFaceTopInner = css({
+  position: 'absolute',
   width: '100%',
-  height: '100%',
-  border: '1px solid rgba(0, 212, 255, 0.3)',
-  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+  height: '50px',
+  bottom: '100%',
+  left: 0,
+  transformOrigin: 'bottom',
+  transform: 'rotateX(60deg)',
+  background: 'linear-gradient(0deg, #0c1e28 0%, #081520 100%)',
+  borderBottom: '1px solid rgba(0, 212, 255, 0.3)',
 })
 
 const hexFaceRight = css({
-  transform: 'rotateY(-90deg) translateZ(75px)',
-  transformOrigin: 'left',
-  background: 'linear-gradient(90deg, #0a1920 0%, #050d12 100%)',
-  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-})
-
-const hexFaceRightInner = css({
-  width: '100%',
+  position: 'absolute',
+  width: '50px',
   height: '100%',
-  border: '1px solid rgba(0, 212, 255, 0.2)',
-  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+  left: '100%',
+  top: 0,
+  transformOrigin: 'left',
+  transform: 'rotateY(-60deg)',
+  background: 'linear-gradient(90deg, #0a1920 0%, #050d12 100%)',
+  borderLeft: '1px solid rgba(0, 212, 255, 0.2)',
 })
 
 const connectionLines = css({
