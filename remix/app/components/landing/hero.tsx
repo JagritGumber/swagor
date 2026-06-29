@@ -77,19 +77,19 @@ export function Hero(handle: Handle<Record<string, never>>) {
 
         <div mix={heroVisual}>
           <div mix={hexContainer}>
-            <svg viewBox="0 0 300 300" mix={hexShape}>
+            <svg viewBox="0 0 280 280" mix={hexShape}>
               <defs>
-                <linearGradient id="faceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="frontFace" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#1e4050" />
                   <stop offset="100%" stopColor="#0d2535" />
                 </linearGradient>
-                <linearGradient id="topGrad" x1="0%" y1="100%" x2="0%" y2="0%">
-                  <stop offset="0%" stopColor="#0c1e28" />
-                  <stop offset="100%" stopColor="#081520" />
-                </linearGradient>
-                <linearGradient id="rightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="sideTop" x1="0%" y1="100%" x2="0%" y2="0%">
                   <stop offset="0%" stopColor="#0a1920" />
-                  <stop offset="100%" stopColor="#050d12" />
+                  <stop offset="100%" stopColor="#061018" />
+                </linearGradient>
+                <linearGradient id="sideRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#081520" />
+                  <stop offset="100%" stopColor="#040c10" />
                 </linearGradient>
                 <filter id="glow">
                   <feGaussianBlur stdDeviation="3" result="blur" />
@@ -100,39 +100,55 @@ export function Hero(handle: Handle<Record<string, never>>) {
                 </filter>
               </defs>
               
-              {/* Shadow */}
-              <ellipse cx="110" cy="260" rx="50" ry="10" fill="#00d4ff" opacity="0.04" />
-              
               {/* 
-                Isometric hexagon facing LEFT.
-                Hex vertices (flat-top hex, radius 70):
-                v0: top-left, v1: top-right, v2: right, v3: bottom-right, v4: bottom-left, v5: left
+                Isometric hexagonal coin facing LEFT.
                 
-                Facing left = we see left face + depth on top-right edges
+                Front hex (center 100,150, radius 60):
+                  top:     100, 90
+                  topRight: 152, 120
+                  botRight: 152, 180
+                  bottom:  100, 210
+                  botLeft:  48, 180
+                  topLeft:  48, 120
+                
+                Back hex offset by (20, -15) for isometric depth.
+                
+                Visible side faces (facing left):
+                  - top edge (topLeft -> top)
+                  - right edge (top -> topRight)
               */}
               
-              {/* Depth: top face (connects front top edge to back) */}
+              {/* Back hex (darker, offset up-right) */}
               <path
-                d="M40 105 L110 65 L180 105 L180 85 L110 45 L40 85 Z"
-                fill="url(#topGrad)"
+                d="M120 75 L172 105 L172 165 L120 195 L68 165 L68 105 Z"
+                fill="#060e14"
+                stroke="#00d4ff"
+                strokeWidth="0.5"
+                strokeOpacity="0.2"
+              />
+              
+              {/* Side face: top-left edge */}
+              <path
+                d="M48 120 L68 105 L120 75 L100 90 Z"
+                fill="url(#sideTop)"
                 stroke="#00d4ff"
                 strokeWidth="0.5"
                 strokeOpacity="0.3"
               />
               
-              {/* Depth: right face (connects front right edge to back) */}
+              {/* Side face: top-right edge */}
               <path
-                d="M180 105 L180 85 L200 97 L200 117 Z"
-                fill="url(#rightGrad)"
+                d="M100 90 L120 75 L172 105 L152 120 Z"
+                fill="url(#sideRight)"
                 stroke="#00d4ff"
                 strokeWidth="0.5"
                 strokeOpacity="0.3"
               />
               
-              {/* Front face: hexagon */}
+              {/* Front hex (main face) */}
               <path
-                d="M40 125 L110 85 L180 125 L180 185 L110 225 L40 185 Z"
-                fill="url(#faceGrad)"
+                d="M100 90 L152 120 L152 180 L100 210 L48 180 L48 120 Z"
+                fill="url(#frontFace)"
                 stroke="#00d4ff"
                 strokeWidth="1.5"
                 filter="url(#glow)"
@@ -140,7 +156,7 @@ export function Hero(handle: Handle<Record<string, never>>) {
               
               {/* Inner hex detail */}
               <path
-                d="M70 140 L110 115 L150 140 L150 170 L110 195 L70 170 Z"
+                d="M100 115 L130 132 L130 168 L100 185 L70 168 L70 132 Z"
                 fill="none"
                 stroke="#00d4ff"
                 strokeWidth="0.5"
@@ -149,7 +165,7 @@ export function Hero(handle: Handle<Record<string, never>>) {
               
               {/* Chart line */}
               <polyline
-                points="60,175 85,160 110,168 135,150 155,158 175,145"
+                points="65,170 85,158 105,163 125,148 140,155 155,143"
                 fill="none"
                 stroke="#00d4ff"
                 strokeWidth="2"
@@ -157,9 +173,9 @@ export function Hero(handle: Handle<Record<string, never>>) {
               />
               
               {/* Data dots */}
-              <circle cx="85" cy="160" r="2" fill="#00d4ff" />
-              <circle cx="135" cy="150" r="2" fill="#00d4ff" />
-              <circle cx="175" cy="145" r="2" fill="#00d4ff" />
+              <circle cx="85" cy="158" r="2" fill="#00d4ff" />
+              <circle cx="125" cy="148" r="2" fill="#00d4ff" />
+              <circle cx="155" cy="143" r="2" fill="#00d4ff" />
             </svg>
           </div>
 
