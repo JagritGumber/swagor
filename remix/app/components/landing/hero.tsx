@@ -140,8 +140,8 @@ export function Hero(handle: Handle<Record<string, never>>) {
       </section>
 
       <script
+        type="module"
         src={routes.assets.href({ path: 'app/assets/hex-three-client.ts' })}
-        defer
       />
     </div>
   )
