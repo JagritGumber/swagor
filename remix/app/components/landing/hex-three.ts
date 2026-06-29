@@ -4,7 +4,7 @@ export function createHexCoin(container: HTMLElement) {
   const scene = new THREE.Scene()
   
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000)
-  camera.position.set(-4, 2, 3)
+  camera.position.set(0, 2, 5)
   camera.lookAt(0, 0, 0)
   
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
@@ -22,9 +22,9 @@ export function createHexCoin(container: HTMLElement) {
   })
   const coin = new THREE.Mesh(geometry, material)
   
-  // Rotate to show hex face on left
+  // Rotate to show hex face towards camera
   coin.rotation.x = -0.5
-  coin.rotation.y = 2.5
+  coin.rotation.y = 0
   
   scene.add(coin)
   
