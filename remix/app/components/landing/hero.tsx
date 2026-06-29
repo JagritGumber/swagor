@@ -404,7 +404,7 @@ const hexCoin = css({
   height: '173px',
   position: 'relative',
   transformStyle: 'preserve-3d',
-  transform: 'rotateX(-35deg) rotateY(35deg)',
+  transform: 'rotateX(-35deg) rotateY(-35deg)',
 })
 
 const hexFace = css({
