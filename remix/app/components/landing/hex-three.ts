@@ -22,8 +22,8 @@ export function createHexCoin(container: HTMLElement) {
   })
   const coin = new THREE.Mesh(geometry, material)
   
-  // Rotate to show hex face towards camera
-  coin.rotation.x = 1.2
+  // Static front view
+  coin.rotation.x = 0
   coin.rotation.y = 0
   
   scene.add(coin)
@@ -50,17 +50,8 @@ export function createHexCoin(container: HTMLElement) {
   backLight.position.set(-5, -3, -5)
   scene.add(backLight)
   
-  // Animation loop
-  let animating = true
-  
-  function animate() {
-    if (!animating) return
-    requestAnimationFrame(animate)
-    coin.rotation.y += 0.003
-    renderer.render(scene, camera)
-  }
-  
-  animate()
+  // Render once
+  renderer.render(scene, camera)
   
   // Handle resize
   const onResize = () => {
@@ -75,7 +66,6 @@ export function createHexCoin(container: HTMLElement) {
   
   return {
     destroy() {
-      animating = false
       window.removeEventListener('resize', onResize)
       renderer.dispose()
       container.removeChild(renderer.domElement)
