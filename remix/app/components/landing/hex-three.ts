@@ -19,10 +19,11 @@ export function createHexCoin(container: HTMLElement) {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
   renderer.setPixelRatio(window.devicePixelRatio)
   renderer.setSize(container.clientWidth, container.clientHeight)
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
   container.appendChild(renderer.domElement)
   
   // Hexagonal prism (coin)
-  // Hexagonal shape
   const hexShape = new THREE.Shape()
   const radius = 1
   for (let i = 0; i < 6; i++) {
@@ -37,7 +38,6 @@ export function createHexCoin(container: HTMLElement) {
   }
   hexShape.closePath()
   
-  // Extrude with bevel
   const extrudeSettings = {
     depth: 0.8,
     bevelEnabled: true,
@@ -53,13 +53,24 @@ export function createHexCoin(container: HTMLElement) {
     shininess: 100,
   })
   const coin = new THREE.Mesh(geometry, material)
-  
-  // Static view
-  coin.rotation.x = 0
-  coin.rotation.y = 0
-  coin.rotation.z = 0
+  coin.position.y = 1.5
+  coin.castShadow = true
   
   scene.add(coin)
+  
+  // Platform
+  const platformGeometry = new THREE.BoxGeometry(4, 0.2, 4)
+  const platformMaterial = new THREE.MeshPhongMaterial({
+    color: 0x0a1018,
+    emissive: 0x050810,
+    emissiveIntensity: 0.1,
+    shininess: 50,
+  })
+  const platform = new THREE.Mesh(platformGeometry, platformMaterial)
+  platform.position.y = 0
+  platform.receiveShadow = true
+  
+  scene.add(platform)
   
   // Edge glow
   const edges = new THREE.EdgesGeometry(geometry)
@@ -77,6 +88,9 @@ export function createHexCoin(container: HTMLElement) {
   
   const directionalLight = new THREE.DirectionalLight(0x00d4ff, 0.8)
   directionalLight.position.set(5, 5, 5)
+  directionalLight.castShadow = true
+  directionalLight.shadow.mapSize.width = 1024
+  directionalLight.shadow.mapSize.height = 1024
   scene.add(directionalLight)
   
   const backLight = new THREE.DirectionalLight(0x0066cc, 0.3)
