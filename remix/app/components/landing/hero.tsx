@@ -1,5 +1,6 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
+import { routes } from '../../routes.ts'
 
 const FLOATING_ICONS = [
   { label: 'Market Scan', icon: 'search', x: -180, y: -60, delay: 0 },
@@ -77,106 +78,7 @@ export function Hero(handle: Handle<Record<string, never>>) {
 
         <div mix={heroVisual}>
           <div mix={hexContainer}>
-            <svg viewBox="0 0 280 280" mix={hexShape}>
-              <defs>
-                <linearGradient id="frontFace" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#1e4050" />
-                  <stop offset="100%" stopColor="#0d2535" />
-                </linearGradient>
-                <linearGradient id="sideTop" x1="0%" y1="100%" x2="0%" y2="0%">
-                  <stop offset="0%" stopColor="#0a1920" />
-                  <stop offset="100%" stopColor="#061018" />
-                </linearGradient>
-                <linearGradient id="sideRight" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#081520" />
-                  <stop offset="100%" stopColor="#040c10" />
-                </linearGradient>
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              
-              {/* 
-                Isometric hexagonal coin facing LEFT.
-                
-                Front hex (center 100,150, radius 60):
-                  top:     100, 90
-                  topRight: 152, 120
-                  botRight: 152, 180
-                  bottom:  100, 210
-                  botLeft:  48, 180
-                  topLeft:  48, 120
-                
-                Back hex offset by (20, -15) for isometric depth.
-                
-                Visible side faces (facing left):
-                  - top edge (topLeft -> top)
-                  - right edge (top -> topRight)
-              */}
-              
-              {/* Back hex (darker, offset up-right) */}
-              <path
-                d="M120 75 L172 105 L172 165 L120 195 L68 165 L68 105 Z"
-                fill="#060e14"
-                stroke="#00d4ff"
-                strokeWidth="0.5"
-                strokeOpacity="0.2"
-              />
-              
-              {/* Side face: top-left edge */}
-              <path
-                d="M48 120 L68 105 L120 75 L100 90 Z"
-                fill="url(#sideTop)"
-                stroke="#00d4ff"
-                strokeWidth="0.5"
-                strokeOpacity="0.3"
-              />
-              
-              {/* Side face: top-right edge */}
-              <path
-                d="M100 90 L120 75 L172 105 L152 120 Z"
-                fill="url(#sideRight)"
-                stroke="#00d4ff"
-                strokeWidth="0.5"
-                strokeOpacity="0.3"
-              />
-              
-              {/* Front hex (main face) */}
-              <path
-                d="M100 90 L152 120 L152 180 L100 210 L48 180 L48 120 Z"
-                fill="url(#frontFace)"
-                stroke="#00d4ff"
-                strokeWidth="1.5"
-                filter="url(#glow)"
-              />
-              
-              {/* Inner hex detail */}
-              <path
-                d="M100 115 L130 132 L130 168 L100 185 L70 168 L70 132 Z"
-                fill="none"
-                stroke="#00d4ff"
-                strokeWidth="0.5"
-                strokeOpacity="0.2"
-              />
-              
-              {/* Chart line */}
-              <polyline
-                points="65,170 85,158 105,163 125,148 140,155 155,143"
-                fill="none"
-                stroke="#00d4ff"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              
-              {/* Data dots */}
-              <circle cx="85" cy="158" r="2" fill="#00d4ff" />
-              <circle cx="125" cy="148" r="2" fill="#00d4ff" />
-              <circle cx="155" cy="143" r="2" fill="#00d4ff" />
-            </svg>
+            <div id="hex-3d" style={{ width: '100%', height: '100%' }} />
           </div>
 
           <svg mix={connectionLines} viewBox="0 0 400 250">
@@ -236,6 +138,11 @@ export function Hero(handle: Handle<Record<string, never>>) {
           ))}
         </div>
       </section>
+
+      <script
+        src={routes.assets.href({ path: 'app/assets/hex-three-client.ts' })}
+        defer
+      />
     </div>
   )
 }
@@ -449,12 +356,6 @@ const hexContainer = css({
   height: '300px',
   position: 'relative',
   zIndex: 2,
-})
-
-const hexShape = css({
-  width: '100%',
-  height: '100%',
-  filter: 'drop-shadow(0 0 20px rgba(0, 212, 255, 0.3))',
 })
 
 const connectionLines = css({
