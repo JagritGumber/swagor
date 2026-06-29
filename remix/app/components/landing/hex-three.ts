@@ -23,7 +23,7 @@ export function createHexCoin(container: HTMLElement) {
   const coin = new THREE.Mesh(geometry, material)
   
   // Rotate to show hex face towards camera
-  coin.rotation.x = 0
+  coin.rotation.x = 0.5
   coin.rotation.y = 0
   
   scene.add(coin)
