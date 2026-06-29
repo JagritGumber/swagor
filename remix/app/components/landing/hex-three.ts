@@ -22,7 +22,30 @@ export function createHexCoin(container: HTMLElement) {
   container.appendChild(renderer.domElement)
   
   // Hexagonal prism (coin)
-  const geometry = new THREE.CylinderGeometry(1, 1, 0.8, 12)
+  // Hexagonal shape
+  const hexShape = new THREE.Shape()
+  const radius = 1
+  for (let i = 0; i < 6; i++) {
+    const angle = (i * Math.PI * 2) / 6 - Math.PI / 2
+    const x = Math.cos(angle) * radius
+    const y = Math.sin(angle) * radius
+    if (i === 0) {
+      hexShape.moveTo(x, y)
+    } else {
+      hexShape.lineTo(x, y)
+    }
+  }
+  hexShape.closePath()
+  
+  // Extrude with bevel
+  const extrudeSettings = {
+    depth: 0.8,
+    bevelEnabled: true,
+    bevelThickness: 0.1,
+    bevelSize: 0.1,
+    bevelSegments: 3,
+  }
+  const geometry = new THREE.ExtrudeGeometry(hexShape, extrudeSettings)
   const material = new THREE.MeshPhongMaterial({
     color: 0x0d2535,
     emissive: 0x1e4050,
@@ -34,6 +57,7 @@ export function createHexCoin(container: HTMLElement) {
   // Static view
   coin.rotation.x = 1.5
   coin.rotation.y = 0
+  coin.rotation.z = 0
   
   scene.add(coin)
   
