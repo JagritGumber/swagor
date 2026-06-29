@@ -13,7 +13,7 @@ export function createHexCoin(container: HTMLElement) {
   container.appendChild(renderer.domElement)
   
   // Hexagonal prism (coin)
-  const geometry = new THREE.CylinderGeometry(1, 1, 0.5, 6)
+  const geometry = new THREE.CylinderGeometry(1, 1, 2, 6)
   const material = new THREE.MeshPhongMaterial({
     color: 0x0d2535,
     emissive: 0x1e4050,
@@ -23,7 +23,7 @@ export function createHexCoin(container: HTMLElement) {
   const coin = new THREE.Mesh(geometry, material)
   
   // Static front view
-  coin.rotation.x = 1.2
+  coin.rotation.x = 1.5
   coin.rotation.y = 0
   coin.rotation.z = 0.3
   
