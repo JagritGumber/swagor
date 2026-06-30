@@ -4,7 +4,7 @@ export function createHexCoin(container: HTMLElement) {
   const scene = new THREE.Scene()
   
   const aspect = 1
-  const frustumSize = 4
+  const frustumSize = 6
   const camera = new THREE.OrthographicCamera(
     frustumSize * aspect / -2,
     frustumSize * aspect / 2,
