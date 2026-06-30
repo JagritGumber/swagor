@@ -61,11 +61,11 @@ export function createHexCoin(container: HTMLElement) {
   // Platform
   const platformGeometry = new THREE.BoxGeometry(4, 0.2, 4)
   const platformMaterial = new THREE.MeshPhongMaterial({
-    color: 0x1a2a3a,
-    emissive: 0x0a1520,
-    emissiveIntensity: 0.2,
-    shininess: 30,
-    specular: 0x00d4ff,
+    color: 0x0d1b2a,
+    emissive: 0x060f18,
+    emissiveIntensity: 0.1,
+    shininess: 20,
+    specular: 0x1a3050,
   })
   const platform = new THREE.Mesh(platformGeometry, platformMaterial)
   platform.position.y = 0
