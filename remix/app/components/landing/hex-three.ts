@@ -61,10 +61,11 @@ export function createHexCoin(container: HTMLElement) {
   // Platform
   const platformGeometry = new THREE.BoxGeometry(4, 0.2, 4)
   const platformMaterial = new THREE.MeshPhongMaterial({
-    color: 0x0a1018,
-    emissive: 0x050810,
-    emissiveIntensity: 0.1,
-    shininess: 50,
+    color: 0x1a2a3a,
+    emissive: 0x0a1520,
+    emissiveIntensity: 0.2,
+    shininess: 30,
+    specular: 0x00d4ff,
   })
   const platform = new THREE.Mesh(platformGeometry, platformMaterial)
   platform.position.y = 0
@@ -83,19 +84,23 @@ export function createHexCoin(container: HTMLElement) {
   coin.add(wireframe)
   
   // Lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4)
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
   scene.add(ambientLight)
   
-  const directionalLight = new THREE.DirectionalLight(0x00d4ff, 0.8)
-  directionalLight.position.set(5, 5, 5)
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8)
+  directionalLight.position.set(5, 8, 5)
   directionalLight.castShadow = true
   directionalLight.shadow.mapSize.width = 1024
   directionalLight.shadow.mapSize.height = 1024
   scene.add(directionalLight)
   
-  const backLight = new THREE.DirectionalLight(0x0066cc, 0.3)
-  backLight.position.set(-5, -3, -5)
+  const backLight = new THREE.DirectionalLight(0x00d4ff, 0.4)
+  backLight.position.set(-5, 3, -5)
   scene.add(backLight)
+  
+  const fillLight = new THREE.DirectionalLight(0x0066cc, 0.3)
+  fillLight.position.set(-3, 2, 3)
+  scene.add(fillLight)
   
   // Render once
   renderer.render(scene, camera)
