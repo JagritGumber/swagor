@@ -59,38 +59,22 @@ export function createHexCoin(container: HTMLElement) {
   
   scene.add(coin)
   
-  // Platform with bevel on side edges
-  // Create side profile shape (rounded rectangle cross-section)
-  const sideProfile = new THREE.Shape()
-  const pw = 1.5  // half-width of platform
-  const ph = 0.2  // half-height
-  const br = 0.1  // bevel radius
+  // Platform with bevel
+  const platformShape = new THREE.Shape()
+  platformShape.moveTo(-1.5, -1.5)
+  platformShape.lineTo(1.5, -1.5)
+  platformShape.lineTo(1.5, 1.5)
+  platformShape.lineTo(-1.5, 1.5)
+  platformShape.closePath()
   
-  sideProfile.moveTo(-pw, -ph)
-  sideProfile.lineTo(pw, -ph)
-  sideProfile.lineTo(pw, ph - br)
-  sideProfile.quadraticCurveTo(pw, ph, pw - br, ph)
-  sideProfile.lineTo(-pw + br, ph)
-  sideProfile.quadraticCurveTo(-pw, ph, -pw, ph - br)
-  sideProfile.lineTo(-pw, -ph)
-  
-  // Rectangular path for extrusion
-  const extrudePath = new THREE.CurvePath()
-  const pathPoints = [
-    new THREE.Vector3(-pw, 0, -pw),
-    new THREE.Vector3(pw, 0, -pw),
-    new THREE.Vector3(pw, 0, pw),
-    new THREE.Vector3(-pw, 0, pw),
-    new THREE.Vector3(-pw, 0, -pw),
-  ]
-  const pathCurve = new THREE.CatmullRomCurve3(pathPoints, true)
-  extrudePath.add(pathCurve)
-  
-  const platformGeometry = new THREE.ExtrudeGeometry(sideProfile, {
-    extrudePath: pathCurve,
-    steps: 100,
-    bevelEnabled: false,
-  })
+  const platformExtrudeSettings = {
+    depth: 0.4,
+    bevelEnabled: true,
+    bevelThickness: 0.2,
+    bevelSize: 0.2,
+    bevelSegments: 4,
+  }
+  const platformGeometry = new THREE.ExtrudeGeometry(platformShape, platformExtrudeSettings)
   const platformMaterial = new THREE.MeshPhongMaterial({
     color: 0x0d1b2a,
     emissive: 0x060f18,
@@ -99,6 +83,8 @@ export function createHexCoin(container: HTMLElement) {
     specular: 0x1a3050,
   })
   const platform = new THREE.Mesh(platformGeometry, platformMaterial)
+  platformGeometry.center()
+  platform.rotation.x = -Math.PI / 2
   platform.position.y = -1
   platform.receiveShadow = true
   
