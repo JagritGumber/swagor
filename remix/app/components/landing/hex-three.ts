@@ -53,7 +53,8 @@ export function createHexCoin(container: HTMLElement) {
     shininess: 100,
   })
   const coin = new THREE.Mesh(geometry, material)
-  coin.position.set(0, 0.5, 0)
+  geometry.center()
+  coin.position.set(0, 0.6, 0)
   coin.castShadow = true
   
   scene.add(coin)
