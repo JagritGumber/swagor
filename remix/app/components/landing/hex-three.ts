@@ -46,19 +46,39 @@ export function createHexCoin(container: HTMLElement) {
     bevelSegments: 3,
   }
   const geometry = new THREE.ExtrudeGeometry(hexShape, extrudeSettings)
-  const material = new THREE.MeshPhongMaterial({
+  const coinMat = new THREE.MeshStandardMaterial({
     color: 0x0d2535,
+    metalness: 0.9,
+    roughness: 0.25,
     emissive: 0x1e4050,
-    emissiveIntensity: 0.3,
-    shininess: 100,
+    emissiveIntensity: 0.15,
   })
-  const coin = new THREE.Mesh(geometry, material)
+  const coin = new THREE.Mesh(geometry, coinMat)
   geometry.center()
   coin.position.set(0.4, 1, 0)
   coin.castShadow = true
   
   scene.add(coin)
-  
+
+  // Glowing panel on the left-facing side face (the "top" of the hex after rotation)
+  const glowPanelMat = new THREE.MeshBasicMaterial({
+    color: 0x88ffff,
+    transparent: true,
+    opacity: 0.85,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false,
+    side: THREE.DoubleSide,
+  })
+  const panelGeom = new THREE.PlaneGeometry(0.8, 2)
+  const glowPanel = new THREE.Mesh(panelGeom, glowPanelMat)
+  // Face center in geometry space: (-1.732, 0, 0)
+  // After rotation.x = -PI/2: (-1.732, 0, 0) — z=0 stays
+  // Rotate plane normal (0,0,1) → (-1,0,0) to face left
+  glowPanel.position.set(-1.732, 0, 0)
+  glowPanel.rotation.y = Math.PI / 2
+  coin.add(glowPanel)
+
   // Square platform with rounded corners
   const platformShape = new THREE.Shape()
   const s = 1.5
@@ -189,15 +209,6 @@ export function createHexCoin(container: HTMLElement) {
     platform.add(new THREE.Mesh(tubeGeom, glowMat))
   }
 
-  // Hex coin edge glow
-  const edges = new THREE.EdgesGeometry(geometry)
-  const lineMaterial = new THREE.LineBasicMaterial({ 
-    color: 0x00d4ff,
-    transparent: true,
-    opacity: 0.6,
-  })
-  const wireframe = new THREE.LineSegments(edges, lineMaterial)
-  coin.add(wireframe)
   
   // Trend chart on hex face
   const chartPoints = [
@@ -240,6 +251,11 @@ export function createHexCoin(container: HTMLElement) {
   const fillLight = new THREE.DirectionalLight(0x0066cc, 0.3)
   fillLight.position.set(-3, 2, 3)
   scene.add(fillLight)
+
+  // Blue top light for metallic reflection on the coin
+  const topBlueLight = new THREE.PointLight(0x4488ff, 2.5, 10)
+  topBlueLight.position.set(0.4, 5, 0)
+  scene.add(topBlueLight)
   
   // Levitate animation
   const baseY = 1
