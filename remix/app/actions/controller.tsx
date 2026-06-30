@@ -2,7 +2,7 @@ import { createController } from 'remix/router'
 
 import { assetServer } from '../assets.ts'
 import { routes } from '../routes.ts'
-import { LandingPage } from '../pages/landing.tsx'
+import { LandingPage } from '../pages/landing/page.tsx'
 import { PortfolioPage } from '../pages/portfolio.tsx'
 import { fetchCandles } from '../data/hyperliquid.ts'
 import type { SelboReasoning, ReaderReadResult } from '../types/reader.ts'

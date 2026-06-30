@@ -3,6 +3,11 @@ import { css } from 'remix/ui'
 export const FONT_UI = "'Inter', system-ui, -apple-system, sans-serif"
 export const FONT_DATA = "'JetBrains Mono', ui-monospace, monospace"
 
+export const GAP_2 = '8px'
+export const GAP_4 = '16px'
+export const GAP_6 = '24px'
+export const GAP_12 = '48px'
+
 export const SURFACE_BODY = 'oklch(0 0 0)'
 export const SURFACE_HEADER = 'oklch(0.08 0.015 260)'
 export const SURFACE_WIDGET_HEADER = 'oklch(0.14 0.03 260)'

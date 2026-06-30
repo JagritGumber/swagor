@@ -1,6 +1,6 @@
 import type { Handle } from 'remix/ui'
-import { Document } from '../document.tsx'
-import { Hero } from '../components/landing/hero.tsx'
+import { Document } from '../../document.tsx'
+import { Hero } from '../../components/landing/hero/component.tsx'
 
 export function LandingPage(handle: Handle<Record<string, never>>) {
   return () => (
