@@ -59,8 +59,38 @@ export function createHexCoin(container: HTMLElement) {
   
   scene.add(coin)
   
-  // Platform - simple box
-  const platformGeometry = new THREE.BoxGeometry(3, 0.3, 3)
+  // Platform with bevel on side edges
+  // Create side profile shape (rounded rectangle cross-section)
+  const sideProfile = new THREE.Shape()
+  const pw = 1.5  // half-width of platform
+  const ph = 0.2  // half-height
+  const br = 0.1  // bevel radius
+  
+  sideProfile.moveTo(-pw, -ph)
+  sideProfile.lineTo(pw, -ph)
+  sideProfile.lineTo(pw, ph - br)
+  sideProfile.quadraticCurveTo(pw, ph, pw - br, ph)
+  sideProfile.lineTo(-pw + br, ph)
+  sideProfile.quadraticCurveTo(-pw, ph, -pw, ph - br)
+  sideProfile.lineTo(-pw, -ph)
+  
+  // Rectangular path for extrusion
+  const extrudePath = new THREE.CurvePath()
+  const pathPoints = [
+    new THREE.Vector3(-pw, 0, -pw),
+    new THREE.Vector3(pw, 0, -pw),
+    new THREE.Vector3(pw, 0, pw),
+    new THREE.Vector3(-pw, 0, pw),
+    new THREE.Vector3(-pw, 0, -pw),
+  ]
+  const pathCurve = new THREE.CatmullRomCurve3(pathPoints, true)
+  extrudePath.add(pathCurve)
+  
+  const platformGeometry = new THREE.ExtrudeGeometry(sideProfile, {
+    extrudePath: pathCurve,
+    steps: 100,
+    bevelEnabled: false,
+  })
   const platformMaterial = new THREE.MeshPhongMaterial({
     color: 0x0d1b2a,
     emissive: 0x060f18,
@@ -72,43 +102,26 @@ export function createHexCoin(container: HTMLElement) {
   platform.position.y = -1
   platform.receiveShadow = true
   
-  // Rounded edges on 4 sides
-  const edgeGeometry = new THREE.CylinderGeometry(0.08, 0.08, 3, 8)
-  const edgeMaterial = new THREE.MeshPhongMaterial({
-    color: 0x1a3050,
-    emissive: 0x0a1828,
-    emissiveIntensity: 0.2,
-    shininess: 40,
+  // Platform edges
+  const platformEdges = new THREE.EdgesGeometry(platformGeometry)
+  const platformLineMaterial = new THREE.LineBasicMaterial({ 
+    color: 0x00d4ff,
+    transparent: true,
+    opacity: 0.4,
   })
-  
-  // 4 side edges
-  const platformEdges = [
-    { pos: [0, -1, 1.5] as const, rot: [0, 0, Math.PI / 2] as const },
-    { pos: [0, -1, -1.5] as const, rot: [0, 0, Math.PI / 2] as const },
-    { pos: [1.5, -1, 0] as const, rot: [Math.PI / 2, 0, 0] as const },
-    { pos: [-1.5, -1, 0] as const, rot: [Math.PI / 2, 0, 0] as const },
-  ]
-  
-  platformEdges.forEach(({ pos, rot }) => {
-    const edge = new THREE.Mesh(edgeGeometry, edgeMaterial)
-    edge.position.set(pos[0], pos[1], pos[2])
-    edge.rotation.set(rot[0], rot[1], rot[2])
-    edge.castShadow = true
-    scene.add(edge)
-  })
-  
-  scene.add(platform)
+  const platformWireframe = new THREE.LineSegments(platformEdges, platformLineMaterial)
+  platform.add(platformWireframe)
   
   scene.add(platform)
   
   // Edge glow
-  const hexEdges = new THREE.EdgesGeometry(geometry)
+  const edges = new THREE.EdgesGeometry(geometry)
   const lineMaterial = new THREE.LineBasicMaterial({ 
     color: 0x00d4ff,
     transparent: true,
     opacity: 0.6,
   })
-  const wireframe = new THREE.LineSegments(hexEdges, lineMaterial)
+  const wireframe = new THREE.LineSegments(edges, lineMaterial)
   coin.add(wireframe)
   
   // Trend chart on hex face
