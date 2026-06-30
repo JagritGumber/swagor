@@ -275,7 +275,7 @@ const trustDot = css({
 const heroVisual = css({
   flex: '0 0 50%',
   position: 'relative',
-  height: '400px',
+  height: '500px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -284,6 +284,9 @@ const heroVisual = css({
 const hexContainer = css({
   width: '500px',
   height: '500px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   position: 'relative',
   zIndex: 2,
 })

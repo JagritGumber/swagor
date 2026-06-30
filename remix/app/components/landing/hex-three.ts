@@ -59,48 +59,137 @@ export function createHexCoin(container: HTMLElement) {
   
   scene.add(coin)
   
-  // Platform with bevel
+  // Square platform with rounded corners
   const platformShape = new THREE.Shape()
-  platformShape.moveTo(-1.5, -1.5)
-  platformShape.lineTo(1.5, -1.5)
-  platformShape.lineTo(1.5, 1.5)
-  platformShape.lineTo(-1.5, 1.5)
+  const s = 1.5
+  const r = 0.3
+  
+  platformShape.moveTo(-s + r, -s)
+  platformShape.lineTo(s - r, -s)
+  platformShape.quadraticCurveTo(s, -s, s, -s + r)
+  platformShape.lineTo(s, s - r)
+  platformShape.quadraticCurveTo(s, s, s - r, s)
+  platformShape.lineTo(-s + r, s)
+  platformShape.quadraticCurveTo(-s, s, -s, s - r)
+  platformShape.lineTo(-s, -s + r)
+  platformShape.quadraticCurveTo(-s, -s, -s + r, -s)
   platformShape.closePath()
   
-  const platformExtrudeSettings = {
-    depth: 0.4,
-    bevelEnabled: true,
-    bevelThickness: 0.2,
-    bevelSize: 0.2,
-    bevelSegments: 4,
-  }
-  const platformGeometry = new THREE.ExtrudeGeometry(platformShape, platformExtrudeSettings)
-  const platformMaterial = new THREE.MeshPhongMaterial({
-    color: 0x0d1b2a,
-    emissive: 0x060f18,
-    emissiveIntensity: 0.1,
-    shininess: 20,
-    specular: 0x1a3050,
+  const platformDepth = 0.8
+  const platformGeometry = new THREE.ExtrudeGeometry(platformShape, {
+    depth: platformDepth,
+    bevelEnabled: false,
+    material: 0,
+    extrudeMaterialIndex: 1,
+  } as THREE.ExtrudeGeometryOptions & { material: number; extrudeMaterialIndex: number })
+
+  // Alpha map: vertical fade for side faces (black=transparent at bottom, white=opaque at top)
+  const alphaCanvas = document.createElement('canvas')
+  alphaCanvas.width = 1
+  alphaCanvas.height = 64
+  const actx = alphaCanvas.getContext('2d')!
+  const aGrad = actx.createLinearGradient(0, 0, 0, 64)
+  aGrad.addColorStop(0, '#000')   // top of image → V=1 → top → transparent
+  aGrad.addColorStop(0.4, '#666')
+  aGrad.addColorStop(1, '#fff')   // bottom of image → V=0 → bottom → opaque
+  actx.fillStyle = aGrad
+  actx.fillRect(0, 0, 1, 64)
+  const alphaTexture = new THREE.CanvasTexture(alphaCanvas)
+
+  const holoColor = 0x00ddff
+
+  // Top/bottom faces: ShaderMaterial with world-Y alpha (bottom invisible)
+  const faceMat = new THREE.ShaderMaterial({
+    uniforms: {
+      holoColor: { value: new THREE.Color(holoColor) },
+      intensity: { value: 0.25 },
+      baseAlpha: { value: 0.35 },
+    },
+    vertexShader: `
+      varying float vWorldY;
+      void main() {
+        vec4 worldPos = modelMatrix * vec4(position, 1.0);
+        vWorldY = worldPos.y;
+        gl_Position = projectionMatrix * viewMatrix * worldPos;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 holoColor;
+      uniform float intensity;
+      uniform float baseAlpha;
+      varying float vWorldY;
+      void main() {
+        float alpha = smoothstep(-2.5, -1.6, vWorldY) * baseAlpha;
+        gl_FragColor = vec4(holoColor + holoColor * intensity, alpha);
+      }
+    `,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
   })
-  const platform = new THREE.Mesh(platformGeometry, platformMaterial)
+
+  // Side faces: same + vertical alpha fade
+  const sideMat = new THREE.MeshPhongMaterial({
+    color: holoColor,
+    emissive: holoColor,
+    emissiveIntensity: 0.25,
+    alphaMap: alphaTexture,
+    transparent: true,
+    opacity: 0.35,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  })
+  const platform = new THREE.Mesh(platformGeometry, [faceMat, sideMat])
   platformGeometry.center()
   platform.rotation.x = -Math.PI / 2
-  platform.position.y = -1
-  platform.receiveShadow = true
-  
-  // Platform edges
-  const platformEdges = new THREE.EdgesGeometry(platformGeometry)
-  const platformLineMaterial = new THREE.LineBasicMaterial({ 
-    color: 0x00d4ff,
-    transparent: true,
-    opacity: 0.4,
-  })
-  const platformWireframe = new THREE.LineSegments(platformEdges, platformLineMaterial)
-  platform.add(platformWireframe)
+  platform.position.y = -2
   
   scene.add(platform)
-  
-  // Edge glow
+
+  // Smooth top-edge glow via geometry-sampled curve + TubeGeometry
+  {
+    const allEdges = new THREE.EdgesGeometry(platformGeometry, 30)
+    const pos = allEdges.attributes.position
+    const eps = 0.01
+    const topZ = platformDepth / 2
+
+    const verts: THREE.Vector3[] = []
+    const keyed = new Set<string>()
+    for (let i = 0; i < pos.count - 1; i += 2) {
+      const i0 = i * 3
+      const i1 = (i + 1) * 3
+      const z0 = pos.array[i0 + 2]
+      const z1 = pos.array[i1 + 2]
+      if (Math.abs(z0 - topZ) < eps && Math.abs(z1 - topZ) < eps) {
+        for (const idx of [i0, i1]) {
+          const k = `${pos.array[idx].toFixed(4)},${pos.array[idx + 1].toFixed(4)}`
+          if (!keyed.has(k)) {
+            keyed.add(k)
+            verts.push(new THREE.Vector3(pos.array[idx], pos.array[idx + 1], pos.array[idx + 2]))
+          }
+        }
+      }
+    }
+
+    verts.sort((a, b) => Math.atan2(a.y, a.x) - Math.atan2(b.y, b.x))
+
+    const curve = new THREE.CatmullRomCurve3(verts, true)
+    const tubeGeom = new THREE.TubeGeometry(curve, 64, 0.025, 6, true)
+    const glowMat = new THREE.MeshPhongMaterial({
+      color: 0x00eeff,
+      emissive: 0x00eeff,
+      emissiveIntensity: 0.8,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    })
+    platform.add(new THREE.Mesh(tubeGeom, glowMat))
+  }
+
+  // Hex coin edge glow
   const edges = new THREE.EdgesGeometry(geometry)
   const lineMaterial = new THREE.LineBasicMaterial({ 
     color: 0x00d4ff,
