@@ -4,7 +4,7 @@ export function createHexCoin(container: HTMLElement) {
   const scene = new THREE.Scene()
   
   const aspect = 1
-  const frustumSize = 6
+  const frustumSize = 8
   const camera = new THREE.OrthographicCamera(
     frustumSize * aspect / -2,
     frustumSize * aspect / 2,
@@ -54,7 +54,7 @@ export function createHexCoin(container: HTMLElement) {
   })
   const coin = new THREE.Mesh(geometry, material)
   geometry.center()
-  coin.position.set(0, 1.5, 0)
+  coin.position.set(0, 1, 0)
   coin.castShadow = true
   
   scene.add(coin)
