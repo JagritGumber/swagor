@@ -169,7 +169,7 @@ const tagline = css({
   padding: '8px 16px',
   border: '1px solid rgba(0, 212, 255, 0.3)',
   borderRadius: '24px',
-  marginBottom: '32px',
+  marginBottom: '16px',
   fontSize: '11px',
   fontWeight: '600',
   letterSpacing: '1.5px',
@@ -189,7 +189,7 @@ const heroTitle = css({
   fontWeight: '700',
   lineHeight: '1.1',
   letterSpacing: '-1px',
-  marginBottom: '24px',
+  marginBottom: '8px',
 })
 
 const heroHighlight = css({
@@ -200,13 +200,13 @@ const heroDescription = css({
   fontSize: '16px',
   lineHeight: '1.6',
   color: '#8892a4',
-  marginBottom: '32px',
+  marginBottom: '16px',
 })
 
 const heroActions = css({
   display: 'flex',
   gap: '16px',
-  marginBottom: '32px',
+  marginBottom: '16px',
 })
 
 const primaryCta = css({
