@@ -68,11 +68,11 @@ export function createHexCoin(container: HTMLElement) {
   platformShape.closePath()
   
   const platformExtrudeSettings = {
-    depth: 0.3,
+    depth: 0.4,
     bevelEnabled: true,
-    bevelThickness: 0.15,
-    bevelSize: 0.15,
-    bevelSegments: 3,
+    bevelThickness: 0.2,
+    bevelSize: 0.2,
+    bevelSegments: 4,
   }
   const platformGeometry = new THREE.ExtrudeGeometry(platformShape, platformExtrudeSettings)
   const platformMaterial = new THREE.MeshPhongMaterial({
@@ -85,7 +85,7 @@ export function createHexCoin(container: HTMLElement) {
   const platform = new THREE.Mesh(platformGeometry, platformMaterial)
   platformGeometry.center()
   platform.rotation.x = -Math.PI / 2
-  platform.position.y = -0.5
+  platform.position.y = -1
   platform.receiveShadow = true
   
   // Platform edges
