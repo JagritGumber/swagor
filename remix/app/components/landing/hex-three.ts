@@ -25,7 +25,7 @@ export function createHexCoin(container: HTMLElement) {
   
   // Hexagonal prism (coin)
   const hexShape = new THREE.Shape()
-  const radius = 1
+  const radius = 1.5
   for (let i = 0; i < 6; i++) {
     const angle = (i * Math.PI * 2) / 6 - Math.PI / 2
     const x = Math.cos(angle) * radius
@@ -54,13 +54,13 @@ export function createHexCoin(container: HTMLElement) {
   })
   const coin = new THREE.Mesh(geometry, material)
   geometry.center()
-  coin.position.set(0.5, 1.5, -0.5)
+  coin.position.set(0, 1.5, 0)
   coin.castShadow = true
   
   scene.add(coin)
   
   // Platform
-  const platformGeometry = new THREE.BoxGeometry(4, 0.1, 4)
+  const platformGeometry = new THREE.BoxGeometry(3, 0.1, 3)
   const platformMaterial = new THREE.MeshPhongMaterial({
     color: 0x0d1b2a,
     emissive: 0x060f18,
