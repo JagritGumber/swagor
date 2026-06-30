@@ -1,6 +1,7 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { routes } from '../../routes.ts'
+import { Features } from './features.tsx'
 
 export function Hero(handle: Handle<Record<string, never>>) {
   return () => (
@@ -73,6 +74,7 @@ export function Hero(handle: Handle<Record<string, never>>) {
         type="module"
         src={routes.assets.href({ path: 'app/assets/hex-three-client.ts' })}
       />
+      <Features />
     </div>
   )
 }
