@@ -78,6 +78,44 @@ lighter colors.
 | `--positive (#00B86B)` on `--surface-widget (#FFFFFF)` | ~3.5:1 |
 | `--negative (#E54040)` on `--surface-widget (#FFFFFF)` | ~4:1 |
 
+## Ramp System (landing + app)
+
+### Font ramp
+
+| Step | Size | Landing (brand) | App UI (product) |
+|------|------|-----------------|------------------|
+| 64 | 64px | — | — |
+| 48 | 48px | h1 hero | — |
+| 32 | 32px | h2 section | — |
+| 24 | 24px | logo text | — |
+| 16 | 16px | body, small headings | Header UI, body |
+| 14 | 14px | nav links, small body | Body |
+| 12 | 12px | — | Widget content |
+| 11 | 11px | tagline, badge | — |
+| 10 | 10px | — | Widget header, section divider |
+
+Use the nearest step. Do not interpolate arbitrary sizes.
+
+### Gap ramp
+
+| Level | Value | Relationship |
+|-------|-------|--------------|
+| Section | 48px | Between major page blocks |
+| Group | 24px | Between related content groups |
+| Cluster | 16px | Between related elements in a group |
+| Tight | 8px | Between tightly-coupled elements |
+
+Hero content applies these as: tagline→title 16, title→desc 8, desc→actions 16, actions→trust 16.
+
+### Button padding rule
+
+- y-padding divisible by 4
+- x-padding = 2× y-padding
+- Hero CTAs: 16×32, nav CTA: 12×24
+- Secondary buttons use `outline` instead of `border` to avoid box-model sizing shift
+
+---
+
 ## Typography
 
 ### Fonts
