@@ -18,7 +18,7 @@ export function PortfolioPage(handle: Handle<PortfolioPageProps>) {
 
   return () => (
     <Document
-      title={read.ok ? `Selbo — ${read.data.asset} ${read.data.interval}` : 'Read Error'}
+      title={read.ok ? `Selbo - ${read.data.asset} ${read.data.interval}` : 'Read Error'}
       head={
         <>
           <meta name="color-scheme" content="dark" />

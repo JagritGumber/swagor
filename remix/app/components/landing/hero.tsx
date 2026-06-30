@@ -34,7 +34,7 @@ export function Hero(handle: Handle<Record<string, never>>) {
 
           <p mix={heroDescription}>
             Selbo is an autonomous agent that monitors markets,<br />
-            makes decisions, and executes trades — following<br />
+            makes decisions, and executes trades - following<br />
             rules you set. Every action is recorded on-chain<br />
             so you can verify it anytime.
           </p>

@@ -5,7 +5,7 @@ import { Hero } from '../components/landing/hero.tsx'
 export function LandingPage(handle: Handle<Record<string, never>>) {
   return () => (
     <Document
-      title="Selbo — AI Trading Agent"
+      title="Selbo - AI Trading Agent"
       head={
         <>
           <meta name="color-scheme" content="dark" />

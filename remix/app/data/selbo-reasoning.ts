@@ -28,7 +28,7 @@ export function buildSelboReasoning(
     if (aligned) {
       return {
         intent: `Confirming ${dir} momentum`,
-        context: `${regime.label} with ${dir} drift of ${regime.driftPct}%. Price is ${location} — reading for continuation.`,
+        context: `${regime.label} with ${dir} drift of ${regime.driftPct}%. Price is ${location} - reading for continuation.`,
         focus: `Strength of ${dir} move at next key level. Watching for acceleration or absorption.`,
         confidence: 'high',
       }
