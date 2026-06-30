@@ -60,7 +60,7 @@ export function createHexCoin(container: HTMLElement) {
   scene.add(coin)
   
   // Platform
-  const platformGeometry = new THREE.BoxGeometry(4, 0.2, 4)
+  const platformGeometry = new THREE.BoxGeometry(4, 0.1, 4)
   const platformMaterial = new THREE.MeshPhongMaterial({
     color: 0x0d1b2a,
     emissive: 0x060f18,
@@ -71,6 +71,16 @@ export function createHexCoin(container: HTMLElement) {
   const platform = new THREE.Mesh(platformGeometry, platformMaterial)
   platform.position.y = 0
   platform.receiveShadow = true
+  
+  // Platform edges
+  const platformEdges = new THREE.EdgesGeometry(platformGeometry)
+  const platformLineMaterial = new THREE.LineBasicMaterial({ 
+    color: 0x00d4ff,
+    transparent: true,
+    opacity: 0.4,
+  })
+  const platformWireframe = new THREE.LineSegments(platformEdges, platformLineMaterial)
+  platform.add(platformWireframe)
   
   scene.add(platform)
   
