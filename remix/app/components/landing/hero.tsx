@@ -90,7 +90,7 @@ const nav = css({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '20px 48px',
+  padding: '24px 48px',
   maxWidth: '1280px',
   margin: '0 auto',
 })
@@ -135,7 +135,7 @@ const navLink = css({
 const navCta = css({
   backgroundColor: '#00d4ff',
   color: '#0a0e14',
-  padding: '10px 20px',
+  padding: '12px 24px',
   borderRadius: '6px',
   textDecoration: 'none',
   fontSize: '14px',
@@ -151,15 +151,18 @@ const heroSection = css({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '60px 48px 80px',
+  padding: '64px 48px 64px',
   maxWidth: '1280px',
   margin: '0 auto',
-  gap: '60px',
+  gap: '64px',
 })
 
 const heroContent = css({
   flex: '0 0 45%',
   maxWidth: '520px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '32px',
 })
 
 const tagline = css({
@@ -169,7 +172,6 @@ const tagline = css({
   padding: '8px 16px',
   border: '1px solid rgba(0, 212, 255, 0.3)',
   borderRadius: '24px',
-  marginBottom: '32px',
   fontSize: '11px',
   fontWeight: '600',
   letterSpacing: '1.5px',
@@ -189,8 +191,6 @@ const heroTitle = css({
   fontWeight: '700',
   lineHeight: '1.1',
   letterSpacing: '-1px',
-  marginBottom: '24px',
-  margin: 0,
 })
 
 const heroHighlight = css({
@@ -201,20 +201,17 @@ const heroDescription = css({
   fontSize: '16px',
   lineHeight: '1.6',
   color: '#8892a4',
-  marginBottom: '32px',
-  margin: 0,
 })
 
 const heroActions = css({
   display: 'flex',
   gap: '16px',
-  marginBottom: '32px',
 })
 
 const primaryCta = css({
   backgroundColor: '#00d4ff',
   color: '#0a0e14',
-  padding: '14px 28px',
+  padding: '16px 32px',
   borderRadius: '6px',
   textDecoration: 'none',
   fontSize: '15px',
@@ -232,17 +229,17 @@ const primaryCta = css({
 const secondaryCta = css({
   backgroundColor: 'transparent',
   color: '#ffffff',
-  padding: '14px 28px',
+  padding: '16px 32px',
   borderRadius: '6px',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+  outline: '1px solid rgba(255, 255, 255, 0.2)',
   textDecoration: 'none',
   fontSize: '15px',
   fontWeight: '600',
   display: 'inline-flex',
   alignItems: 'center',
   gap: '8px',
-  transition: 'border-color 0.2s',
-  ':hover': { borderColor: 'rgba(255, 255, 255, 0.4)' },
+  transition: 'outline-color 0.2s',
+  ':hover': { outlineColor: 'rgba(255, 255, 255, 0.4)' },
 })
 
 const ctaArrow = css({
