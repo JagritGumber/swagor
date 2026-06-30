@@ -1,5 +1,5 @@
 import { css } from 'remix/ui'
-import { FONT_UI, GAP_4, GAP_6, GAP_12 } from '../../constants/theme.ts'
+import { FONT_UI, GAP_4, GAP_6, GAP_12 } from '../../../constants/theme.ts'
 
 export const heroContainer = css({
   minHeight: '100vh',
