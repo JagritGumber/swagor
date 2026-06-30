@@ -14,7 +14,7 @@ export function createHexCoin(container: HTMLElement) {
     1000
   )
   camera.position.set(3, 4, 4)
-  camera.lookAt(0, 0, 0)
+  camera.lookAt(0, 1, 0)
   
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
   renderer.setPixelRatio(window.devicePixelRatio)
