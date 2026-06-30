@@ -94,19 +94,17 @@ export function createHexCoin(container: HTMLElement) {
   const wireframe = new THREE.LineSegments(edges, lineMaterial)
   coin.add(wireframe)
   
-  // S-shaped chart on hex face
-  const sCurvePoints = [
-    new THREE.Vector3(-0.2, 0.6, 0.5),
-    new THREE.Vector3(0.3, 0.5, 0.5),
-    new THREE.Vector3(0.4, 0.3, 0.5),
-    new THREE.Vector3(0.1, 0.1, 0.5),
-    new THREE.Vector3(-0.3, -0.1, 0.5),
-    new THREE.Vector3(-0.4, -0.3, 0.5),
-    new THREE.Vector3(-0.1, -0.5, 0.5),
-    new THREE.Vector3(0.2, -0.6, 0.5),
+  // Trend chart on hex face
+  const chartPoints = [
+    new THREE.Vector3(-0.5, -0.2, 0.5),
+    new THREE.Vector3(-0.3, 0.1, 0.5),
+    new THREE.Vector3(-0.1, -0.1, 0.5),
+    new THREE.Vector3(0.1, 0.3, 0.5),
+    new THREE.Vector3(0.3, 0.0, 0.5),
+    new THREE.Vector3(0.5, 0.4, 0.5),
   ]
   
-  const sCurve = new THREE.CatmullRomCurve3(sCurvePoints)
+  const sCurve = new THREE.CatmullRomCurve3(chartPoints)
   const sTubeGeometry = new THREE.TubeGeometry(sCurve, 64, 0.03, 8, false)
   const sMaterial = new THREE.MeshPhongMaterial({
     color: 0x00d4ff,
