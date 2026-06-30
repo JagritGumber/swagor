@@ -23,19 +23,42 @@ export function createHexCoin(container: HTMLElement) {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   container.appendChild(renderer.domElement)
   
-  // Hexagonal prism (coin)
-  const hexShape = new THREE.Shape()
-  const radius = 2
-  for (let i = 0; i < 6; i++) {
-    const angle = (i * Math.PI * 2) / 6 - Math.PI / 2
-    const x = Math.cos(angle) * radius
-    const y = Math.sin(angle) * radius
-    if (i === 0) {
-      hexShape.moveTo(x, y)
-    } else {
-      hexShape.lineTo(x, y)
+  // Draw a rounded hexagon onto a Shape or Path
+  function addRoundedHex(
+    api: { moveTo(x: number, y: number): void; lineTo(x: number, y: number): void; quadraticCurveTo(cpx: number, cpy: number, x: number, y: number): void },
+    R: number,
+    cr: number,
+    cw = false
+  ) {
+    const n = 6
+    const verts: THREE.Vector2[] = []
+    for (let i = 0; i < n; i++) {
+      const idx = cw ? (n - i) % n : i
+      const angle = (idx * Math.PI * 2) / n - Math.PI / 2
+      verts.push(new THREE.Vector2(Math.cos(angle) * R, Math.sin(angle) * R))
     }
+    const edges: THREE.Vector2[] = []
+    for (let i = 0; i < n; i++) {
+      const dir = new THREE.Vector2().copy(verts[(i + 1) % n]).sub(verts[i]).normalize()
+      edges.push(dir)
+    }
+    const offset = cr / Math.tan(Math.PI / 6)
+    const start = new THREE.Vector2().copy(verts[0]).addScaledVector(edges[0], offset)
+    api.moveTo(start.x, start.y)
+    for (let i = 1; i < n; i++) {
+      const lineEnd = new THREE.Vector2().copy(verts[i]).sub(edges[i - 1].clone().multiplyScalar(offset))
+      api.lineTo(lineEnd.x, lineEnd.y)
+      const curveEnd = new THREE.Vector2().copy(verts[i]).addScaledVector(edges[i], offset)
+      api.quadraticCurveTo(verts[i].x, verts[i].y, curveEnd.x, curveEnd.y)
+    }
+    const lastLineEnd = new THREE.Vector2().copy(verts[0]).sub(edges[n - 1].clone().multiplyScalar(offset))
+    api.lineTo(lastLineEnd.x, lastLineEnd.y)
+    api.quadraticCurveTo(verts[0].x, verts[0].y, start.x, start.y)
   }
+
+  // Hexagonal prism (coin) with rounded corners
+  const hexShape = new THREE.Shape()
+  addRoundedHex(hexShape, 2, 0.08)
   hexShape.closePath()
   
   const extrudeSettings = {
@@ -46,12 +69,14 @@ export function createHexCoin(container: HTMLElement) {
     bevelSegments: 3,
   }
   const geometry = new THREE.ExtrudeGeometry(hexShape, extrudeSettings)
-  const coinMat = new THREE.MeshStandardMaterial({
-    color: 0x0d2535,
-    metalness: 0.9,
-    roughness: 0.25,
-    emissive: 0x1e4050,
-    emissiveIntensity: 0.15,
+  const coinMat = new THREE.MeshPhysicalMaterial({
+    color: 0x081a2e,
+    metalness: 0.85,
+    roughness: 0.15,
+    clearcoat: 0.4,
+    clearcoatRoughness: 0.3,
+    emissive: 0x004488,
+    emissiveIntensity: 0.35,
   })
   const coin = new THREE.Mesh(geometry, coinMat)
   geometry.center()
@@ -73,7 +98,7 @@ export function createHexCoin(container: HTMLElement) {
   const panelGeom = new THREE.PlaneGeometry(0.8, 2)
   const glowPanel = new THREE.Mesh(panelGeom, glowPanelMat)
   // Face center in geometry space: (-1.732, 0, 0)
-  // After rotation.x = -PI/2: (-1.732, 0, 0) — z=0 stays
+  // After rotation.x = -PI/2: (-1.732, 0, 0) - z=0 stays
   // Rotate plane normal (0,0,1) → (-1,0,0) to face left
   glowPanel.position.set(-1.732, 0, 0)
   glowPanel.rotation.y = Math.PI / 2
@@ -122,8 +147,8 @@ export function createHexCoin(container: HTMLElement) {
   const faceMat = new THREE.ShaderMaterial({
     uniforms: {
       holoColor: { value: new THREE.Color(holoColor) },
-      intensity: { value: 0.25 },
-      baseAlpha: { value: 0.35 },
+      intensity: { value: 0.1 },
+      baseAlpha: { value: 0.15 },
     },
     vertexShader: `
       varying float vWorldY;
@@ -153,10 +178,10 @@ export function createHexCoin(container: HTMLElement) {
   const sideMat = new THREE.MeshPhongMaterial({
     color: holoColor,
     emissive: holoColor,
-    emissiveIntensity: 0.25,
+    emissiveIntensity: 0.1,
     alphaMap: alphaTexture,
     transparent: true,
-    opacity: 0.35,
+    opacity: 0.15,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     side: THREE.DoubleSide,
@@ -232,7 +257,31 @@ export function createHexCoin(container: HTMLElement) {
   sMesh.castShadow = true
   
   coin.add(sMesh)
-  
+
+  // Glowing inner hex ring on the face (creates a ridge around the chart)
+  const ringShape = new THREE.Shape()
+  addRoundedHex(ringShape, 1.7, 0.06)
+  ringShape.closePath()
+  const holePath = new THREE.Path()
+  addRoundedHex(holePath, 1.3, 0.06, true)
+  ringShape.holes.push(holePath)
+  const ringGeom = new THREE.ExtrudeGeometry(ringShape, { depth: 0.06, bevelEnabled: false })
+  ringGeom.center()
+  const ringMat = new THREE.MeshPhysicalMaterial({
+    color: 0x00ddff,
+    emissive: 0x00ddff,
+    emissiveIntensity: 2,
+    transparent: true,
+    opacity: 0.5,
+    metalness: 0.3,
+    roughness: 0.4,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  })
+  const ringMesh = new THREE.Mesh(ringGeom, ringMat)
+  ringMesh.position.z = 0.35
+  coin.add(ringMesh)
+
   // Lights
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
   scene.add(ambientLight)
@@ -252,10 +301,18 @@ export function createHexCoin(container: HTMLElement) {
   fillLight.position.set(-3, 2, 3)
   scene.add(fillLight)
 
-  // Blue top light for metallic reflection on the coin
-  const topBlueLight = new THREE.PointLight(0x4488ff, 2.5, 10)
-  topBlueLight.position.set(0.4, 5, 0)
-  scene.add(topBlueLight)
+  // Top spotlight: bright center on top triangular walls, penumbra fade on adjacent walls
+  const topSpotTarget = new THREE.Object3D()
+  topSpotTarget.position.set(0.4, 1, 0)
+  scene.add(topSpotTarget)
+  const topSpot = new THREE.SpotLight(0x00ddff, 500)
+  topSpot.position.set(0.4, 4, -2)
+  topSpot.target = topSpotTarget
+  topSpot.angle = 1.4
+  topSpot.penumbra = 0.4
+  topSpot.decay = 1
+  topSpot.distance = 8
+  scene.add(topSpot)
   
   // Levitate animation
   const baseY = 1
