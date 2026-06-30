@@ -90,7 +90,7 @@ const heroContainer = css({
   fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
   overflow: 'hidden',
   position: 'relative',
-  padding: '0 48px',
+  padding: '0 96px',
 })
 
 const nav = css({
@@ -171,6 +171,7 @@ const heroContent = css({
 const contentGroup = css({
   display: 'flex',
   flexDirection: 'column',
+  gap: '16px',
 })
 
 const actionGroup = css({
@@ -185,7 +186,7 @@ const tagline = css({
   padding: '8px 16px',
   border: '1px solid rgba(0, 212, 255, 0.3)',
   borderRadius: '24px',
-  marginBottom: '32px',
+  alignSelf: 'flex-start',
   fontSize: '11px',
   fontWeight: '600',
   letterSpacing: '1.5px',
@@ -205,7 +206,6 @@ const heroTitle = css({
   fontWeight: '700',
   lineHeight: '1.1',
   letterSpacing: '-1px',
-  marginBottom: '16px',
 })
 
 const heroHighlight = css({
@@ -281,9 +281,10 @@ const trustIcon = css({
 })
 
 const heroVisual = css({
-  flex: '1',
-  position: 'relative',
+  width: '500px',
   height: '500px',
+  flexShrink: 0,
+  position: 'relative',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
