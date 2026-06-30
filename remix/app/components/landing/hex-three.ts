@@ -84,6 +84,7 @@ export function createHexCoin(container: HTMLElement) {
   })
   const platform = new THREE.Mesh(platformGeometry, platformMaterial)
   platformGeometry.center()
+  platform.rotation.x = -Math.PI / 2
   platform.position.y = 0
   platform.receiveShadow = true
   
