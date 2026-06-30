@@ -96,14 +96,14 @@ export function createHexCoin(container: HTMLElement) {
   
   // S-shaped chart on hex face
   const sCurvePoints = [
-    new THREE.Vector3(-0.5, 0.6, 0.5),
-    new THREE.Vector3(-0.3, 0.3, 0.5),
-    new THREE.Vector3(0.0, 0.4, 0.5),
-    new THREE.Vector3(0.3, 0.1, 0.5),
-    new THREE.Vector3(0.5, -0.2, 0.5),
-    new THREE.Vector3(0.3, -0.5, 0.5),
-    new THREE.Vector3(0.0, -0.4, 0.5),
+    new THREE.Vector3(-0.2, 0.6, 0.5),
+    new THREE.Vector3(0.3, 0.5, 0.5),
+    new THREE.Vector3(0.4, 0.3, 0.5),
+    new THREE.Vector3(0.1, 0.1, 0.5),
     new THREE.Vector3(-0.3, -0.1, 0.5),
+    new THREE.Vector3(-0.4, -0.3, 0.5),
+    new THREE.Vector3(-0.1, -0.5, 0.5),
+    new THREE.Vector3(0.2, -0.6, 0.5),
   ]
   
   const sCurve = new THREE.CatmullRomCurve3(sCurvePoints)
