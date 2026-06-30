@@ -25,7 +25,7 @@ export function createHexCoin(container: HTMLElement) {
   
   // Hexagonal prism (coin)
   const hexShape = new THREE.Shape()
-  const radius = 1.5
+  const radius = 2
   for (let i = 0; i < 6; i++) {
     const angle = (i * Math.PI * 2) / 6 - Math.PI / 2
     const x = Math.cos(angle) * radius
