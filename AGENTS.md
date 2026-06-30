@@ -18,6 +18,11 @@
   - `selbo-reader-research` for reader hypothesis evaluation and result integrity.
   - `selbo-context-reader` for context-first live reader/narrative architecture.
   - `selbo-integration-handoff` for moving benchmark readers into Selbo shadow mode.
+  - `color-ramps` for Selbo's color tokens, font/gap ramps, and design token rules.
+- Global skills (in `~/.config/opencode/skills/`):
+  - `seo-content-writing` for SEO-optimized website copy (meta, headings, CTA structure).
+  - `design-architecture` for establishing font/color/spacing architecture on any project.
+- Design system documented in `remix/DESIGN.md` — includes ramp system (font steps: 48/32/24/16/14/11, gap levels: 48/24/16/8), color tokens for both landing (dark) and app (light) surfaces.
 
 ## Strategy Lab
 
