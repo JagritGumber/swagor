@@ -2,20 +2,6 @@ import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { routes } from '../../routes.ts'
 
-const FLOATING_ICONS = [
-  { label: 'Market Scan', icon: 'search', x: -180, y: -60, delay: 0 },
-  { label: 'Execute Trade', icon: 'zap', x: -180, y: 80, delay: 0.1 },
-  { label: 'Decision', icon: 'brain', x: 180, y: -60, delay: 0.2 },
-  { label: 'On-chain Record', icon: 'shield-check', x: 180, y: 80, delay: 0.3 },
-] as const
-
-const ICON_PATHS: Record<string, string> = {
-  search: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
-  zap: 'M13 10V3L4 14h7v7l9-11h-7z',
-  brain: 'M12 2a7 7 0 00-7 7c0 2.5 1.5 4.5 3 6v2a2 2 0 002 2h4a2 2 0 002-2v-2c1.5-1.5 3-3.5 3-6a7 7 0 00-7-7zm0 18v-1',
-  'shield-check': 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4',
-}
-
 export function Hero(handle: Handle<Record<string, never>>) {
   return () => (
     <div mix={heroContainer}>
@@ -80,62 +66,6 @@ export function Hero(handle: Handle<Record<string, never>>) {
           <div mix={hexContainer}>
             <div id="hex-3d" style={{ width: '100%', height: '100%' }} />
           </div>
-
-          <svg mix={connectionLines} viewBox="0 0 400 250">
-            <path
-              d="M50,125 Q200,50 200,125"
-              fill="none"
-              stroke="#00d4ff"
-              strokeWidth="1"
-              strokeDasharray="4,4"
-              strokeOpacity="0.3"
-            />
-            <path
-              d="M50,125 Q200,200 200,125"
-              fill="none"
-              stroke="#00d4ff"
-              strokeWidth="1"
-              strokeDasharray="4,4"
-              strokeOpacity="0.3"
-            />
-            <path
-              d="M350,125 Q200,50 200,125"
-              fill="none"
-              stroke="#00d4ff"
-              strokeWidth="1"
-              strokeDasharray="4,4"
-              strokeOpacity="0.3"
-            />
-            <path
-              d="M350,125 Q200,200 200,125"
-              fill="none"
-              stroke="#00d4ff"
-              strokeWidth="1"
-              strokeDasharray="4,4"
-              strokeOpacity="0.3"
-            />
-          </svg>
-
-          {FLOATING_ICONS.map((item) => (
-            <div
-              key={item.label}
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: `translate(${item.x}px, ${item.y}px)`,
-                animationDelay: `${item.delay}s`,
-              }}
-              mix={floatingIcon}
-            >
-              <div mix={iconCircle}>
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#00d4ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d={ICON_PATHS[item.icon]} />
-                </svg>
-              </div>
-              <span mix={iconLabel}>{item.label}</span>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -356,41 +286,4 @@ const hexContainer = css({
   height: '300px',
   position: 'relative',
   zIndex: 2,
-})
-
-const connectionLines = css({
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '400px',
-  height: '250px',
-  zIndex: 1,
-})
-
-const floatingIcon = css({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: '8px',
-  zIndex: 3,
-  animation: 'float 3s ease-in-out infinite',
-})
-
-const iconCircle = css({
-  width: '48px',
-  height: '48px',
-  borderRadius: '12px',
-  backgroundColor: 'rgba(0, 212, 255, 0.1)',
-  border: '1px solid rgba(0, 212, 255, 0.2)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-})
-
-const iconLabel = css({
-  fontSize: '12px',
-  fontWeight: '500',
-  color: '#8892a4',
-  whiteSpace: 'nowrap',
 })
