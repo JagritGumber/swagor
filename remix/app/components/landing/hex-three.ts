@@ -54,7 +54,7 @@ export function createHexCoin(container: HTMLElement) {
   })
   const coin = new THREE.Mesh(geometry, material)
   geometry.center()
-  coin.position.set(0, 1, 0)
+  coin.position.set(0.4, 1, 0)
   coin.castShadow = true
   
   scene.add(coin)
@@ -241,9 +241,19 @@ export function createHexCoin(container: HTMLElement) {
   fillLight.position.set(-3, 2, 3)
   scene.add(fillLight)
   
-  // Render once
-  renderer.render(scene, camera)
-  
+  // Levitate animation
+  const baseY = 1
+  let animFrame: number
+  let t = 0
+
+  function tick() {
+    t += 0.02
+    coin.position.y = baseY + Math.sin(t * 1.2) * 0.15
+    renderer.render(scene, camera)
+    animFrame = requestAnimationFrame(tick)
+  }
+  tick()
+
   // Handle resize
   const onResize = () => {
     const width = container.clientWidth
@@ -262,6 +272,7 @@ export function createHexCoin(container: HTMLElement) {
   return {
     destroy() {
       window.removeEventListener('resize', onResize)
+      cancelAnimationFrame(animFrame)
       renderer.dispose()
       container.removeChild(renderer.domElement)
     },
