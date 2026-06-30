@@ -1,7 +1,6 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { routes } from '../../routes.ts'
-import { Features } from './features.tsx'
 
 export function Hero(handle: Handle<Record<string, never>>) {
   return () => (
@@ -74,7 +73,6 @@ export function Hero(handle: Handle<Record<string, never>>) {
         type="module"
         src={routes.assets.href({ path: 'app/assets/hex-three-client.ts' })}
       />
-      <Features />
     </div>
   )
 }
@@ -92,7 +90,7 @@ const nav = css({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '24px 48px',
+  padding: '20px 48px',
   maxWidth: '1280px',
   margin: '0 auto',
 })
@@ -153,18 +151,15 @@ const heroSection = css({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '64px 48px 64px',
+  padding: '60px 48px 80px',
   maxWidth: '1280px',
   margin: '0 auto',
-  gap: '64px',
+  gap: '60px',
 })
 
 const heroContent = css({
   flex: '0 0 45%',
   maxWidth: '520px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '32px',
 })
 
 const tagline = css({
@@ -174,6 +169,7 @@ const tagline = css({
   padding: '8px 16px',
   border: '1px solid rgba(0, 212, 255, 0.3)',
   borderRadius: '24px',
+  marginBottom: '32px',
   fontSize: '11px',
   fontWeight: '600',
   letterSpacing: '1.5px',
@@ -193,6 +189,7 @@ const heroTitle = css({
   fontWeight: '700',
   lineHeight: '1.1',
   letterSpacing: '-1px',
+  marginBottom: '24px',
 })
 
 const heroHighlight = css({
@@ -203,11 +200,13 @@ const heroDescription = css({
   fontSize: '16px',
   lineHeight: '1.6',
   color: '#8892a4',
+  marginBottom: '32px',
 })
 
 const heroActions = css({
   display: 'flex',
   gap: '16px',
+  marginBottom: '32px',
 })
 
 const primaryCta = css({
