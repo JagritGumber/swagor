@@ -20,52 +20,58 @@ export function Hero(handle: Handle<Record<string, never>>) {
 
       <section mix={heroSection}>
         <div mix={heroContent}>
-          <div mix={tagline}>
-            <span mix={taglineDot}>AUTOMATED.</span>
-            <span mix={taglineDot}>TRANSPARENT.</span>
-            <span mix={taglineText}>ON-CHAIN.</span>
+          <div mix={contentGroup}>
+            <div mix={tagline}>
+              <span mix={taglineDot}>AUTOMATED.</span>
+              <span mix={taglineDot}>TRANSPARENT.</span>
+              <span mix={taglineText}>ON-CHAIN.</span>
+            </div>
+
+            <h1 mix={heroTitle}>
+              Your AI trader,<br />
+              with every decision<br />
+              recorded <span mix={heroHighlight}>on-chain.</span>
+            </h1>
+
+            <p mix={heroDescription}>
+              Selbo is an autonomous agent that monitors markets,<br />
+              makes decisions, and executes trades - following<br />
+              rules you set. Every action is recorded on-chain<br />
+              so you can verify it anytime.
+            </p>
           </div>
 
-          <h1 mix={heroTitle}>
-            Your AI trader,<br />
-            with every decision<br />
-            recorded <span mix={heroHighlight}>on-chain.</span>
-          </h1>
+          <div mix={actionGroup}>
+            <div mix={heroActions}>
+              <a href="#request-access" mix={primaryCta}>
+                Request Beta Access
+                <span mix={ctaArrow}>→</span>
+              </a>
+              <a href="#how-it-works" mix={secondaryCta}>
+                See How It Works
+                <span mix={ctaArrow}>→</span>
+              </a>
+            </div>
 
-          <p mix={heroDescription}>
-            Selbo is an autonomous agent that monitors markets,<br />
-            makes decisions, and executes trades - following<br />
-            rules you set. Every action is recorded on-chain<br />
-            so you can verify it anytime.
-          </p>
-
-          <div mix={heroActions}>
-            <a href="#request-access" mix={primaryCta}>
-              Request Beta Access
-              <span mix={ctaArrow}>→</span>
-            </a>
-            <a href="#how-it-works" mix={secondaryCta}>
-              See How It Works
-              <span mix={ctaArrow}>→</span>
-            </a>
-          </div>
-
-          <div mix={trustIndicators}>
-            <span mix={trustItem}>
-              <i class="ph ph-shield-check" mix={trustIcon}></i>
-              Non-custodial
-            </span>
-            <span mix={trustDot}>•</span>
-            <span mix={trustItem}>You stay in control</span>
-            <span mix={trustDot}>•</span>
-            <span mix={trustItem}>No profit guarantees</span>
+            <div mix={trustIndicators}>
+              <span mix={trustItem}>
+                <i class="ph ph-shield-check" mix={trustIcon}></i>
+                Non-custodial
+              </span>
+              <span mix={trustItem}>
+                <i class="ph ph-hand-soap" mix={trustIcon}></i>
+                You stay in control
+              </span>
+              <span mix={trustItem}>
+                <i class="ph ph-chart-line-down" mix={trustIcon}></i>
+                No profit guarantees
+              </span>
+            </div>
           </div>
         </div>
 
         <div mix={heroVisual}>
-          <div mix={hexContainer}>
-            <div id="hex-3d" style={{ width: '100%', height: '100%' }} />
-          </div>
+          <div id="hex-3d" style={{ width: '100%', height: '100%' }} />
         </div>
       </section>
 
@@ -84,15 +90,14 @@ const heroContainer = css({
   fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
   overflow: 'hidden',
   position: 'relative',
+  padding: '0 48px',
 })
 
 const nav = css({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '20px 48px',
-  maxWidth: '1280px',
-  margin: '0 auto',
+  padding: '20px 0',
 })
 
 const navLogo = css({
@@ -151,15 +156,26 @@ const heroSection = css({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '60px 48px 80px',
-  maxWidth: '1280px',
-  margin: '0 auto',
+  padding: '60px 0 80px',
   gap: '60px',
 })
 
 const heroContent = css({
   flex: '0 0 45%',
   maxWidth: '520px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '48px',
+})
+
+const contentGroup = css({
+  display: 'flex',
+  flexDirection: 'column',
+})
+
+const actionGroup = css({
+  display: 'flex',
+  flexDirection: 'column',
 })
 
 const tagline = css({
@@ -169,7 +185,7 @@ const tagline = css({
   padding: '8px 16px',
   border: '1px solid rgba(0, 212, 255, 0.3)',
   borderRadius: '24px',
-  marginBottom: '16px',
+  marginBottom: '32px',
   fontSize: '11px',
   fontWeight: '600',
   letterSpacing: '1.5px',
@@ -189,7 +205,7 @@ const heroTitle = css({
   fontWeight: '700',
   lineHeight: '1.1',
   letterSpacing: '-1px',
-  marginBottom: '8px',
+  marginBottom: '16px',
 })
 
 const heroHighlight = css({
@@ -200,13 +216,11 @@ const heroDescription = css({
   fontSize: '16px',
   lineHeight: '1.6',
   color: '#8892a4',
-  marginBottom: '16px',
 })
 
 const heroActions = css({
   display: 'flex',
   gap: '16px',
-  marginBottom: '16px',
 })
 
 const primaryCta = css({
@@ -250,7 +264,7 @@ const ctaArrow = css({
 const trustIndicators = css({
   display: 'flex',
   alignItems: 'center',
-  gap: '12px',
+  gap: '24px',
   fontSize: '13px',
   color: '#8892a4',
 })
@@ -266,25 +280,11 @@ const trustIcon = css({
   color: '#00d4ff',
 })
 
-const trustDot = css({
-  color: '#8892a4',
-})
-
 const heroVisual = css({
-  flex: '0 0 50%',
+  flex: '1',
   position: 'relative',
   height: '500px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-})
-
-const hexContainer = css({
-  width: '500px',
-  height: '500px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  position: 'relative',
-  zIndex: 2,
 })
