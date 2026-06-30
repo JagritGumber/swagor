@@ -283,7 +283,7 @@ const heroVisual = css({
 
 const hexContainer = css({
   width: '500px',
-  height: '400px',
+  height: '500px',
   position: 'relative',
   zIndex: 2,
 })
