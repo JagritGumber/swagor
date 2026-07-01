@@ -11,5 +11,6 @@ if (raw && container) {
     candles: data.candles,
     segments: data.segments,
     auction: data.auction,
+    plan: data.plan,
   })
 }

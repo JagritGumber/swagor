@@ -14,6 +14,10 @@ import { tryCatch } from '../lib/api/try-catch.ts'
 import { readMarketRegime } from '@packages/strategy-lab/read-core/market-regime/read-market-regime'
 import { readMarketAuction } from '@packages/strategy-lab/read-core/read/read-market-auction'
 import { readRegimeSegments } from '@packages/strategy-lab/read-core/market-regime/read-regime-segments'
+import { createOrderflowWindow } from '@packages/strategy-lab/read-core/orderflow/create-orderflow-window'
+import { readOrderflowWindow } from '@packages/strategy-lab/read-core/orderflow/read-orderflow-window'
+import { combineAuctionOrderflow } from '@packages/strategy-lab/reader/reader-live/combine-auction-orderflow'
+import { buildReaderTradePlan } from '@packages/strategy-lab/backtest/trade-plan/build-reader-trade-plan'
 
 const VALID_INTERVALS = new Set(['1m', '5m', '15m', '1h', '4h', '1d'])
 const INTERVAL_MS: Record<string, number> = {
@@ -327,8 +331,57 @@ export default createController(routes, {
           : null,
       }
 
+      const window = createOrderflowWindow(60_000)
+      const orderflow = readOrderflowWindow({ asset, window })
+      orderflow.lastPrice = lastCandle.c
+
+      const read = combineAuctionOrderflow({
+        auction: rawAuction,
+        orderflow,
+        regime: rawRegime,
+        lastClosedCandle: candles.length >= 2 ? candles[candles.length - 2] : null,
+      })
+
+      const plan = buildReaderTradePlan(read)
+
+      const readerRead = {
+        stance: read.stance,
+        narrative: read.narrative,
+        invalidation: read.invalidation,
+        target: read.target,
+        orderflow: {
+          pressure: read.orderflow.pressure,
+          delta: round(read.orderflow.delta),
+          tradeCount: read.orderflow.tradeCount,
+          events: read.orderflow.events,
+        },
+      }
+
+      const tradePlan = plan.status === 'no-trade'
+        ? { status: plan.status, asset: plan.asset, confidence: plan.confidence, reasons: plan.reasons }
+        : {
+            status: plan.status,
+            asset: plan.asset,
+            side: plan.side,
+            entryLow: round(plan.entryLow),
+            entryHigh: round(plan.entryHigh),
+            stop: round(plan.stop),
+            target: round(plan.target),
+            invalidation: plan.invalidation,
+            confidence: plan.confidence,
+            reasons: plan.reasons,
+          }
+
       return context.render(
-        <AgentPage candles={candles} segments={segments} auction={auction} regime={regime} asset={asset} />,
+        <AgentPage
+          candles={candles}
+          segments={segments}
+          auction={auction}
+          regime={regime}
+          read={readerRead}
+          plan={tradePlan}
+          asset={asset}
+        />,
       )
     },
   },
