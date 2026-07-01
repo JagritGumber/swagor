@@ -136,23 +136,7 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
               id="agent-chart"
               style={{ width: '100%', height: '100%' }}
             />
-            <div
-              mix={s.analysisPanel}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                width: '280px',
-                backgroundColor: 'rgba(10, 14, 20, 0.9)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: '8px',
-                padding: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
-                zIndex: 5,
-              }}
-            >
+            <div mix={s.analysisPanel}>
               {regime && (
                 <div mix={s.analysisSection}>
                   <div mix={s.analysisLabel}>Regime</div>
@@ -271,13 +255,9 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
           type="module"
           src={routes.assets.href({ path: 'app/assets/agent-chart-client.ts' })}
         />
-        <script
-          id="agent-data"
-          type="application/json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({ candles, segments, auction, regime, read, plan, asset }),
-          }}
-        />
+        <script id="agent-data" type="application/json">
+          {JSON.stringify({ candles, segments, auction, regime, read, plan, asset })}
+        </script>
       </Document>
     )
   }

@@ -69,3 +69,11 @@
   research scripts — run research via module tests or a dedicated runner.
 - Use `tsgo`, not `tsc`, for typechecking.
 - Do not read `.env.local` or production env files.
+
+## Code Hygiene
+
+- **No silent failures.** Every failure point must throw with a descriptive message. No `?.` optional chaining on DOM queries, no `value ?? fallback` that hides bugs, no `|| []` or `|| {}` defaults that mask errors. If something is missing, crash immediately with a clear error.
+- **No `?.` on DOM traversal.** Always use `getElementById` + validate with `instanceof HTMLElement` + throw if wrong. `document.getElementById('x')?.textContent` is forbidden.
+- **No `dangerouslySetInnerHTML` on `<script>` tags.** Use `{jsonString}` as children instead. `dangerouslySetInnerHTML` on script tags causes silent data loss in Remix server rendering.
+- **No em dashes (`—`).** Use hyphens (`-`) only. Search and replace before committing.
+- **Verify data shape matches interface.** When a server sends JSON to a client, ensure the client-side interface matches the actual JSON structure. Mismatches cause silent `undefined` reads.

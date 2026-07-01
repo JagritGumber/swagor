@@ -3,10 +3,12 @@ import type { OverlaySegment } from '../chart/types.ts'
 import { createChart } from '../chart/create-chart.ts'
 
 interface AgentAuction {
-  poc: number
-  valueAreaLow: number
-  valueAreaHigh: number
-  bins: { low: number; high: number; volume: number }[]
+  profile: {
+    poc: number
+    valueAreaLow: number
+    valueAreaHigh: number
+    bins: { low: number; high: number; volume: number }[]
+  } | null
 }
 
 interface AgentTradePlan {
@@ -66,7 +68,7 @@ export function createAgentChart({ container, candles, segments, auction, plan }
     const rect = container.getBoundingClientRect()
     const scale = computeScale(candles, rect.width, rect.height)
     if (scale) {
-      if (auction) {
+      if (auction && auction.profile) {
         drawAuctionOverlays(container, auction, scale)
       }
       if (plan && plan.status !== 'no-trade') {
@@ -89,7 +91,9 @@ function drawAuctionOverlays(
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  const { poc, valueAreaLow, valueAreaHigh, bins } = auction
+  if (!auction.profile) return
+
+  const { poc, valueAreaLow, valueAreaHigh, bins } = auction.profile
 
   const dpr = window.devicePixelRatio || 1
   const w = canvas.width / dpr
