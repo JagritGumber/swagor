@@ -251,6 +251,7 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
               No trades yet - agent is observing
             </div>
           </div>
+          </div>
         </DashboardLayout>
 
         <script
