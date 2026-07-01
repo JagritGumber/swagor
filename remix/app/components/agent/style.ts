@@ -25,17 +25,17 @@ export const bottomStrip = css({
 
 export const analysisPanel = css({
   position: 'absolute',
-  top: '16px',
-  right: '16px',
-  width: '280px',
-  backgroundColor: 'rgba(10, 14, 20, 0.9)',
-  border: '1px solid rgba(255, 255, 255, 0.06)',
-  borderRadius: '8px',
-  padding: '16px',
+  top: 0,
+  right: 0,
+  width: '320px',
+  height: '100%',
+  backgroundColor: 'rgba(10, 14, 20, 0.95)',
+  borderLeft: '1px solid rgba(255, 255, 255, 0.06)',
+  padding: '24px',
   display: 'flex',
   flexDirection: 'column',
-  gap: '16px',
-  zIndex: 5,
+  gap: '20px',
+  zIndex: 10,
   overflowY: 'auto',
 })
 
