@@ -4,6 +4,7 @@ import { assetServer } from '../assets.ts'
 import { routes } from '../routes.ts'
 import { LandingPage } from '../pages/landing/page.tsx'
 import { PortfolioPage } from '../pages/portfolio.tsx'
+import { AgentPage } from '../pages/agent.tsx'
 import { fetchCandles } from '../data/hyperliquid.ts'
 import type { SelboReasoning, ReaderReadResult } from '../types/reader.ts'
 import type { Candle } from '../types/candles.ts'
@@ -261,6 +262,73 @@ export default createController(routes, {
 
       return context.render(
         <PortfolioPage read={readerResult.read} candles={candles} segments={segments} />,
+      )
+    },
+    async agent(context) {
+      const url = new URL(context.request.url)
+      const asset = (url.searchParams.get('asset') ?? 'ETH').toUpperCase()
+      const interval = '1h'
+      const lookback = 300
+
+      const now = Date.now()
+      const { data: rawCandles, error: err } = await tryCatch(
+        fetchCandles(asset, interval, now - INTERVAL_MS[interval] * lookback, now),
+      )
+      if (err !== null) {
+        return context.render(<AgentPage candles={[]} segments={[]} auction={null} regime={null} asset={asset} />)
+      }
+      if (rawCandles.length === 0) {
+        return context.render(<AgentPage candles={[]} segments={[]} auction={null} regime={null} asset={asset} />)
+      }
+
+      const candles = rawCandles.map(toCandle)
+      const segments = readRegimeSegments({ candles, lookback })
+      const lastCandle = candles[candles.length - 1]
+
+      const rawRegime = readMarketRegime({ candles, now })
+      const rawAuction = readMarketAuction({
+        asset,
+        interval,
+        candles,
+        price: lastCandle.c,
+      })
+
+      const regime = {
+        mode: rawRegime.mode,
+        label: formatRegime(rawRegime.mode),
+        rangePct: round(rawRegime.rangePct * 100, 2),
+        driftPct: round(rawRegime.driftPct * 100, 2),
+        directionalEfficiency: round(rawRegime.directionalEfficiency, 2),
+      }
+
+      const auction = {
+        location: rawAuction.location,
+        locationLabel: formatAuctionLocation(rawAuction.location),
+        bias: rawAuction.bias,
+        narrative: rawAuction.narrative,
+        profile: rawAuction.profile
+          ? {
+              poc: round(rawAuction.profile.poc),
+              valueAreaLow: round(rawAuction.profile.valueAreaLow),
+              valueAreaHigh: round(rawAuction.profile.valueAreaHigh),
+              bins: rawAuction.profile.bins.map(b => ({
+                low: round(b.low),
+                high: round(b.high),
+                volume: b.volume,
+              })),
+            }
+          : null,
+        level: rawAuction.level
+          ? {
+              price: round(rawAuction.level.price),
+              kind: rawAuction.level.kind,
+              touches: rawAuction.level.touches,
+            }
+          : null,
+      }
+
+      return context.render(
+        <AgentPage candles={candles} segments={segments} auction={auction} regime={regime} asset={asset} />,
       )
     },
   },

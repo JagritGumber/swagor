@@ -4,5 +4,6 @@ export const routes = route({
   assets: get('/assets/*path'),
   home: '/',
   portfolio: '/portfolio',
+  agent: '/agent',
   candles: get('/api/candles'),
 })
