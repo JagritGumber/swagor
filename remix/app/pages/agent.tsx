@@ -136,7 +136,7 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
               id="agent-chart"
               style={{ width: '100%', height: '100%' }}
             />
-            <div mix={[s.analysisPanel, s.analysisPanelOpen]}>
+            <div mix={s.analysisPanel}>
               {regime && (
                 <div mix={s.analysisSection}>
                   <div mix={s.analysisLabel}>Regime</div>
