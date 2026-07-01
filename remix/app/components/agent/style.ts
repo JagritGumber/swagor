@@ -35,8 +35,14 @@ export const analysisPanel = css({
   display: 'flex',
   flexDirection: 'column',
   gap: '20px',
+  transform: 'translateX(100%)',
+  transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
   zIndex: 10,
   overflowY: 'auto',
+})
+
+export const analysisPanelOpen = css({
+  transform: 'translateX(0)',
 })
 
 export const analysisSection = css({
