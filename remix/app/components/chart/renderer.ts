@@ -1,7 +1,7 @@
 import type { Candle } from '../../types/candles.ts'
 import type { ChartConfig, OverlaySegment, Scale } from './types.ts'
 import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'
-import { rect, line, text } from './draw.ts'
+import { rect, line, text, label } from './draw.ts'
 
 const MONO_FONT = '10px "JetBrains Mono", ui-monospace, monospace'
 
@@ -93,6 +93,14 @@ function buildScale(
     minPrice: paddedMin,
     maxPrice: paddedMax,
   }
+}
+
+function niceStep(range: number, targetLabels: number): number {
+  const roughStep = range / targetLabels
+  const magnitude = 10 ** Math.floor(Math.log10(roughStep))
+  const residual = roughStep / magnitude
+  const nice = residual <= 1.5 ? 1 : residual <= 3 ? 2 : residual <= 7 ? 5 : 10
+  return nice * magnitude
 }
 
 function formatLabel(n: number): string {
@@ -190,19 +198,20 @@ export function renderChart(
     }
   }
 
-  const labelCount = 6
-  const labelStep = (scale.maxPrice - scale.minPrice) / (labelCount - 1)
+  const step = niceStep(scale.maxPrice - scale.minPrice, 6)
+  const firstLabel = Math.ceil(scale.minPrice / step) * step
   const labelX = width - padding.right - 4
-  for (let i = 0; i < labelCount; i++) {
-    const price = scale.maxPrice - labelStep * i
-    text(ctx).at(labelX, scale.y(price)).content(formatLabel(price)).color(C.label).font(MONO_FONT).align('right').baseline('middle').draw()
+  for (let price = firstLabel; price <= scale.maxPrice; price += step) {
+    const y = scale.y(price)
+    if (y >= padding.top && y <= plotBottom) {
+      label(ctx).at(labelX, y).text(formatLabel(price)).color(C.label).font(MONO_FONT).align('right').draw()
+    }
   }
 
   if (count > 1) {
     const visibleCount = lastVisible - firstVisible + 1
     const timeLabelCount = Math.min(6, visibleCount)
     if (timeLabelCount > 1) {
-      const timePxStep = (lastVisible - firstVisible) * pxPerCandle / Math.max(timeLabelCount - 1, 1)
       const timeY = height - 6
       for (let i = 0; i < timeLabelCount; i++) {
         const idx = firstVisible + Math.round(i * (lastVisible - firstVisible) / (timeLabelCount - 1))
@@ -222,7 +231,7 @@ export function renderChart(
     line(ctx).from(padding.left, chY).to(width - padding.right, chY).color(C.up).width(1).stroke()
 
     const chPrice = scale.yInverse(chY)
-    text(ctx).at(width - padding.right - 4, chY).content(formatLabel(chPrice)).color(C.up).font(MONO_FONT).align('right').baseline('middle').draw()
+    label(ctx).at(width - padding.right - 4, chY).text(formatLabel(chPrice)).color(C.up).font(MONO_FONT).align('right').draw()
 
     const chIdx = Math.round((chX - padding.left + scrollPx - pxPerCandle / 2) / pxPerCandle)
     const chCi = Math.max(0, Math.min(chIdx, count - 1))

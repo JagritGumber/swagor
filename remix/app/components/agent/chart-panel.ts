@@ -1,6 +1,9 @@
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from '../chart/types.ts'
 import { createChart } from '../chart/create-chart.ts'
+import { rect, line, label } from '../chart/draw.ts'
+
+const MONO = '10px "JetBrains Mono", monospace'
 
 interface AgentAuction {
   profile: {
@@ -97,51 +100,27 @@ function drawAuctionOverlays(
 
   const dpr = window.devicePixelRatio || 1
   const w = canvas.width / dpr
-  const h = canvas.height / dpr
 
   ctx.save()
   ctx.scale(dpr, dpr)
 
   const chartWidth = w - 8
+  const cyan = 'rgba(0, 212, 255,'
 
-  // POC line
   const pocY = scale.priceToY(poc)
   if (pocY !== undefined) {
-    ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)'
-    ctx.lineWidth = 1
-    ctx.setLineDash([4, 4])
-    ctx.beginPath()
-    ctx.moveTo(0, pocY)
-    ctx.lineTo(chartWidth, pocY)
-    ctx.stroke()
-    ctx.setLineDash([])
-
-    ctx.fillStyle = 'rgba(0, 212, 255, 0.8)'
-    ctx.font = '10px JetBrains Mono, monospace'
-    ctx.textAlign = 'right'
-    ctx.fillText(`POC ${poc.toFixed(2)}`, chartWidth - 4, pocY - 4)
+    line(ctx).from(0, pocY).to(chartWidth, pocY).color(`${cyan} 0.5)`).width(1).dash([4, 4]).stroke()
+    label(ctx).at(chartWidth - 4, pocY - 4).text(`POC ${poc.toFixed(2)}`).color(`${cyan} 0.8)`).font(MONO).align('right').draw()
   }
 
-  // Value area shading
   const vaHighY = scale.priceToY(valueAreaHigh)
   const vaLowY = scale.priceToY(valueAreaLow)
   if (vaHighY !== undefined && vaLowY !== undefined) {
-    ctx.fillStyle = 'rgba(0, 212, 255, 0.04)'
-    ctx.fillRect(0, vaHighY, chartWidth, vaLowY - vaHighY)
-
-    ctx.strokeStyle = 'rgba(0, 212, 255, 0.2)'
-    ctx.lineWidth = 1
-    ctx.setLineDash([2, 4])
-    ctx.beginPath()
-    ctx.moveTo(0, vaHighY)
-    ctx.lineTo(chartWidth, vaHighY)
-    ctx.moveTo(0, vaLowY)
-    ctx.lineTo(chartWidth, vaLowY)
-    ctx.stroke()
-    ctx.setLineDash([])
+    rect(ctx).x(0).y(vaHighY).w(chartWidth).h(vaLowY - vaHighY).color(`${cyan} 0.04)`).fill()
+    line(ctx).from(0, vaHighY).to(chartWidth, vaHighY).color(`${cyan} 0.2)`).width(1).dash([2, 4]).stroke()
+    line(ctx).from(0, vaLowY).to(chartWidth, vaLowY).color(`${cyan} 0.2)`).width(1).dash([2, 4]).stroke()
   }
 
-  // Volume profile sidebar
   if (bins.length > 0) {
     const maxVolume = Math.max(...bins.map(b => b.volume))
     if (maxVolume > 0) {
@@ -157,8 +136,7 @@ function drawAuctionOverlays(
         const barHeight = Math.max(1, yLow - y)
         const barWidth = (bin.volume / maxVolume) * profileWidth
 
-        ctx.fillStyle = 'rgba(0, 212, 255, 0.6)'
-        ctx.fillRect(profileX + profileWidth - barWidth, y, barWidth, barHeight)
+        rect(ctx).x(profileX + profileWidth - barWidth).y(y).w(barWidth).h(barHeight).color(`${cyan} 0.6)`).fill()
       }
       ctx.globalAlpha = 1
     }
@@ -183,78 +161,37 @@ function drawTradePlanOverlays(
 
   const dpr = window.devicePixelRatio || 1
   const w = canvas.width / dpr
-  const h = canvas.height / dpr
 
   ctx.save()
   ctx.scale(dpr, dpr)
 
   const chartWidth = w - 8
   const isLong = side === 'long'
-  const color = isLong ? 'rgba(0, 212, 100' : 'rgba(255, 80, 80'
+  const base = isLong ? 'rgba(0, 212, 100' : 'rgba(255, 80, 80'
 
-  // Entry zone band
   const entryHighY = scale.priceToY(entryHigh)
   const entryLowY = scale.priceToY(entryLow)
   if (entryHighY !== undefined && entryLowY !== undefined) {
-    ctx.fillStyle = `${color}, 0.08)`
-    ctx.fillRect(0, entryHighY, chartWidth, entryLowY - entryHighY)
-
-    ctx.strokeStyle = `${color}, 0.4)`
-    ctx.lineWidth = 1
-    ctx.setLineDash([6, 3])
-    ctx.beginPath()
-    ctx.moveTo(0, entryHighY)
-    ctx.lineTo(chartWidth, entryHighY)
-    ctx.moveTo(0, entryLowY)
-    ctx.lineTo(chartWidth, entryLowY)
-    ctx.stroke()
-    ctx.setLineDash([])
-
-    // Entry label
-    ctx.fillStyle = `${color}, 0.8)`
-    ctx.font = '10px JetBrains Mono, monospace'
-    ctx.textAlign = 'right'
+    rect(ctx).x(0).y(entryHighY).w(chartWidth).h(entryLowY - entryHighY).color(`${base}, 0.08)`).fill()
+    line(ctx).from(0, entryHighY).to(chartWidth, entryHighY).color(`${base}, 0.4)`).width(1).dash([6, 3]).stroke()
+    line(ctx).from(0, entryLowY).to(chartWidth, entryLowY).color(`${base}, 0.4)`).width(1).dash([6, 3]).stroke()
     const entryMidY = (entryHighY + entryLowY) / 2
-    ctx.fillText(`ENTRY ${entryLow.toFixed(2)}-${entryHigh.toFixed(2)}`, chartWidth - 4, entryMidY + 3)
+    label(ctx).at(chartWidth - 4, entryMidY + 3).text(`ENTRY ${entryLow.toFixed(2)}-${entryHigh.toFixed(2)}`).color(`${base}, 0.8)`).font(MONO).align('right').draw()
   }
 
-  // Stop level
   if (stop !== undefined) {
     const stopY = scale.priceToY(stop)
     if (stopY !== undefined) {
-      ctx.strokeStyle = 'rgba(255, 80, 80, 0.6)'
-      ctx.lineWidth = 1
-      ctx.setLineDash([4, 4])
-      ctx.beginPath()
-      ctx.moveTo(0, stopY)
-      ctx.lineTo(chartWidth, stopY)
-      ctx.stroke()
-      ctx.setLineDash([])
-
-      ctx.fillStyle = 'rgba(255, 80, 80, 0.8)'
-      ctx.font = '10px JetBrains Mono, monospace'
-      ctx.textAlign = 'right'
-      ctx.fillText(`STOP ${stop.toFixed(2)}`, chartWidth - 4, stopY - 4)
+      line(ctx).from(0, stopY).to(chartWidth, stopY).color('rgba(255, 80, 80, 0.6)').width(1).dash([4, 4]).stroke()
+      label(ctx).at(chartWidth - 4, stopY - 4).text(`STOP ${stop.toFixed(2)}`).color('rgba(255, 80, 80, 0.8)').font(MONO).align('right').draw()
     }
   }
 
-  // Target level
   if (target !== undefined) {
     const targetY = scale.priceToY(target)
     if (targetY !== undefined) {
-      ctx.strokeStyle = 'rgba(0, 212, 100, 0.6)'
-      ctx.lineWidth = 1
-      ctx.setLineDash([4, 4])
-      ctx.beginPath()
-      ctx.moveTo(0, targetY)
-      ctx.lineTo(chartWidth, targetY)
-      ctx.stroke()
-      ctx.setLineDash([])
-
-      ctx.fillStyle = 'rgba(0, 212, 100, 0.8)'
-      ctx.font = '10px JetBrains Mono, monospace'
-      ctx.textAlign = 'right'
-      ctx.fillText(`TARGET ${target.toFixed(2)}`, chartWidth - 4, targetY - 4)
+      line(ctx).from(0, targetY).to(chartWidth, targetY).color('rgba(0, 212, 100, 0.6)').width(1).dash([4, 4]).stroke()
+      label(ctx).at(chartWidth - 4, targetY - 4).text(`TARGET ${target.toFixed(2)}`).color('rgba(0, 212, 100, 0.8)').font(MONO).align('right').draw()
     }
   }
 
