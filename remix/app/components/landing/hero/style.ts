@@ -201,9 +201,11 @@ export const trustIcon = css({
 })
 
 export const heroVisual = css({
-  flex: '1',
-  aspectRatio: '1 / 1',
-  maxHeight: 'calc(100vh - 200px)',
+  width: '500px',
+  height: '500px',
+  maxWidth: 'calc(100vh - 180px)',
+  maxHeight: 'calc(100vh - 180px)',
+  flexShrink: 0,
   position: 'relative',
   display: 'flex',
   alignItems: 'center',
