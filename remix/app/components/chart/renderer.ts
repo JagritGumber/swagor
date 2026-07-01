@@ -65,8 +65,10 @@ function buildScale(
   }
 
   const priceRange = maxPrice - minPrice || 1
-  let paddedMin = minPrice - priceRange * 0.05
-  let paddedMax = maxPrice + priceRange * 0.05
+  const topMargin = totalH * 0.08
+  const bottomMargin = totalH * 0.05
+  let paddedMin = minPrice - (priceRange * bottomMargin) / totalH
+  let paddedMax = maxPrice + (priceRange * topMargin) / totalH
 
   const center = (paddedMin + paddedMax) / 2
   const halfRange = (paddedMax - paddedMin) / 2
@@ -95,12 +97,19 @@ function buildScale(
   }
 }
 
-function niceStep(range: number, targetLabels: number): number {
-  const roughStep = range / targetLabels
-  const magnitude = 10 ** Math.floor(Math.log10(roughStep))
-  const residual = roughStep / magnitude
-  const nice = residual <= 1.5 ? 1 : residual <= 3 ? 2 : residual <= 7 ? 5 : 10
-  return nice * magnitude
+function niceNum(value: number): number {
+  const exp = Math.floor(Math.log10(value))
+  const frac = value / 10 ** exp
+  const nice = frac <= 1 ? 1 : frac <= 2 ? 2 : frac <= 5 ? 5 : 10
+  return nice * 10 ** exp
+}
+
+function computeLabelStep(range: number, chartHeight: number): number {
+  const FONT_HEIGHT = 10
+  const DENSITY = 2.5
+  const maxPx = FONT_HEIGHT * DENSITY
+  const maxStep = (range * maxPx) / chartHeight
+  return niceNum(maxStep)
 }
 
 function formatLabel(n: number): string {
@@ -199,7 +208,7 @@ export function renderChart(
     }
   }
 
-  const step = niceStep(scale.maxPrice - scale.minPrice, 6)
+  const step = computeLabelStep(scale.maxPrice - scale.minPrice, height - padding.top - padding.bottom)
   const firstLabel = Math.ceil(scale.minPrice / step) * step
   const labelX = width - 8
   for (let price = firstLabel; price <= scale.maxPrice; price += step) {
