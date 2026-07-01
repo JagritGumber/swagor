@@ -1,7 +1,7 @@
 import type { Candle } from '../../types/candles.ts'
 import type { ChartConfig, OverlaySegment, Scale } from './types.ts'
 import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'
-import { rect, line, text, label } from './draw.ts'
+import { rect, line, text } from './draw.ts'
 
 const MONO_FONT = '10px "JetBrains Mono", ui-monospace, monospace'
 
@@ -143,6 +143,7 @@ export function renderChart(
   const lastVisible = Math.min(count - 1, Math.ceil((scrollPx + totalW) / pxPerCandle))
 
   rect(ctx).x(0).y(0).w(width).h(height).color(C.bg).fill()
+  rect(ctx).x(width - padding.right).y(padding.top).w(padding.right).h(plotBottom - padding.top).color('rgba(10, 14, 20, 0.85)').fill()
 
   for (const seg of segments) {
     const x1 = scale.x(seg.startIndex)
@@ -204,7 +205,7 @@ export function renderChart(
   for (let price = firstLabel; price <= scale.maxPrice; price += step) {
     const y = scale.y(price)
     if (y >= padding.top && y <= plotBottom) {
-      label(ctx).at(labelX, y).text(formatLabel(price)).color(C.label).font(MONO_FONT).align('right').draw()
+      text(ctx).at(labelX, y).content(formatLabel(price)).color(C.label).font(MONO_FONT).align('right').baseline('middle').draw()
     }
   }
 
@@ -231,7 +232,7 @@ export function renderChart(
     line(ctx).from(padding.left, chY).to(width - padding.right, chY).color(C.up).width(1).stroke()
 
     const chPrice = scale.yInverse(chY)
-    label(ctx).at(width - padding.right - 4, chY).text(formatLabel(chPrice)).color(C.up).font(MONO_FONT).align('right').draw()
+    text(ctx).at(width - padding.right - 4, chY).content(formatLabel(chPrice)).color(C.up).font(MONO_FONT).align('right').baseline('middle').draw()
 
     const chIdx = Math.round((chX - padding.left + scrollPx - pxPerCandle / 2) / pxPerCandle)
     const chCi = Math.max(0, Math.min(chIdx, count - 1))

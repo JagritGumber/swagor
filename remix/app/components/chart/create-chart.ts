@@ -43,7 +43,7 @@ export function createChart(options: {
   const intervalMs = INTERVAL_MS[interval] ?? 3_600_000
   const batchSize = 200
 
-  const PADDING = { top: 16, right: 8, bottom: 28, left: 8 }
+  const PADDING = { top: 16, right: 64, bottom: 28, left: 8 }
   const MIN_PX = 2
   const MAX_PX = 1000
   const DRAG_THRESHOLD = 3
