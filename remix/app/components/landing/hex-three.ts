@@ -301,16 +301,6 @@ export function createHexCoin(container: HTMLElement) {
   }
 
   // 4 extruded rectangles scattered around the coin
-  const rectMat = new THREE.MeshPhysicalMaterial({
-    color: 0x00ddff,
-    emissive: 0x00ddff,
-    emissiveIntensity: 0.3,
-    transparent: true,
-    opacity: 0.5,
-    metalness: 0.4,
-    roughness: 0.3,
-    side: THREE.DoubleSide,
-  })
 
   const coinCenter = new THREE.Vector3(0.4, 1, 0)
   const rectPositions = [
@@ -332,7 +322,7 @@ export function createHexCoin(container: HTMLElement) {
       { depth: 0.15, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 2 }
     )
     rectGeom.center()
-    const mesh = new THREE.Mesh(rectGeom, rectMat)
+    const mesh = new THREE.Mesh(rectGeom, coinMat)
     mesh.position.set(pos.x, pos.y, pos.z)
     scene.add(mesh)
 
