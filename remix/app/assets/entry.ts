@@ -5,4 +5,9 @@ run({
     let mod = await import(moduleUrl)
     return mod[exportName]
   },
+
+  async resolveFrame(src, signal) {
+    const response = await fetch(src, { signal })
+    return response.body!
+  },
 })
