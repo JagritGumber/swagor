@@ -304,10 +304,10 @@ export function createHexCoin(container: HTMLElement) {
 
   const coinCenter = new THREE.Vector3(0.4, 1, 0)
   const rectPositions = [
-    { x: -2.5, y: -2, z: -2.5 },
-    { x: 3.5, y: -2, z: -2.5 },
-    { x: -2.5, y: -2, z: 2.5 },
-    { x: 3.5, y: -2, z: 2.5 },
+    { x: -2.5, y: 1, z: -2.5 },
+    { x: 3.5, y: 1, z: -2.5 },
+    { x: -2.5, y: 1, z: 2.5 },
+    { x: 3.5, y: 1, z: 2.5 },
   ]
 
   const lineMat = new THREE.LineBasicMaterial({
@@ -323,11 +323,10 @@ export function createHexCoin(container: HTMLElement) {
     )
     rectGeom.center()
     const mesh = new THREE.Mesh(rectGeom, coinMat)
-    mesh.rotation.x = -Math.PI / 2
     mesh.position.set(pos.x, pos.y, pos.z)
     scene.add(mesh)
 
-    // L-shaped line: horizontal at coin height, then drops to rect
+    // L-shaped connecting line from coin center to rectangle
     const mid = new THREE.Vector3(
       Math.abs(pos.x - coinCenter.x) > Math.abs(pos.z - coinCenter.z) ? pos.x : coinCenter.x,
       1,
