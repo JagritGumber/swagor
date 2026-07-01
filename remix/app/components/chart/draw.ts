@@ -1,13 +1,6 @@
-type P<T> = { [K in keyof T]: T[K] } & {}
-
-type Coordinate = { x: number; y: number }
+import type { P, Coordinate } from '../../types/shared.ts'
 
 type RectState = P<Coordinate & { w: number; h: number; color: string }>
-type LineState = P<{ from: Coordinate; to: Coordinate; color: string; width: number; dash: number[] | undefined }>
-type TextState = P<Coordinate & { text: string; color: string; font: string; align: CanvasTextAlign; baseline: CanvasTextBaseline }>
-type CircleState = P<Coordinate & { r: number; color: string }>
-type LabelState = P<Coordinate & { text: string; color: string; font: string; align: CanvasTextAlign; bgColor: string; borderColor: string }>
-
 export function rect(ctx: CanvasRenderingContext2D) {
   const state: RectState = { x: 0, y: 0, w: 0, h: 0, color: '' }
   const api = {
@@ -21,6 +14,7 @@ export function rect(ctx: CanvasRenderingContext2D) {
   return api
 }
 
+type LineState = P<{ from: Coordinate; to: Coordinate; color: string; width: number; dash: number[] | undefined }>
 export function line(ctx: CanvasRenderingContext2D) {
   const state: LineState = { from: { x: 0, y: 0 }, to: { x: 0, y: 0 }, color: '', width: 1, dash: undefined }
   const api = {
@@ -43,6 +37,7 @@ export function line(ctx: CanvasRenderingContext2D) {
   return api
 }
 
+type TextState = P<Coordinate & { text: string; color: string; font: string; align: CanvasTextAlign; baseline: CanvasTextBaseline }>
 export function text(ctx: CanvasRenderingContext2D) {
   const state: TextState = { x: 0, y: 0, text: '', color: '', font: '', align: 'right', baseline: 'middle' }
   const api = {
@@ -63,6 +58,7 @@ export function text(ctx: CanvasRenderingContext2D) {
   return api
 }
 
+type CircleState = P<Coordinate & { r: number; color: string }>
 export function circle(ctx: CanvasRenderingContext2D) {
   const state: CircleState = { x: 0, y: 0, r: 0, color: '' }
   const api = {
@@ -87,6 +83,7 @@ export function circle(ctx: CanvasRenderingContext2D) {
   return api
 }
 
+type LabelState = P<Coordinate & { text: string; color: string; font: string; align: CanvasTextAlign; bgColor: string; borderColor: string }>
 export function label(ctx: CanvasRenderingContext2D) {
   const state: LabelState = { x: 0, y: 0, text: '', color: '', font: '', align: 'right', bgColor: 'rgba(10, 14, 20, 0.85)', borderColor: 'rgba(255, 255, 255, 0.1)' }
   const api = {
