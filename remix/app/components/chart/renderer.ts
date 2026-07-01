@@ -11,22 +11,35 @@ function css(name: string): string {
   return value
 }
 
-const segColors: Record<ReaderMarketRegimeMode, string> = {
-  'trend-up': css('--seg-trend-up'),
-  'trend-down': css('--seg-trend-down'),
-  'high-vol': css('--seg-high-vol'),
-  'range': css('--seg-range'),
-  'unknown': css('--seg-unknown'),
-}
+let _colors: {
+  bg: string
+  up: string
+  down: string
+  label: string
+  dash: string
+  vaBg: string
+  seg: Record<ReaderMarketRegimeMode, string>
+} | null = null
 
-const C = {
-  bg: css('--chart-bg'),
-  up: css('--candle-up'),
-  down: css('--candle-down'),
-  label: css('--chart-label'),
-  dash: css('--chart-dash'),
-  vaBg: css('--chart-va-bg'),
-  seg: segColors,
+function colors() {
+  if (_colors) return _colors
+  const segColors: Record<ReaderMarketRegimeMode, string> = {
+    'trend-up': css('--seg-trend-up'),
+    'trend-down': css('--seg-trend-down'),
+    'high-vol': css('--seg-high-vol'),
+    'range': css('--seg-range'),
+    'unknown': css('--seg-unknown'),
+  }
+  _colors = {
+    bg: css('--chart-bg'),
+    up: css('--candle-up'),
+    down: css('--candle-down'),
+    label: css('--chart-label'),
+    dash: css('--chart-dash'),
+    vaBg: css('--chart-va-bg'),
+    seg: segColors,
+  }
+  return _colors
 }
 
 function buildScale(
@@ -150,6 +163,8 @@ export function renderChart(
 
   const firstVisible = Math.max(0, Math.floor(scrollPx / pxPerCandle))
   const lastVisible = Math.min(count - 1, Math.ceil((scrollPx + totalW) / pxPerCandle))
+
+  const C = colors()
 
   rect(ctx).x(0).y(0).w(width).h(height).color(C.bg).fill()
   rect(ctx).x(width - padding.right).y(padding.top).w(padding.right).h(plotBottom - padding.top).color('rgba(10, 14, 20, 0.85)').fill()
