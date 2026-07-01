@@ -209,4 +209,6 @@ export const heroVisual = css({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  backgroundImage: 'radial-gradient(circle, rgba(0, 212, 255, 0.08) 1px, transparent 1px)',
+  backgroundSize: '20px 20px',
 })
