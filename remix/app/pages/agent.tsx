@@ -117,7 +117,7 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
                       POC ${auction.profile.poc.toFixed(2)}
                     </div>
                     <div mix={s.analysisValue} style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
-                      VA ${auction.profile.valueAreaLow.toFixed(2)} – ${auction.profile.valueAreaHigh.toFixed(2)}
+                      VA ${auction.profile.valueAreaLow.toFixed(2)} - ${auction.profile.valueAreaHigh.toFixed(2)}
                     </div>
                   </div>
                 )}
@@ -138,7 +138,7 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
               <span>Thesis</span>
             </div>
             <div mix={s.tradeLogEmpty}>
-              No trades yet — agent is observing
+              No trades yet - agent is observing
             </div>
           </div>
         </div>
