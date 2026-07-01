@@ -43,7 +43,7 @@ export function createChart(options: {
   const intervalMs = INTERVAL_MS[interval] ?? 3_600_000
   const batchSize = 200
 
-  const PADDING = { top: 16, right: 60, bottom: 28, left: 8 }
+  const PADDING = { top: 16, right: 48, bottom: 28, left: 8 }
   const MIN_PX = 2
   const MAX_PX = 1000
   const DRAG_THRESHOLD = 3
@@ -55,7 +55,6 @@ export function createChart(options: {
   let yMin = 0
   let yMax = 0
   let crosshair: { x: number; y: number } | null = null
-  let toolbar: HTMLDivElement | null = null
   let observer: ResizeObserver | null = null
   let isLoading = false
   let lastCanvasW = 0
@@ -262,57 +261,15 @@ export function createChart(options: {
     paint()
   }, { passive: false })
 
-  function buildToolbar(): void {
-    if (toolbar !== null) toolbar.remove()
-    toolbar = document.createElement('div')
-    toolbar.style.cssText = 'position:absolute;top:8px;right:8px;display:flex;gap:4px;z-index:10'
-
-    const makeBtn = (label: string, onClick: () => void) => {
-      const b = document.createElement('button')
-      b.textContent = label
-      b.style.cssText = 'width:28px;height:28px;border:1px solid oklch(1 0 0 / .15);border-radius:4px;background:oklch(0 0 0 / .6);color:oklch(1 0 0 / .8);font:14px/1 monospace;cursor:pointer'
-      b.onclick = onClick
-      return b
-    }
-
-    const zoomFn = (dir: number) => () => {
-      const rect = canvas.getBoundingClientRect()
-      const tw = totalWidth(rect.width)
-      const midPx = scrollPx + tw / 2
-      const candleAtCenter = midPx / pxPerCandle
-      pxPerCandle = Math.max(MIN_PX, Math.min(MAX_PX, pxPerCandle * dir))
-      scrollPx = candleAtCenter * pxPerCandle - tw / 2
-      paint()
-    }
-
-    toolbar.appendChild(makeBtn('−', zoomFn(1 / 1.12)))
-    toolbar.appendChild(makeBtn('+', zoomFn(1.12)))
-    toolbar.appendChild(makeBtn('Y−', () => {
-      const oldZoom = yZoom
-      yZoom = Math.max(0.1, Math.min(50, yZoom / 1.12))
-      yScrollPx *= yZoom / oldZoom
-      paint()
-    }))
-    toolbar.appendChild(makeBtn('Y+', () => {
-      const oldZoom = yZoom
-      yZoom = Math.max(0.1, Math.min(50, yZoom * 1.12))
-      yScrollPx *= yZoom / oldZoom
-      paint()
-    }))
-    container.appendChild(toolbar)
-  }
-
   return {
     render(): void {
       cacheSegmentPriceRange(options.segments, options.candles)
       observer = new ResizeObserver(paint)
       observer.observe(canvas)
-      buildToolbar()
       paint()
     },
     destroy(): void {
       if (observer !== null) observer.disconnect()
-      if (toolbar !== null) toolbar.remove()
       canvas.remove()
     },
   }

@@ -31,7 +31,7 @@ interface ChartPanelOptions {
 function computeScale(candles: Candle[], width: number, height: number) {
   if (candles.length === 0) return null
 
-  const padding = { top: 16, right: 60, bottom: 28, left: 8 }
+  const padding = { top: 16, right: 48, bottom: 28, left: 8 }
   const totalH = height - padding.top - padding.bottom
 
   let minPrice = Infinity
@@ -102,7 +102,7 @@ function drawAuctionOverlays(
   ctx.save()
   ctx.scale(dpr, dpr)
 
-  const chartWidth = w - 60
+  const chartWidth = w - 48
 
   // POC line
   const pocY = scale.priceToY(poc)
@@ -188,7 +188,7 @@ function drawTradePlanOverlays(
   ctx.save()
   ctx.scale(dpr, dpr)
 
-  const chartWidth = w - 60
+  const chartWidth = w - 48
   const isLong = side === 'long'
   const color = isLong ? 'rgba(0, 212, 100' : 'rgba(255, 80, 80'
 
