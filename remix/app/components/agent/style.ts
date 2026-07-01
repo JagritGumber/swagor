@@ -5,7 +5,7 @@ export const agentPage = css({
   backgroundColor: '#0a0e14',
   color: '#ffffff',
   fontFamily: FONT_UI,
-  height: 'calc(100vh - 48px)',
+  flex: 1,
   display: 'flex',
   flexDirection: 'column',
   overflow: 'hidden',

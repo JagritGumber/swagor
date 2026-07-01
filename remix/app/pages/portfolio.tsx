@@ -4,6 +4,7 @@ import type { ReaderReadResult } from '../types/reader.ts'
 import type { Candle } from '../types/candles.ts'
 import type { OverlaySegment } from '../components/chart/types.ts'
 import { Document } from '../document.tsx'
+import { DashboardLayout } from '../components/dashboard/layout.tsx'
 import { ErrorState } from '../components/portfolio/error-state.tsx'
 import { Dashboard } from '../components/portfolio/dashboard.tsx'
 
@@ -31,7 +32,9 @@ export function PortfolioPage(handle: Handle<PortfolioPageProps>) {
         </>
       }
     >
-      {read.ok ? <Dashboard candles={candles} segments={segments} /> : <ErrorState message={read.error} />}
+      <DashboardLayout>
+        {read.ok ? <Dashboard candles={candles} segments={segments} /> : <ErrorState message={read.error} />}
+      </DashboardLayout>
     </Document>
   )
 }

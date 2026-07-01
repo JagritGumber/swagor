@@ -3,7 +3,7 @@ import { css } from 'remix/ui'
 import { Document } from '../document.tsx'
 import type { Candle } from '../types/candles.ts'
 import type { OverlaySegment } from '../components/chart/types.ts'
-import { Navbar } from '../components/navbar.tsx'
+import { DashboardLayout } from '../components/dashboard/layout.tsx'
 import * as s from '../components/agent/style.ts'
 import { routes } from '../routes.ts'
 
@@ -131,8 +131,8 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
           </>
         }
       >
-        <Navbar />
-        <div mix={s.agentPage}>
+        <DashboardLayout>
+          <div mix={s.agentPage}>
           <div mix={s.chartArea}>
             <div
               id="agent-chart"
@@ -251,7 +251,7 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
               No trades yet - agent is observing
             </div>
           </div>
-        </div>
+        </DashboardLayout>
 
         <script
           type="module"
