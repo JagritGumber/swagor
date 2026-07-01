@@ -5,6 +5,7 @@ import type { Candle } from '../types/candles.ts'
 import type { OverlaySegment } from '../components/chart/types.ts'
 import { createAgentChart } from '../components/agent/chart-panel.ts'
 import * as s from '../components/agent/style.ts'
+import { routes } from '../routes.ts'
 
 interface AgentAuction {
   location: string
