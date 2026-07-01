@@ -201,7 +201,7 @@ export function renderChart(
 
   const step = niceStep(scale.maxPrice - scale.minPrice, 6)
   const firstLabel = Math.ceil(scale.minPrice / step) * step
-  const labelX = width - padding.right - 4
+  const labelX = width - 8
   for (let price = firstLabel; price <= scale.maxPrice; price += step) {
     const y = scale.y(price)
     if (y >= padding.top && y <= plotBottom) {
@@ -232,7 +232,7 @@ export function renderChart(
     line(ctx).from(padding.left, chY).to(width - padding.right, chY).color(C.up).width(1).stroke()
 
     const chPrice = scale.yInverse(chY)
-    text(ctx).at(width - padding.right - 4, chY).content(formatLabel(chPrice)).color(C.up).font(MONO_FONT).align('right').baseline('middle').draw()
+    text(ctx).at(width - 8, chY).content(formatLabel(chPrice)).color(C.up).font(MONO_FONT).align('right').baseline('middle').draw()
 
     const chIdx = Math.round((chX - padding.left + scrollPx - pxPerCandle / 2) / pxPerCandle)
     const chCi = Math.max(0, Math.min(chIdx, count - 1))

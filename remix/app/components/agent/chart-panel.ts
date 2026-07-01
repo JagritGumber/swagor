@@ -104,7 +104,7 @@ function drawAuctionOverlays(
   ctx.save()
   ctx.scale(dpr, dpr)
 
-  const chartWidth = w - 64
+  const chartWidth = w - 8
   const cyan = 'rgba(0, 212, 255,'
 
   const pocY = scale.priceToY(poc)
@@ -165,7 +165,7 @@ function drawTradePlanOverlays(
   ctx.save()
   ctx.scale(dpr, dpr)
 
-  const chartWidth = w - 64
+  const chartWidth = w - 8
   const isLong = side === 'long'
   const base = isLong ? 'rgba(0, 212, 100' : 'rgba(255, 80, 80'
 
