@@ -282,6 +282,68 @@ export function createHexCoin(container: HTMLElement) {
   ringMesh.position.z = 0.35
   coin.add(ringMesh)
 
+  // Create a rounded rectangle shape
+  function createRoundedRectShape(w: number, h: number, cr: number) {
+    const shape = new THREE.Shape()
+    const hw = w / 2
+    const hh = h / 2
+    shape.moveTo(-hw + cr, -hh)
+    shape.lineTo(hw - cr, -hh)
+    shape.quadraticCurveTo(hw, -hh, hw, -hh + cr)
+    shape.lineTo(hw, hh - cr)
+    shape.quadraticCurveTo(hw, hh, hw - cr, hh)
+    shape.lineTo(-hw + cr, hh)
+    shape.quadraticCurveTo(-hw, hh, -hw, hh - cr)
+    shape.lineTo(-hw, -hh + cr)
+    shape.quadraticCurveTo(-hw, -hh, -hw + cr, -hh)
+    shape.closePath()
+    return shape
+  }
+
+  // 4 extruded rectangles scattered around the coin
+  const rectMat = new THREE.MeshPhysicalMaterial({
+    color: 0x00ddff,
+    emissive: 0x00ddff,
+    emissiveIntensity: 0.3,
+    transparent: true,
+    opacity: 0.5,
+    metalness: 0.4,
+    roughness: 0.3,
+    side: THREE.DoubleSide,
+  })
+
+  const coinCenter = new THREE.Vector3(0.4, 1, 0)
+  const rectPositions = [
+    { x: -2.5, y: 3.5, z: -1.5 },
+    { x: 3.5, y: 3.5, z: 1.5 },
+    { x: -2.5, y: -1, z: 1.5 },
+    { x: 3.5, y: -1, z: -1.5 },
+  ]
+
+  const lineMat = new THREE.LineBasicMaterial({
+    color: 0x00ddff,
+    transparent: true,
+    opacity: 0.25,
+  })
+
+  for (const pos of rectPositions) {
+    const rectGeom = new THREE.ExtrudeGeometry(
+      createRoundedRectShape(1, 1, 0.08),
+      { depth: 0.15, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 2 }
+    )
+    rectGeom.center()
+    const mesh = new THREE.Mesh(rectGeom, rectMat)
+    mesh.position.set(pos.x, pos.y, pos.z)
+    scene.add(mesh)
+
+    // Connecting line from coin center to rectangle
+    const lineGeom = new THREE.BufferGeometry().setFromPoints([
+      coinCenter,
+      new THREE.Vector3(pos.x, pos.y, pos.z),
+    ])
+    scene.add(new THREE.Line(lineGeom, lineMat))
+  }
+
   // Lights
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
   scene.add(ambientLight)
