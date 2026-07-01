@@ -6,12 +6,12 @@ interface DashboardLayoutProps {
   children: RemixNode
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
-  return (
+export function DashboardLayout(handle: DashboardLayoutProps) {
+  return () => (
     <div mix={s.shell}>
       <Navbar />
       <div mix={s.content}>
-        {children}
+        {handle.children}
       </div>
     </div>
   )
