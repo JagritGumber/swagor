@@ -1,11 +1,11 @@
 import type { Handle } from 'remix/ui'
-import { css } from 'remix/ui'
+import { css, ref } from 'remix/ui'
 
 import { FONT_UI, SURFACE_BODY, TEXT_PRIMARY } from '../../constants/theme.ts'
 import { routes } from '../../routes.ts'
-import { Navbar } from '../navbar.tsx'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from '../chart/types.ts'
+import { createChart } from '../chart/create-chart.ts'
 
 interface DashboardProps {
   candles: Candle[]
@@ -19,7 +19,6 @@ export function Dashboard(handle: Handle<DashboardProps>) {
   return () => (
     <div
       mix={css({
-        minHeight: '100vh',
         background: SURFACE_BODY,
         color: TEXT_PRIMARY,
         fontFamily: FONT_UI,
@@ -30,17 +29,26 @@ export function Dashboard(handle: Handle<DashboardProps>) {
         '& *, & *::before, & *::after': { boxSizing: 'border-box' },
       })}
     >
-      <Navbar />
       <link rel="stylesheet" href={routes.assets.href({ path: 'app/assets/chart.css' })} />
       <div
         id="chart-container"
         style={{ position: 'relative', display: 'block', width: '100%', height: 'calc(100vh - 48px)' }}
+        mix={ref((node, signal) => {
+          if (!(node instanceof HTMLElement)) return
+          const dataEl = document.getElementById('chart-data')
+          if (!dataEl) throw new Error('chart-data element not found')
+          const data = JSON.parse(dataEl.textContent ?? '{}')
+          if (!data.candles) throw new Error('chart-data missing candles')
+          const chart = createChart({
+            container: node,
+            candles: data.candles,
+            segments: data.segments,
+          })
+          chart.render()
+          signal.addEventListener('abort', () => chart.destroy())
+        })}
       />
       <script id="chart-data" type="application/json">{chartData}</script>
-      <script
-        type="module"
-        src={routes.assets.href({ path: 'app/assets/candle-chart-client.ts' })}
-      />
     </div>
   )
 }

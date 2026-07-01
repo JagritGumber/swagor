@@ -1,10 +1,10 @@
 import type { Handle } from 'remix/ui'
-import { css } from 'remix/ui'
+import { css, ref } from 'remix/ui'
 import { Document } from '../document.tsx'
 import type { Candle } from '../types/candles.ts'
 import type { OverlaySegment } from '../components/chart/types.ts'
+import { createAgentChart } from '../components/agent/chart-panel.ts'
 import * as s from '../components/agent/style.ts'
-import { routes } from '../routes.ts'
 
 interface AgentAuction {
   location: string
@@ -135,6 +135,21 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
             <div
               id="agent-chart"
               style={{ width: '100%', height: '100%' }}
+              mix={ref((node, signal) => {
+                if (!(node instanceof HTMLElement)) return
+                const dataEl = document.getElementById('agent-data')
+                if (!dataEl) throw new Error('agent-data element not found')
+                const data = JSON.parse(dataEl.textContent ?? '{}')
+                if (!data.candles) throw new Error('agent-data missing candles')
+                const chart = createAgentChart({
+                  container: node,
+                  candles: data.candles,
+                  segments: data.segments,
+                  auction: data.auction,
+                  plan: data.plan,
+                })
+                signal.addEventListener('abort', () => chart.destroy())
+              })}
             />
             <div mix={s.analysisPanel}>
               {regime && (
@@ -251,10 +266,6 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
           </div>
           </div>
 
-        <script
-          type="module"
-          src={routes.assets.href({ path: 'app/assets/agent-chart-client.ts' })}
-        />
         <script id="agent-data" type="application/json">
           {JSON.stringify({ candles, segments, auction, regime, read, plan, asset })}
         </script>
