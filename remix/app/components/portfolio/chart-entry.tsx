@@ -1,9 +1,9 @@
-import { clientEntry, ref, type Handle, type SerializableProps } from 'remix/ui'
+import { clientEntry, ref, type Handle } from 'remix/ui'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from '../chart/types.ts'
 import { createChart } from '../chart/create-chart.ts'
 
-interface ChartEntryProps extends SerializableProps {
+interface ChartEntryProps {
   candles: Candle[]
   segments: OverlaySegment[]
 }
