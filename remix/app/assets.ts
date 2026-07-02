@@ -10,7 +10,7 @@ export const assetServer = createAssetServer({
     'node_modules/*path': 'node_modules/*path',
     '@packages/*path': '../packages/*path',
   },
-  allow: ['app/assets/**', 'app/lib/**', 'app/data/**', 'app/components/chart/**', 'app/components/landing/**', 'app/components/agent/**', 'app/types/**', 'app/constants/theme.ts', 'node_modules/**', '../packages/**'],
+  allow: ['app/assets/**', 'app/lib/**', 'app/data/**', 'app/components/chart/**', 'app/components/landing/**', 'app/components/agent/**', 'app/components/portfolio/**', 'app/types/**', 'app/constants/theme.ts', 'node_modules/**', '../packages/**'],
   deny: ['app/**/*.server.*'],
   sourceMaps: process.env.NODE_ENV === 'development' ? 'external' : undefined,
   scripts: {
