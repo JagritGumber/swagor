@@ -39,6 +39,7 @@
     "node_modules",
     ".next",
     "remix",
+    "ingestion",
     "references"
   ]
 }

@@ -6,5 +6,4 @@ export const routes = route({
   portfolio: '/portfolio',
   agent: '/agent',
   candles: get('/api/candles'),
-  subscribe: get('/api/candles/subscribe'),
 })

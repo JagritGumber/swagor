@@ -1,11 +1,11 @@
 import type { Candle } from '../types/candles.ts'
-import type { OverlaySegment } from '../components/chart/types.ts'
 
 export interface LiveCallbacks {
-  onInit(candles: Candle[], segments: OverlaySegment[]): void
   onUpdate(candle: Candle): void
-  onClose(candle: Candle, segments: OverlaySegment[]): void
+  onClose(candle: Candle): void
 }
+
+const INGESTION_URL = 'http://localhost:44101/subscribe'
 
 export function connectLiveCandles(
   asset: string,
@@ -14,20 +14,18 @@ export function connectLiveCandles(
   signal: AbortSignal,
 ): void {
   const params = new URLSearchParams({ asset, interval })
-  const es = new EventSource(`/api/candles/subscribe?${params}`)
-
-  es.addEventListener('init', (e) => {
-    const data = JSON.parse(e.data)
-    callbacks.onInit(data.candles, data.segments)
-  })
+  const es = new EventSource(`${INGESTION_URL}?${params}`)
 
   es.addEventListener('candle-update', (e) => {
-    callbacks.onUpdate(JSON.parse(e.data))
+    const data = JSON.parse(e.data)
+    if (data.interval !== interval) return
+    callbacks.onUpdate(data)
   })
 
   es.addEventListener('candle-close', (e) => {
     const data = JSON.parse(e.data)
-    callbacks.onClose(data.candle, data.segments)
+    if (data.interval !== interval) return
+    callbacks.onClose(data)
   })
 
   es.addEventListener('error', () => {})

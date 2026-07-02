@@ -46,9 +46,8 @@ export const AgentChartEntry = clientEntry(
           })
 
           connectLiveCandles(asset, interval, {
-            onInit: () => {},
             onUpdate: (candle) => chart.updateCandle(candle),
-            onClose: (candle, segments) => chart.appendCandle(candle),
+            onClose: (candle) => chart.appendCandle(candle),
           }, signal)
 
           signal.addEventListener('abort', () => chart.destroy())

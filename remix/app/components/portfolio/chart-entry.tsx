@@ -30,7 +30,6 @@ export const PortfolioChartEntry = clientEntry(
           chart.render()
 
           connectLiveCandles(asset, interval, {
-            onInit: () => {},
             onUpdate: (candle) => chart.updateCandle(candle),
             onClose: (candle) => chart.appendCandle(candle),
           }, signal)
