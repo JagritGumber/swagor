@@ -53,7 +53,7 @@ export function handleSubscribe(
   const client = createSSEClient(res)
   sseManager.subscribe(client, asset)
 
-  const forming = aggregator.getForming(interval)
+  const forming = aggregator.getForming(asset, interval)
   const trades = tradeBuffer.getAll()
   client.send('init', { asset, interval, formingCandle: forming, trades })
 

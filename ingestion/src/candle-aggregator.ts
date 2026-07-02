@@ -6,10 +6,12 @@ export interface FormingCandle extends Candle {
 }
 
 export interface CandleAggregator {
-  applyTrade(interval: string, intervalMs: number, price: number, size: number, timestamp: number): 'tick' | 'close'
-  getForming(interval: string): FormingCandle | null
+  applyTrade(asset: string, interval: string, intervalMs: number, price: number, size: number, timestamp: number): 'tick' | 'close'
+  getForming(asset: string, interval: string): FormingCandle | null
   getClosed(): FormingCandle[]
 }
+
+const key = (asset: string, interval: string) => `${asset}:${interval}`
 
 export function createCandleAggregator(): CandleAggregator {
   const candles = new Map<string, FormingCandle>()
@@ -20,33 +22,35 @@ export function createCandleAggregator(): CandleAggregator {
   }
 
   function applyTrade(
+    asset: string,
     interval: string,
     intervalMs: number,
     price: number,
     size: number,
     timestamp: number,
   ): 'tick' | 'close' {
-    const key = bucketKey(intervalMs, timestamp)
+    const k = key(asset, interval)
+    const bk = bucketKey(intervalMs, timestamp)
 
-    const current = candles.get(interval)
-    if (current && current.t !== key) {
+    const current = candles.get(k)
+    if (current && current.t !== bk) {
       closed.push({ ...current, closed: true })
-      candles.delete(interval)
+      candles.delete(k)
       const next: FormingCandle = {
-        t: key, o: price, h: price, l: price, c: price, v: size,
+        t: bk, o: price, h: price, l: price, c: price, v: size,
         interval, closed: false,
       }
-      candles.set(interval, next)
+      candles.set(k, next)
       return 'close'
     }
 
-    let candle = candles.get(interval)
+    let candle = candles.get(k)
     if (!candle) {
       candle = {
-        t: key, o: price, h: price, l: price, c: price, v: size,
+        t: bk, o: price, h: price, l: price, c: price, v: size,
         interval, closed: false,
       }
-      candles.set(interval, candle)
+      candles.set(k, candle)
       return 'tick'
     }
 
@@ -57,8 +61,8 @@ export function createCandleAggregator(): CandleAggregator {
     return 'tick'
   }
 
-  function getForming(interval: string): FormingCandle | null {
-    return candles.get(interval) ?? null
+  function getForming(asset: string, interval: string): FormingCandle | null {
+    return candles.get(key(asset, interval)) ?? null
   }
 
   function getClosed(): FormingCandle[] {

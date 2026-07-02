@@ -46,7 +46,7 @@ export function connectAndStream(
 
       let anyClosed = false
       for (const { name, ms } of INTERVALS) {
-        if (aggregator.applyTrade(name, ms, trade.price, trade.size, timestamp) === 'close') {
+        if (aggregator.applyTrade(trade.asset, name, ms, trade.price, trade.size, timestamp) === 'close') {
           anyClosed = true
         }
       }
@@ -70,7 +70,7 @@ export function connectAndStream(
       }
 
       for (const { name } of INTERVALS) {
-        const forming = aggregator.getForming(name)
+        const forming = aggregator.getForming(trade.asset, name)
         if (forming) {
           sseManager.broadcast(trade.asset, 'candle-update', forming)
         }
