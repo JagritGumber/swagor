@@ -12,7 +12,10 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
     "allowImportingTsExtensions": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@packages/*": ["../packages/*"]
+    }
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules"]
