@@ -61,6 +61,26 @@ export function createChart(options: {
   let isLoading = false
   let lastCanvasW = 0
   let lastCanvasH = 0
+  const flashTimestamps: Map<number, { start: number; side: 'up' | 'down' }> = new Map()
+  let flashRaf: number | null = null
+
+  function requestFlashFrame(): void {
+    if (flashRaf !== null) return
+    function tick() {
+      const now = performance.now()
+      let hasActive = false
+      for (const [ts, f] of flashTimestamps) {
+        if (now - f.start < 400) { hasActive = true; break }
+      }
+      if (hasActive) {
+        paint()
+        flashRaf = requestAnimationFrame(tick)
+      } else {
+        flashRaf = null
+      }
+    }
+    flashRaf = requestAnimationFrame(tick)
+  }
 
   function initViewport(width: number): void {
     const totalW = width - PADDING.left - PADDING.right
@@ -191,7 +211,7 @@ export function createChart(options: {
       width: rect.width,
       height: rect.height,
       padding: PADDING,
-    }, pxPerCandle, scrollPx, crosshair ?? undefined, yMin, yMax, yScrollPx, yZoom)
+    }, pxPerCandle, scrollPx, crosshair ?? undefined, yMin, yMax, yScrollPx, yZoom, undefined, flashTimestamps)
 
     checkEdges(rect.width)
   }
@@ -278,14 +298,18 @@ export function createChart(options: {
       const idx = options.candles.findIndex(c => c.t === candle.t)
       if (idx >= 0) {
         options.candles[idx] = candle
+        flashTimestamps.set(candle.t, { start: performance.now(), side: candle.c >= candle.o ? 'up' : 'down' })
         paint()
+        requestFlashFrame()
       }
     },
     appendCandle(candle: Candle): void {
       options.candles.push(candle)
       options.segments = readRegimeSegments({ candles: options.candles, lookback: 200 })
       cacheSegmentPriceRange(options.segments, options.candles)
+      flashTimestamps.set(candle.t, { start: performance.now(), side: candle.c >= candle.o ? 'up' : 'down' })
       paint()
+      requestFlashFrame()
     },
   }
 }

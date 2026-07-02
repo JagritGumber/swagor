@@ -154,6 +154,7 @@ export function renderChart(
   yMax?: number,
   yScrollPx?: number,
   yZoom?: number,
+  flashTimestamps?: Map<number, { start: number; side: 'up' | 'down' }>,
 ): void {
   const scale = buildScale(candles, config, pxPerCandle, scrollPx, yMin, yMax, yScrollPx, yZoom)
   const { width, height, padding } = config
@@ -214,6 +215,20 @@ export function renderChart(
     const bodyTop = isUp ? scale.y(c.c) : scale.y(c.o)
     const bodyBottom = isUp ? scale.y(c.o) : scale.y(c.c)
     rect(ctx).x(cx - cw / 2).y(bodyTop).w(cw).h(Math.max(1, bodyBottom - bodyTop)).color(clr).fill()
+
+    if (flashTimestamps) {
+      const flash = flashTimestamps.get(c.t)
+      if (flash) {
+        const t = (performance.now() - flash.start) / 400
+        if (t < 1) {
+          const alpha = Math.max(0, 1 - t) * 0.5
+          const flashColor = flash.side === 'up' ? `rgba(0, 255, 133, ${alpha})` : `rgba(255, 80, 80, ${alpha})`
+          rect(ctx).x(cx - cw / 2 - 1).y(bodyTop - 1).w(cw + 2).h(Math.max(1, bodyBottom - bodyTop + 2)).color(flashColor).fill()
+        } else {
+          flashTimestamps.delete(c.t)
+        }
+      }
+    }
   }
 
   if (currentPrice !== undefined) {
