@@ -204,6 +204,14 @@ async function buildReaderRead(url: URL, lookback?: number, existingCandles?: Ca
   return { read: { ok: true, data }, candles }
 }
 
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) { reject(new DOMException('Aborted', 'AbortError')); return }
+    const id = setTimeout(resolve, ms)
+    signal?.addEventListener('abort', () => { clearTimeout(id); reject(new DOMException('Aborted', 'AbortError')) }, { once: true })
+  })
+}
+
 export default createController(routes, {
   actions: {
     async assets(context) {
@@ -383,6 +391,79 @@ export default createController(routes, {
           asset={asset}
         />,
       )
+    },
+    async subscribe(context) {
+      const url = new URL(context.request.url)
+      const asset = (url.searchParams.get('asset') ?? 'ETH').toUpperCase()
+      const interval = url.searchParams.get('interval') ?? '1h'
+
+      if (!VALID_INTERVALS.has(interval)) {
+        return new Response(JSON.stringify({ error: `Invalid interval: ${interval}` }), { status: 400 })
+      }
+
+      const intervalMs = INTERVAL_MS[interval] ?? 3_600_000
+      const lookback = 300
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          const encoder = new TextEncoder()
+          function send(event: string, data: unknown) {
+            controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+          }
+
+          try {
+            const now = Date.now()
+            const { data: rawCandles, error: err } = await tryCatch(
+              fetchCandles(asset, interval, now - intervalMs * lookback, now),
+            )
+            if (err !== null) { send('error', { message: err.message }); controller.close(); return }
+            if (rawCandles.length === 0) { send('error', { message: 'No candle data' }); controller.close(); return }
+
+            const candles = rawCandles.map(toCandle)
+            let segments = readRegimeSegments({ candles, lookback: 200 })
+            send('init', { candles, segments })
+
+            let lastTs = candles[candles.length - 1].t
+
+            while (!context.request.signal.aborted) {
+              await sleep(30_000, context.request.signal)
+
+              const fresh = await tryCatch(fetchCandles(asset, interval, lastTs, Date.now()))
+              if (fresh.error !== null) continue
+              if (fresh.data.length === 0) continue
+
+              const freshCandles = fresh.data.map(toCandle)
+
+              for (const c of freshCandles) {
+                const idx = candles.findIndex(e => e.t === c.t)
+                if (idx >= 0) {
+                  candles[idx] = c
+                  send('candle-update', c)
+                } else {
+                  candles.push(c)
+                  lastTs = c.t
+                  segments = readRegimeSegments({ candles, lookback: 200 })
+                  send('candle-close', { candle: c, segments })
+                }
+              }
+            }
+          } catch (e) {
+            if (e instanceof DOMException && e.name === 'AbortError') return
+            send('error', { message: String(e) })
+          } finally {
+            controller.close()
+          }
+        },
+        cancel() {},
+      })
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      })
     },
   },
 })

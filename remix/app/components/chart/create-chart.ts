@@ -7,6 +7,8 @@ import { readRegimeSegments } from '@packages/strategy-lab/read-core/market-regi
 export interface ChartInstance {
   render(): void
   destroy(): void
+  updateCandle(candle: Candle): void
+  appendCandle(candle: Candle): void
 }
 
 const INTERVAL_MS: Record<string, number> = {
@@ -271,6 +273,19 @@ export function createChart(options: {
     destroy(): void {
       if (observer !== null) observer.disconnect()
       canvas.remove()
+    },
+    updateCandle(candle: Candle): void {
+      const idx = options.candles.findIndex(c => c.t === candle.t)
+      if (idx >= 0) {
+        options.candles[idx] = candle
+        paint()
+      }
+    },
+    appendCandle(candle: Candle): void {
+      options.candles.push(candle)
+      options.segments = readRegimeSegments({ candles: options.candles, lookback: 200 })
+      cacheSegmentPriceRange(options.segments, options.candles)
+      paint()
     },
   }
 }

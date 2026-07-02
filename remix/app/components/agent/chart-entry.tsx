@@ -2,6 +2,7 @@ import { clientEntry, ref, type Handle } from 'remix/ui'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from '../chart/types.ts'
 import { createAgentChart } from './chart-panel.ts'
+import { connectLiveCandles } from '../../data/live-candles.ts'
 
 interface ChartEntryProps {
   candles: Candle[]
@@ -32,6 +33,10 @@ export const AgentChartEntry = clientEntry(
         style={{ width: '100%', height: '100%' }}
         mix={ref((node, signal) => {
           if (!(node instanceof HTMLElement)) return
+          const params = new URLSearchParams(window.location.search)
+          const asset = params.get('asset') ?? 'ETH'
+          const interval = params.get('interval') ?? '1h'
+
           const chart = createAgentChart({
             container: node,
             candles: handle.props.candles,
@@ -39,6 +44,13 @@ export const AgentChartEntry = clientEntry(
             auction: handle.props.auction,
             plan: handle.props.plan,
           })
+
+          connectLiveCandles(asset, interval, {
+            onInit: () => {},
+            onUpdate: (candle) => chart.updateCandle(candle),
+            onClose: (candle, segments) => chart.appendCandle(candle),
+          }, signal)
+
           signal.addEventListener('abort', () => chart.destroy())
         })}
       />
