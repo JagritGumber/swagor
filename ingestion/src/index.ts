@@ -4,6 +4,7 @@ import { createSSEManager } from './sse-manager.ts'
 import { createTradeBuffer } from './trade-buffer.ts'
 import { createCandleAggregator } from './candle-aggregator.ts'
 import { handleSubscribe } from './http/subscribe.ts'
+import { setCorsHeaders } from './http/cors.ts'
 import { connectAndStream } from './ws/hyperliquid-connector.ts'
 import { getDb } from './db/index.ts'
 
@@ -13,6 +14,13 @@ const aggregator = createCandleAggregator()
 
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
+  setCorsHeaders(res)
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204)
+    res.end()
+    return
+  }
 
   if (url.pathname === '/health' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
