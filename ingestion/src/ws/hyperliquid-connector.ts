@@ -5,6 +5,8 @@ import type { StoredOrderflowEvent } from '@packages/market-data/orderflow/types
 import type { TradeBuffer } from '../trade-buffer.ts'
 import type { CandleAggregator } from '../candle-aggregator.ts'
 import type { SSEManager } from '../sse-manager.ts'
+import type { DB } from '../db/index.ts'
+import { trades, candles } from '../db/schema.ts'
 import { NETWORK } from '../../env.ts'
 import { INTERVAL_MS } from '../http/subscribe.ts'
 
@@ -17,11 +19,12 @@ export function connectAndStream(
   tradeBuffer: TradeBuffer,
   aggregator: CandleAggregator,
   sseManager: SSEManager,
+  db: DB,
 ): { close(): void } {
   const connection = connectHyperliquidOrderflow({
     network: NETWORK,
     assets: ASSETS,
-    onEvent(event: OrderflowEvent) {
+    async onEvent(event: OrderflowEvent) {
       if (event.type !== 'trade') return
       const { trade } = event
       const timestamp = Math.floor(trade.time / 1000)
@@ -33,7 +36,14 @@ export function connectAndStream(
         timestamp,
       })
 
-      // Apply trade to all intervals, track if any closed
+      await db.insert(trades).values({
+        asset: trade.asset,
+        price: trade.price,
+        size: trade.size,
+        side: trade.side,
+        timestamp,
+      })
+
       let anyClosed = false
       for (const { name, ms } of INTERVALS) {
         if (aggregator.applyTrade(name, ms, trade.price, trade.size, timestamp) === 'close') {
@@ -41,15 +51,24 @@ export function connectAndStream(
         }
       }
 
-      // Broadcast closed candles (outside loop to avoid drain bug)
       if (anyClosed) {
         const closed = aggregator.getClosed()
         for (const candle of closed) {
+          await db.insert(candles).values({
+            t: candle.t,
+            o: candle.o,
+            h: candle.h,
+            l: candle.l,
+            c: candle.c,
+            v: candle.v,
+            asset: trade.asset,
+            interval: candle.interval,
+          })
+
           sseManager.broadcast(trade.asset, 'candle-close', candle)
         }
       }
 
-      // Broadcast forming candle for each interval
       for (const { name } of INTERVALS) {
         const forming = aggregator.getForming(name)
         if (forming) {
@@ -58,7 +77,7 @@ export function connectAndStream(
       }
     },
     onRecord(record: StoredOrderflowEvent) {
-      // TODO: persist to DB
+      // TODO: persist raw records to parquet or separate table
     },
     onStatus(status: string) {
       console.log(`hyperliquid ws: ${status}`)

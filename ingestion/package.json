@@ -8,11 +8,13 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.4",
     "drizzle-orm": "^0.45.2",
     "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
-    "@types/ws": "^8.5.14"
+    "@types/ws": "^8.5.14",
+    "drizzle-kit": "^0.31.10"
   }
 }

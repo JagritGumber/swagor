@@ -5,6 +5,7 @@ import { createTradeBuffer } from './trade-buffer.ts'
 import { createCandleAggregator } from './candle-aggregator.ts'
 import { handleSubscribe } from './http/subscribe.ts'
 import { connectAndStream } from './ws/hyperliquid-connector.ts'
+import { getDb } from './db/index.ts'
 
 const sseManager = createSSEManager()
 const tradeBuffer = createTradeBuffer(1000)
@@ -28,7 +29,8 @@ const server = createServer((req, res) => {
   res.end()
 })
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`ingestion service listening on :${PORT}`)
-  connectAndStream(tradeBuffer, aggregator, sseManager)
+  const db = await getDb()
+  connectAndStream(tradeBuffer, aggregator, sseManager, db)
 })
