@@ -1,9 +1,9 @@
 import type { Handle } from 'remix/ui'
-import { css, ref } from 'remix/ui'
+import { css } from 'remix/ui'
 import { Document } from '../document.tsx'
 import type { Candle } from '../types/candles.ts'
 import type { OverlaySegment } from '../components/chart/types.ts'
-import { createAgentChart } from '../components/agent/chart-panel.ts'
+import { AgentChartEntry } from '../components/agent/chart-entry.tsx'
 import * as s from '../components/agent/style.ts'
 import { routes } from '../routes.ts'
 
@@ -133,24 +133,11 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
       >
         <div mix={s.agentPage}>
           <div mix={s.chartArea}>
-            <div
-              id="agent-chart"
-              style={{ width: '100%', height: '100%' }}
-              mix={ref((node, signal) => {
-                if (!(node instanceof HTMLElement)) return
-                const dataEl = document.getElementById('agent-data')
-                if (!dataEl) throw new Error('agent-data element not found')
-                const data = JSON.parse(dataEl.textContent ?? '{}')
-                if (!data.candles) throw new Error('agent-data missing candles')
-                const chart = createAgentChart({
-                  container: node,
-                  candles: data.candles,
-                  segments: data.segments,
-                  auction: data.auction,
-                  plan: data.plan,
-                })
-                signal.addEventListener('abort', () => chart.destroy())
-              })}
+            <AgentChartEntry
+              candles={candles}
+              segments={segments}
+              auction={auction}
+              plan={plan}
             />
             <div mix={s.analysisPanel}>
               {regime && (
@@ -267,9 +254,6 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
           </div>
           </div>
 
-        <script id="agent-data" type="application/json">
-          {JSON.stringify({ candles, segments, auction, regime, read, plan, asset })}
-        </script>
       </Document>
     )
   }
