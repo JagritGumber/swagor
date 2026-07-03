@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch --import tsx/esm server.ts",
-    "start": "node --import tsx/esm server.ts",
+"dev": "node --watch --env-file .env --import tsx/esm server.ts",
+"start": "node --env-file .env --import tsx/esm server.ts",
     "test": "node --import tsx/esm --test",
     "typecheck": "tsc --noEmit"
   },
