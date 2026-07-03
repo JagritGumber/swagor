@@ -1,11 +1,13 @@
 import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'
 
+// status: Unused — replaced by lightweight-charts
 export interface ChartConfig {
   width: number
   height: number
   padding: { top: number; right: number; bottom: number; left: number }
 }
 
+// status: Unused — replaced by lightweight-charts
 export interface Scale {
   xStep: number
   candleWidth: number

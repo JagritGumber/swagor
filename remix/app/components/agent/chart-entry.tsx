@@ -1,7 +1,7 @@
 import { clientEntry, ref, type Handle } from 'remix/ui'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from '../chart/types.ts'
-import { createAgentChart } from './chart-panel.ts'
+import { createLWChart } from '../chart/lw-chart.ts'
 import { connectLiveCandles } from '../../data/live-candles.ts'
 
 interface ChartEntryProps {
@@ -37,7 +37,7 @@ export const AgentChartEntry = clientEntry(
           const asset = params.get('asset') ?? 'ETH'
           const interval = params.get('interval') ?? '1h'
 
-          const chart = createAgentChart({
+          const chart = createLWChart({
             container: node,
             candles: handle.props.candles,
             segments: handle.props.segments,

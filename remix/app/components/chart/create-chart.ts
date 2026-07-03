@@ -1,3 +1,4 @@
+// status: Unused — replaced by lightweight-charts lw-chart.ts
 import { renderChart } from './renderer.ts'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from './types.ts'

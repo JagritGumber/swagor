@@ -1,3 +1,4 @@
+// status: Unused — replaced by lightweight-charts lw-chart.ts
 import type { Candle } from '../../types/candles.ts'
 import type { ChartConfig, OverlaySegment, Scale } from './types.ts'
 import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'

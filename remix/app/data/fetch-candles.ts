@@ -1,3 +1,4 @@
+// status: Unused — replaced by lightweight-charts lw-chart.ts
 import type { Candle } from '../types/candles.ts'
 
 export async function fetchCandles(

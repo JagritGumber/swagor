@@ -1,3 +1,4 @@
+// status: Unused — replaced by lightweight-charts lw-chart.ts
 import type { P, Coordinate } from '../../types/shared.ts'
 
 type RectState = P<Coordinate & { w: number; h: number; color: string }>
