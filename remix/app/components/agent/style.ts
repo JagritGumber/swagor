@@ -1,8 +1,8 @@
 import { css } from 'remix/ui'
-import { FONT_UI, FONT_DATA } from '../../constants/theme.ts'
+import { FONT_UI, FONT_DATA, SURFACE_BODY } from '../../constants/theme.ts'
 
 export const agentPage = css({
-  backgroundColor: '#0a0e14',
+  backgroundColor: SURFACE_BODY,
   color: '#ffffff',
   fontFamily: FONT_UI,
   flex: 1,
