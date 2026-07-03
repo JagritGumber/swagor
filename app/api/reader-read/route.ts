@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { fetchCandles } from "@/lib/data-sources/hyperliquid";
-import { readMarketAuction, readMarketRegime, type Candle } from "@/packages/strategy-lab";
+import { readMarketAuction } from "../../../packages/strategy-lab/read-core/read/read-market-auction";
+import { readMarketRegime } from "../../../packages/strategy-lab/read-core/market-regime/read-market-regime";
+import type { Candle } from "../../../packages/strategy-lab/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
