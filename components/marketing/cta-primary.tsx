@@ -17,24 +17,8 @@ import { authClient } from "@/lib/auth-client";
 export function CtaPrimary({ className }: { className?: string }) {
   const { data: session, isPending } = authClient.useSession();
 
-  if (isPending) {
-    return (
-      <span
-        aria-hidden
-        className={`${className ?? ""} pointer-events-none invisible`}
-      >
-        <span>Request beta access</span>
-        <ArrowRight className="h-4 w-4" aria-hidden />
-      </span>
-    );
-  }
-
-  if (!session) {
-    return (
-      <span className={`${className ?? ""} pointer-events-none opacity-50`}>
-        <span>Closed beta</span>
-      </span>
-    );
+  if (isPending || !session) {
+    return null;
   }
 
   return (
