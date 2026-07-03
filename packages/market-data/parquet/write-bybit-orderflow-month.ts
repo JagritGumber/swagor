@@ -33,7 +33,7 @@ export type WriteBybitOrderflowMonthDateProgress = {
   profileRows: number;
 };
 
-type BinaryArchive = Uint8Array<ArrayBuffer>;
+type BinaryArchive = Uint8Array;
 
 export async function writeBybitOrderflowMonth(input: {
   rawRoot: string;

@@ -21,6 +21,7 @@ const nextConfig = {
   // resolveAlias entries here. The webpack block below is preserved for
   // `next dev --webpack` / `next build --webpack` fallback path.
   turbopack: {},
+  serverExternalPackages: ['parquet-wasm'],
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
