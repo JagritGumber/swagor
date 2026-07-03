@@ -1,6 +1,10 @@
 node_modules
 .git
 .github
+.data
+artifacts
+.next
+.open-next
 .env.local
 .env.production.local
 .env.development.local
@@ -15,5 +19,7 @@ packages
 docs
 emails
 scripts
+references
+.worktrees
 .nixpacks
 replit.nix
