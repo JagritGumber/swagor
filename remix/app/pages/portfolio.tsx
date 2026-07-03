@@ -11,10 +11,11 @@ interface PortfolioPageProps {
   read: ReaderReadResult
   candles: Candle[]
   segments: OverlaySegment[]
+  user?: { address: string }
 }
 
 export function PortfolioPage(handle: Handle<PortfolioPageProps>) {
-  const { read, candles, segments } = handle.props
+  const { read, candles, segments, user } = handle.props
 
   return () => (
     <Document
@@ -30,6 +31,7 @@ export function PortfolioPage(handle: Handle<PortfolioPageProps>) {
           />
         </>
       }
+      user={user}
     >
       {read.ok ? <Dashboard candles={candles} segments={segments} /> : <ErrorState message={read.error} />}
     </Document>

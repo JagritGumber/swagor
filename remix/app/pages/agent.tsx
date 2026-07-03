@@ -66,6 +66,7 @@ interface AgentPageProps {
   read: AgentReaderRead | null
   plan: AgentTradePlan | null
   asset: string
+  user?: { address: string }
 }
 
 function regimeBadgeClass(mode: string): string {
@@ -113,7 +114,7 @@ function planStatusLabel(status: string): string {
 
 export function AgentPage(handle: Handle<AgentPageProps>) {
   return () => {
-    const { candles, segments, auction, regime, read, plan, asset } = handle.props
+    const { candles, segments, auction, regime, read, plan, asset, user } = handle.props
 
     return (
       <Document
@@ -130,6 +131,7 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
             <link rel="stylesheet" href={routes.assets.href({ path: 'app/assets/chart.css' })} />
           </>
         }
+        user={user}
       >
         <div mix={s.agentPage}>
           <div mix={s.chartArea}>

@@ -1,10 +1,15 @@
 import { createController } from 'remix/router'
+import { redirect } from 'remix/response/redirect'
+import { Session } from 'remix/session'
+import { Auth } from 'remix/middleware/auth'
+import { completeAuth } from 'remix/auth'
 
 import { assetServer } from '../assets.ts'
 import { routes } from '../routes.ts'
 import { LandingPage } from '../pages/landing/page.tsx'
 import { PortfolioPage } from '../pages/portfolio.tsx'
 import { AgentPage } from '../pages/agent.tsx'
+import { LoginPage } from '../pages/login.tsx'
 import { fetchCandles } from '../data/hyperliquid.ts'
 import type { SelboReasoning, ReaderReadResult } from '../types/reader.ts'
 import type { Candle } from '../types/candles.ts'
@@ -18,6 +23,9 @@ import { createOrderflowWindow } from '@packages/strategy-lab/read-core/orderflo
 import { readOrderflowWindow } from '@packages/strategy-lab/read-core/orderflow/read-orderflow-window'
 import { combineAuctionOrderflow } from '@packages/strategy-lab/reader/reader-live/combine-auction-orderflow'
 import { buildReaderTradePlan } from '@packages/strategy-lab/backtest/trade-plan/build-reader-trade-plan'
+import { resolveUser } from '../data/user.ts'
+import { generateNonce, consumeNonce } from '../data/nonce.ts'
+import { verifyEthereumSignature } from '../lib/verify-signature.ts'
 
 const VALID_INTERVALS = new Set(['1m', '5m', '15m', '1h', '4h', '1d'])
 const INTERVAL_MS: Record<string, number> = {
@@ -236,6 +244,10 @@ export default createController(routes, {
       return Response.json({ candles })
     },
     async portfolio(context) {
+      const auth = context.get(Auth)
+      if (!auth.ok) return redirect('/login')
+      const user = { address: auth.identity.wallets[0].address }
+
       const url = new URL(context.request.url)
       const lookback = Math.min(Math.max(Number(url.searchParams.get('lookback') ?? '200'), 20), 800)
       const asset = (url.searchParams.get('asset') ?? 'ETH').toUpperCase()
@@ -243,7 +255,7 @@ export default createController(routes, {
 
       if (!VALID_INTERVALS.has(interval)) {
         return context.render(
-          <PortfolioPage read={{ ok: false, error: `Invalid interval: ${interval}` }} candles={[]} segments={[]} />,
+          <PortfolioPage read={{ ok: false, error: `Invalid interval: ${interval}` }} candles={[]} segments={[]} user={user} />,
         )
       }
 
@@ -253,12 +265,12 @@ export default createController(routes, {
       )
       if (err !== null) {
         return context.render(
-          <PortfolioPage read={{ ok: false, error: err.message }} candles={[]} segments={[]} />,
+          <PortfolioPage read={{ ok: false, error: err.message }} candles={[]} segments={[]} user={user} />,
         )
       }
       if (rawCandles.length === 0) {
         return context.render(
-          <PortfolioPage read={{ ok: false, error: 'No candle data' }} candles={[]} segments={[]} />,
+          <PortfolioPage read={{ ok: false, error: 'No candle data' }} candles={[]} segments={[]} user={user} />,
         )
       }
 
@@ -267,10 +279,14 @@ export default createController(routes, {
       const segments = readRegimeSegments({ candles, lookback })
 
       return context.render(
-        <PortfolioPage read={readerResult.read} candles={candles} segments={segments} />,
+        <PortfolioPage read={readerResult.read} candles={candles} segments={segments} user={user} />,
       )
     },
     async agent(context) {
+      const auth = context.get(Auth)
+      if (!auth.ok) return redirect('/login')
+      const user = { address: auth.identity.wallets[0].address }
+
       const url = new URL(context.request.url)
       const asset = (url.searchParams.get('asset') ?? 'ETH').toUpperCase()
       const interval = '1h'
@@ -281,10 +297,10 @@ export default createController(routes, {
         fetchCandles(asset, interval, now - INTERVAL_MS[interval] * lookback, now),
       )
       if (err !== null) {
-        return context.render(<AgentPage candles={[]} segments={[]} auction={null} regime={null} asset={asset} />)
+        return context.render(<AgentPage candles={[]} segments={[]} auction={null} regime={null} asset={asset} user={user} />)
       }
       if (rawCandles.length === 0) {
-        return context.render(<AgentPage candles={[]} segments={[]} auction={null} regime={null} asset={asset} />)
+        return context.render(<AgentPage candles={[]} segments={[]} auction={null} regime={null} asset={asset} user={user} />)
       }
 
       const candles = rawCandles.map(toCandle)
@@ -383,8 +399,58 @@ export default createController(routes, {
           read={readerRead}
           plan={tradePlan}
           asset={asset}
+          user={user}
         />,
       )
+    },
+    async nonce(context) {
+      const url = new URL(context.request.url)
+      const address = url.searchParams.get('address')
+      if (!address) {
+        return Response.json({ error: 'address parameter required' }, { status: 400 })
+      }
+      const nonce = generateNonce(address)
+      return Response.json({ nonce })
+    },
+    async login(context) {
+      if (context.request.method !== 'POST') {
+        const auth = context.get(Auth)
+        const user = auth.ok ? { address: auth.identity.wallets[0].address } : undefined
+        return context.render(<LoginPage user={user} />)
+      }
+
+      let body: { address?: string; signature?: string; nonce?: string }
+      try {
+        body = await context.request.json()
+      } catch {
+        return Response.json({ ok: false, error: 'Invalid request body' }, { status: 400 })
+      }
+
+      const { address, signature, nonce } = body
+      if (!address || !signature || !nonce) {
+        return Response.json({ ok: false, error: 'Missing address, signature, or nonce' }, { status: 400 })
+      }
+
+      if (!consumeNonce(address, nonce)) {
+        return Response.json({ ok: false, error: 'Invalid or expired nonce' }, { status: 401 })
+      }
+
+      if (!verifyEthereumSignature(address, nonce, signature)) {
+        return Response.json({ ok: false, error: 'Signature verification failed' }, { status: 401 })
+      }
+
+      const user = resolveUser(address)
+
+      const session = completeAuth(context)
+      session.set('auth', { userId: user.id })
+
+      return Response.json({ ok: true, redirect: '/portfolio' })
+    },
+    async logout(context) {
+      const session = context.get(Session)
+      session.unset('auth')
+      session.regenerateId(true)
+      return redirect('/login')
     },
   },
 })

@@ -6,4 +6,7 @@ export const routes = route({
   portfolio: '/portfolio',
   agent: '/agent',
   candles: get('/api/candles'),
+  login: '/login',
+  nonce: get('/api/nonce'),
+  logout: '/logout',
 })
