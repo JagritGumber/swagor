@@ -32,13 +32,7 @@ export function AuthNavLink() {
 
   if (isPending) return <div className="h-9 w-[88px]" aria-hidden />;
 
-  if (!session) {
-    return (
-      <Link href="/sign-in" className={PRIMARY}>
-        Sign In
-      </Link>
-    );
-  }
+  if (!session) return null;
 
   const onDashboard = pathname?.startsWith("/dashboard") ?? false;
   const initials = (session.user.email ?? "??").slice(0, 2).toUpperCase();

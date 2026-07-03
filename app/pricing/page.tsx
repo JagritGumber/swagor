@@ -55,12 +55,18 @@ export default async function PricingPage() {
               </ul>
               <div className="mt-auto pt-6">
                 {id === "free" ? (
-                  <Link
-                    href={signedIn ? "/dashboard" : "/sign-up"}
-                    className="inline-flex h-10 w-full items-center justify-center border border-[var(--hairline-strong)] bg-black px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-foreground transition hover:border-[var(--neon-cyan)] hover:text-[var(--neon-cyan)]"
-                  >
-                    {signedIn ? "Open dashboard" : "Sign up free"}
-                  </Link>
+                  signedIn ? (
+                    <Link
+                      href="/dashboard"
+                      className="inline-flex h-10 w-full items-center justify-center border border-[var(--hairline-strong)] bg-black px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-foreground transition hover:border-[var(--neon-cyan)] hover:text-[var(--neon-cyan)]"
+                    >
+                      Open dashboard
+                    </Link>
+                  ) : (
+                    <span className="inline-flex h-10 w-full items-center justify-center border border-[var(--hairline-strong)] bg-black px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground opacity-50">
+                      Unavailable
+                    </span>
+                  )
                 ) : isContact ? (
                   <a
                     href="mailto:jagrit@wearemomentus.com?subject=Selbo Capital tier"

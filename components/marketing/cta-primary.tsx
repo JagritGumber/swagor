@@ -29,12 +29,17 @@ export function CtaPrimary({ className }: { className?: string }) {
     );
   }
 
-  const href = session ? "/dashboard" : "/sign-up";
-  const label = session ? "Open dashboard" : "Request beta access";
+  if (!session) {
+    return (
+      <span className={`${className ?? ""} pointer-events-none opacity-50`}>
+        <span>Closed beta</span>
+      </span>
+    );
+  }
 
   return (
-    <Link href={href} className={className}>
-      <span>{label}</span>
+    <Link href="/dashboard" className={className}>
+      <span>Open dashboard</span>
       <ArrowRight
         aria-hidden
         className="h-4 w-4 transition-transform group-hover:translate-x-1"
