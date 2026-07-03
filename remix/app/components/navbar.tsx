@@ -103,7 +103,7 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
               Sign out
             </button>
           </form>
-        ) : (
+        ) : !hideLinks ? (
           <a
             href="/login"
             mix={css({
@@ -116,7 +116,7 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
           >
             Sign in
           </a>
-        )}
+        ) : null}
       </div>
     )
   }
