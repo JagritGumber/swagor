@@ -28,6 +28,7 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
         </>
       }
       user={user}
+      hideNavLinks
     >
       <div
         mix={css({

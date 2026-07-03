@@ -9,6 +9,7 @@ export interface DocumentProps {
   head?: RemixNode
   title?: string
   hideNav?: boolean
+  hideNavLinks?: boolean
   user?: { address: string }
 }
 
@@ -16,7 +17,7 @@ const DEFAULT_TITLE = readAppDisplayName('Remix')
 
 export function Document(handle: Handle<DocumentProps>) {
   return () => {
-    let { children, head, title = DEFAULT_TITLE, hideNav, user } = handle.props
+    let { children, head, title = DEFAULT_TITLE, hideNav, hideNavLinks, user } = handle.props
 
     return (
       <html lang="en">
@@ -28,7 +29,7 @@ export function Document(handle: Handle<DocumentProps>) {
           {head}
         </head>
         <body mix={css({ margin: 0, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' })}>
-          {!hideNav && <Navbar user={user} />}
+          {!hideNav && <Navbar user={user} hideLinks={hideNavLinks} />}
           <div mix={css({ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' })}>
             {children}
           </div>

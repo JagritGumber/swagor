@@ -2,8 +2,8 @@ import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { SURFACE_HEADER, BORDER_HEADER, TEXT_PRIMARY, TEXT_MUTED, FONT_UI } from '../constants/theme.ts'
 
-export function Navbar(handle: Handle<{ user?: { address: string } }>) {
-  const { user } = handle.props
+export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: boolean }>) {
+  const { user, hideLinks } = handle.props
 
   return () => {
     const displayAddress = user
@@ -35,40 +35,42 @@ export function Navbar(handle: Handle<{ user?: { address: string } }>) {
         >
           Selbo
         </a>
-        <nav
-          mix={css({
-            display: 'flex',
-            alignItems: 'center',
-            gap: '24px',
-            marginLeft: '32px',
-            flex: 1,
-          })}
-        >
-          <a
-            href="/agent"
+{!hideLinks && (
+          <nav
             mix={css({
-              color: TEXT_MUTED,
-              textDecoration: 'none',
-              fontSize: '13px',
-              fontWeight: 500,
-              ':hover': { color: TEXT_PRIMARY },
+              display: 'flex',
+              alignItems: 'center',
+              gap: '24px',
+              marginLeft: '32px',
+              flex: 1,
             })}
           >
-            Agent
-          </a>
-          <a
-            href="/portfolio"
-            mix={css({
-              color: TEXT_MUTED,
-              textDecoration: 'none',
-              fontSize: '13px',
-              fontWeight: 500,
-              ':hover': { color: TEXT_PRIMARY },
-            })}
-          >
-            Portfolio
-          </a>
-        </nav>
+            <a
+              href="/agent"
+              mix={css({
+                color: TEXT_MUTED,
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 500,
+                ':hover': { color: TEXT_PRIMARY },
+              })}
+            >
+              Agent
+            </a>
+            <a
+              href="/portfolio"
+              mix={css({
+                color: TEXT_MUTED,
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 500,
+                ':hover': { color: TEXT_PRIMARY },
+              })}
+            >
+              Portfolio
+            </a>
+          </nav>
+)}
         {displayAddress ? (
           <form
             action="/logout"
