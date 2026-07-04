@@ -142,21 +142,26 @@ function formatTime(ts: number): string {
   return `${mm}/${dd} ${hh}:${mi}`
 }
 
+export interface RenderChartOptions {
+  pxPerCandle: number
+  scrollPx: number
+  crosshair?: { x: number; y: number }
+  yMin?: number
+  yMax?: number
+  yScrollPx?: number
+  yZoom?: number
+  flashTimestamps?: Map<number, { start: number; side: 'up' | 'down' }>
+}
+
 export function renderChart(
   ctx: CanvasRenderingContext2D,
   candles: Candle[],
   segments: OverlaySegment[],
   currentPrice: number | undefined,
   config: ChartConfig,
-  pxPerCandle: number,
-  scrollPx: number,
-  crosshair?: { x: number; y: number },
-  yMin?: number,
-  yMax?: number,
-  yScrollPx?: number,
-  yZoom?: number,
-  flashTimestamps?: Map<number, { start: number; side: 'up' | 'down' }>,
+  opts: RenderChartOptions,
 ): void {
+  const { pxPerCandle, scrollPx, crosshair, yMin, yMax, yScrollPx, yZoom, flashTimestamps } = opts
   const scale = buildScale(candles, config, pxPerCandle, scrollPx, yMin, yMax, yScrollPx, yZoom)
   const { width, height, padding } = config
   const totalW = width - padding.left - padding.right

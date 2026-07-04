@@ -33,7 +33,7 @@ export function PortfolioPage(handle: Handle<PortfolioPageProps>) {
       }
       user={user}
     >
-      {read.ok ? <Dashboard candles={candles} segments={segments} /> : <ErrorState message={read.error} />}
+      {read.ok ? <><script id="portfolio-chart-data" type="application/json">{JSON.stringify({ candles, segments })}</script><Dashboard /></> : <ErrorState message={read.error} />}
     </Document>
   )
 }

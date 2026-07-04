@@ -3,7 +3,9 @@ import { css } from 'remix/ui'
 
 import { Document } from '../document.tsx'
 import { FONT_UI, SURFACE_BODY, TEXT_MUTED } from '../constants/theme.ts'
-import { ArcWalletConnect } from '../assets/arc-wallet-connect.tsx'
+import { WalletConnect } from '../assets/wallet-connect.tsx'
+import { PageLoader } from '../assets/page-loader.tsx'
+import { WalletIcon } from '../components/icons/wallet.tsx'
 
 interface LoginPageProps {
   error?: string
@@ -25,10 +27,15 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
           />
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css"
-          />
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
         </>
       }
       user={user}
@@ -53,9 +60,12 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
             fontWeight: 700,
             color: '#fff',
             margin: 0,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '10px',
           })}
         >
-          Sign In
+          <WalletIcon size={24} /> Sign In
         </h1>
         <p
           mix={css({
@@ -70,8 +80,9 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
           Connect your wallet to access your Selbo dashboard. Your wallet is your identity.
         </p>
 
-        <ArcWalletConnect />
+        <WalletConnect />
       </div>
+      <PageLoader />
     </Document>
   )
 }

@@ -1,5 +1,6 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
+import { Button } from './button.tsx'
 import { SURFACE_HEADER, BORDER_HEADER, TEXT_PRIMARY, TEXT_MUTED, FONT_UI } from '../constants/theme.ts'
 
 export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: boolean }>) {
@@ -86,22 +87,18 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
             >
               {displayAddress}
             </span>
-            <button
+            <Button
+              variant="ghost"
               type="submit"
               mix={css({
-                appearance: 'none',
-                border: 0,
-                background: 'transparent',
-                color: TEXT_MUTED,
                 fontSize: '12px',
                 fontWeight: 500,
-                cursor: 'pointer',
                 fontFamily: FONT_UI,
                 ':hover': { color: TEXT_PRIMARY },
               })}
             >
               Sign out
-            </button>
+            </Button>
           </form>
         ) : !hideLinks ? (
           <a

@@ -14,6 +14,8 @@ declare module 'remix/router' {
   }
 }
 
+export type { AppContext }
+
 export const router = createRouter<AppContext>({
   middleware: [staticFiles('./public', { index: false }), sessionMiddleware, authMiddleware, render()],
 })

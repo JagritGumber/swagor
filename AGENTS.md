@@ -19,6 +19,7 @@
   - `selbo-context-reader` for context-first live reader/narrative architecture.
   - `selbo-integration-handoff` for moving benchmark readers into Selbo shadow mode.
   - `color-ramps` for Selbo's color tokens, font/gap ramps, and design token rules.
+  - `use-arc` for Arc chain configuration, ConnectWallet (`window.__arcWallet`) integration, contract deployment, and USDC-as-gas patterns.
 - Global skills (in `~/.config/opencode/skills/`):
   - `seo-content-writing` for SEO-optimized website copy (meta, headings, CTA structure).
   - `design-architecture` for establishing font/color/spacing architecture on any project.

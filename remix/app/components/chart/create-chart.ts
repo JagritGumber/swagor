@@ -212,7 +212,7 @@ export function createChart(options: {
       width: rect.width,
       height: rect.height,
       padding: PADDING,
-    }, pxPerCandle, scrollPx, crosshair ?? undefined, yMin, yMax, yScrollPx, yZoom, undefined, flashTimestamps)
+    }, { pxPerCandle, scrollPx, crosshair: crosshair ?? undefined, yMin, yMax, yScrollPx, yZoom, flashTimestamps })
 
     checkEdges(rect.width)
   }

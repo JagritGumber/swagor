@@ -63,13 +63,13 @@ interface AgentPageProps {
   segments: OverlaySegment[]
   auction: AgentAuction | null
   regime: AgentRegime | null
-  read: AgentReaderRead | null
-  plan: AgentTradePlan | null
+  read?: AgentReaderRead | null
+  plan?: AgentTradePlan | null
   asset: string
   user?: { address: string }
 }
 
-function regimeBadgeClass(mode: string): string {
+function regimeBadgeClass(mode: string) {
   switch (mode) {
     case 'range': return s.regimeRange
     case 'trend-up': return s.regimeTrendUp
@@ -79,7 +79,7 @@ function regimeBadgeClass(mode: string): string {
   }
 }
 
-function stanceBadgeClass(stance: string): string {
+function stanceBadgeClass(stance: string) {
   switch (stance) {
     case 'possible-long': return s.stancePossibleLong
     case 'possible-short': return s.stancePossibleShort
@@ -135,12 +135,8 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
       >
         <div mix={s.agentPage}>
           <div mix={s.chartArea}>
-            <AgentChartEntry
-              candles={candles}
-              segments={segments}
-              auction={auction}
-              plan={plan}
-            />
+            <script id="agent-chart-data" type="application/json">{JSON.stringify({ candles, segments, auction, plan })}</script>
+            <AgentChartEntry />
             <div mix={s.analysisPanel}>
               {regime && (
                 <div mix={s.analysisSection}>
