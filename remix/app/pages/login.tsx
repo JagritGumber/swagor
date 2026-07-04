@@ -3,7 +3,7 @@ import { css } from 'remix/ui'
 
 import { Document } from '../document.tsx'
 import { FONT_UI, SURFACE_BODY, TEXT_MUTED } from '../constants/theme.ts'
-import { WalletConnect } from '../assets/wallet-connect.tsx'
+import { ArcWalletConnect } from '../assets/arc-wallet-connect.tsx'
 
 interface LoginPageProps {
   error?: string
@@ -24,6 +24,10 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
           <link
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          />
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css"
           />
         </>
       }
@@ -66,11 +70,7 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
           Connect your wallet to access your Selbo dashboard. Your wallet is your identity.
         </p>
 
-        <WalletConnect
-          nonceUrl="/api/nonce"
-          loginUrl="/login"
-          redirectUrl="/portfolio"
-        />
+        <ArcWalletConnect />
       </div>
     </Document>
   )
