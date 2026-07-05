@@ -1,4 +1,4 @@
-// Dashboard page — status left, equity+risk badges right
+// Dashboard page — clean modern design, status + divider + data sections
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import type { DashboardData } from './types.ts'
@@ -6,18 +6,14 @@ import {
   page,
   topBar,
   statusSection,
-  statusDot,
   statusText,
   statusSub,
-  badgesSection,
-  equityBadge,
-  equityLabel,
-  equityValue,
-  changePill,
-  riskBadge,
-  riskLabel,
+  divider,
+  dataSection,
+  dataBlock,
+  dataLabel,
+  dataValue,
   riskValue,
-  pauseButton,
   content,
 } from './style.ts'
 
@@ -44,42 +40,39 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
           <link
             rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
           />
         </>
       }
     >
       <div mix={page}>
         <div mix={topBar}>
-          {/* Left: Status */}
+          {/* Status */}
           <div mix={statusSection}>
-            <div mix={statusDot} />
-            <div>
-              <div mix={statusText}>{data.statusMessage}</div>
-              <div mix={statusSub}>{data.statusSubtext}</div>
-            </div>
+            <div mix={statusText}>{data.statusMessage}</div>
+            <div mix={statusSub}>{data.statusSubtext}</div>
           </div>
 
-          {/* Right: Badges */}
-          <div mix={badgesSection}>
-            {/* Equity Badge */}
-            <div mix={equityBadge}>
-              <div mix={equityLabel}>Total Equity</div>
-              <div mix={{ display: 'flex', alignItems: 'baseline', gap: '8px' } as any}>
-                <div mix={equityValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-                <div mix={changePill(isUp)}>{changeStr}</div>
-              </div>
+          {/* Divider */}
+          <div mix={divider} />
+
+          {/* Data Sections */}
+          <div mix={dataSection}>
+            <div mix={dataBlock}>
+              <div mix={dataLabel}>Total Equity</div>
+              <div mix={dataValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
             </div>
 
-            {/* Risk Badge */}
-            <div mix={riskBadge}>
-              <div mix={riskLabel}>Risk Level</div>
+            <div mix={dataBlock}>
+              <div mix={dataLabel}>24h Change</div>
+              <div mix={dataValue}>{changeStr}</div>
+            </div>
+
+            <div mix={dataBlock}>
+              <div mix={dataLabel}>Risk</div>
               <div mix={riskValue(data.riskLevel)}>{data.riskLevel}</div>
             </div>
           </div>
-
-          {/* Pause Button */}
-          <button mix={pauseButton} type="button">Pause</button>
         </div>
 
         <div mix={content} />
