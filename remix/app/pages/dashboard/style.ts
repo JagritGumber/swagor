@@ -197,7 +197,7 @@ export const centerPanel = css({
 })
 
 export const panelHeader = css({
-  padding: '16px 24px',
+  padding: '16px 0',
   borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
@@ -208,18 +208,19 @@ export const panelTitle = css({
   fontFamily: FONT_UI,
   textTransform: 'uppercase',
   letterSpacing: '0.06em',
+  padding: '0 24px',
 })
 
 export const panelContent = css({
   flex: 1,
   overflow: 'auto',
-  padding: '16px 24px',
+  padding: '16px 0',
 })
 
 export const readRow = css({
   display: 'flex',
   justifyContent: 'space-between',
-  padding: '8px 0',
+  padding: '8px 24px',
   borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
   '&:last-child': { borderBottom: 'none' },
 })
@@ -242,7 +243,7 @@ export const positionRow = css({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '10px 0',
+  padding: '10px 24px',
   borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
   '&:last-child': { borderBottom: 'none' },
 })
@@ -275,7 +276,7 @@ export const activityPanel = css({
 })
 
 export const activityHeader = css({
-  padding: '16px 24px',
+  padding: '16px 0',
   borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
@@ -286,6 +287,7 @@ export const activityTitle = css({
   fontFamily: FONT_UI,
   textTransform: 'uppercase',
   letterSpacing: '0.06em',
+  padding: '0 24px',
 })
 
 export const activityList = css({
