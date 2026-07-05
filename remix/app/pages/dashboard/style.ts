@@ -6,10 +6,8 @@ import type { RiskLevel } from './types.ts'
 export const page = css({
   backgroundColor: SURFACE_BODY,
   color: '#ffffff',
-  flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  overflow: 'hidden',
   fontFamily: FONT_UI,
 })
 
@@ -25,15 +23,15 @@ export const statusSection = css({
 })
 
 export const statusText = css({
-  fontSize: '24px',
+  fontSize: '20px',
   fontWeight: 600,
   color: '#f1f5f9',
   fontFamily: FONT_UI,
-  marginBottom: '4px',
+  marginBottom: '2px',
 })
 
 export const statusSub = css({
-  fontSize: '15px',
+  fontSize: '13px',
   fontWeight: 400,
   color: '#94a3b8',
   fontFamily: FONT_UI,
@@ -49,25 +47,34 @@ export const divider = css({
 
 export const dataSection = css({
   display: 'flex',
-  gap: '48px',
+  alignItems: 'center',
+  gap: '0',
 })
 
 export const dataBlock = css({
   flex: 1,
+  padding: '0 24px',
+})
+
+export const dataBlockDivider = css({
+  width: '1px',
+  height: '32px',
+  backgroundColor: 'rgba(255, 255, 255, 0.10)',
+  flexShrink: 0,
 })
 
 export const dataLabel = css({
-  fontSize: '12px',
+  fontSize: '11px',
   fontWeight: 500,
   color: '#94a3b8',
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
   fontFamily: FONT_UI,
-  marginBottom: '4px',
+  marginBottom: '2px',
 })
 
 export const dataValue = css({
-  fontSize: '24px',
+  fontSize: '20px',
   fontWeight: 600,
   color: '#f1f5f9',
   fontFamily: FONT_UI,

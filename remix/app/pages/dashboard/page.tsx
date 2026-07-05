@@ -11,6 +11,7 @@ import {
   divider,
   dataSection,
   dataBlock,
+  dataBlockDivider,
   dataLabel,
   dataValue,
   riskValue,
@@ -59,6 +60,8 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
               <div mix={dataLabel}>Total Equity</div>
               <div mix={dataValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
             </div>
+
+            <div mix={dataBlockDivider} />
 
             <div mix={dataBlock}>
               <div mix={dataLabel}>Risk</div>
