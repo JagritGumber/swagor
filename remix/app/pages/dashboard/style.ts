@@ -1,4 +1,4 @@
-// Dashboard styles — clean modern, grid layout
+// Dashboard styles — 8fr 2fr 2fr grid, border-left separators
 import { css } from 'remix/ui'
 import { SURFACE_BODY, FONT_UI } from '../../constants/theme.ts'
 import type { RiskLevel } from './types.ts'
@@ -13,15 +13,12 @@ export const page = css({
 
 export const topBar = css({
   display: 'grid',
-  gridTemplateColumns: '8fr 1fr 2fr 2fr',
-  alignItems: 'center',
-  padding: '20px 32px',
+  gridTemplateColumns: '8fr 2fr 2fr',
   borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
-  gap: '0',
 })
 
 export const statusSection = css({
-  minWidth: 0,
+  padding: '20px 24px',
 })
 
 export const statusText = css({
@@ -39,15 +36,14 @@ export const statusSub = css({
   fontFamily: FONT_UI,
 })
 
-export const divider = css({
-  width: '1px',
-  height: '36px',
-  backgroundColor: 'rgba(255, 255, 255, 0.10)',
-  justifySelf: 'center',
+export const equityBlock = css({
+  padding: '20px 24px',
+  borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
-export const dataBlock = css({
-  padding: '0',
+export const riskBlock = css({
+  padding: '20px 24px',
+  borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
 export const dataLabel = css({

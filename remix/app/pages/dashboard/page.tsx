@@ -1,4 +1,4 @@
-// Dashboard page — grid: 8col status | 1col divider | 2col equity | 2col risk
+// Dashboard page — 8fr 2fr 2fr grid, border-left cuts between sections
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import type { DashboardData } from './types.ts'
@@ -8,8 +8,8 @@ import {
   statusSection,
   statusText,
   statusSub,
-  divider,
-  dataBlock,
+  equityBlock,
+  riskBlock,
   dataLabel,
   dataValue,
   riskValue,
@@ -48,14 +48,12 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
             <div mix={statusSub}>{data.statusSubtext}</div>
           </div>
 
-          <div mix={divider} />
-
-          <div mix={dataBlock}>
+          <div mix={equityBlock}>
             <div mix={dataLabel}>Total Equity</div>
             <div mix={dataValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
           </div>
 
-          <div mix={dataBlock}>
+          <div mix={riskBlock}>
             <div mix={dataLabel}>Risk</div>
             <div mix={riskValue(data.riskLevel)}>{data.riskLevel}</div>
           </div>
