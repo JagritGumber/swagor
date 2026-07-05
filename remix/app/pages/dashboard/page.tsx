@@ -86,22 +86,6 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
           <div mix={statusSection}>
             <div mix={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '2px' } as any}>
               <div mix={statusText}>{data.statusMessage}</div>
-              <span
-                mix={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  color: '#00ff85',
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  background: 'rgba(0, 255, 133, 0.10)',
-                  border: '1px solid rgba(0, 255, 133, 0.20)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                } as any}
-              >
-                Testnet
-              </span>
             </div>
             <div mix={statusSub}>{data.statusSubtext}</div>
           </div>
