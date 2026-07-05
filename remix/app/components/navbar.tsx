@@ -80,8 +80,8 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '0 16px',
               borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
+              height: '100%',
             })}
           >
             <select
@@ -94,11 +94,12 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
                 fontFamily: FONT_UI,
                 fontSize: '12px',
                 fontWeight: 500,
-                padding: '0',
+                padding: '0 8px',
                 cursor: 'pointer',
                 backgroundImage: 'none',
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 6px center',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
                 ':hover': { color: '#f1f5f9' },
                 '& option': {
                   background: '#0a0e14',
@@ -122,8 +123,9 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
               fontSize: '13px',
               fontFamily: FONT_UI,
               fontWeight: 500,
-              padding: '0 16px 0 16px',
+              padding: '0 16px',
               borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
+              height: '100%',
             })}
           >
             <Identicon address={user!.address} size={20} />
