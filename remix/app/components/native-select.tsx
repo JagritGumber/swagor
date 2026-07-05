@@ -25,8 +25,8 @@ const select = css({
   transition: 'color 0.15s',
   outline: 'none',
   cursor: 'pointer',
-  '&:hover': { color: '#ffffff' },
-  '&:focus-visible': { color: '#ffffff' },
+  '&:hover': { color: '#ffffff', background: 'rgba(255, 255, 255, 0.05)' },
+  '&:focus-visible': { color: '#ffffff', background: 'rgba(255, 255, 255, 0.05)' },
   '& option': { background: '#0a0e14', color: '#f1f5f9', padding: '8px 12px' },
   '& option:disabled': { opacity: 0.4 },
 })

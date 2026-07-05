@@ -55,7 +55,10 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
                 color: TEXT_MUTED,
                 textDecoration: 'none',
                 fontWeight: 500,
-                ':hover': { color: TEXT_PRIMARY },
+                padding: '4px 8px',
+                borderRadius: '4px',
+                transition: 'color 0.15s, background-color 0.15s',
+                ':hover': { color: TEXT_PRIMARY, background: 'rgba(255, 255, 255, 0.05)' },
               })}
             >
               Agent
@@ -66,7 +69,10 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
                 color: TEXT_MUTED,
                 textDecoration: 'none',
                 fontWeight: 500,
-                ':hover': { color: TEXT_PRIMARY },
+                padding: '4px 8px',
+                borderRadius: '4px',
+                transition: 'color 0.15s, background-color 0.15s',
+                ':hover': { color: TEXT_PRIMARY, background: 'rgba(255, 255, 255, 0.05)' },
               })}
             >
               Dashboard
@@ -108,6 +114,9 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
                   padding: '0 16px',
                   borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
                   height: '100%',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.15s',
+                  ':hover': { background: 'rgba(255, 255, 255, 0.05)' },
                 })}
               >
                 <Identicon address={user!.address} size={20} />
