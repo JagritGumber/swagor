@@ -2,10 +2,12 @@ import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import { Hero } from '../../components/landing/hero/component.tsx'
 
-export function LandingPage(handle: Handle<Record<string, never>>) {
+export function LandingPage(handle: Handle<{ user?: { address: string } }>) {
+  const { user } = handle.props
   return () => (
     <Document
       title="Selbo - AI Trading Agent"
+      user={user}
       head={
         <>
           <meta name="color-scheme" content="dark" />

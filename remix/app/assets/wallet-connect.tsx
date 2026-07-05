@@ -2,7 +2,7 @@ import { clientEntry, css, on, type Handle } from 'remix/ui'
 import { Button } from '../components/button.tsx'
 import { WalletIcon } from '../components/icons/wallet.tsx'
 import { ArrowRightIcon } from '../components/icons/arrow-right.tsx'
-import { api } from '../data/api.ts'
+import { getNonce, postLogin } from '../data/api.ts'
 
 declare global {
   interface Window {
@@ -39,6 +39,8 @@ export const WalletConnect = clientEntry(
           flexDirection: 'column',
           alignItems: 'center',
           gap: '16px',
+          transition: 'transform 0.1s',
+          '&:active': { transform: 'scale(0.97)' },
         })}
       >
         <Button
@@ -67,7 +69,9 @@ export const WalletConnect = clientEntry(
                   status = 'signing'
                   handle.update()
 
-                  const { nonce } = (await api.Get('/api/nonce', { params: { address } })) as { nonce: string }
+                  const nonceRes = await getNonce(address)
+                  if (!nonceRes.ok) throw new Error(nonceRes.error.message)
+                  const { nonce } = nonceRes.data
 
                   const signature = (await eth.request({
                     method: 'personal_sign',
@@ -77,18 +81,14 @@ export const WalletConnect = clientEntry(
                   status = 'verifying'
                   handle.update()
 
-                  const result = (await api.Post('/login', { address, signature, nonce })) as {
-                    ok: boolean
-                    redirect?: string
-                    error?: string
-                  }
+                  const loginRes = await postLogin(address, signature, nonce)
 
-                  if (result.ok && result.redirect) {
-                    window.location.href = result.redirect
+                  if (loginRes.ok && loginRes.data.redirect) {
+                    window.location.href = loginRes.data.redirect
                     return
                   }
 
-                  errorMessage = result.error ?? 'Authentication failed'
+                  errorMessage = loginRes.ok ? 'No redirect returned' : loginRes.error.message
                   status = 'error'
                   handle.update()
                 } catch (err) {

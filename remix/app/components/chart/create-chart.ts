@@ -2,7 +2,7 @@
 import { renderChart } from './renderer.ts'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from './types.ts'
-import { fetchCandles } from '../../data/fetch-candles.ts'
+import { getCandles } from '../../data/api.ts'
 import { readRegimeSegments } from '@packages/strategy-lab/read-core/market-regime/read-regime-segments'
 
 export interface ChartInstance {
@@ -115,14 +115,17 @@ export function createChart(options: {
     }
   }
 
-  function loadOlder(): void {
+  async function loadOlder(): Promise<void> {
     if (isLoading) return
     const first = options.candles[0]
     if (!first) return
     isLoading = true
     const end = first.t - intervalMs
     const start = end - intervalMs * batchSize
-    fetchCandles(asset, interval, start, end).then(newCandles => {
+    try {
+      const res = await getCandles(asset, interval, start, end)
+      if (!res.ok) { isLoading = false; return }
+      const { candles: newCandles } = res.data
       if (newCandles.length === 0) { isLoading = false; return }
       const existing = new Set(options.candles.map(c => c.t))
       const uniqueCandles = newCandles.filter(c => !existing.has(c.t))
@@ -137,19 +140,24 @@ export function createChart(options: {
       options.segments = [...uniqueSegments, ...options.segments]
       options.candles = [...uniqueCandles, ...options.candles]
       scrollPx += uniqueCandles.length * pxPerCandle
-      isLoading = false
-      paint()
-    })
+    } catch {
+      // load failed silently
+    }
+    isLoading = false
+    paint()
   }
 
-  function loadNewer(): void {
+  async function loadNewer(): Promise<void> {
     if (isLoading) return
     const last = options.candles[options.candles.length - 1]
     if (!last) return
     isLoading = true
     const start = last.t + intervalMs
     const end = start + intervalMs * batchSize
-    fetchCandles(asset, interval, start, end).then(newCandles => {
+    try {
+      const res = await getCandles(asset, interval, start, end)
+      if (!res.ok) { isLoading = false; return }
+      const { candles: newCandles } = res.data
       if (newCandles.length === 0) { isLoading = false; return }
       const existing = new Set(options.candles.map(c => c.t))
       const uniqueCandles = newCandles.filter(c => !existing.has(c.t))
@@ -160,9 +168,11 @@ export function createChart(options: {
       cacheSegmentPriceRange(uniqueSegments, options.candles.concat(uniqueCandles))
       options.segments = [...options.segments, ...uniqueSegments]
       options.candles = [...options.candles, ...uniqueCandles]
-      isLoading = false
-      paint()
-    })
+    } catch {
+      // load failed silently
+    }
+    isLoading = false
+    paint()
   }
 
   let lastLoadTime = 0

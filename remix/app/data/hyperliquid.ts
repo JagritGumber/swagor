@@ -34,5 +34,7 @@ export function fetchCandles(
   return hlApi.Post<Candle[]>('/info', {
     type: 'candleSnapshot',
     req: { coin, interval, startTime: startMs, endTime: endMs },
+  }, {
+    name: `candles-${coin}-${interval}-${startMs}-${endMs}`,
   })
 }

@@ -24,16 +24,23 @@ const base = css({
   alignItems: 'center',
   justifyContent: 'center',
   gap: '8px',
-  transition: 'opacity 0.15s',
-  ':hover': { opacity: 0.85 },
+  transition: 'opacity 0.15s, transform 0.1s',
+  '&:active': { transform: 'scale(0.97)' },
+  '&:focus': { outline: 'none' },
+  '&:focus-visible': { outline: '2px solid #00ff85', outlineOffset: '2px' },
   ':disabled': { opacity: 0.4, cursor: 'not-allowed' },
+  '@keyframes buttonBlurIn': {
+    from: { opacity: 0.6, filter: 'blur(3px)' },
+    to: { opacity: 1, filter: 'blur(0)' },
+  },
+  animation: 'buttonBlurIn 0.2s ease-out both',
 })
 
 const variants: Record<Variant, ReturnType<typeof css>> = {
-  primary: css({ background: '#00ff85', color: '#000' }),
-  ghost: css({ background: 'transparent', color: 'inherit' }),
-  outline: css({ background: 'transparent', border: '1px solid #1e293b', color: '#e2e8f0' }),
-  danger: css({ background: 'transparent', color: '#ff5050' }),
+  primary: css({ background: '#00ff85', color: '#000', '&:hover': { background: '#33ff9a' } }),
+  ghost: css({ background: 'transparent', color: 'inherit', '&:hover': { background: 'rgba(255, 255, 255, 0.08)' } }),
+  outline: css({ background: 'transparent', border: '1px solid #1e293b', color: '#e2e8f0', '&:hover': { borderColor: '#334155', background: 'rgba(255, 255, 255, 0.04)' } }),
+  danger: css({ background: 'transparent', color: '#ff5050', '&:hover': { background: 'rgba(255, 80, 80, 0.1)' } }),
 }
 
 const sizes: Record<Size, ReturnType<typeof css>> = {

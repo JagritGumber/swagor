@@ -6,12 +6,24 @@ import {
   type CandlestickData,
   type UTCTimestamp,
   type CreatePriceLineOptions,
+  type Logical,
   LineStyle,
   CrosshairMode,
   ColorType,
+  type DrawingUtils,
 } from 'lightweight-charts'
 import type { Candle } from '../../types/candles.ts'
 import type { OverlaySegment } from './types.ts'
+import { getCandles } from '../../data/api.ts'
+
+const INTERVAL_MS: Record<string, number> = {
+  '1m': 60_000,
+  '5m': 300_000,
+  '15m': 900_000,
+  '1h': 3_600_000,
+  '4h': 14_400_000,
+  '1d': 86_400_000,
+}
 
 const SEG_BG: Record<string, string> = {
   'trend-up': 'rgba(0, 255, 133, 0.06)',
@@ -35,6 +47,8 @@ export interface LWChartOptions {
   container: HTMLElement
   candles: Candle[]
   segments: OverlaySegment[]
+  asset?: string
+  interval?: string
   auction?: {
     profile: {
       poc: number
@@ -106,6 +120,57 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
 
   series.setData(toLWData(candles))
 
+  let allCandles = [...candles]
+  let segmentOffset = 0
+  let earliestMs = candles.length > 0 ? candles[0].t : 0
+  let loadingHistory = false
+  let lastLoadTime = 0
+  const BATCH_SIZE = 200
+
+  const asset = opts.asset ?? (new URLSearchParams(window.location.search).get('asset') ?? 'ETH')
+  const interval = opts.interval ?? (new URLSearchParams(window.location.search).get('interval') ?? '1h')
+
+  async function tryLoadHistory(): Promise<void> {
+    if (loadingHistory) return
+    if (performance.now() - lastLoadTime < 3000) return
+
+    const logicalRange = chart.timeScale().getVisibleLogicalRange()
+    if (!logicalRange) return
+    if (logicalRange.from > 30) return
+
+    const end = earliestMs - 1
+    const intervalMs = INTERVAL_MS[interval] ?? 3_600_000
+    const start = end - intervalMs * BATCH_SIZE
+
+    loadingHistory = true
+    lastLoadTime = performance.now()
+
+    try {
+      const res = await getCandles(asset, interval, start, end)
+      if (!res.ok) { loadingHistory = false; return }
+      const { candles: newCandles } = res.data
+      if (newCandles.length === 0) { loadingHistory = false; return }
+
+      const savedLogical = chart.timeScale().getVisibleLogicalRange()
+      const newCount = newCandles.length
+
+      allCandles = [...newCandles, ...allCandles]
+      segmentOffset += newCount
+      earliestMs = newCandles[0].t
+      series.setData(toLWData(allCandles))
+
+      if (savedLogical) {
+        chart.timeScale().setVisibleLogicalRange({
+          from: savedLogical.from + newCount,
+          to: savedLogical.to + newCount,
+        })
+      }
+    } catch {
+      // history load failed silently — alova handles retry via middleware
+    }
+    loadingHistory = false
+  }
+
   chart.timeScale().scrollToRealTime()
 
   function pline(price: number, color: string, title?: string): CreatePriceLineOptions {
@@ -117,14 +182,6 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
       axisLabelVisible: title !== undefined,
       title: title ?? '',
     }
-  }
-
-  const auction = opts.auction?.profile
-  if (auction) {
-    const c = 'rgba(0, 212, 255, '
-    series.createPriceLine(pline(auction.poc, `${c}0.5)`, 'POC'))
-    series.createPriceLine(pline(auction.valueAreaHigh, `${c}0.2)`))
-    series.createPriceLine(pline(auction.valueAreaLow, `${c}0.2)`))
   }
 
   const plan = opts.plan
@@ -146,6 +203,57 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
     }
   }
 
+  const overlayPrimitive = {
+    updateAllViews(): void {},
+    paneViews() {
+      return [{
+        zOrder(): 'bottom' { return 'bottom' },
+        renderer() {
+          return {
+            draw(target: { useMediaCoordinateSpace: <T>(f: (scope: { readonly context: CanvasRenderingContext2D; readonly mediaSize: { width: number; height: number } }) => T) => T }, utils?: DrawingUtils): void {
+              target.useMediaCoordinateSpace((scope) => {
+                const ctx = scope.context
+                ctx.clearRect(0, 0, scope.mediaSize.width, scope.mediaSize.height)
+
+                for (const seg of segments) {
+                  const segStart = seg.startIndex + segmentOffset
+                  const segEnd = seg.endIndex + segmentOffset
+
+                  const x1 = chart.timeScale().logicalToCoordinate(segStart as Logical)
+                  const x2 = chart.timeScale().logicalToCoordinate(segEnd as Logical)
+                  if (x1 === null || x2 === null) continue
+
+                  const vaHigh = series.priceToCoordinate(seg.valueAreaHigh)
+                  const vaLow = series.priceToCoordinate(seg.valueAreaLow)
+                  if (vaHigh !== null && vaLow !== null) {
+                    const top = Math.min(vaHigh, vaLow)
+                    const h = Math.abs(vaLow - vaHigh)
+                    if (h > 0) {
+                      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)'
+                      ctx.fillRect(x1, top, x2 - x1, h)
+                    }
+                  }
+
+                  const pocY = series.priceToCoordinate(seg.poc)
+                  if (pocY !== null) {
+                    if (utils) utils.setLineStyle(ctx, LineStyle.Dashed)
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'
+                    ctx.lineWidth = 1
+                    ctx.beginPath()
+                    ctx.moveTo(x1, pocY)
+                    ctx.lineTo(x2, pocY)
+                    ctx.stroke()
+                  }
+                }
+              })
+            },
+          }
+        },
+      }]
+    },
+  }
+  series.attachPrimitive(overlayPrimitive as any)
+
   const overlay = document.createElement('div')
   overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;overflow:hidden'
   container.appendChild(overlay)
@@ -160,8 +268,8 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
 
     let html = ''
     for (const seg of segments) {
-      const segStart = Math.max(from, seg.startIndex)
-      const segEnd = Math.min(to, seg.endIndex)
+      const segStart = Math.max(from, seg.startIndex + segmentOffset)
+      const segEnd = Math.min(to, seg.endIndex + segmentOffset)
       if (segStart >= segEnd) continue
 
       const left = (segStart - from) * pxPerIndex
@@ -173,7 +281,12 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
     overlay.innerHTML = html
   }
 
-  const onRangeChange = () => repositionSegments()
+  let loadTimer = 0
+  const onRangeChange = () => {
+    repositionSegments()
+    clearTimeout(loadTimer)
+    loadTimer = window.setTimeout(tryLoadHistory, 300)
+  }
   chart.timeScale().subscribeVisibleTimeRangeChange(onRangeChange)
 
   return {
@@ -196,7 +309,9 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
       })
     },
     destroy(): void {
+      series.detachPrimitive(overlayPrimitive)
       chart.timeScale().unsubscribeVisibleTimeRangeChange(onRangeChange)
+      clearTimeout(loadTimer)
       chart.remove()
       overlay.remove()
     },
