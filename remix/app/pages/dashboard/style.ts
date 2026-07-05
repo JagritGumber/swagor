@@ -185,13 +185,88 @@ export const activityRow = css({
 })
 
 export const leftPanel = css({
-  padding: '20px 24px',
+  display: 'flex',
+  flexDirection: 'column',
   borderRight: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
 export const centerPanel = css({
-  padding: '20px 24px',
+  display: 'flex',
+  flexDirection: 'column',
   borderRight: '1px solid rgba(255, 255, 255, 0.10)',
+})
+
+export const panelHeader = css({
+  padding: '16px 24px',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+})
+
+export const panelTitle = css({
+  fontSize: '13px',
+  fontWeight: 600,
+  color: '#f1f5f9',
+  fontFamily: FONT_UI,
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+})
+
+export const panelContent = css({
+  flex: 1,
+  overflow: 'auto',
+  padding: '16px 24px',
+})
+
+export const readRow = css({
+  display: 'flex',
+  justifyContent: 'space-between',
+  padding: '8px 0',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+  '&:last-child': { borderBottom: 'none' },
+})
+
+export const readLabel = css({
+  fontSize: '12px',
+  fontWeight: 500,
+  color: '#94a3b8',
+  fontFamily: FONT_UI,
+})
+
+export const readValue = css({
+  fontSize: '12px',
+  fontWeight: 500,
+  color: '#f1f5f9',
+  fontFamily: FONT_UI,
+})
+
+export const positionRow = css({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '10px 0',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+  '&:last-child': { borderBottom: 'none' },
+})
+
+export const positionMarket = css({
+  fontSize: '13px',
+  fontWeight: 600,
+  color: '#f1f5f9',
+  fontFamily: FONT_UI,
+})
+
+export const positionSide = (side: 'long' | 'short') => css({
+  fontSize: '11px',
+  fontWeight: 600,
+  color: side === 'long' ? '#00ff85' : '#ff5050',
+  fontFamily: FONT_UI,
+  textTransform: 'uppercase',
+})
+
+export const positionPnl = (positive: boolean) => css({
+  fontSize: '13px',
+  fontWeight: 600,
+  color: positive ? '#00ff85' : '#ff5050',
+  fontFamily: FONT_UI,
 })
 
 export const activityPanel = css({
@@ -216,13 +291,12 @@ export const activityTitle = css({
 export const activityList = css({
   flex: 1,
   overflow: 'auto',
-  padding: '12px 24px',
 })
 
 export const activityItem = css({
   display: 'flex',
   gap: '12px',
-  padding: '10px 0',
+  padding: '10px 24px',
   borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
   '&:last-child': { borderBottom: 'none' },
 })

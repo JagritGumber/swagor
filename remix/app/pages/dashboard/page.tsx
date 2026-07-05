@@ -1,4 +1,4 @@
-// Dashboard page — 6fr 2fr 2fr 2fr grid + metrics row + activity feed
+// Dashboard page — full layout with market read, positions, activity
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import type { DashboardData } from './types.ts'
@@ -28,6 +28,16 @@ import {
   leftPanel,
   centerPanel,
   activityPanel,
+  panelHeader,
+  panelTitle,
+  panelContent,
+  readRow,
+  readLabel,
+  readValue,
+  positionRow,
+  positionMarket,
+  positionSide,
+  positionPnl,
   activityHeader,
   activityTitle,
   activityList,
@@ -124,8 +134,52 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
         </div>
 
         <div mix={activityRow}>
-          <div mix={leftPanel}></div>
-          <div mix={centerPanel}></div>
+          {/* Market Read */}
+          <div mix={leftPanel}>
+            <div mix={panelHeader}>
+              <div mix={panelTitle}>Market Read</div>
+            </div>
+            <div mix={panelContent}>
+              <div mix={readRow}>
+                <span mix={readLabel}>Asset</span>
+                <span mix={readValue}>{data.marketRead.asset}</span>
+              </div>
+              <div mix={readRow}>
+                <span mix={readLabel}>Regime</span>
+                <span mix={readValue}>{data.marketRead.regime}</span>
+              </div>
+              <div mix={readRow}>
+                <span mix={readLabel}>Bias</span>
+                <span mix={readValue}>{data.marketRead.bias}</span>
+              </div>
+              <div mix={readRow}>
+                <span mix={readLabel}>Narrative</span>
+                <span mix={readValue}>{data.marketRead.narrative}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Positions */}
+          <div mix={centerPanel}>
+            <div mix={panelHeader}>
+              <div mix={panelTitle}>Active Positions</div>
+            </div>
+            <div mix={panelContent}>
+              {data.positions.map((pos, i: number) => (
+                <div key={String(i)} mix={positionRow}>
+                  <div>
+                    <div mix={positionMarket}>{pos.market}</div>
+                    <div mix={positionSide(pos.side)}>{pos.side} · {pos.size} · {pos.leverage}</div>
+                  </div>
+                  <div mix={positionPnl(pos.pnl >= 0)}>
+                    {pos.pnl >= 0 ? '+' : ''}${pos.pnl.toFixed(2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Live Activity */}
           <div mix={activityPanel}>
             <div mix={activityHeader}>
               <div mix={activityTitle}>Live Activity</div>

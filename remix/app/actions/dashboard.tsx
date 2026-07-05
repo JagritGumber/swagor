@@ -18,6 +18,16 @@ const template: DashboardData = {
   winRate: 68.4,
   totalTrades: 47,
   maxDrawdown: 4.2,
+  marketRead: {
+    asset: 'ETH-USD',
+    regime: 'Ranging',
+    bias: 'Neutral',
+    narrative: 'ETH consolidating within $1,750-$1,820 range. Low volatility, waiting for breakout.',
+  },
+  positions: [
+    { market: 'ETH-USD', side: 'long', size: '0.5 contracts', entryPrice: 1788.40, currentPrice: 1792.10, pnl: 185.50, leverage: '2x' },
+    { market: 'BTC-USD', side: 'short', size: '0.1 contracts', entryPrice: 43250.00, currentPrice: 43180.00, pnl: 70.00, leverage: '3x' },
+  ],
   activity: [
     { time: '2m ago', text: 'Opened ETH-USD long position at $1,788.40 with 2x leverage', type: 'action' },
     { time: '5m ago', text: 'Risk check passed: all positions within safety limits', type: 'success' },

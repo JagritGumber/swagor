@@ -7,6 +7,23 @@ export interface ActivityEntry {
   type: 'info' | 'action' | 'warning' | 'success'
 }
 
+export interface MarketRead {
+  asset: string
+  regime: string
+  bias: string
+  narrative: string
+}
+
+export interface Position {
+  market: string
+  side: 'long' | 'short'
+  size: string
+  entryPrice: number
+  currentPrice: number
+  pnl: number
+  leverage: string
+}
+
 export interface DashboardData {
   balanceUsd: number
   change24hUsd: number
@@ -20,5 +37,7 @@ export interface DashboardData {
   winRate: number
   totalTrades: number
   maxDrawdown: number
+  marketRead: MarketRead
+  positions: Position[]
   activity: ActivityEntry[]
 }
