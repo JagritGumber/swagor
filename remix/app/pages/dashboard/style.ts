@@ -38,17 +38,16 @@ export const statusSub = css({
 
 export const equityBlock = css({
   padding: '20px 24px',
-  borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
+  borderRight: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
 export const riskBlock = css({
   padding: '20px 24px',
-  borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
+  borderRight: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
 export const emptyBlock = css({
   padding: '20px 24px',
-  borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
