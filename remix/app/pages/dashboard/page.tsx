@@ -1,4 +1,4 @@
-// Dashboard page — 6fr 2fr 2fr 2fr grid + metrics row
+// Dashboard page — 6fr 2fr 2fr 2fr grid + metrics row + activity feed
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import type { DashboardData } from './types.ts'
@@ -24,8 +24,19 @@ import {
   metricValue,
   metricValueGreen,
   metricValueRed,
+  activityRow,
+  leftPanel,
+  activityPanel,
+  activityHeader,
+  activityTitle,
+  activityList,
+  activityItem,
+  activityTime,
+  activityDot,
+  activityText,
   content,
 } from './style.ts'
+import type { ActivityEntry } from './types.ts'
 
 interface DashboardPageProps {
   data: DashboardData
@@ -108,6 +119,24 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
           <div mix={metricBlock}>
             <div mix={metricLabel}>Max Drawdown</div>
             <div mix={{ fontSize: '18px', fontWeight: 600, color: ddColor, fontFamily: "'Inter', system-ui, sans-serif" } as any}>{data.maxDrawdown.toFixed(1)}%</div>
+          </div>
+        </div>
+
+        <div mix={activityRow}>
+          <div mix={leftPanel}></div>
+          <div mix={activityPanel}>
+            <div mix={activityHeader}>
+              <div mix={activityTitle}>Live Activity</div>
+            </div>
+            <div mix={activityList}>
+              {data.activity.map((entry: ActivityEntry, i: number) => (
+                <div key={String(i)} mix={activityItem}>
+                  <span mix={activityTime}>{entry.time}</span>
+                  <span mix={activityDot(entry.type)} />
+                  <span mix={activityText}>{entry.text}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

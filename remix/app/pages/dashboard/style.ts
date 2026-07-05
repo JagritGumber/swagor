@@ -176,3 +176,77 @@ export const metricValueRed = css({
   color: '#ff5050',
   fontFamily: FONT_UI,
 })
+
+export const activityRow = css({
+  display: 'grid',
+  gridTemplateColumns: '1fr 2fr',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
+  minHeight: '300px',
+})
+
+export const leftPanel = css({
+  padding: '20px 24px',
+  borderRight: '1px solid rgba(255, 255, 255, 0.10)',
+})
+
+export const activityPanel = css({
+  display: 'flex',
+  flexDirection: 'column',
+})
+
+export const activityHeader = css({
+  padding: '16px 24px',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+})
+
+export const activityTitle = css({
+  fontSize: '13px',
+  fontWeight: 600,
+  color: '#f1f5f9',
+  fontFamily: FONT_UI,
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+})
+
+export const activityList = css({
+  flex: 1,
+  overflow: 'auto',
+  padding: '12px 24px',
+})
+
+export const activityItem = css({
+  display: 'flex',
+  gap: '12px',
+  padding: '10px 0',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+  '&:last-child': { borderBottom: 'none' },
+})
+
+export const activityTime = css({
+  fontSize: '11px',
+  fontWeight: 500,
+  color: '#6b7280',
+  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+  whiteSpace: 'nowrap',
+  minWidth: '50px',
+})
+
+export const activityDot = (type: ActivityEntry['type']) => css({
+  width: '6px',
+  height: '6px',
+  borderRadius: '50%',
+  backgroundColor: type === 'success' ? '#00ff85' : type === 'warning' ? '#f59e0b' : type === 'action' ? '#00d4ff' : '#6b7280',
+  flexShrink: 0,
+  marginTop: '5px',
+})
+
+export const activityText = css({
+  fontSize: '13px',
+  fontWeight: 400,
+  color: '#d1d5db',
+  fontFamily: FONT_UI,
+  lineHeight: 1.4,
+})
+
+// Re-export ActivityEntry type for use in page
+import type { ActivityEntry } from './types.ts'
