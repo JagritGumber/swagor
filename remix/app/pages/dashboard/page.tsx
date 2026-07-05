@@ -13,6 +13,7 @@ import {
   dataBlock,
   dataLabel,
   dataValue,
+  changePill,
   riskValue,
   content,
 } from './style.ts'
@@ -65,7 +66,7 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
 
             <div mix={dataBlock}>
               <div mix={dataLabel}>24h Change</div>
-              <div mix={dataValue}>{changeStr}</div>
+              <div mix={changePill(isUp)}>{changeStr}</div>
             </div>
 
             <div mix={dataBlock}>

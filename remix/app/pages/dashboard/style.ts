@@ -22,7 +22,7 @@ export const statusSection = css({
 })
 
 export const statusText = css({
-  fontSize: '18px',
+  fontSize: '24px',
   fontWeight: 600,
   color: '#f1f5f9',
   fontFamily: FONT_UI,
@@ -30,15 +30,15 @@ export const statusText = css({
 })
 
 export const statusSub = css({
-  fontSize: '13px',
+  fontSize: '15px',
   fontWeight: 400,
-  color: '#6b7280',
+  color: '#94a3b8',
   fontFamily: FONT_UI,
 })
 
 export const divider = css({
   height: '1px',
-  backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  backgroundColor: 'rgba(255, 255, 255, 0.10)',
   marginBottom: '24px',
 })
 
@@ -54,7 +54,7 @@ export const dataBlock = css({
 export const dataLabel = css({
   fontSize: '12px',
   fontWeight: 500,
-  color: '#6b7280',
+  color: '#94a3b8',
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
   fontFamily: FONT_UI,
@@ -65,6 +65,13 @@ export const dataValue = css({
   fontSize: '24px',
   fontWeight: 600,
   color: '#f1f5f9',
+  fontFamily: FONT_UI,
+})
+
+export const changePill = (up: boolean) => css({
+  fontSize: '24px',
+  fontWeight: 600,
+  color: up ? '#00ff85' : '#ff5050',
   fontFamily: FONT_UI,
 })
 
