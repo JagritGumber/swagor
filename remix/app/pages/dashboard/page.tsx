@@ -1,4 +1,4 @@
-// Dashboard page — compact: status left, equity+change+risk right
+// Dashboard page — flex row: status | divider | data sections
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import type { DashboardData } from './types.ts'
@@ -8,13 +8,13 @@ import {
   statusSection,
   statusText,
   statusSub,
-  rightSection,
-  equityRow,
-  equityValue,
+  divider,
+  dataSection,
+  dataBlock,
+  dataLabel,
+  dataValue,
   changePill,
-  riskColors,
   riskValue,
-  riskLabel,
   content,
 } from './style.ts'
 
@@ -48,21 +48,30 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
     >
       <div mix={page}>
         <div mix={topBar}>
-          {/* Left: Status */}
+          {/* Status */}
           <div mix={statusSection}>
             <div mix={statusText}>{data.statusMessage}</div>
             <div mix={statusSub}>{data.statusSubtext}</div>
           </div>
 
-          {/* Right: Equity + Change + Risk */}
-          <div mix={rightSection}>
-            <div mix={equityRow}>
-              <span mix={equityValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-              <span mix={changePill(isUp)}>{changeStr}</span>
+          {/* Vertical Divider */}
+          <div mix={divider} />
+
+          {/* Data Sections */}
+          <div mix={dataSection}>
+            <div mix={dataBlock}>
+              <div mix={dataLabel}>Total Equity</div>
+              <div mix={dataValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
             </div>
-            <div>
-              <span mix={riskLabel}>Risk:</span>
-              <span mix={riskValue(data.riskLevel)}>{data.riskLevel}</span>
+
+            <div mix={dataBlock}>
+              <div mix={dataLabel}>24h Change</div>
+              <div mix={changePill(isUp)}>{changeStr}</div>
+            </div>
+
+            <div mix={dataBlock}>
+              <div mix={dataLabel}>Risk</div>
+              <div mix={riskValue(data.riskLevel)}>{data.riskLevel}</div>
             </div>
           </div>
         </div>
