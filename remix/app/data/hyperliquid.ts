@@ -1,9 +1,10 @@
 import { createAlova } from 'alova'
 import { xhrRequestAdapter } from '@alova/adapter-xhr'
 import { ApiError } from '../lib/api/error.ts'
+import { networks } from '../lib/networks.ts'
 
 const hlApi = createAlova({
-  baseURL: 'https://api.hyperliquid-testnet.xyz',
+  baseURL: networks.testnet.hlInfoUrl,
   requestAdapter: xhrRequestAdapter({ onCreate: xhr => { xhr.timeout = 10_000 } }),
   responded: {
     onSuccess: async (response) => {

@@ -38,17 +38,17 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
         >
           Selbo
         </a>
-{!hideLinks && (
+        {!hideLinks && (
           <nav
             mix={css({
               display: 'flex',
-          alignItems: 'baseline',
+              alignItems: 'baseline',
               gap: '24px',
               marginLeft: '32px',
               flex: 1,
             })}
           >
-              <a
+            <a
               href="/agent"
               mix={css({
                 color: TEXT_MUTED,
@@ -71,7 +71,54 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
               Dashboard
             </a>
           </nav>
-)}
+        )}
+
+        {/* Network Selector */}
+        {!hideLinks && (
+          <div
+            mix={css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginRight: '16px',
+            })}
+          >
+            <span
+              mix={css({
+                fontSize: '11px',
+                fontWeight: 500,
+                color: '#94a3b8',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                fontFamily: FONT_UI,
+              })}
+            >
+              Network
+            </span>
+            <select
+              mix={css({
+                appearance: 'none',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.10)',
+                borderRadius: '6px',
+                color: TEXT_PRIMARY,
+                fontFamily: FONT_UI,
+                fontSize: '12px',
+                fontWeight: 500,
+                padding: '4px 24px 4px 8px',
+                cursor: 'pointer',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2394a3b8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 6px center',
+                ':hover': { borderColor: 'rgba(255, 255, 255, 0.20)' },
+              })}
+            >
+              <option value="testnet">Testnet</option>
+              <option value="mainnet" disabled>Mainnet (soon)</option>
+            </select>
+          </div>
+        )}
+
         {displayAddress ? (
           <div
             mix={css({
