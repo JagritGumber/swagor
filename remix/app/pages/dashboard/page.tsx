@@ -10,6 +10,7 @@ import {
   statusSub,
   equityBlock,
   riskBlock,
+  emptyBlock,
   dataLabel,
   dataValue,
   riskValue,
@@ -57,6 +58,8 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
             <div mix={dataLabel}>Risk</div>
             <div mix={riskValue(data.riskLevel)}>{data.riskLevel}</div>
           </div>
+
+          <div mix={emptyBlock}></div>
         </div>
 
         <div mix={content} />

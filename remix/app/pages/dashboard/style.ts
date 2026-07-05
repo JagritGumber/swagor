@@ -13,7 +13,7 @@ export const page = css({
 
 export const topBar = css({
   display: 'grid',
-  gridTemplateColumns: '8fr 2fr 2fr',
+  gridTemplateColumns: '6fr 2fr 2fr 2fr',
   borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
@@ -42,6 +42,11 @@ export const equityBlock = css({
 })
 
 export const riskBlock = css({
+  padding: '20px 24px',
+  borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
+})
+
+export const emptyBlock = css({
   padding: '20px 24px',
   borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
 })
