@@ -1,4 +1,4 @@
-// Dashboard action — auth-gated, returns template data for the dashboard page
+// Dashboard action — auth-gated, returns template data
 import { redirect } from 'remix/response/redirect'
 import { Auth } from 'remix/middleware/auth'
 import type { AppContext } from '../router.ts'
