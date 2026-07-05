@@ -1,4 +1,4 @@
-// Dashboard styles — clean modern design, no cards, just sections
+// Dashboard styles — compact layout, status left, equity+risk right
 import { css } from 'remix/ui'
 import { SURFACE_BODY, FONT_UI } from '../../constants/theme.ts'
 import type { RiskLevel } from './types.ts'
@@ -14,63 +14,56 @@ export const page = css({
 })
 
 export const topBar = css({
-  padding: '24px 32px',
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  padding: '20px 32px',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
 export const statusSection = css({
-  marginBottom: '24px',
+  flex: 1,
 })
 
 export const statusText = css({
-  fontSize: '24px',
+  fontSize: '20px',
   fontWeight: 600,
   color: '#f1f5f9',
   fontFamily: FONT_UI,
-  marginBottom: '4px',
+  marginBottom: '2px',
 })
 
 export const statusSub = css({
-  fontSize: '15px',
+  fontSize: '13px',
   fontWeight: 400,
   color: '#94a3b8',
   fontFamily: FONT_UI,
 })
 
-export const divider = css({
-  height: '1px',
-  backgroundColor: 'rgba(255, 255, 255, 0.10)',
-  marginBottom: '24px',
-})
-
-export const dataSection = css({
+export const rightSection = css({
   display: 'flex',
-  gap: '48px',
+  flexDirection: 'column',
+  alignItems: 'flex-end',
+  gap: '2px',
 })
 
-export const dataBlock = css({
-  flex: 1,
+export const equityRow = css({
+  display: 'flex',
+  alignItems: 'baseline',
+  gap: '12px',
 })
 
-export const dataLabel = css({
-  fontSize: '12px',
-  fontWeight: 500,
-  color: '#94a3b8',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  fontFamily: FONT_UI,
-  marginBottom: '4px',
-})
-
-export const dataValue = css({
-  fontSize: '24px',
+export const equityValue = css({
+  fontSize: '20px',
   fontWeight: 600,
   color: '#f1f5f9',
   fontFamily: FONT_UI,
+  fontVariantNumeric: 'tabular-nums',
 })
 
 export const changePill = (up: boolean) => css({
-  fontSize: '24px',
-  fontWeight: 600,
+  fontSize: '13px',
+  fontWeight: 500,
   color: up ? '#00ff85' : '#ff5050',
   fontFamily: FONT_UI,
 })
@@ -82,11 +75,18 @@ export const riskColors: Record<RiskLevel, string> = {
 }
 
 export const riskValue = (level: RiskLevel) => css({
-  fontSize: '24px',
-  fontWeight: 600,
+  fontSize: '13px',
+  fontWeight: 500,
   color: riskColors[level],
   fontFamily: FONT_UI,
-  textTransform: 'capitalize',
+})
+
+export const riskLabel = css({
+  fontSize: '12px',
+  fontWeight: 400,
+  color: '#6b7280',
+  fontFamily: FONT_UI,
+  marginRight: '6px',
 })
 
 export const content = css({

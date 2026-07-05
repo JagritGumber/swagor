@@ -1,4 +1,4 @@
-// Dashboard page — clean modern design, status + divider + data sections
+// Dashboard page — compact: status left, equity+change+risk right
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import type { DashboardData } from './types.ts'
@@ -8,13 +8,13 @@ import {
   statusSection,
   statusText,
   statusSub,
-  divider,
-  dataSection,
-  dataBlock,
-  dataLabel,
-  dataValue,
+  rightSection,
+  equityRow,
+  equityValue,
   changePill,
+  riskColors,
   riskValue,
+  riskLabel,
   content,
 } from './style.ts'
 
@@ -48,30 +48,21 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
     >
       <div mix={page}>
         <div mix={topBar}>
-          {/* Status */}
+          {/* Left: Status */}
           <div mix={statusSection}>
             <div mix={statusText}>{data.statusMessage}</div>
             <div mix={statusSub}>{data.statusSubtext}</div>
           </div>
 
-          {/* Divider */}
-          <div mix={divider} />
-
-          {/* Data Sections */}
-          <div mix={dataSection}>
-            <div mix={dataBlock}>
-              <div mix={dataLabel}>Total Equity</div>
-              <div mix={dataValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+          {/* Right: Equity + Change + Risk */}
+          <div mix={rightSection}>
+            <div mix={equityRow}>
+              <span mix={equityValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              <span mix={changePill(isUp)}>{changeStr}</span>
             </div>
-
-            <div mix={dataBlock}>
-              <div mix={dataLabel}>24h Change</div>
-              <div mix={changePill(isUp)}>{changeStr}</div>
-            </div>
-
-            <div mix={dataBlock}>
-              <div mix={dataLabel}>Risk</div>
-              <div mix={riskValue(data.riskLevel)}>{data.riskLevel}</div>
+            <div>
+              <span mix={riskLabel}>Risk:</span>
+              <span mix={riskValue(data.riskLevel)}>{data.riskLevel}</span>
             </div>
           </div>
         </div>
