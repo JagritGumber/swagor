@@ -7,10 +7,17 @@ import type { DashboardData } from '../pages/dashboard/types.ts'
 
 const template: DashboardData = {
   balanceUsd: 12847.32,
+  change24hUsd: 342.18,
   agentStatus: 'active',
   riskLevel: 'low',
   statusMessage: 'Selbo is running smoothly',
   statusSubtext: 'AI systems are normal. Markets are being monitored 24/7.',
+  dailyAvgPnl: 127.50,
+  totalPnl: 1620.18,
+  sharpeRatio: 1.85,
+  winRate: 68.4,
+  totalTrades: 47,
+  maxDrawdown: 4.2,
 }
 
 export async function dashboard(context: AppContext) {

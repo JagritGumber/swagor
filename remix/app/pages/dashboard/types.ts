@@ -3,8 +3,15 @@ export type RiskLevel = 'low' | 'medium' | 'high'
 
 export interface DashboardData {
   balanceUsd: number
+  change24hUsd: number
   agentStatus: AgentStatus
   riskLevel: RiskLevel
   statusMessage: string
   statusSubtext: string
+  dailyAvgPnl: number
+  totalPnl: number
+  sharpeRatio: number
+  winRate: number
+  totalTrades: number
+  maxDrawdown: number
 }

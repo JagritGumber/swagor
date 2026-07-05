@@ -107,6 +107,14 @@ export const dataValue = css({
   fontFamily: FONT_UI,
 })
 
+export const changeText = (up: boolean) => css({
+  fontSize: '12px',
+  fontWeight: 500,
+  color: up ? '#00ff85' : '#ff5050',
+  fontFamily: FONT_UI,
+  marginTop: '2px',
+})
+
 export const riskColors: Record<RiskLevel, string> = {
   low: '#00ff85',
   medium: '#f59e0b',
@@ -124,4 +132,47 @@ export const riskValue = (level: RiskLevel) => css({
 export const content = css({
   flex: 1,
   overflow: 'auto',
+})
+
+export const metricsRow = css({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(6, 1fr)',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
+})
+
+export const metricBlock = css({
+  padding: '16px 20px',
+  borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+  '&:last-child': { borderRight: 'none' },
+})
+
+export const metricLabel = css({
+  fontSize: '11px',
+  fontWeight: 500,
+  color: '#94a3b8',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  fontFamily: FONT_UI,
+  marginBottom: '4px',
+})
+
+export const metricValue = css({
+  fontSize: '18px',
+  fontWeight: 600,
+  color: '#f1f5f9',
+  fontFamily: FONT_UI,
+})
+
+export const metricValueGreen = css({
+  fontSize: '18px',
+  fontWeight: 600,
+  color: '#00ff85',
+  fontFamily: FONT_UI,
+})
+
+export const metricValueRed = css({
+  fontSize: '18px',
+  fontWeight: 600,
+  color: '#ff5050',
+  fontFamily: FONT_UI,
 })
