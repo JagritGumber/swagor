@@ -25,6 +25,7 @@ const base = css({
   justifyContent: 'center',
   gap: '8px',
   transition: 'opacity 0.15s, transform 0.1s',
+  transform: 'scale(1)',
   '&:active': { transform: 'scale(0.97)' },
   '&:focus': { outline: 'none' },
   '&:focus-visible': { outline: '2px solid #00ff85', outlineOffset: '2px' },
