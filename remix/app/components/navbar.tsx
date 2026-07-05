@@ -80,7 +80,8 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              marginRight: '16px',
+              padding: '0 16px',
+              borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
             })}
           >
             <span
@@ -133,6 +134,8 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
               fontSize: '13px',
               fontFamily: FONT_UI,
               fontWeight: 500,
+              padding: '0 16px 0 16px',
+              borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
             })}
           >
             <Identicon address={user!.address} size={20} />
