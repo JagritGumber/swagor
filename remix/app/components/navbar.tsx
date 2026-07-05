@@ -113,9 +113,14 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
               <div
                 mix={css({
                   position: 'relative',
+                  '&:focus-within > div:last-child': {
+                    opacity: 1,
+                    visibility: 'visible',
+                  },
                 })}
               >
                 <div
+                  tabIndex={0}
                   mix={css({
                     display: 'flex',
                     alignItems: 'center',
@@ -130,6 +135,7 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
                     cursor: 'pointer',
                     transition: 'background-color 0.15s, transform 0.1s',
                     transform: 'scale(1)',
+                    outline: 'none',
                     ':hover': { background: 'rgba(255, 255, 255, 0.05)' },
                     '&:active': { transform: 'scale(0.98)' },
                   })}
@@ -157,7 +163,6 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
                     transition: 'opacity 0.15s, visibility 0.15s',
                     zIndex: 100,
                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                    '&:hover': { opacity: 1, visibility: 'visible' },
                   })}
                 >
                   <a
