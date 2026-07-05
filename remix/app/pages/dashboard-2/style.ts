@@ -1,4 +1,4 @@
-// Dashboard-2 styles — separated sections with gaps and cards
+// Dashboard-2 styles — hero, mixed grids, visual hierarchy
 import { css } from 'remix/ui'
 import { SURFACE_BODY, FONT_UI } from '../../constants/theme.ts'
 import type { RiskLevel, ActivityEntry } from './types.ts'
@@ -12,74 +12,96 @@ export const page = css({
   overflow: 'auto',
 })
 
-export const dashboardGrid = css({
+// Hero section — full-width status + equity
+export const hero = css({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '32px',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
+})
+
+export const heroLeft = css({
   display: 'flex',
   flexDirection: 'column',
-  gap: '16px',
-  padding: '24px 32px',
+  gap: '4px',
 })
 
-// Top bar — 4 separated cards
-export const topBar = css({
-  display: 'grid',
-  gridTemplateColumns: '3fr 1fr 1fr 1fr',
-  gap: '16px',
-})
-
-export const statusSection = css({
-  padding: '20px 24px',
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1px solid rgba(255, 255, 255, 0.10)',
-  borderRadius: '8px',
-})
-
-export const statusText = css({
-  fontSize: '20px',
+export const heroStatus = css({
+  fontSize: '24px',
   fontWeight: 600,
   color: '#f1f5f9',
   fontFamily: FONT_UI,
-  marginBottom: '2px',
 })
 
-export const statusSub = css({
-  fontSize: '13px',
+export const heroSub = css({
+  fontSize: '14px',
   fontWeight: 400,
   color: '#94a3b8',
   fontFamily: FONT_UI,
 })
 
-export const equityBlock = css({
-  padding: '20px 24px',
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1px solid rgba(255, 255, 255, 0.10)',
-  borderRadius: '8px',
-})
-
-export const riskBlock = css({
-  padding: '20px 24px',
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1px solid rgba(255, 255, 255, 0.10)',
-  borderRadius: '8px',
-})
-
-export const emptyBlock = css({
-  padding: '20px 24px',
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1px solid rgba(255, 255, 255, 0.10)',
-  borderRadius: '8px',
+export const heroRight = css({
   display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-  alignItems: 'flex-start',
-  gap: '8px',
+  alignItems: 'center',
+  gap: '32px',
 })
 
-export const tradingLabel = css({
+export const equityGroup = css({
+  textAlign: 'right',
+})
+
+export const equityLabel = css({
   fontSize: '11px',
   fontWeight: 500,
   color: '#94a3b8',
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
+  fontFamily: FONT_UI,
+  marginBottom: '4px',
+})
+
+export const equityValue = css({
+  fontSize: '28px',
+  fontWeight: 700,
+  color: '#f1f5f9',
+  fontFamily: FONT_UI,
+})
+
+export const equityChange = (up: boolean) => css({
+  fontSize: '13px',
+  fontWeight: 500,
+  color: up ? '#00ff85' : '#ff5050',
+  fontFamily: FONT_UI,
+  textAlign: 'right',
+})
+
+export const heroMeta = css({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-end',
+  gap: '8px',
+})
+
+export const riskBadge = (level: RiskLevel) => css({
+  fontSize: '12px',
+  fontWeight: 600,
+  color: riskColors[level],
+  fontFamily: FONT_UI,
+  padding: '4px 12px',
+  borderRadius: '12px',
+  background: `${riskColors[level]}15`,
+  border: `1px solid ${riskColors[level]}30`,
+  textTransform: 'capitalize',
+})
+
+export const tradingToggle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  fontSize: '12px',
+  fontWeight: 500,
+  color: '#94a3b8',
   fontFamily: FONT_UI,
 })
 
@@ -108,57 +130,25 @@ export const toggleKnob = (active: boolean) => css({
   transition: 'left 0.2s, background-color 0.2s',
 })
 
-export const dataLabel = css({
-  fontSize: '11px',
-  fontWeight: 500,
-  color: '#94a3b8',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  fontFamily: FONT_UI,
-  marginBottom: '2px',
+// Section dividers
+export const divider = css({
+  borderTop: '1px solid rgba(255, 255, 255, 0.10)',
+  margin: '0 32px',
 })
 
-export const dataValue = css({
-  fontSize: '20px',
-  fontWeight: 600,
-  color: '#f1f5f9',
-  fontFamily: FONT_UI,
-})
-
-export const changeText = (up: boolean) => css({
-  fontSize: '12px',
-  fontWeight: 500,
-  color: up ? '#00ff85' : '#ff5050',
-  fontFamily: FONT_UI,
-  marginTop: '2px',
-})
-
-export const riskColors: Record<RiskLevel, string> = {
-  low: '#00ff85',
-  medium: '#f59e0b',
-  high: '#ff5050',
-}
-
-export const riskValue = (level: RiskLevel) => css({
-  fontSize: '20px',
-  fontWeight: 600,
-  color: riskColors[level],
-  fontFamily: FONT_UI,
-  textTransform: 'capitalize',
-})
-
-// Metrics row — 6 separated cards
-export const metricsRow = css({
+// Metrics row — 3-col grid, no cards, just data
+export const metricsGrid = css({
   display: 'grid',
-  gridTemplateColumns: 'repeat(6, 1fr)',
-  gap: '16px',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: '0',
+  padding: '0 32px',
 })
 
-export const metricBlock = css({
-  padding: '16px 20px',
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1px solid rgba(255, 255, 255, 0.10)',
-  borderRadius: '8px',
+export const metricCell = css({
+  padding: '24px 0',
+  borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+  '&:nth-child(3n)': { borderRight: 'none' },
+  '&:nth-child(-n+3)': { borderBottom: '1px solid rgba(255, 255, 255, 0.06)' },
 })
 
 export const metricLabel = css({
@@ -172,67 +162,56 @@ export const metricLabel = css({
 })
 
 export const metricValue = css({
-  fontSize: '18px',
+  fontSize: '20px',
   fontWeight: 600,
   color: '#f1f5f9',
   fontFamily: FONT_UI,
 })
 
 export const metricValueGreen = css({
-  fontSize: '18px',
+  fontSize: '20px',
   fontWeight: 600,
   color: '#00ff85',
   fontFamily: FONT_UI,
 })
 
 export const metricValueRed = css({
-  fontSize: '18px',
+  fontSize: '20px',
   fontWeight: 600,
   color: '#ff5050',
   fontFamily: FONT_UI,
 })
 
-// Activity row — 3 separated panels
-export const activityRow = css({
+// Two-panel row — Market Read + Positions
+export const twoPanelRow = css({
   display: 'grid',
-  gridTemplateColumns: '1fr 1fr 1fr',
-  gap: '16px',
-  minHeight: '300px',
+  gridTemplateColumns: '1fr 1fr',
+  gap: '0',
+  padding: '0 32px',
 })
 
-export const panelCard = css({
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1px solid rgba(255, 255, 255, 0.10)',
-  borderRadius: '8px',
-  display: 'flex',
-  flexDirection: 'column',
-  overflow: 'hidden',
-})
-
-export const panelHeader = css({
-  padding: '16px 24px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+export const panelHalf = css({
+  padding: '24px',
+  borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+  '&:last-child': { borderRight: 'none' },
 })
 
 export const panelTitle = css({
-  fontSize: '13px',
+  fontSize: '12px',
   fontWeight: 600,
-  color: '#f1f5f9',
-  fontFamily: FONT_UI,
+  color: '#94a3b8',
   textTransform: 'uppercase',
   letterSpacing: '0.06em',
-})
-
-export const panelContent = css({
-  flex: 1,
-  overflow: 'auto',
-  padding: '16px 0',
+  fontFamily: FONT_UI,
+  marginBottom: '16px',
+  paddingBottom: '12px',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
 })
 
 export const readRow = css({
   display: 'flex',
   justifyContent: 'space-between',
-  padding: '8px 24px',
+  padding: '8px 0',
   borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
   '&:last-child': { borderBottom: 'none' },
 })
@@ -255,7 +234,7 @@ export const positionRow = css({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '10px 24px',
+  padding: '10px 0',
   borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
   '&:last-child': { borderBottom: 'none' },
 })
@@ -282,15 +261,37 @@ export const positionPnl = (positive: boolean) => css({
   fontFamily: FONT_UI,
 })
 
+// Full-width sections
+export const fullSection = css({
+  padding: '0 32px',
+})
+
+export const sectionHeader = css({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '20px 0',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+})
+
+export const sectionTitle = css({
+  fontSize: '12px',
+  fontWeight: 600,
+  color: '#94a3b8',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  fontFamily: FONT_UI,
+})
+
 export const activityList = css({
-  flex: 1,
+  maxHeight: '300px',
   overflow: 'auto',
 })
 
 export const activityItem = css({
   display: 'flex',
   gap: '12px',
-  padding: '10px 24px',
+  padding: '12px 0',
   borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
   '&:last-child': { borderBottom: 'none' },
 })
@@ -320,6 +321,44 @@ export const activityText = css({
   fontFamily: FONT_UI,
   lineHeight: 1.4,
 })
+
+// Performance row — horizontal scroll of metrics
+export const perfGrid = css({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(6, 1fr)',
+  gap: '0',
+  padding: '0 32px',
+})
+
+export const perfCell = css({
+  padding: '20px 0',
+  borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+  '&:last-child': { borderRight: 'none' },
+})
+
+export const perfLabel = css({
+  fontSize: '11px',
+  fontWeight: 500,
+  color: '#94a3b8',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  fontFamily: FONT_UI,
+  marginBottom: '4px',
+})
+
+export const perfValue = css({
+  fontSize: '18px',
+  fontWeight: 600,
+  color: '#f1f5f9',
+  fontFamily: FONT_UI,
+})
+
+// Colors
+export const riskColors: Record<RiskLevel, string> = {
+  low: '#00ff85',
+  medium: '#f59e0b',
+  high: '#ff5050',
+}
 
 export const content = css({
   flex: 1,
