@@ -30,6 +30,7 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
       >
         <a
           href="/dashboard"
+          rmx-document
           mix={css({
             color: TEXT_PRIMARY,
             textDecoration: 'none',
@@ -51,6 +52,7 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
           >
             <a
               href="/agent"
+              rmx-document
               mix={css({
                 color: currentPath === '/agent' ? TEXT_PRIMARY : TEXT_MUTED,
                 textDecoration: 'none',
@@ -69,6 +71,7 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
             </a>
             <a
               href="/dashboard"
+              rmx-document
               mix={css({
                 color: currentPath === '/dashboard' ? TEXT_PRIMARY : TEXT_MUTED,
                 textDecoration: 'none',
