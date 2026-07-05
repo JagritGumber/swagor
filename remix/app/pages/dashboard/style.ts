@@ -46,21 +46,21 @@ export const divider = css({
 })
 
 export const dataSection = css({
-  display: 'flex',
-  alignItems: 'center',
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
   gap: '0',
 })
 
 export const dataBlock = css({
-  flex: 1,
-  padding: '0 24px',
+  padding: '0',
 })
 
 export const dataBlockDivider = css({
   width: '1px',
-  height: '32px',
   backgroundColor: 'rgba(255, 255, 255, 0.10)',
-  flexShrink: 0,
+  justifySelf: 'center',
+  height: '32px',
+  alignSelf: 'center',
 })
 
 export const dataLabel = css({
