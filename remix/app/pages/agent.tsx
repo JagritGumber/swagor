@@ -119,6 +119,7 @@ export function AgentPage(handle: Handle<AgentPageProps>) {
     return (
       <Document
         title="Agent"
+        currentPath="/agent"
         head={
           <>
             <meta name="color-scheme" content="dark" />

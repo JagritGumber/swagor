@@ -4,8 +4,8 @@ import { Identicon } from './identicon.tsx'
 import { SURFACE_HEADER, BORDER_HEADER, TEXT_PRIMARY, TEXT_MUTED, FONT_UI } from '../constants/theme.ts'
 import { NativeSelect, NativeSelectOption } from './native-select.tsx'
 
-export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: boolean }>) {
-  const { user, hideLinks } = handle.props
+export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: boolean; currentPath?: string }>) {
+  const { user, hideLinks, currentPath } = handle.props
 
   return () => {
     const displayAddress = user
@@ -52,13 +52,17 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
             <a
               href="/agent"
               mix={css({
-                color: TEXT_MUTED,
+                color: currentPath === '/agent' ? TEXT_PRIMARY : TEXT_MUTED,
                 textDecoration: 'none',
                 fontWeight: 500,
                 padding: '4px 8px',
                 borderRadius: '4px',
-                transition: 'color 0.15s, background-color 0.15s',
-                ':hover': { color: TEXT_PRIMARY, background: 'rgba(255, 255, 255, 0.05)' },
+                transition: 'transform 0.1s, background-color 0.15s',
+                transform: 'scale(1)',
+                background: currentPath === '/agent' ? 'rgba(255, 255, 255, 0.10)' : 'transparent',
+                borderBottom: currentPath === '/agent' ? '2px solid #00ff85' : '2px solid transparent',
+                '&:hover': { color: TEXT_PRIMARY },
+                '&:active': { transform: 'scale(0.95)' },
               })}
             >
               Agent
@@ -66,13 +70,17 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
             <a
               href="/dashboard"
               mix={css({
-                color: TEXT_MUTED,
+                color: currentPath === '/dashboard' ? TEXT_PRIMARY : TEXT_MUTED,
                 textDecoration: 'none',
                 fontWeight: 500,
                 padding: '4px 8px',
                 borderRadius: '4px',
-                transition: 'color 0.15s, background-color 0.15s',
-                ':hover': { color: TEXT_PRIMARY, background: 'rgba(255, 255, 255, 0.05)' },
+                transition: 'transform 0.1s, background-color 0.15s',
+                transform: 'scale(1)',
+                background: currentPath === '/dashboard' ? 'rgba(255, 255, 255, 0.10)' : 'transparent',
+                borderBottom: currentPath === '/dashboard' ? '2px solid #00ff85' : '2px solid transparent',
+                '&:hover': { color: TEXT_PRIMARY },
+                '&:active': { transform: 'scale(0.95)' },
               })}
             >
               Dashboard

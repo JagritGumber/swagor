@@ -68,6 +68,7 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
     <Document
       title="Selbo - Dashboard"
       user={user}
+      currentPath="/dashboard"
       head={
         <>
           <meta name="color-scheme" content="dark" />
