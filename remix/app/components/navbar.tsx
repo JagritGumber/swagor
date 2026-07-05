@@ -112,25 +112,71 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
             {displayAddress && (
               <div
                 mix={css({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: TEXT_MUTED,
-                  fontSize: '13px',
-                  fontFamily: FONT_UI,
-                  fontWeight: 500,
-                  padding: '0 16px',
-                  borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
-                  height: '100%',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.15s',
-                  ':hover': { background: 'rgba(255, 255, 255, 0.05)' },
+                  position: 'relative',
                 })}
               >
-                <Identicon address={user!.address} size={20} />
-                <span mix={css({ fontFamily: "'JetBrains Mono', ui-monospace, monospace" })}>
-                  {displayAddress}
-                </span>
+                <div
+                  mix={css({
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    color: TEXT_MUTED,
+                    fontSize: '13px',
+                    fontFamily: FONT_UI,
+                    fontWeight: 500,
+                    padding: '0 16px',
+                    borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
+                    height: '100%',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.15s, transform 0.1s',
+                    transform: 'scale(1)',
+                    ':hover': { background: 'rgba(255, 255, 255, 0.05)' },
+                    '&:active': { transform: 'scale(0.98)' },
+                  })}
+                >
+                  <Identicon address={user!.address} size={20} />
+                  <span mix={css({ fontFamily: "'JetBrains Mono', ui-monospace, monospace" })}>
+                    {displayAddress}
+                  </span>
+                </div>
+
+                {/* Dropdown Menu */}
+                <div
+                  mix={css({
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '4px',
+                    background: '#1a1a1a',
+                    border: '1px solid rgba(255, 255, 255, 0.10)',
+                    borderRadius: '8px',
+                    padding: '4px',
+                    minWidth: '160px',
+                    opacity: 0,
+                    visibility: 'hidden',
+                    transition: 'opacity 0.15s, visibility 0.15s',
+                    zIndex: 100,
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                    '&:hover': { opacity: 1, visibility: 'visible' },
+                  })}
+                >
+                  <a
+                    href="/logout"
+                    mix={css({
+                      display: 'block',
+                      padding: '8px 12px',
+                      color: '#f1f5f9',
+                      fontSize: '13px',
+                      fontFamily: FONT_UI,
+                      textDecoration: 'none',
+                      borderRadius: '4px',
+                      transition: 'background-color 0.15s',
+                      ':hover': { background: 'rgba(255, 80, 80, 0.10)', color: '#ff5050' },
+                    })}
+                  >
+                    Sign out
+                  </a>
+                </div>
               </div>
             )}
           </div>
