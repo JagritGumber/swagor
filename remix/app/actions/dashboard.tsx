@@ -7,8 +7,6 @@ import type { DashboardData } from '../pages/dashboard/types.ts'
 
 const template: DashboardData = {
   balanceUsd: 12847.32,
-  change24hUsd: 342.18,
-  change24hPct: 2.7,
   agentStatus: 'active',
   riskLevel: 'low',
   statusMessage: 'Selbo is running smoothly',

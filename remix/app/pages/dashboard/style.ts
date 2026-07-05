@@ -73,13 +73,6 @@ export const dataValue = css({
   fontFamily: FONT_UI,
 })
 
-export const changePill = (up: boolean) => css({
-  fontSize: '24px',
-  fontWeight: 600,
-  color: up ? '#00ff85' : '#ff5050',
-  fontFamily: FONT_UI,
-})
-
 export const riskColors: Record<RiskLevel, string> = {
   low: '#00ff85',
   medium: '#f59e0b',
