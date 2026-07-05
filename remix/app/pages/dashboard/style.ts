@@ -49,6 +49,40 @@ export const riskBlock = css({
 export const emptyBlock = css({
   padding: '20px 24px',
   borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  gap: '8px',
+})
+
+export const pauseButton = css({
+  appearance: 'none',
+  border: '1px solid rgba(245, 158, 11, 0.3)',
+  borderRadius: '6px',
+  backgroundColor: 'rgba(245, 158, 11, 0.08)',
+  color: '#f59e0b',
+  fontFamily: FONT_UI,
+  fontSize: '12px',
+  fontWeight: 600,
+  padding: '7px 14px',
+  cursor: 'pointer',
+  transition: 'background-color 0.15s, border-color 0.15s',
+  '&:hover': { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.50)' },
+})
+
+export const stopButton = css({
+  appearance: 'none',
+  border: '1px solid rgba(255, 80, 80, 0.3)',
+  borderRadius: '6px',
+  backgroundColor: 'rgba(255, 80, 80, 0.08)',
+  color: '#ff5050',
+  fontFamily: FONT_UI,
+  fontSize: '12px',
+  fontWeight: 600,
+  padding: '7px 14px',
+  cursor: 'pointer',
+  transition: 'background-color 0.15s, border-color 0.15s',
+  '&:hover': { backgroundColor: 'rgba(255, 80, 80, 0.15)', borderColor: 'rgba(255, 80, 80, 0.50)' },
 })
 
 export const dataLabel = css({

@@ -1,4 +1,4 @@
-// Dashboard page — 8fr 2fr 2fr grid, border-left cuts between sections
+// Dashboard page — 6fr 2fr 2fr 2fr grid with pause/stop buttons
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import type { DashboardData } from './types.ts'
@@ -14,6 +14,8 @@ import {
   dataLabel,
   dataValue,
   riskValue,
+  pauseButton,
+  stopButton,
   content,
 } from './style.ts'
 
@@ -59,7 +61,10 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
             <div mix={riskValue(data.riskLevel)}>{data.riskLevel}</div>
           </div>
 
-          <div mix={emptyBlock}></div>
+          <div mix={emptyBlock}>
+            <button mix={pauseButton} type="button">Pause Trading</button>
+            <button mix={stopButton} type="button">Stop Trading</button>
+          </div>
         </div>
 
         <div mix={content} />
