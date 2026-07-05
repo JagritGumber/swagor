@@ -142,7 +142,7 @@ export const metricsRow = css({
 
 export const metricBlock = css({
   padding: '16px 20px',
-  borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+  borderRight: '1px solid rgba(255, 255, 255, 0.10)',
   '&:last-child': { borderRight: 'none' },
 })
 
@@ -198,7 +198,7 @@ export const centerPanel = css({
 
 export const panelHeader = css({
   padding: '16px 24px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
 export const panelTitle = css({
@@ -276,7 +276,7 @@ export const activityPanel = css({
 
 export const activityHeader = css({
   padding: '16px 24px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
 export const activityTitle = css({
