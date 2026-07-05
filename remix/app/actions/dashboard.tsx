@@ -28,6 +28,14 @@ const template: DashboardData = {
     { market: 'ETH-USD', side: 'long', size: '0.5 contracts', entryPrice: 1788.40, currentPrice: 1792.10, pnl: 185.50, leverage: '2x' },
     { market: 'BTC-USD', side: 'short', size: '0.1 contracts', entryPrice: 43250.00, currentPrice: 43180.00, pnl: 70.00, leverage: '3x' },
   ],
+  portfolioPerformance: {
+    totalReturn: '+14.3%',
+    monthlyReturn: '+8.7%',
+    sharpeRatio: '1.85',
+    sortinoRatio: '2.42',
+    maxDrawdown: '4.2%',
+    calmarRatio: '3.40',
+  },
   activity: [
     { time: '2m ago', text: 'Opened ETH-USD long position at $1,788.40 with 2x leverage', type: 'action' },
     { time: '5m ago', text: 'Risk check passed: all positions within safety limits', type: 'success' },

@@ -196,6 +196,44 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
           </div>
         </div>
 
+        <div mix={activityRow}>
+          <div mix={leftPanel}>
+            <div mix={panelHeader}>
+              <div mix={panelTitle}>Portfolio Performance</div>
+            </div>
+            <div mix={panelContent}>
+              <div mix={readRow}>
+                <span mix={readLabel}>Total Return</span>
+                <span mix={readValue}>{data.portfolioPerformance.totalReturn}</span>
+              </div>
+              <div mix={readRow}>
+                <span mix={readLabel}>Monthly Return</span>
+                <span mix={readValue}>{data.portfolioPerformance.monthlyReturn}</span>
+              </div>
+              <div mix={readRow}>
+                <span mix={readLabel}>Sharpe Ratio</span>
+                <span mix={readValue}>{data.portfolioPerformance.sharpeRatio}</span>
+              </div>
+              <div mix={readRow}>
+                <span mix={readLabel}>Sortino Ratio</span>
+                <span mix={readValue}>{data.portfolioPerformance.sortinoRatio}</span>
+              </div>
+              <div mix={readRow}>
+                <span mix={readLabel}>Max Drawdown</span>
+                <span mix={readValue}>{data.portfolioPerformance.maxDrawdown}</span>
+              </div>
+              <div mix={readRow}>
+                <span mix={readLabel}>Calmar Ratio</span>
+                <span mix={readValue}>{data.portfolioPerformance.calmarRatio}</span>
+              </div>
+            </div>
+          </div>
+
+          <div mix={centerPanel}></div>
+
+          <div mix={activityPanel}></div>
+        </div>
+
         <div mix={content} />
       </div>
     </Document>

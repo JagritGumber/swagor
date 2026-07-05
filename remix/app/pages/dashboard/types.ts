@@ -24,6 +24,15 @@ export interface Position {
   leverage: string
 }
 
+export interface PortfolioPerformance {
+  totalReturn: string
+  monthlyReturn: string
+  sharpeRatio: string
+  sortinoRatio: string
+  maxDrawdown: string
+  calmarRatio: string
+}
+
 export interface DashboardData {
   balanceUsd: number
   change24hUsd: number
@@ -39,5 +48,6 @@ export interface DashboardData {
   maxDrawdown: number
   marketRead: MarketRead
   positions: Position[]
+  portfolioPerformance: PortfolioPerformance
   activity: ActivityEntry[]
 }
