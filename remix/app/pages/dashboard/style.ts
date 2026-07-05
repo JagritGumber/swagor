@@ -19,6 +19,7 @@ export const topBar = css({
 
 export const statusSection = css({
   padding: '20px 24px',
+  borderRight: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
 export const statusText = css({
