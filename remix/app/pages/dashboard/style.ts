@@ -13,7 +13,7 @@ export const page = css({
 
 export const topBar = css({
   display: 'grid',
-  gridTemplateColumns: '6fr 2fr 2fr 2fr',
+  gridTemplateColumns: '3fr 1fr 1fr 1fr',
   borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
 })
 
