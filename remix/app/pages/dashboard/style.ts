@@ -179,7 +179,7 @@ export const metricValueRed = css({
 
 export const activityRow = css({
   display: 'grid',
-  gridTemplateColumns: '1fr 2fr',
+  gridTemplateColumns: '1fr 4fr',
   borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
   minHeight: '300px',
 })
