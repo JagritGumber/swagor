@@ -1,4 +1,4 @@
-// Dashboard page — 6fr 2fr 2fr 2fr grid with pause/stop buttons
+// Dashboard page — 6fr 2fr 2fr 2fr grid with trading toggle
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import type { DashboardData } from './types.ts'
@@ -11,11 +11,12 @@ import {
   equityBlock,
   riskBlock,
   emptyBlock,
+  tradingLabel,
+  toggleButton,
+  toggleKnob,
   dataLabel,
   dataValue,
   riskValue,
-  pauseButton,
-  stopButton,
   content,
 } from './style.ts'
 
@@ -27,6 +28,7 @@ interface DashboardPageProps {
 export function DashboardPage(handle: Handle<DashboardPageProps>) {
   return () => {
     const { data, user } = handle.props
+    const isActive = data.agentStatus === 'active'
 
     return (
     <Document
@@ -62,8 +64,10 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
           </div>
 
           <div mix={emptyBlock}>
-            <button mix={pauseButton} type="button">Pause Trading</button>
-            <button mix={stopButton} type="button">Stop Trading</button>
+            <span mix={tradingLabel}>Trading</span>
+            <button mix={toggleButton(isActive)} type="button">
+              <span mix={toggleKnob(isActive)} />
+            </button>
           </div>
         </div>
 

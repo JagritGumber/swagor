@@ -52,41 +52,42 @@ export const emptyBlock = css({
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
+  alignItems: 'flex-start',
   gap: '8px',
 })
 
-export const pauseButton = css({
-  appearance: 'none',
-  border: '1px solid rgba(245, 158, 11, 0.3)',
-  borderRadius: '6px',
-  backgroundColor: 'rgba(245, 158, 11, 0.08)',
-  color: '#f59e0b',
+export const tradingLabel = css({
+  fontSize: '11px',
+  fontWeight: 500,
+  color: '#94a3b8',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
   fontFamily: FONT_UI,
-  fontSize: '12px',
-  fontWeight: 600,
-  padding: '7px 14px',
-  cursor: 'pointer',
-  transition: 'background-color 0.15s, border-color 0.15s, transform 0.1s',
-  transform: 'scale(1)',
-  '&:hover': { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.50)' },
-  '&:active': { transform: 'scale(0.97)' },
 })
 
-export const stopButton = css({
+export const toggleButton = (active: boolean) => css({
   appearance: 'none',
-  border: '1px solid rgba(255, 80, 80, 0.3)',
-  borderRadius: '6px',
-  backgroundColor: 'rgba(255, 80, 80, 0.08)',
-  color: '#ff5050',
-  fontFamily: FONT_UI,
-  fontSize: '12px',
-  fontWeight: 600,
-  padding: '7px 14px',
+  border: `1px solid ${active ? 'rgba(0, 255, 133, 0.3)' : 'rgba(255, 255, 255, 0.10)'}`,
+  borderRadius: '20px',
+  backgroundColor: active ? 'rgba(0, 255, 133, 0.10)' : 'rgba(255, 255, 255, 0.05)',
+  width: '44px',
+  height: '24px',
   cursor: 'pointer',
-  transition: 'background-color 0.15s, border-color 0.15s, transform 0.1s',
+  position: 'relative',
+  transition: 'background-color 0.2s, border-color 0.2s',
   transform: 'scale(1)',
-  '&:hover': { backgroundColor: 'rgba(255, 80, 80, 0.15)', borderColor: 'rgba(255, 80, 80, 0.50)' },
-  '&:active': { transform: 'scale(0.97)' },
+  '&:active': { transform: 'scale(0.95)' },
+})
+
+export const toggleKnob = (active: boolean) => css({
+  position: 'absolute',
+  top: '3px',
+  left: active ? '23px' : '3px',
+  width: '16px',
+  height: '16px',
+  borderRadius: '50%',
+  backgroundColor: active ? '#00ff85' : '#6b7280',
+  transition: 'left 0.2s, background-color 0.2s',
 })
 
 export const dataLabel = css({
