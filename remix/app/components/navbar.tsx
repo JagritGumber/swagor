@@ -110,7 +110,11 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2394a3b8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'right 6px center',
-                ':hover': { borderColor: 'rgba(255, 255, 255, 0.20)' },
+                '&:hover': { borderColor: 'rgba(255, 255, 255, 0.20)' },
+                '& option': {
+                  background: '#0a0e14',
+                  color: '#f1f5f9',
+                },
               })}
             >
               <option value="testnet">Testnet</option>
