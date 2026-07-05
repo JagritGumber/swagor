@@ -1,4 +1,4 @@
-// Dashboard page — full layout with market read, positions, activity
+// Dashboard page — full layout with metrics, performance, panels, activity
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import type { DashboardData } from './types.ts'
@@ -24,6 +24,12 @@ import {
   metricValue,
   metricValueGreen,
   metricValueRed,
+  perfRow,
+  perfBlock,
+  perfLabel,
+  perfValue,
+  perfValueGreen,
+  perfValueRed,
   activityRow,
   leftPanel,
   centerPanel,
@@ -63,6 +69,10 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
     const dailyUp = data.dailyAvgPnl >= 0
     const totalUp = data.totalPnl >= 0
     const ddColor = data.maxDrawdown < 5 ? '#00ff85' : data.maxDrawdown < 10 ? '#f59e0b' : '#ff5050'
+    const totalRetUp = data.totalReturn >= 0
+    const monthlyRetUp = data.monthlyReturn >= 0
+    const avgWinUp = data.avgWin >= 0
+    const avgLossUp = data.avgLoss >= 0
 
     return (
     <Document
@@ -133,8 +143,34 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
           </div>
         </div>
 
+        <div mix={perfRow}>
+          <div mix={perfBlock}>
+            <div mix={perfLabel}>Total Return</div>
+            <div mix={totalRetUp ? perfValueGreen : perfValueRed}>{totalRetUp ? '+' : ''}{data.totalReturn.toFixed(1)}%</div>
+          </div>
+          <div mix={perfBlock}>
+            <div mix={perfLabel}>Monthly Return</div>
+            <div mix={monthlyRetUp ? perfValueGreen : perfValueRed}>{monthlyRetUp ? '+' : ''}{data.monthlyReturn.toFixed(1)}%</div>
+          </div>
+          <div mix={perfBlock}>
+            <div mix={perfLabel}>Win/Loss Ratio</div>
+            <div mix={perfValue}>{data.winLossRatio.toFixed(2)}</div>
+          </div>
+          <div mix={perfBlock}>
+            <div mix={perfLabel}>Avg Win</div>
+            <div mix={avgWinUp ? perfValueGreen : perfValueRed}>{avgWinUp ? '+' : ''}${data.avgWin.toFixed(2)}</div>
+          </div>
+          <div mix={perfBlock}>
+            <div mix={perfLabel}>Avg Loss</div>
+            <div mix={avgLossUp ? perfValueGreen : perfValueRed}>{avgLossUp ? '+' : ''}${data.avgLoss.toFixed(2)}</div>
+          </div>
+          <div mix={perfBlock}>
+            <div mix={perfLabel}>Profit Factor</div>
+            <div mix={perfValue}>{data.profitFactor.toFixed(2)}</div>
+          </div>
+        </div>
+
         <div mix={activityRow}>
-          {/* Market Read */}
           <div mix={leftPanel}>
             <div mix={panelHeader}>
               <div mix={panelTitle}>Market Read</div>
@@ -159,7 +195,6 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
             </div>
           </div>
 
-          {/* Active Positions */}
           <div mix={centerPanel}>
             <div mix={panelHeader}>
               <div mix={panelTitle}>Active Positions</div>
@@ -179,7 +214,6 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
             </div>
           </div>
 
-          {/* Live Activity */}
           <div mix={activityPanel}>
             <div mix={activityHeader}>
               <div mix={activityTitle}>Live Activity</div>

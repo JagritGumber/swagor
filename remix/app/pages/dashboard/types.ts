@@ -37,6 +37,12 @@ export interface DashboardData {
   winRate: number
   totalTrades: number
   maxDrawdown: number
+  totalReturn: number
+  monthlyReturn: number
+  winLossRatio: number
+  avgWin: number
+  avgLoss: number
+  profitFactor: number
   marketRead: MarketRead
   positions: Position[]
   activity: ActivityEntry[]
