@@ -329,48 +329,5 @@ export const activityText = css({
   lineHeight: 1.4,
 })
 
-export const perfRow = css({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(6, 1fr)',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
-})
-
-export const perfBlock = css({
-  padding: '16px 20px',
-  borderRight: '1px solid rgba(255, 255, 255, 0.10)',
-  '&:last-child': { borderRight: 'none' },
-})
-
-export const perfLabel = css({
-  fontSize: '11px',
-  fontWeight: 500,
-  color: '#94a3b8',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  fontFamily: FONT_UI,
-  marginBottom: '4px',
-})
-
-export const perfValue = css({
-  fontSize: '18px',
-  fontWeight: 600,
-  color: '#f1f5f9',
-  fontFamily: FONT_UI,
-})
-
-export const perfValueGreen = css({
-  fontSize: '18px',
-  fontWeight: 600,
-  color: '#00ff85',
-  fontFamily: FONT_UI,
-})
-
-export const perfValueRed = css({
-  fontSize: '18px',
-  fontWeight: 600,
-  color: '#ff5050',
-  fontFamily: FONT_UI,
-})
-
 // Re-export ActivityEntry type for use in page
 import type { ActivityEntry } from './types.ts'

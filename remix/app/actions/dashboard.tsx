@@ -18,12 +18,6 @@ const template: DashboardData = {
   winRate: 68.4,
   totalTrades: 47,
   maxDrawdown: 4.2,
-  totalReturn: 14.3,
-  monthlyReturn: 8.7,
-  winLossRatio: 2.15,
-  avgWin: 89.50,
-  avgLoss: -41.60,
-  profitFactor: 1.82,
   marketRead: {
     asset: 'ETH-USD',
     regime: 'Ranging',
