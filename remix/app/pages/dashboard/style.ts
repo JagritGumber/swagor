@@ -66,8 +66,10 @@ export const pauseButton = css({
   fontWeight: 600,
   padding: '7px 14px',
   cursor: 'pointer',
-  transition: 'background-color 0.15s, border-color 0.15s',
+  transition: 'background-color 0.15s, border-color 0.15s, transform 0.1s',
+  transform: 'scale(1)',
   '&:hover': { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.50)' },
+  '&:active': { transform: 'scale(0.97)' },
 })
 
 export const stopButton = css({
@@ -81,8 +83,10 @@ export const stopButton = css({
   fontWeight: 600,
   padding: '7px 14px',
   cursor: 'pointer',
-  transition: 'background-color 0.15s, border-color 0.15s',
+  transition: 'background-color 0.15s, border-color 0.15s, transform 0.1s',
+  transform: 'scale(1)',
   '&:hover': { backgroundColor: 'rgba(255, 80, 80, 0.15)', borderColor: 'rgba(255, 80, 80, 0.50)' },
+  '&:active': { transform: 'scale(0.97)' },
 })
 
 export const dataLabel = css({
