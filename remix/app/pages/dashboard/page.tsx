@@ -26,6 +26,7 @@ import {
   metricValueRed,
   activityRow,
   leftPanel,
+  centerPanel,
   activityPanel,
   activityHeader,
   activityTitle,
@@ -124,6 +125,7 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
 
         <div mix={activityRow}>
           <div mix={leftPanel}></div>
+          <div mix={centerPanel}></div>
           <div mix={activityPanel}>
             <div mix={activityHeader}>
               <div mix={activityTitle}>Live Activity</div>
