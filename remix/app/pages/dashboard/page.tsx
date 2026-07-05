@@ -1,4 +1,4 @@
-// Dashboard page — flex row: status | divider | data sections
+// Dashboard page — grid: 8col status | 1col divider | 2col equity | 2col risk
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import type { DashboardData } from './types.ts'
@@ -9,9 +9,7 @@ import {
   statusText,
   statusSub,
   divider,
-  dataSection,
   dataBlock,
-  dataBlockDivider,
   dataLabel,
   dataValue,
   riskValue,
@@ -45,28 +43,21 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
     >
       <div mix={page}>
         <div mix={topBar}>
-          {/* Status */}
           <div mix={statusSection}>
             <div mix={statusText}>{data.statusMessage}</div>
             <div mix={statusSub}>{data.statusSubtext}</div>
           </div>
 
-          {/* Vertical Divider */}
           <div mix={divider} />
 
-          {/* Data Sections */}
-          <div mix={dataSection}>
-            <div mix={dataBlock}>
-              <div mix={dataLabel}>Total Equity</div>
-              <div mix={dataValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-            </div>
+          <div mix={dataBlock}>
+            <div mix={dataLabel}>Total Equity</div>
+            <div mix={dataValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+          </div>
 
-            <div mix={dataBlockDivider} />
-
-            <div mix={dataBlock}>
-              <div mix={dataLabel}>Risk</div>
-              <div mix={riskValue(data.riskLevel)}>{data.riskLevel}</div>
-            </div>
+          <div mix={dataBlock}>
+            <div mix={dataLabel}>Risk</div>
+            <div mix={riskValue(data.riskLevel)}>{data.riskLevel}</div>
           </div>
         </div>
 

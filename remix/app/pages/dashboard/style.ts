@@ -1,4 +1,4 @@
-// Dashboard styles — clean modern, flex row layout
+// Dashboard styles — clean modern, grid layout
 import { css } from 'remix/ui'
 import { SURFACE_BODY, FONT_UI } from '../../constants/theme.ts'
 import type { RiskLevel } from './types.ts'
@@ -12,14 +12,16 @@ export const page = css({
 })
 
 export const topBar = css({
-  display: 'flex',
+  display: 'grid',
+  gridTemplateColumns: '8fr 1fr 2fr 2fr',
   alignItems: 'center',
-  padding: '24px 32px',
+  padding: '20px 32px',
   borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
+  gap: '0',
 })
 
 export const statusSection = css({
-  flex: 1,
+  minWidth: 0,
 })
 
 export const statusText = css({
@@ -39,28 +41,13 @@ export const statusSub = css({
 
 export const divider = css({
   width: '1px',
-  height: '48px',
+  height: '36px',
   backgroundColor: 'rgba(255, 255, 255, 0.10)',
-  margin: '0 32px',
-  flexShrink: 0,
-})
-
-export const dataSection = css({
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gap: '0',
+  justifySelf: 'center',
 })
 
 export const dataBlock = css({
   padding: '0',
-})
-
-export const dataBlockDivider = css({
-  width: '1px',
-  backgroundColor: 'rgba(255, 255, 255, 0.10)',
-  justifySelf: 'center',
-  height: '32px',
-  alignSelf: 'center',
 })
 
 export const dataLabel = css({
@@ -87,7 +74,7 @@ export const riskColors: Record<RiskLevel, string> = {
 }
 
 export const riskValue = (level: RiskLevel) => css({
-  fontSize: '24px',
+  fontSize: '20px',
   fontWeight: 600,
   color: riskColors[level],
   fontFamily: FONT_UI,
