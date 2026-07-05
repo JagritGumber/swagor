@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { Identicon } from './identicon.tsx'
 import { SURFACE_HEADER, BORDER_HEADER, TEXT_PRIMARY, TEXT_MUTED, FONT_UI } from '../constants/theme.ts'
+import { NativeSelect, NativeSelectOption } from './native-select.tsx'
 
 export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: boolean }>) {
   const { user, hideLinks } = handle.props
@@ -73,71 +74,52 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
           </nav>
         )}
 
-        {/* Network Selector */}
+        {/* Network + Profile */}
         {!hideLinks && (
           <div
             mix={css({
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
               height: '100%',
             })}
           >
-            <select
+            <div
               mix={css({
-                appearance: 'none',
-                background: 'transparent',
-                border: 'none',
-                borderRadius: '0',
-                color: TEXT_PRIMARY,
-                fontFamily: FONT_UI,
-                fontSize: '12px',
-                fontWeight: 500,
-                padding: '0 8px',
-                cursor: 'pointer',
-                backgroundImage: 'none',
+                borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
                 height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                ':hover': { color: '#f1f5f9' },
-                '& option': {
-                  background: '#0a0e14',
-                  color: '#f1f5f9',
-                },
               })}
             >
-              <option value="testnet">Testnet</option>
-              <option value="mainnet" disabled>Mainnet (soon)</option>
-            </select>
+              <NativeSelect value="testnet">
+                <NativeSelectOption value="testnet">Testnet</NativeSelectOption>
+                <NativeSelectOption value="mainnet" disabled>Mainnet (soon)</NativeSelectOption>
+              </NativeSelect>
+            </div>
+
+            {displayAddress && (
+              <div
+                mix={css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: TEXT_MUTED,
+                  fontSize: '13px',
+                  fontFamily: FONT_UI,
+                  fontWeight: 500,
+                  padding: '0 16px',
+                  borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
+                  height: '100%',
+                })}
+              >
+                <Identicon address={user!.address} size={20} />
+                <span mix={css({ fontFamily: "'JetBrains Mono', ui-monospace, monospace" })}>
+                  {displayAddress}
+                </span>
+              </div>
+            )}
           </div>
         )}
 
-        {displayAddress ? (
-          <div
-            mix={css({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              color: TEXT_MUTED,
-              fontSize: '13px',
-              fontFamily: FONT_UI,
-              fontWeight: 500,
-              padding: '0 16px',
-              borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
-              height: '100%',
-            })}
-          >
-            <Identicon address={user!.address} size={20} />
-            <span
-              mix={css({
-                fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-              })}
-            >
-              {displayAddress}
-            </span>
-          </div>
-        ) : !hideLinks ? (
+        {!displayAddress && !hideLinks && (
           <a
             href="/login"
             mix={css({
@@ -145,12 +127,17 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
               textDecoration: 'none',
               fontSize: '13px',
               fontWeight: 500,
+              borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
+              padding: '0 16px',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
               ':hover': { color: TEXT_PRIMARY },
             })}
           >
             Sign in
           </a>
-        ) : null}
+        )}
       </div>
     )
   }
