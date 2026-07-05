@@ -17,7 +17,7 @@ const select = css({
   borderRadius: 0,
   border: 'none',
   background: 'transparent',
-  padding: '0 24px 0 8px',
+  padding: '0 24px 0 16px',
   fontSize: '13px',
   fontWeight: 500,
   fontFamily: FONT_UI,
