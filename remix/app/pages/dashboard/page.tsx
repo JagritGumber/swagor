@@ -16,7 +16,8 @@ import {
   toggleKnob,
   dataLabel,
   dataValue,
-  changeText,
+  labelRow,
+  infoTooltip,
   riskValue,
   metricsRow,
   metricBlock,
@@ -58,8 +59,6 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
   return () => {
     const { data, user } = handle.props
     const isActive = data.agentStatus === 'active'
-    const changeUp = data.change24hUsd >= 0
-    const changeSign = changeUp ? '+' : ''
     const dailyUp = data.dailyAvgPnl >= 0
     const totalUp = data.totalPnl >= 0
     const ddColor = data.maxDrawdown < 5 ? '#00ff85' : data.maxDrawdown < 10 ? '#f59e0b' : '#ff5050'
@@ -91,9 +90,11 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
           </div>
 
           <div mix={equityBlock}>
-            <div mix={dataLabel}>Total Equity</div>
+            <div mix={labelRow}>
+              <div mix={dataLabel}>Wallet Balance</div>
+              <span mix={infoTooltip} title="This is the wallet balance of Selbo">ℹ</span>
+            </div>
             <div mix={dataValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-            <div mix={changeText(changeUp)}>{changeSign}${Math.abs(data.change24hUsd).toFixed(2)} (24h)</div>
           </div>
 
           <div mix={riskBlock}>

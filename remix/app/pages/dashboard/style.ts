@@ -107,12 +107,44 @@ export const dataValue = css({
   fontFamily: FONT_UI,
 })
 
-export const changeText = (up: boolean) => css({
+export const labelRow = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  marginBottom: '2px',
+})
+
+export const infoTooltip = css({
   fontSize: '12px',
-  fontWeight: 500,
-  color: up ? '#00ff85' : '#ff5050',
+  color: '#6b7280',
+  cursor: 'help',
   fontFamily: FONT_UI,
-  marginTop: '2px',
+  position: 'relative',
+  '&:hover': {
+    color: '#94a3b8',
+  },
+  '&::after': {
+    content: 'attr(title)',
+    position: 'absolute',
+    bottom: '100%',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    padding: '6px 10px',
+    borderRadius: '6px',
+    backgroundColor: '#1e293b',
+    border: '1px solid rgba(255, 255, 255, 0.10)',
+    color: '#e2e8f0',
+    fontSize: '11px',
+    fontWeight: 500,
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+    opacity: 0,
+    transition: 'opacity 0.15s',
+    zIndex: 10,
+  },
+  '&:hover::after': {
+    opacity: 1,
+  },
 })
 
 export const riskColors: Record<RiskLevel, string> = {
