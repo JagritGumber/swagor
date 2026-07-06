@@ -18,6 +18,13 @@ export async function runMigrations() {
 
   for (const file of sqlFiles) {
     const sql = readFileSync(join(migrationsDir, file), 'utf-8')
-    await db.execute(sql)
+    const statements = sql
+      .split('--> statement-breakpoint')
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+
+    for (const stmt of statements) {
+      await db.execute(stmt)
+    }
   }
 }
