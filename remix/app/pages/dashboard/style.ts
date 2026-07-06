@@ -97,7 +97,6 @@ export const dataLabel = css({
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
   fontFamily: FONT_UI,
-  marginBottom: '2px',
 })
 
 export const dataValue = css({
@@ -111,6 +110,7 @@ export const labelRow = css({
   display: 'flex',
   alignItems: 'center',
   gap: '6px',
+  lineHeight: '18px',
   marginBottom: '2px',
 })
 
