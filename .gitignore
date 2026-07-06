@@ -52,6 +52,8 @@ cloudflare-env.d.ts
 references/
 .idea/
 .claude/
+.superpowers/
+docs/superpowers/
 
 # local backtest / scratch artifacts (not source)
 artifacts/
