@@ -31,7 +31,7 @@ const sessionAuthScheme = createSessionAuthScheme<UserIdentity, { userId: string
     return session.get('auth') as { userId: string } | null
   },
   async verify(value) {
-    return getUserById(value.userId)
+    return await getUserById(value.userId)
   },
   invalidate(session) {
     session.unset('auth')

@@ -35,7 +35,7 @@ export async function login(context: AppContext) {
     return apiError('SIGNATURE_FAILED', 'Signature verification failed', 401)
   }
 
-  const user = resolveUser(address)
+  const user = await resolveUser(address)
   const circleWallet = await allocateCircleWallet(user.id)
 
   const session = completeAuth(context)
