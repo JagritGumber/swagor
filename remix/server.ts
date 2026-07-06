@@ -3,9 +3,6 @@ if (typeof globalThis.XMLHttpRequest === 'undefined') {
   globalThis.XMLHttpRequest = XHR2 as typeof globalThis.XMLHttpRequest
 }
 
-import { runMigrations } from './app/db/migrate.ts'
-await runMigrations()
-
 import * as http from 'node:http'
 import { createRequestListener } from 'remix/node-fetch-server'
 
