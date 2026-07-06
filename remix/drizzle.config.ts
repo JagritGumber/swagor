@@ -1,7 +1,6 @@
 import { defineConfig } from 'drizzle-kit'
 
 const driver = process.env.DRIZZLE_DRIVER === 'pglite' ? 'pglite' as const : undefined
-const isFileUrl = (url: string) => !url.startsWith('postgres')
 
 export default defineConfig({
   schema: './app/db/schema.ts',
