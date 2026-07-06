@@ -152,7 +152,6 @@ export const metricLabel = css({
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
   fontFamily: FONT_UI,
-  marginBottom: '4px',
 })
 
 export const metricValue = css({

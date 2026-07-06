@@ -98,12 +98,18 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
           </div>
 
           <div mix={riskBlock}>
-            <div mix={dataLabel}>Risk</div>
+            <div mix={labelRow}>
+              <div mix={dataLabel}>Risk</div>
+              <Tooltip content="Current risk exposure level based on open positions" />
+            </div>
             <div mix={riskValue(data.riskLevel)}>{data.riskLevel}</div>
           </div>
 
           <div mix={emptyBlock}>
-            <span mix={tradingLabel}>Trading</span>
+            <div mix={labelRow}>
+              <span mix={tradingLabel}>Trading</span>
+              <Tooltip content="Toggle automated trading on or off" />
+            </div>
             <button mix={toggleButton(isActive)} type="button">
               <span mix={toggleKnob(isActive)} />
             </button>
@@ -112,27 +118,45 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
 
         <div mix={metricsRow}>
           <div mix={metricBlock}>
-            <div mix={metricLabel}>Daily Avg P&L</div>
+            <div mix={labelRow}>
+              <div mix={metricLabel}>Daily Avg P&L</div>
+              <Tooltip content="Average daily profit or loss over the active period" />
+            </div>
             <div mix={dailyUp ? metricValueGreen : metricValueRed}>{dailyUp ? '+' : ''}${data.dailyAvgPnl.toFixed(2)}</div>
           </div>
           <div mix={metricBlock}>
-            <div mix={metricLabel}>Total P&L</div>
+            <div mix={labelRow}>
+              <div mix={metricLabel}>Total P&L</div>
+              <Tooltip content="Cumulative profit or loss since activation" />
+            </div>
             <div mix={totalUp ? metricValueGreen : metricValueRed}>{totalUp ? '+' : ''}${data.totalPnl.toFixed(2)}</div>
           </div>
           <div mix={metricBlock}>
-            <div mix={metricLabel}>Sharpe Ratio</div>
+            <div mix={labelRow}>
+              <div mix={metricLabel}>Sharpe Ratio</div>
+              <Tooltip content="Risk-adjusted return measure (higher is better)" />
+            </div>
             <div mix={metricValue}>{data.sharpeRatio.toFixed(2)}</div>
           </div>
           <div mix={metricBlock}>
-            <div mix={metricLabel}>Win Rate</div>
+            <div mix={labelRow}>
+              <div mix={metricLabel}>Win Rate</div>
+              <Tooltip content="Percentage of closed trades that were profitable" />
+            </div>
             <div mix={metricValue}>{data.winRate.toFixed(1)}%</div>
           </div>
           <div mix={metricBlock}>
-            <div mix={metricLabel}>Total Trades</div>
+            <div mix={labelRow}>
+              <div mix={metricLabel}>Total Trades</div>
+              <Tooltip content="Total number of trades executed since activation" />
+            </div>
             <div mix={metricValue}>{data.totalTrades}</div>
           </div>
           <div mix={metricBlock}>
-            <div mix={metricLabel}>Max Drawdown</div>
+            <div mix={labelRow}>
+              <div mix={metricLabel}>Max Drawdown</div>
+              <Tooltip content="Largest peak-to-trough decline in equity" />
+            </div>
             <div mix={{ fontSize: '18px', fontWeight: 600, color: ddColor, fontFamily: "'Inter', system-ui, sans-serif" } as any}>{data.maxDrawdown.toFixed(1)}%</div>
           </div>
         </div>

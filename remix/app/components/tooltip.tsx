@@ -1,9 +1,8 @@
-// Tooltip component — uses position: fixed to escape overflow containers
+// Tooltip component — measures actual content size and clamps to viewport
 import { clientEntry, css, on, type Handle, type RemixNode, type SerializableProps } from 'remix/ui'
 import { FONT_UI } from '../constants/theme.ts'
 import { InfoIcon } from './icons/info.tsx'
 
-const TOOLTIP_HEIGHT = 30
 const GAP = 8
 const VIEWPORT_PAD = 8
 const SHOW_DELAY = 220
@@ -30,19 +29,28 @@ const base = {
   whiteSpace: 'nowrap',
   pointerEvents: 'none',
   zIndex: 9999,
-  transition: 'opacity 0.15s ease, transform 0.15s ease, filter 0.15s ease',
 } as const
 
-const tooltipStyle = (pos: { top: number; left: number }, above: boolean, shown: boolean) => css({
+const hiddenStyle = css({
+  ...base,
+  visibility: 'hidden',
+  position: 'fixed',
+  top: '-9999px',
+  left: '-9999px',
+})
+
+const tooltipStyle = (pos: { top: number; left: number }, above: boolean) => css({
   ...base,
   top: `${pos.top}px`,
   left: `${pos.left}px`,
-  transform: shown
-    ? 'translateX(-50%) scale(1)'
-    : 'translateX(-50%) scale(0.92)',
   transformOrigin: above ? 'bottom center' : 'top center',
+})
+
+const tooltipAnim = (shown: boolean) => css({
+  transform: shown ? 'scale(1)' : 'scale(0.92)',
   opacity: shown ? 1 : 0,
   filter: shown ? 'blur(0px)' : 'blur(4px)',
+  transition: 'opacity 0.15s ease, transform 0.15s ease, filter 0.15s ease',
 })
 
 interface TooltipProps extends SerializableProps {
@@ -58,6 +66,7 @@ export const Tooltip = clientEntry(
     let pos = { top: 0, left: 0 }
     let above = true
     let showTimer: ReturnType<typeof setTimeout> | null = null
+    let tooltipId = 'tip-' + Math.random().toString(36).slice(2, 8)
 
     return () => {
       const { content, children } = handle.props
@@ -69,19 +78,38 @@ export const Tooltip = clientEntry(
             on<HTMLElement>('mouseenter', (e) => {
               if (showTimer) clearTimeout(showTimer)
 
-              const rect = (e.target as HTMLElement).getBoundingClientRect()
+              const trigger = e.target as HTMLElement
+              const triggerRect = trigger.getBoundingClientRect()
               const vw = window.innerWidth
+              const vh = window.innerHeight
 
-              const spaceAbove = rect.top
-              above = spaceAbove >= TOOLTIP_HEIGHT + GAP + VIEWPORT_PAD
-
-              pos = {
-                top: above
-                  ? rect.top - GAP - TOOLTIP_HEIGHT
-                  : rect.bottom + GAP,
-                left: Math.max(VIEWPORT_PAD, Math.min(rect.left + rect.width / 2, vw - VIEWPORT_PAD)),
+              // Measure actual tooltip content size
+              const measured = document.getElementById(tooltipId)
+              let tipW = 150
+              let tipH = 28
+              if (measured) {
+                tipW = measured.offsetWidth || tipW
+                tipH = measured.offsetHeight || tipH
               }
 
+              // Decide above or below
+              const spaceAbove = triggerRect.top
+              const spaceBelow = vh - triggerRect.bottom
+              above = spaceAbove >= tipH + GAP + VIEWPORT_PAD
+                || spaceAbove >= spaceBelow
+
+              // Compute x: center on trigger, clamp full content rect to viewport
+              const centerX = triggerRect.left + triggerRect.width / 2
+              const minX = VIEWPORT_PAD
+              const maxX = vw - VIEWPORT_PAD - tipW
+              const x = Math.max(minX, Math.min(centerX - tipW / 2, maxX))
+
+              // Compute y: above or below trigger
+              const y = above
+                ? triggerRect.top - GAP - tipH
+                : triggerRect.bottom + GAP
+
+              pos = { top: y, left: x }
               positioned = true
               handle.update()
 
@@ -98,7 +126,19 @@ export const Tooltip = clientEntry(
           ]}
         >
           {children ?? <InfoIcon size={16} variant="bold" />}
-          {positioned && <span mix={tooltipStyle(pos, above, shown)}>{content}</span>}
+          {/* Hidden measurement element — always rendered */}
+          {!positioned && (
+            <span id={tooltipId} mix={hiddenStyle}>{content}</span>
+          )}
+          {/* Positioned visible tooltip */}
+          {positioned && (
+            <span
+              id={tooltipId}
+              mix={[tooltipStyle(pos, above), tooltipAnim(shown)]}
+            >
+              {content}
+            </span>
+          )}
         </span>
       )
     }
