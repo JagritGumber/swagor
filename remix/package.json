@@ -14,10 +14,12 @@
   "dependencies": {
     "@alova/adapter-xhr": "^2.3.1",
     "@circle-fin/developer-controlled-wallets": "^10.8.0",
+    "@electric-sql/pglite": "^0.5.4",
     "@noble/curves": "^2.2.0",
     "@noble/hashes": "^2.2.0",
     "@phosphor-icons/web": "^2.1.2",
     "alova": "^3.5.1",
+    "drizzle-orm": "^0.45.2",
     "lightweight-charts": "^5.2.0",
     "remix": "^3.0.0-beta.4",
     "three": "^0.185.0",
@@ -27,6 +29,7 @@
     "@types/node": "latest",
     "@types/three": "^0.185.0",
     "@typescript/native-preview": "^7.0.0-dev.20260705.1",
+    "drizzle-kit": "^0.31.10",
     "typescript": "latest"
   }
 }
