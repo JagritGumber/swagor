@@ -51,21 +51,17 @@ export async function resolveUser(address: string): Promise<UserIdentity> {
 export async function getUserById(userId: string): Promise<UserIdentity | null> {
   const db = await getDb()
 
-  const user = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, userId))
-    .then(rows => rows[0] ?? null)
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    with: {
+      wallets: { columns: { address: true } },
+    },
+  })
 
   if (!user) return null
 
-  const userWallets = await db
-    .select({ address: wallets.address })
-    .from(wallets)
-    .where(eq(wallets.userId, userId))
-
   return {
     id: user.id,
-    wallets: userWallets.map(w => ({ address: w.address })),
+    wallets: user.wallets.map(w => ({ address: w.address })),
   }
 }
