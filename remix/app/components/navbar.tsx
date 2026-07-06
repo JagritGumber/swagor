@@ -4,13 +4,38 @@ import { SURFACE_HEADER, BORDER_HEADER, TEXT_PRIMARY, TEXT_MUTED, FONT_UI } from
 import { NativeSelect, NativeSelectOption } from './native-select.tsx'
 import { ProfileMenu } from './profile-menu.tsx'
 
-export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: boolean; currentPath?: string }>) {
-  const { user, hideLinks, currentPath } = handle.props
+export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: boolean; currentPath?: string; publicRoute?: boolean }>) {
+  const { user, hideLinks, currentPath, publicRoute } = handle.props
 
   return () => {
     const displayAddress = user
       ? `${user.address.slice(0, 6)}...${user.address.slice(-4)}`
       : null
+
+    if (publicRoute) {
+      return (
+        <nav
+          mix={css({
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '20px 96px',
+            fontFamily: FONT_UI,
+            fontSize: '14px',
+            color: TEXT_PRIMARY,
+            fontWeight: 500,
+          })}
+        >
+          <a
+            href="/"
+            rmx-document
+            mix={css({ color: TEXT_PRIMARY, textDecoration: 'none', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.5px' })}
+          >
+            Selbo
+          </a>
+        </nav>
+      )
+    }
 
     return (
       <div
@@ -29,7 +54,7 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
         })}
       >
         <a
-          href="/dashboard"
+          href="/"
           rmx-document
           mix={css({
             color: TEXT_PRIMARY,

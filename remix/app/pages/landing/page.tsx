@@ -8,6 +8,7 @@ export function LandingPage(handle: Handle<{ user?: { address: string } }>) {
     <Document
       title="Selbo - AI Trading Agent"
       user={user}
+      publicRoute
       head={
         <>
           <meta name="color-scheme" content="dark" />

@@ -10,65 +10,6 @@ export const heroContainer = css({
   position: 'relative',
 })
 
-export const nav = css({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '20px 96px',
-})
-
-export const navLogo = css({
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px',
-})
-
-export const logoText = css({
-  fontSize: '24px',
-  fontWeight: '700',
-  letterSpacing: '-0.5px',
-})
-
-export const logoBadge = css({
-  fontSize: '10px',
-  fontWeight: '600',
-  color: '#00d4ff',
-  letterSpacing: '1.5px',
-  padding: '4px 8px',
-  border: '1px solid rgba(0, 212, 255, 0.3)',
-  borderRadius: '4px',
-})
-
-export const navLinks = css({
-  display: 'flex',
-  alignItems: 'center',
-  gap: '32px',
-})
-
-export const navLink = css({
-  color: '#8892a4',
-  textDecoration: 'none',
-  fontSize: '14px',
-  fontWeight: '500',
-  transition: 'color 0.2s',
-  ':hover': { color: '#ffffff' },
-})
-
-export const navCta = css({
-  backgroundColor: '#00d4ff',
-  color: '#0a0e14',
-  padding: '12px 24px',
-  borderRadius: '6px',
-  textDecoration: 'none',
-  fontSize: '14px',
-  fontWeight: '600',
-  transition: 'transform 0.2s, box-shadow 0.2s',
-  ':hover': {
-    transform: 'translateY(-1px)',
-    boxShadow: '0 4px 12px rgba(0, 212, 255, 0.3)',
-  },
-})
-
 export const heroSection = css({
   display: 'flex',
   alignItems: 'center',

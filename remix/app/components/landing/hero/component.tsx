@@ -6,19 +6,6 @@ import * as s from './style.ts'
 export function Hero(handle: Handle<Record<string, never>>) {
   return () => (
     <div mix={s.heroContainer}>
-      <nav mix={s.nav}>
-        <div mix={s.navLogo}>
-          <span mix={s.logoText}>Selbo</span>
-          <span mix={s.logoBadge}>AI TRADING AGENT</span>
-        </div>
-        <div mix={s.navLinks}>
-          <a href="#how-it-works" mix={s.navLink}>How it works</a>
-          <a href="#transparency" mix={s.navLink}>Transparency</a>
-          <a href="#faq" mix={s.navLink}>FAQ</a>
-          <a href="#request-access" mix={s.navCta}>Request Beta Access</a>
-        </div>
-      </nav>
-
       <section mix={s.heroSection}>
         <div mix={s.heroContent}>
           <div mix={s.contentGroup}>

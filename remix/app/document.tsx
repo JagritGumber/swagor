@@ -12,13 +12,14 @@ export interface DocumentProps {
   hideNavLinks?: boolean
   user?: { address: string }
   currentPath?: string
+  publicRoute?: boolean
 }
 
 const DEFAULT_TITLE = readAppDisplayName('Remix')
 
 export function Document(handle: Handle<DocumentProps>) {
   return () => {
-    let { children, head, title = DEFAULT_TITLE, hideNav, hideNavLinks, user, currentPath } = handle.props
+    let { children, head, title = DEFAULT_TITLE, hideNav, hideNavLinks, user, currentPath, publicRoute } = handle.props
 
     return (
       <html lang="en">
@@ -29,8 +30,8 @@ export function Document(handle: Handle<DocumentProps>) {
           <title>{title}</title>
           {head}
         </head>
-        <body mix={css({ margin: 0, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' })}>
-          {!hideNav && <Navbar user={user} hideLinks={hideNavLinks} currentPath={currentPath} />}
+          <body mix={css({ margin: 0, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#0a0e14' })}>
+          {!hideNav && <Navbar user={user} hideLinks={hideNavLinks} currentPath={currentPath} publicRoute={publicRoute} />}
           <div mix={css({ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' })}>
             {children}
           </div>
