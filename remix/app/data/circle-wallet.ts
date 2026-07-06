@@ -2,6 +2,9 @@ import { DatabaseSync } from 'node:sqlite'
 import * as path from 'node:path'
 import * as fs from 'node:fs'
 import { randomUUID } from 'node:crypto'
+import { createRequire } from 'node:module'
+
+const require = createRequire(import.meta.url)
 
 const DB_DIR = path.resolve('.data')
 const DB_PATH = path.join(DB_DIR, 'auth.db')
@@ -40,7 +43,7 @@ export type CircleWallet = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let sdkInstance: any = null
 
-async function getCircleSdk() {
+function getCircleSdk() {
   if (sdkInstance) return sdkInstance
 
   const apiKey = process.env.CIRCLE_API_KEY
@@ -50,7 +53,7 @@ async function getCircleSdk() {
     throw new Error('CIRCLE_API_KEY and CIRCLE_ENTITY_SECRET environment variables are required')
   }
 
-  const { initiateDeveloperControlledWalletsClient } = await import('@circle-fin/developer-controlled-wallets')
+  const { initiateDeveloperControlledWalletsClient } = require('@circle-fin/developer-controlled-wallets')
 
   sdkInstance = initiateDeveloperControlledWalletsClient({
     apiKey,
@@ -68,7 +71,7 @@ export async function allocateCircleWallet(userId: string): Promise<CircleWallet
   const existing = getCircleWalletForUser(userId)
   if (existing) return existing
 
-  const sdk = await getCircleSdk()
+  const sdk = getCircleSdk()
 
   const walletSet = await sdk.createWalletSet({
     name: `remix-${userId.slice(0, 8)}`,
