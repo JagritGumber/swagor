@@ -5,14 +5,14 @@ import { NativeSelect, NativeSelectOption } from './native-select.tsx'
 import { ProfileMenu } from './profile-menu.tsx'
 
 export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: boolean; currentPath?: string; publicRoute?: boolean }>) {
-  const { user, hideLinks, currentPath } = handle.props
+  const { user, hideLinks, currentPath, publicRoute } = handle.props
 
   return () => {
     const displayAddress = user
       ? `${user.address.slice(0, 6)}...${user.address.slice(-4)}`
       : null
 
-    if (!user && !hideLinks) {
+    if (publicRoute) {
       return (
         <nav
           mix={css({
