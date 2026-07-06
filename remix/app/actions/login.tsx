@@ -3,6 +3,7 @@ import { completeAuth } from 'remix/auth'
 import type { AppContext } from '../router.ts'
 import { LoginPage } from '../pages/login.tsx'
 import { resolveUser } from '../data/user.ts'
+import { allocateCircleWallet } from '../data/circle-wallet.ts'
 import { consumeNonce } from '../data/nonce.ts'
 import { verifyEthereumSignature } from '../lib/verify-signature.ts'
 import { apiSuccess, apiError } from '../lib/api/response.ts'
@@ -35,6 +36,7 @@ export async function login(context: AppContext) {
   }
 
   const user = resolveUser(address)
+  const circleWallet = await allocateCircleWallet(user.id)
 
   const session = completeAuth(context)
   session.set('auth', { userId: user.id })
