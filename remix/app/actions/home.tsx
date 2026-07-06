@@ -12,6 +12,6 @@ export async function home(context: AppContext) {
 
   return context.render(
     <AgentPage candles={candles} segments={segments} auction={auction} regime={regime}
-      read={read} plan={plan} asset={asset} publicRoute />,
+      read={read} plan={plan} asset={asset} />,
   )
 }
