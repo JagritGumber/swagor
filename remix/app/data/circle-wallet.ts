@@ -1,36 +1,8 @@
-import { DatabaseSync } from 'node:sqlite'
-import * as path from 'node:path'
-import * as fs from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
-
-const require = createRequire(import.meta.url)
-
-const DB_DIR = path.resolve('.data')
-const DB_PATH = path.join(DB_DIR, 'auth.db')
-
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true })
-}
-
-const db = new DatabaseSync(DB_PATH)
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS circle_wallets (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id),
-    circle_wallet_id TEXT NOT NULL UNIQUE,
-    circle_wallet_address TEXT NOT NULL,
-    created_at TEXT NOT NULL
-  )
-`)
-
-const insertWallet = db.prepare(
-  'INSERT INTO circle_wallets (id, user_id, circle_wallet_id, circle_wallet_address, created_at) VALUES (?, ?, ?, ?, ?)'
-)
-const findWalletByUserId = db.prepare(
-  'SELECT id, user_id, circle_wallet_id, circle_wallet_address, created_at FROM circle_wallets WHERE user_id = ?'
-)
+import { eq } from 'drizzle-orm'
+import { getDb } from '../db/client.ts'
+import { circleWallets } from '../db/schema.ts'
 
 export type CircleWallet = {
   id: string
@@ -53,6 +25,7 @@ function getCircleSdk() {
     throw new Error('CIRCLE_API_KEY and CIRCLE_ENTITY_SECRET environment variables are required')
   }
 
+  const require = createRequire(import.meta.url)
   const { initiateDeveloperControlledWalletsClient } = require('@circle-fin/developer-controlled-wallets')
 
   sdkInstance = initiateDeveloperControlledWalletsClient({
@@ -62,13 +35,28 @@ function getCircleSdk() {
   return sdkInstance
 }
 
-export function getCircleWalletForUser(userId: string): CircleWallet | null {
-  const wallet = findWalletByUserId.get(userId) as CircleWallet | undefined
-  return wallet || null
+export async function getCircleWalletForUser(userId: string): Promise<CircleWallet | null> {
+  const db = await getDb()
+
+  const wallet = await db
+    .select()
+    .from(circleWallets)
+    .where(eq(circleWallets.userId, userId))
+    .then(rows => rows[0] ?? null)
+
+  if (!wallet) return null
+
+  return {
+    id: wallet.id,
+    user_id: wallet.userId,
+    circle_wallet_id: wallet.circleWalletId,
+    circle_wallet_address: wallet.circleWalletAddress,
+    created_at: wallet.createdAt.toISOString(),
+  }
 }
 
 export async function allocateCircleWallet(userId: string): Promise<CircleWallet> {
-  const existing = getCircleWalletForUser(userId)
+  const existing = await getCircleWalletForUser(userId)
   if (existing) return existing
 
   const sdk = getCircleSdk()
@@ -88,16 +76,23 @@ export async function allocateCircleWallet(userId: string): Promise<CircleWallet
   const wallet = created.data?.wallets?.[0]
   if (!wallet) throw new Error('Circle wallet creation returned no wallet')
 
-  const now = new Date().toISOString()
+  const db = await getDb()
+  const now = new Date()
   const id = randomUUID()
 
-  insertWallet.run(id, userId, wallet.id, wallet.address.toLowerCase(), now)
+  await db.insert(circleWallets).values({
+    id,
+    userId,
+    circleWalletId: wallet.id,
+    circleWalletAddress: wallet.address.toLowerCase(),
+    createdAt: now,
+  })
 
   return {
     id,
     user_id: userId,
     circle_wallet_id: wallet.id,
     circle_wallet_address: wallet.address.toLowerCase(),
-    created_at: now,
+    created_at: now.toISOString(),
   }
 }
