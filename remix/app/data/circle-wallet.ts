@@ -37,9 +37,12 @@ export type CircleWallet = {
   created_at: string
 }
 
-const CIRCLE_API_BASE = 'https://api.circle.com/v2/developer'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let sdkInstance: any = null
 
-function getCircleHeaders() {
+async function getCircleSdk() {
+  if (sdkInstance) return sdkInstance
+
   const apiKey = process.env.CIRCLE_API_KEY
   const entitySecret = process.env.CIRCLE_ENTITY_SECRET
 
@@ -47,11 +50,13 @@ function getCircleHeaders() {
     throw new Error('CIRCLE_API_KEY and CIRCLE_ENTITY_SECRET environment variables are required')
   }
 
-  return {
-    Authorization: `Bearer ${apiKey}`,
-    'Content-Type': 'application/json',
-    'X-Entity-Secret': entitySecret,
-  }
+  const { initiateDeveloperControlledWalletsClient } = await import('@circle-fin/developer-controlled-wallets')
+
+  sdkInstance = initiateDeveloperControlledWalletsClient({
+    apiKey,
+    entitySecret,
+  })
+  return sdkInstance
 }
 
 export function getCircleWalletForUser(userId: string): CircleWallet | null {
@@ -63,41 +68,21 @@ export async function allocateCircleWallet(userId: string): Promise<CircleWallet
   const existing = getCircleWalletForUser(userId)
   if (existing) return existing
 
-  const headers = getCircleHeaders()
+  const sdk = await getCircleSdk()
 
-  const walletSetRes = await fetch(`${CIRCLE_API_BASE}/wallet-sets`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ name: `remix-${userId.slice(0, 8)}` }),
+  const walletSet = await sdk.createWalletSet({
+    name: `remix-${userId.slice(0, 8)}`,
   })
-
-  if (!walletSetRes.ok) {
-    const body = await walletSetRes.text()
-    throw new Error(`Circle wallet set creation failed: ${walletSetRes.status} ${body.slice(0, 200)}`)
-  }
-
-  const walletSetData = await walletSetRes.json() as { data: { walletSet: { id: string } } }
-  const walletSetId = walletSetData.data?.walletSet?.id
+  const walletSetId = walletSet.data?.walletSet?.id
   if (!walletSetId) throw new Error('Circle wallet set creation returned no id')
 
-  const walletRes = await fetch(`${CIRCLE_API_BASE}/wallets`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      accountType: 'SCA',
-      blockchains: ['ARC-TESTNET'],
-      walletSetId,
-      count: 1,
-    }),
+  const created = await sdk.createWallets({
+    accountType: 'SCA',
+    blockchains: ['ARC-TESTNET'],
+    walletSetId,
+    count: 1,
   })
-
-  if (!walletRes.ok) {
-    const body = await walletRes.text()
-    throw new Error(`Circle wallet creation failed: ${walletRes.status} ${body.slice(0, 200)}`)
-  }
-
-  const walletData = await walletRes.json() as { data: { wallets: Array<{ id: string; address: string }> } }
-  const wallet = walletData.data?.wallets?.[0]
+  const wallet = created.data?.wallets?.[0]
   if (!wallet) throw new Error('Circle wallet creation returned no wallet')
 
   const now = new Date().toISOString()
