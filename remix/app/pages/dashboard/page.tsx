@@ -1,6 +1,7 @@
 // Dashboard page — full layout with market read, positions, activity
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
+import { Tooltip } from '../../components/tooltip.tsx'
 import type { DashboardData } from './types.ts'
 import {
   page,
@@ -17,7 +18,6 @@ import {
   dataLabel,
   dataValue,
   labelRow,
-  infoTooltip,
   riskValue,
   metricsRow,
   metricBlock,
@@ -92,7 +92,7 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
           <div mix={equityBlock}>
             <div mix={labelRow}>
               <div mix={dataLabel}>Wallet Balance</div>
-              <span mix={infoTooltip} title="This is the wallet balance of Selbo">ℹ</span>
+              <Tooltip content="This is the wallet balance of Selbo" />
             </div>
             <div mix={dataValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
           </div>

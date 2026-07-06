@@ -114,39 +114,6 @@ export const labelRow = css({
   marginBottom: '2px',
 })
 
-export const infoTooltip = css({
-  fontSize: '12px',
-  color: '#6b7280',
-  cursor: 'help',
-  fontFamily: FONT_UI,
-  position: 'relative',
-  '&:hover': {
-    color: '#94a3b8',
-  },
-  '&::after': {
-    content: 'attr(title)',
-    position: 'absolute',
-    bottom: '100%',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    padding: '6px 10px',
-    borderRadius: '6px',
-    backgroundColor: '#1e293b',
-    border: '1px solid rgba(255, 255, 255, 0.10)',
-    color: '#e2e8f0',
-    fontSize: '11px',
-    fontWeight: 500,
-    whiteSpace: 'nowrap',
-    pointerEvents: 'none',
-    opacity: 0,
-    transition: 'opacity 0.15s',
-    zIndex: 10,
-  },
-  '&:hover::after': {
-    opacity: 1,
-  },
-})
-
 export const riskColors: Record<RiskLevel, string> = {
   low: '#00ff85',
   medium: '#f59e0b',
