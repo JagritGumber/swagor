@@ -36,6 +36,7 @@ export const api = createAlova({
 export type CandlesResponse = ApiResponse<{ candles: Candle[] }>
 export type NonceResponse = ApiResponse<{ nonce: string }>
 export type LoginResponse = ApiResponse<{ redirect: string }>
+export type BalanceResponse = ApiResponse<{ balanceUsd: number }>
 
 export function getCandles(asset: string, interval: string, start: number, end: number) {
   return api.Get<CandlesResponse>('/api/candles', {
@@ -56,4 +57,10 @@ export function postLogin(address: string, signature: string, nonce: string) {
     { address, signature, nonce },
     { name: 'login' },
   )
+}
+
+export function fetchBalance() {
+  return api.Get<BalanceResponse>('/api/balance', {
+    name: 'balance',
+  })
 }

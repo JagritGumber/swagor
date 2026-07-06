@@ -228,7 +228,7 @@ export function renderChart(
         const t = (performance.now() - flash.start) / 400
         if (t < 1) {
           const alpha = Math.max(0, 1 - t) * 0.5
-          const flashColor = flash.side === 'up' ? `rgba(0, 255, 133, ${alpha})` : `rgba(255, 80, 80, ${alpha})`
+          const flashColor = flash.side === 'up' ? `rgba(0, 212, 255, ${alpha})` : `rgba(255, 80, 80, ${alpha})`
           rect(ctx).x(cx - cw / 2 - 1).y(bodyTop - 1).w(cw + 2).h(Math.max(1, bodyBottom - bodyTop + 2)).color(flashColor).fill()
         } else {
           flashTimestamps.delete(c.t)

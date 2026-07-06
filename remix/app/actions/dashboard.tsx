@@ -4,9 +4,29 @@ import { Auth } from 'remix/middleware/auth'
 import type { AppContext } from '../router.ts'
 import { DashboardPage } from '../pages/dashboard/page.tsx'
 import type { DashboardData } from '../pages/dashboard/types.ts'
+import { getCircleWalletForUser } from '../data/circle-wallet.ts'
+import { getWalletBalance } from '../data/balance.ts'
 
-const template: DashboardData = {
-  balanceUsd: 12847.32,
+async function fetchBalanceUsd(userId: string): Promise<number> {
+  try {
+    const wallet = await getCircleWalletForUser(userId)
+    if (!wallet) return 0
+    return await getWalletBalance(wallet.circle_wallet_address)
+  } catch {
+    return 0
+  }
+}
+
+async function fetchWalletAddress(userId: string): Promise<string> {
+  try {
+    const wallet = await getCircleWalletForUser(userId)
+    return wallet?.circle_wallet_address ?? ''
+  } catch {
+    return ''
+  }
+}
+
+const template: Omit<DashboardData, 'balanceUsd' | 'walletAddress'> = {
   agentStatus: 'active',
   riskLevel: 'low',
   statusMessage: 'Selbo is running smoothly',
@@ -54,5 +74,11 @@ export async function dashboard(context: AppContext) {
   if (!auth.ok) return redirect('/login')
   const user = { address: auth.identity.wallets[0].address }
 
-  return context.render(<DashboardPage data={template} user={user} />)
+  const [balanceUsd, walletAddress] = await Promise.all([
+    fetchBalanceUsd(auth.identity.id),
+    fetchWalletAddress(auth.identity.id),
+  ])
+  const data: DashboardData = { ...template, balanceUsd, walletAddress }
+
+  return context.render(<DashboardPage data={data} user={user} />)
 }

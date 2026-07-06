@@ -35,6 +35,7 @@ export interface PortfolioPerformance {
 
 export interface DashboardData {
   balanceUsd: number
+  walletAddress: string
   agentStatus: AgentStatus
   riskLevel: RiskLevel
   statusMessage: string

@@ -62,7 +62,7 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
                 transition: 'transform 0.1s, background-color 0.15s',
                 transform: 'scale(1)',
                 background: currentPath === '/agent' ? 'rgba(255, 255, 255, 0.10)' : 'transparent',
-                borderBottom: currentPath === '/agent' ? '2px solid #00ff85' : '2px solid transparent',
+                borderBottom: currentPath === '/agent' ? '2px solid #00d4ff' : '2px solid transparent',
                 '&:hover': { color: TEXT_PRIMARY },
                 '&:active': { transform: 'scale(0.95)' },
               })}
@@ -81,7 +81,7 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
                 transition: 'transform 0.1s, background-color 0.15s',
                 transform: 'scale(1)',
                 background: currentPath === '/dashboard' ? 'rgba(255, 255, 255, 0.10)' : 'transparent',
-                borderBottom: currentPath === '/dashboard' ? '2px solid #00ff85' : '2px solid transparent',
+                borderBottom: currentPath === '/dashboard' ? '2px solid #00d4ff' : '2px solid transparent',
                 '&:hover': { color: TEXT_PRIMARY },
                 '&:active': { transform: 'scale(0.95)' },
               })}

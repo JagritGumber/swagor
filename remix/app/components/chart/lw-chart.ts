@@ -26,7 +26,7 @@ const INTERVAL_MS: Record<string, number> = {
 }
 
 const SEG_BG: Record<string, string> = {
-  'trend-up': 'rgba(0, 255, 133, 0.06)',
+  'trend-up': 'rgba(0, 212, 255, 0.06)',
   'trend-down': 'rgba(255, 80, 80, 0.06)',
   'high-vol': 'rgba(255, 200, 50, 0.06)',
   'range': 'rgba(100, 150, 255, 0.06)',
@@ -89,12 +89,12 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
     crosshair: {
       mode: CrosshairMode.Normal,
       vertLine: {
-        color: 'rgba(0, 255, 133, 0.3)',
+        color: 'rgba(0, 212, 255, 0.3)',
         width: 1,
         labelBackgroundColor: '#0a0e14',
       },
       horzLine: {
-        color: 'rgba(0, 255, 133, 0.3)',
+        color: 'rgba(0, 212, 255, 0.3)',
         width: 1,
         labelBackgroundColor: '#0a0e14',
       },
@@ -110,11 +110,11 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
   })
 
   const series = chart.addSeries(CandlestickSeries, {
-    upColor: '#00ff85',
+    upColor: '#00d4ff',
     downColor: '#ff5050',
-    borderUpColor: '#00ff85',
+    borderUpColor: '#00d4ff',
     borderDownColor: '#ff5050',
-    wickUpColor: '#00ff85',
+    wickUpColor: '#00d4ff',
     wickDownColor: '#ff5050',
   })
 

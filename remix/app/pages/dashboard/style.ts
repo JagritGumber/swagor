@@ -67,9 +67,9 @@ export const tradingLabel = css({
 
 export const toggleButton = (active: boolean) => css({
   appearance: 'none',
-  border: `1px solid ${active ? 'rgba(0, 255, 133, 0.3)' : 'rgba(255, 255, 255, 0.10)'}`,
+  border: `1px solid ${active ? 'rgba(0, 212, 255, 0.3)' : 'rgba(255, 255, 255, 0.10)'}`,
   borderRadius: '20px',
-  backgroundColor: active ? 'rgba(0, 255, 133, 0.10)' : 'rgba(255, 255, 255, 0.05)',
+  backgroundColor: active ? 'rgba(0, 212, 255, 0.10)' : 'rgba(255, 255, 255, 0.05)',
   width: '44px',
   height: '24px',
   cursor: 'pointer',
@@ -86,7 +86,7 @@ export const toggleKnob = (active: boolean) => css({
   width: '16px',
   height: '16px',
   borderRadius: '50%',
-  backgroundColor: active ? '#00ff85' : '#6b7280',
+  backgroundColor: active ? '#00d4ff' : '#6b7280',
   transition: 'left 0.2s, background-color 0.2s',
 })
 
@@ -115,7 +115,7 @@ export const labelRow = css({
 })
 
 export const riskColors: Record<RiskLevel, string> = {
-  low: '#00ff85',
+  low: '#00d4ff',
   medium: '#f59e0b',
   high: '#ff5050',
 }
@@ -164,7 +164,7 @@ export const metricValue = css({
 export const metricValueGreen = css({
   fontSize: '18px',
   fontWeight: 600,
-  color: '#00ff85',
+  color: '#00d4ff',
   fontFamily: FONT_UI,
 })
 
@@ -256,7 +256,7 @@ export const positionMarket = css({
 export const positionSide = (side: 'long' | 'short') => css({
   fontSize: '11px',
   fontWeight: 600,
-  color: side === 'long' ? '#00ff85' : '#ff5050',
+  color: side === 'long' ? '#00d4ff' : '#ff5050',
   fontFamily: FONT_UI,
   textTransform: 'uppercase',
 })
@@ -264,7 +264,7 @@ export const positionSide = (side: 'long' | 'short') => css({
 export const positionPnl = (positive: boolean) => css({
   fontSize: '13px',
   fontWeight: 600,
-  color: positive ? '#00ff85' : '#ff5050',
+  color: positive ? '#00d4ff' : '#ff5050',
   fontFamily: FONT_UI,
 })
 
@@ -314,7 +314,7 @@ export const activityDot = (type: ActivityEntry['type']) => css({
   width: '6px',
   height: '6px',
   borderRadius: '50%',
-  backgroundColor: type === 'success' ? '#00ff85' : type === 'warning' ? '#f59e0b' : type === 'action' ? '#00d4ff' : '#6b7280',
+  backgroundColor: type === 'success' ? '#00d4ff' : type === 'warning' ? '#f59e0b' : type === 'action' ? '#00d4ff' : '#6b7280',
   flexShrink: 0,
   marginTop: '5px',
 })

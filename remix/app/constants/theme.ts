@@ -18,8 +18,8 @@ export const TEXT_PRIMARY = 'oklch(1 0 0)'
 export const TEXT_SECONDARY = 'oklch(1 0 0)'
 export const TEXT_MUTED = 'oklch(1 0 0)'
 export const TEXT_DATA = 'oklch(1 0 0)'
-export const ACCENT_GREEN = '#00ff85'
-export const POSITIVE = '#00ff85'
+export const ACCENT_GREEN = '#00d4ff'
+export const POSITIVE = '#00d4ff'
 export const NEGATIVE = 'oklch(0.55 0.2 30)'
 
 const widgetBg = css({

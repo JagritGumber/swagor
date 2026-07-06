@@ -34,7 +34,7 @@ export const PageLoader = clientEntry(
               width: '20px',
               height: '20px',
               border: '2px solid #1e293b',
-              borderTopColor: '#00ff85',
+              borderTopColor: '#00d4ff',
               borderRadius: '50%',
               animation: 'spin 0.8s linear infinite',
             })}

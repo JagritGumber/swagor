@@ -2,6 +2,8 @@
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import { Tooltip } from '../../components/tooltip.tsx'
+import { BalanceDisplay } from '../../assets/balance-display.tsx'
+import { WalletAddress } from '../../assets/wallet-address.tsx'
 import type { DashboardData } from './types.ts'
 import {
   page,
@@ -61,7 +63,7 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
     const isActive = data.agentStatus === 'active'
     const dailyUp = data.dailyAvgPnl >= 0
     const totalUp = data.totalPnl >= 0
-    const ddColor = data.maxDrawdown < 5 ? '#00ff85' : data.maxDrawdown < 10 ? '#f59e0b' : '#ff5050'
+    const ddColor = data.maxDrawdown < 5 ? '#00d4ff' : data.maxDrawdown < 10 ? '#f59e0b' : '#ff5050'
 
     return (
     <Document
@@ -94,7 +96,10 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
               <div mix={dataLabel}>Wallet Balance</div>
               <Tooltip content="This is the wallet balance of Selbo" />
             </div>
-            <div mix={dataValue}>${data.balanceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            <div mix={dataValue}>
+              <BalanceDisplay initialBalance={data.balanceUsd} />
+            </div>
+            <WalletAddress address={data.walletAddress} />
           </div>
 
           <div mix={riskBlock}>

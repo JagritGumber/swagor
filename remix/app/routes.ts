@@ -8,5 +8,6 @@ export const routes = route({
   candles: get('/api/candles'),
   login: '/login',
   nonce: get('/api/nonce'),
+  balance: get('/api/balance'),
   logout: '/logout',
 })
