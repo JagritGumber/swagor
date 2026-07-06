@@ -17,19 +17,21 @@ export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: 
         <nav
           mix={css({
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
-            padding: '20px 96px',
+            height: '48px',
+            padding: '0 24px',
             fontFamily: FONT_UI,
             fontSize: '14px',
             color: TEXT_PRIMARY,
             fontWeight: 500,
+            background: SURFACE_HEADER,
+            borderBottom: `1px solid ${BORDER_HEADER}`,
           })}
         >
           <a
             href="/"
             rmx-document
-            mix={css({ color: TEXT_PRIMARY, textDecoration: 'none', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.5px' })}
+            mix={css({ color: TEXT_PRIMARY, textDecoration: 'none', fontSize: '16px', fontWeight: 600 })}
           >
             Selbo
           </a>
