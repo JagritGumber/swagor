@@ -88,6 +88,38 @@ function parseRGBA(color: string): [number, number, number, number] {
   return [Number(m[0]), Number(m[1]), Number(m[2]), Number(m[3])]
 }
 
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b)
+  const l = (max + min) / 2
+  if (max === min) return [0, 0, l]
+  const d = max - min
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+  let h = 0
+  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6
+  else if (max === g) h = ((b - r) / d + 2) / 6
+  else h = ((r - g) / d + 4) / 6
+  return [h, s, l]
+}
+
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  if (s === 0) { const v = Math.round(l * 255); return [v, v, v] }
+  const hue2rgb = (p: number, q: number, t: number) => {
+    if (t < 0) t += 1; if (t > 1) t -= 1
+    if (t < 1/6) return p + (q - p) * 6 * t
+    if (t < 1/2) return q
+    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6
+    return p
+  }
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+  const p = 2 * l - q
+  return [
+    Math.round(hue2rgb(p, q, h + 1/3) * 255),
+    Math.round(hue2rgb(p, q, h) * 255),
+    Math.round(hue2rgb(p, q, h - 1/3) * 255),
+  ]
+}
+
 function drawHistogramBars(
   ctx: CanvasRenderingContext2D,
   x1: number,
@@ -102,13 +134,12 @@ function drawHistogramBars(
   const maxVolume = Math.max(...bins.map(b => b.volume))
   if (maxVolume <= 0) return
 
-  const segmentWidth = x2 - x1
-  const barAreaWidth = Math.min(HISTOGRAM_WIDTH_PX, segmentWidth * 0.4)
-  if (barAreaWidth < 4) return
+  const [r, g, b, baseAlpha] = parseRGBA(color)
+  const [hue, sat, lit] = rgbToHsl(r, g, b)
 
+  const barAreaWidth = HISTOGRAM_WIDTH_PX
   const barAreaX = x2 - barAreaWidth
   const gap = 1
-  const [r, g, b, baseAlpha] = parseRGBA(color)
 
   const profileLow = bins[0].low
   const profileHigh = bins[bins.length - 1].high
@@ -126,10 +157,16 @@ function drawHistogramBars(
     if (barWidth < 0.5) continue
 
     const dist = Math.abs(bin.mid - poc) / halfRange
-    const fade = 1 - dist * dist
-    const alpha = baseAlpha * (0.3 + 0.7 * fade)
+    const t = dist * dist
 
-    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`
+    const edgeHue = hue + 0.08
+    const cr = hue + (edgeHue - hue) * t
+    const cs = sat * (1 - t * 0.5)
+    const cl = lit * (1 - t * 0.45)
+    const ca = baseAlpha * (1 - t * 0.3)
+
+    const [rr, gg, bb] = hslToRgb(cr, cs, cl)
+    ctx.fillStyle = `rgba(${rr}, ${gg}, ${bb}, ${ca.toFixed(3)})`
     ctx.fillRect(barAreaX + barAreaWidth - barWidth, top, barWidth, barHeight)
   }
 }
