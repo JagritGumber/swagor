@@ -18,6 +18,11 @@ export async function loadCandlesForAsset(
   lookback: number,
   interval: string,
 ): Promise<Candle[]> {
+  if (!(interval in INTERVAL_MS)) {
+    throw new Error(
+      `Unsupported interval: ${interval}. Use: ${Object.keys(INTERVAL_MS).join(', ')}`,
+    );
+  }
   const now = Date.now();
   const startTime = now - INTERVAL_MS[interval] * lookback;
   const method = getCandles("testnet", asset, interval, startTime, now);

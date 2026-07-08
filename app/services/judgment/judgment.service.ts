@@ -22,6 +22,80 @@ type JudgmentResult = {
   metricsSnapshot: Record<string, unknown>;
 };
 
+async function persistJudgment(params: {
+  instanceId: string;
+  asset: string;
+  result: { judgment: { id: string; reason: string; invalidation: string | null; action: { type: string; side?: string; confidence?: number; entry?: number; stop?: number; target?: number }; metrics: Record<string, unknown> }; allJudgments: Array<{ configId: string; label: string; confidence: number; reason: string }> };
+  previousJudgmentId: string | null;
+  adminJudgment: boolean;
+}): Promise<JudgmentResult> {
+  const { instanceId, asset, result, previousJudgmentId, adminJudgment } = params;
+  const { judgment, allJudgments } = result;
+
+  const record = await db
+    .insert(judgmentTicks)
+    .values({
+      selboInstanceId: instanceId,
+      asset,
+      version: "v1",
+      side:
+        judgment.action.type === "enter"
+          ? (judgment.action.side ?? null)
+          : null,
+      confidence: judgment.action.type === "enter"
+        ? (judgment.action.confidence ?? 0)
+        : 0,
+      reason: judgment.reason,
+      entryPrice:
+        judgment.action.type === "enter"
+          ? String(judgment.action.entry)
+          : null,
+      stopPrice:
+        judgment.action.type === "enter"
+          ? String(judgment.action.stop)
+          : null,
+      targetPrice:
+        judgment.action.type === "enter"
+          ? String(judgment.action.target)
+          : null,
+      invalidation: judgment.invalidation,
+      allJudgments: allJudgments.map((j) => ({
+        configId: j.configId,
+        label: j.label,
+        confidence: j.confidence,
+        reason: j.reason,
+      })),
+      metricsSnapshot: judgment.metrics as unknown as Record<string, unknown>,
+      previousJudgmentId,
+      adminJudgment,
+    })
+    .returning({ id: judgmentTicks.id });
+
+  const savedId = record[0]?.id;
+  if (savedId) {
+    updateLastJudgment(instanceId, savedId);
+  }
+
+  return {
+    judgmentId: savedId ?? judgment.id,
+    side:
+      judgment.action.type === "enter"
+        ? (judgment.action.side ?? null)
+        : null,
+    confidence: judgment.action.type === "enter"
+      ? (judgment.action.confidence ?? 0)
+      : 0,
+    reason: judgment.reason,
+    allJudgments: allJudgments.map((j) => ({
+      configId: j.configId,
+      label: j.label,
+      confidence: j.confidence,
+      reason: j.reason,
+    })),
+    metricsSnapshot: judgment.metrics as unknown as Record<string, unknown>,
+  };
+}
+
 export async function runJudgmentForInstance(
   instanceId: string,
 ): Promise<JudgmentResult> {
@@ -49,70 +123,14 @@ export async function runJudgmentForInstance(
   const entry = getEngineEntry(instanceId);
 
   const result = engine.onCandle(candles[candles.length - 1]);
-  const { judgment, allJudgments } = result;
 
-  const record = await db
-    .insert(judgmentTicks)
-    .values({
-      selboInstanceId: instanceId,
-      asset,
-      version: "v1",
-      side:
-        judgment.action.type === "enter"
-          ? judgment.action.side
-          : null,
-      confidence: judgment.action.type === "enter"
-        ? judgment.action.confidence
-        : 0,
-      reason: judgment.reason,
-      entryPrice:
-        judgment.action.type === "enter"
-          ? String(judgment.action.entry)
-          : null,
-      stopPrice:
-        judgment.action.type === "enter"
-          ? String(judgment.action.stop)
-          : null,
-      targetPrice:
-        judgment.action.type === "enter"
-          ? String(judgment.action.target)
-          : null,
-      invalidation: judgment.invalidation,
-      allJudgments: allJudgments.map((j) => ({
-        configId: j.configId,
-        label: j.label,
-        confidence: j.confidence,
-        reason: j.reason,
-      })),
-      metricsSnapshot: result.judgment.metrics as unknown as Record<string, unknown>,
-      previousJudgmentId: entry?.previousJudgmentId ?? null,
-      adminJudgment: false,
-    })
-    .returning({ id: judgmentTicks.id });
-
-  const savedId = record[0]?.id;
-  if (savedId) {
-    updateLastJudgment(instanceId, savedId);
-  }
-
-  return {
-    judgmentId: savedId ?? judgment.id,
-    side:
-      judgment.action.type === "enter"
-        ? judgment.action.side
-        : null,
-    confidence: judgment.action.type === "enter"
-      ? judgment.action.confidence
-      : 0,
-    reason: judgment.reason,
-    allJudgments: allJudgments.map((j) => ({
-      configId: j.configId,
-      label: j.label,
-      confidence: j.confidence,
-      reason: j.reason,
-    })),
-    metricsSnapshot: result.judgment.metrics as unknown as Record<string, unknown>,
-  };
+  return persistJudgment({
+    instanceId,
+    asset,
+    result,
+    previousJudgmentId: entry?.previousJudgmentId ?? null,
+    adminJudgment: false,
+  });
 }
 
 export async function runAdminJudgment(
@@ -128,70 +146,14 @@ export async function runAdminJudgment(
   const entry = getEngineEntry(ADMIN_INSTANCE_ID);
 
   const result = engine.onCandle(candles[candles.length - 1]);
-  const { judgment, allJudgments } = result;
 
-  const record = await db
-    .insert(judgmentTicks)
-    .values({
-      selboInstanceId: ADMIN_INSTANCE_ID,
-      asset,
-      version: "v1",
-      side:
-        judgment.action.type === "enter"
-          ? judgment.action.side
-          : null,
-      confidence: judgment.action.type === "enter"
-        ? judgment.action.confidence
-        : 0,
-      reason: judgment.reason,
-      entryPrice:
-        judgment.action.type === "enter"
-          ? String(judgment.action.entry)
-          : null,
-      stopPrice:
-        judgment.action.type === "enter"
-          ? String(judgment.action.stop)
-          : null,
-      targetPrice:
-        judgment.action.type === "enter"
-          ? String(judgment.action.target)
-          : null,
-      invalidation: judgment.invalidation,
-      allJudgments: allJudgments.map((j) => ({
-        configId: j.configId,
-        label: j.label,
-        confidence: j.confidence,
-        reason: j.reason,
-      })),
-      metricsSnapshot: result.judgment.metrics as unknown as Record<string, unknown>,
-      previousJudgmentId: entry?.previousJudgmentId ?? null,
-      adminJudgment: true,
-    })
-    .returning({ id: judgmentTicks.id });
-
-  const savedId = record[0]?.id;
-  if (savedId) {
-    updateLastJudgment(ADMIN_INSTANCE_ID, savedId);
-  }
-
-  return {
-    judgmentId: savedId ?? judgment.id,
-    side:
-      judgment.action.type === "enter"
-        ? judgment.action.side
-        : null,
-    confidence: judgment.action.type === "enter"
-      ? judgment.action.confidence
-      : 0,
-    reason: judgment.reason,
-    allJudgments: allJudgments.map((j) => ({
-      configId: j.configId,
-      label: j.label,
-      confidence: j.confidence,
-      reason: j.reason,
-    })),
-    metricsSnapshot: result.judgment.metrics as unknown as Record<string, unknown>,
-  };
+  return persistJudgment({
+    instanceId: ADMIN_INSTANCE_ID,
+    asset,
+    result,
+    previousJudgmentId: entry?.previousJudgmentId ?? null,
+    adminJudgment: true,
+  });
 }
 
 export async function getLatestJudgment(
