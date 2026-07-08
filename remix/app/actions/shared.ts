@@ -289,7 +289,7 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
 
   const judgmentResponse = await fetch(
     `${process.env.APP_URL ?? "http://localhost:3000"}/api/judgment/history?asset=${asset}&limit=1`,
-  ).catch(() => null)
+  ).catch((err) => { console.error("[judgment] failed to fetch history:", err); return null; })
 
   let judgment: AgentReadResult["judgment"] = null
   if (judgmentResponse?.ok) {
@@ -303,12 +303,14 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
         confidence: j.confidence ?? 0,
         reason: j.reason ?? "no judgment",
         previousJudgmentId: j.previousJudgmentId ?? null,
-        allJudgments: (j.allJudgments as Array<{
-          configId: string;
-          label: string;
-          confidence: number;
-          reason: string;
-        }>) ?? [],
+        allJudgments: Array.isArray(j.allJudgments)
+          ? j.allJudgments.map((aj: Record<string, unknown>) => ({
+              configId: String(aj.configId ?? ""),
+              label: String(aj.label ?? ""),
+              confidence: Number(aj.confidence ?? 0),
+              reason: String(aj.reason ?? ""),
+            }))
+          : [],
         metricsSnapshot: j.metricsSnapshot ?? null,
         createdAt: j.createdAt ?? new Date().toISOString(),
       }
