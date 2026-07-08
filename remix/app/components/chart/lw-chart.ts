@@ -11,7 +11,7 @@ import {
   ColorType,
   type DrawingUtils,
 } from 'lightweight-charts'
-import type { Candle } from '../../types/candles.ts'
+import type { Candle } from '@shared/candle'
 import type { OverlaySegment } from './types.ts'
 import { getCandles } from '../../data/api.ts'
 

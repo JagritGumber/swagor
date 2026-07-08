@@ -1,4 +1,4 @@
-import type { Candle } from '../../types/candles.ts'
+import type { Candle } from '@shared/candle'
 import type { OverlaySegment } from '../../components/chart/types.ts'
 
 export interface LandingAuction {

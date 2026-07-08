@@ -1,5 +1,5 @@
 import { ApiError } from '../lib/api/error.ts'
-import type { Candle } from '../types/candles.ts'
+import type { Candle } from '@shared/candle'
 import type { ApiResponse } from '../lib/api/response.ts'
 
 async function request<T>(url: string, options: RequestInit): Promise<T> {

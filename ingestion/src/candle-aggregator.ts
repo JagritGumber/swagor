@@ -1,4 +1,4 @@
-import type { Candle } from './types.ts'
+import type { Candle } from '@shared/candle'
 
 export interface FormingCandle extends Candle {
   interval: string

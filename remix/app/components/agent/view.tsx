@@ -1,6 +1,6 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
-import type { Candle } from '../../types/candles.ts'
+import type { Candle } from '@shared/candle'
 import type { OverlaySegment } from '../chart/types.ts'
 import { AgentChartEntry } from './chart-entry.tsx'
 import * as s from './style.ts'

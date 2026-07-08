@@ -1,6 +1,7 @@
 import { createAlova } from 'alova'
 import { xhrRequestAdapter } from '@alova/adapter-xhr'
 import { retry, createRateLimiter } from 'alova/server'
+import type { RawCandle } from '@shared/candle'
 import { networks } from '../lib/networks.ts'
 
 const HL_TIMEOUT = 10_000
@@ -49,26 +50,13 @@ export async function hlPost<T>(body: Record<string, any>): Promise<T> {
   return hooked.send() as Promise<T>
 }
 
-export type Candle = {
-  t: number
-  T: number
-  s: string
-  i: string
-  o: string
-  c: string
-  h: string
-  l: string
-  v: string
-  n: number
-}
-
 export function hlCandles(
   coin: string,
   interval: string,
   startMs: number,
   endMs: number,
-): Promise<Candle[]> {
-  return hlPost<Candle[]>({
+): Promise<RawCandle[]> {
+  return hlPost<RawCandle[]>({
     type: 'candleSnapshot',
     req: { coin, interval, startTime: startMs, endTime: endMs },
   })

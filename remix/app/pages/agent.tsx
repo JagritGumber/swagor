@@ -1,6 +1,6 @@
 import type { Handle } from 'remix/ui'
 import { Document } from '../document.tsx'
-import type { Candle } from '../types/candles.ts'
+import type { Candle } from '@shared/candle'
 import type { OverlaySegment } from '../components/chart/types.ts'
 import { AgentView, type AgentViewProps } from '../components/agent/view.tsx'
 import { routes } from '../routes.ts'

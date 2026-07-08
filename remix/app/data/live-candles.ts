@@ -1,4 +1,4 @@
-import type { Candle } from '../types/candles.ts'
+import type { Candle } from '@shared/candle'
 
 export interface LiveCallbacks {
   onUpdate(candle: Candle): void

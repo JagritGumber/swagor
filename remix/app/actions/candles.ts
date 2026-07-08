@@ -2,8 +2,9 @@ import type { AppContext } from '../router.ts'
 import { retry } from 'alova/server'
 import { hlRateLimiter } from '@alova/index'
 import { getCandles, type HyperliquidCandle } from '@alova/methods/hyperliquid'
+import { toCandle } from '@shared/candle'
 import { tryCatch } from '../lib/api/try-catch.ts'
-import { VALID_INTERVALS, toCandle } from './shared.ts'
+import { VALID_INTERVALS } from './shared.ts'
 import { apiSuccess, apiError } from '../lib/api/response.ts'
 
 export async function candles(context: AppContext) {

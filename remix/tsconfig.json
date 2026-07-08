@@ -8,7 +8,8 @@
     "paths": {
       "@/*": ["./app/*"],
       "@packages/*": ["../packages/*"],
-      "@alova/*": ["../alova/*"]
+      "@alova/*": ["../alova/*"],
+      "@shared/*": ["../shared/*"]
     },
     "target": "ESNext",
     "allowImportingTsExtensions": true,

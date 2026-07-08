@@ -1,5 +1,5 @@
 import { clientEntry, ref, type Handle } from 'remix/ui'
-import type { Candle } from '../../types/candles.ts'
+import type { Candle } from '@shared/candle'
 import type { OverlaySegment } from '../chart/types.ts'
 import { createLWChart } from '../chart/lw-chart.ts'
 import { connectLiveCandles } from '../../data/live-candles.ts'

@@ -1,4 +1,5 @@
-import type { Candle } from '../types/candles.ts'
+import type { Candle } from '@shared/candle'
+import { toCandle } from '@shared/candle'
 import type { OverlaySegment } from '../components/chart/types.ts'
 import type { SelboReasoning, ReaderReadResult } from '../types/reader.ts'
 import { buildSelboReasoning } from '../data/selbo-reasoning.ts'
@@ -22,10 +23,6 @@ export const INTERVAL_MS: Record<string, number> = {
   '1h': 3_600_000,
   '4h': 14_400_000,
   '1d': 86_400_000,
-}
-
-export function toCandle(raw: { t: number; o: string; c: string; h: string; l: string; v: string }): Candle {
-  return { t: raw.t, o: Number(raw.o), h: Number(raw.h), l: Number(raw.l), c: Number(raw.c), v: Number(raw.v) }
 }
 
 export function round(v: number, decimals = 4): number {

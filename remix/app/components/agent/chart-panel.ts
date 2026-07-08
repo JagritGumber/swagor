@@ -1,5 +1,5 @@
 // status: Unused — replaced by lightweight-charts lw-chart.ts
-import type { Candle } from '../../types/candles.ts'
+import type { Candle } from '@shared/candle'
 import type { OverlaySegment } from '../chart/types.ts'
 import { createChart } from '../chart/create-chart.ts'
 import { rect, line, label } from '../chart/draw.ts'

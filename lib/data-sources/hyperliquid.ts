@@ -8,6 +8,8 @@
  * Docs: https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api
  */
 
+import type { RawCandle } from '@shared/candle'
+
 const HL = "https://api.hyperliquid-testnet.xyz/info";
 
 async function post<T>(body: unknown): Promise<T> {
@@ -75,10 +77,8 @@ export function fetchClearinghouse(address: string): Promise<ClearinghouseState>
 }
 
 /** OHLCV candles. Interval examples: 1m, 5m, 15m, 1h, 4h, 1d. */
-export type Candle = {
-  t: number; T: number; s: string; i: string;
-  o: string; c: string; h: string; l: string;
-  v: string; n: number;
+export type Candle = RawCandle & {
+  T: number; s: string; i: string; n: number;
 };
 export function fetchCandles(coin: string, interval: string, startMs: number, endMs: number): Promise<Candle[]> {
   return post<Candle[]>({

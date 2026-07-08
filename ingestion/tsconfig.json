@@ -14,7 +14,8 @@
     "allowImportingTsExtensions": true,
     "types": ["node"],
     "paths": {
-      "@packages/*": ["../packages/*"]
+      "@packages/*": ["../packages/*"],
+      "@shared/*": ["../shared/*"]
     }
   },
   "include": ["**/*.ts"],
