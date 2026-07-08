@@ -65,14 +65,14 @@ export function connectAndStream(
             interval: candle.interval,
           })
 
-          sseManager.broadcast(trade.asset, 'candle-close', candle)
+          sseManager.broadcast(trade.asset, 'candle-close', { ...candle, t: candle.t * 1000 })
         }
       }
 
       for (const { name } of INTERVALS) {
         const forming = aggregator.getForming(trade.asset, name)
         if (forming) {
-          sseManager.broadcast(trade.asset, 'candle-update', forming)
+          sseManager.broadcast(trade.asset, 'candle-update', { ...forming, t: forming.t * 1000 })
         }
       }
     },
