@@ -11,13 +11,14 @@ export function WatcherDevControls() {
   const [busy, setBusy] = useState<"tick" | "escalate" | "judgment" | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
 
-  async function hit(path: string, key: "tick" | "escalate" | "judgment") {
+  async function hit(path: string, key: "tick" | "escalate" | "judgment", onResult?: (data: unknown) => void) {
     if (busy) return;
     setBusy(key);
     setLastError(null);
     try {
       const res = await fetch(path, { method: "POST" });
       const body = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      onResult?.(body);
       if (!res.ok || body.ok === false) {
         setLastError(body.error ?? `HTTP ${res.status}`);
       }
@@ -51,7 +52,11 @@ export function WatcherDevControls() {
           </button>
           <button
             type="button"
-            onClick={() => hit("/api/judgment/force-tick", "judgment")}
+            onClick={() =>
+              hit("/api/judgment/force-tick", "judgment", (data) =>
+                console.log("[judgment] force tick:", data),
+              )
+            }
             disabled={!!busy}
             className="inline-flex h-9 items-center justify-center border border-[var(--hairline-strong)] bg-black px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-foreground transition hover:border-[var(--neon-cyan)] hover:text-[var(--neon-cyan)] disabled:opacity-50"
           >
