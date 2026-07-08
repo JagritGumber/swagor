@@ -3,13 +3,13 @@
     "strict": true,
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "types": ["node"],
-"module": "ESNext",
-"moduleResolution": "bundler",
-"paths": {
-  "@/*": ["./app/*"],
-  "@packages/*": ["../packages/*"],
-  "@alova/*": ["../alova/*"]
-},
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/*": ["./app/*"],
+      "@packages/*": ["../packages/*"],
+      "@alova/*": ["../alova/*"]
+    },
     "target": "ESNext",
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
