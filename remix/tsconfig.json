@@ -7,7 +7,8 @@
 "moduleResolution": "bundler",
 "paths": {
   "@/*": ["./app/*"],
-  "@packages/*": ["../packages/*"]
+  "@packages/*": ["../packages/*"],
+  "@alova/*": ["../alova/*"]
 },
     "target": "ESNext",
     "allowImportingTsExtensions": true,
