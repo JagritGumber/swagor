@@ -52,6 +52,30 @@ export interface LandingTradePlan {
   reasons: string[]
 }
 
+export interface LandingJudgment {
+  id: string
+  action: string
+  side?: string
+  confidence: number
+  reason: string
+  allJudgments: {
+    configId: string
+    label: string
+    confidence: number
+    reason: string
+  }[]
+}
+
+export interface LandingPortfolio {
+  equity: number
+  totalPnl: number
+  dailyPnl: number
+  tradeCount: number
+  winCount: number
+  lossCount: number
+  openPositionCount: number
+}
+
 export interface LandingViewProps {
   candles: Candle[]
   segments: OverlaySegment[]
@@ -59,5 +83,7 @@ export interface LandingViewProps {
   regime: LandingRegime | null
   read?: LandingReaderRead | null
   plan?: LandingTradePlan | null
+  judgment?: LandingJudgment | null
+  portfolio?: LandingPortfolio | null
   asset: string
 }

@@ -54,7 +54,7 @@ function planStatusLabel(status: string): string {
 
 export function LandingPage(handle: Handle<LandingPageProps>) {
   return () => {
-    const { candles, segments, auction, regime, read, plan, asset, user } = handle.props
+    const { candles, segments, auction, regime, read, plan, judgment, portfolio, asset, user } = handle.props
 
     return (
       <Document
@@ -174,6 +174,57 @@ export function LandingPage(handle: Handle<LandingPageProps>) {
                 <div mix={s.analysisSection}>
                   <div mix={s.analysisLabel}>Narrative</div>
                   <div mix={s.analysisNarrative}>{auction.narrative}</div>
+                </div>
+              )}
+              {judgment && (
+                <div mix={s.analysisSection}>
+                  <div mix={s.analysisLabel}>Judgment</div>
+                  <div mix={s.planStatus}>
+                    <span mix={[s.planBadge, judgment.action === 'enter' && judgment.side === 'long' ? s.planLong : judgment.action === 'enter' && judgment.side === 'short' ? s.planShort : '']}>
+                      {judgment.action === 'enter' ? judgment.side?.toUpperCase() : judgment.action}
+                    </span>
+                  </div>
+                  <div mix={s.analysisValue} style={{ fontSize: '12px', marginTop: '4px' }}>{judgment.reason}</div>
+                  <div mix={s.planConfidence}>
+                    <span mix={s.planConfidenceLabel}>Confidence</span>
+                    <span mix={s.planConfidenceValue}>{(judgment.confidence * 100).toFixed(0)}%</span>
+                  </div>
+                  {judgment.allJudgments.length > 0 && (
+                    <div style={{ marginTop: '8px' }}>
+                      <div mix={s.analysisLabel} style={{ fontSize: '10px' }}>All Strategies</div>
+                      {judgment.allJudgments.map((j) => (
+                        <div key={j.configId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', padding: '2px 0', color: '#9ca3af' }}>
+                          <span>{j.label}</span>
+                          <span>{(j.confidence * 100).toFixed(0)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {portfolio && (
+                <div mix={s.analysisSection}>
+                  <div mix={s.analysisLabel}>Portfolio</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '12px' }}>
+                    <div>
+                      <span mix={s.orderflowLabel}>Equity</span>
+                      <div mix={s.orderflowValue}>${portfolio.equity.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <span mix={s.orderflowLabel}>P&L</span>
+                      <div mix={[s.orderflowValue, portfolio.totalPnl > 0 ? s.orderflowBuy : portfolio.totalPnl < 0 ? s.orderflowSell : '']}>
+                        {portfolio.totalPnl >= 0 ? '+' : ''}{portfolio.totalPnl.toFixed(2)}%
+                      </div>
+                    </div>
+                    <div>
+                      <span mix={s.orderflowLabel}>Trades</span>
+                      <div mix={s.orderflowValue}>{portfolio.tradeCount}</div>
+                    </div>
+                    <div>
+                      <span mix={s.orderflowLabel}>Win Rate</span>
+                      <div mix={s.orderflowValue}>{portfolio.tradeCount > 0 ? ((portfolio.winCount / portfolio.tradeCount) * 100).toFixed(0) : 0}%</div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

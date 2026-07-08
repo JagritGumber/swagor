@@ -14,6 +14,7 @@ import { createOrderflowWindow } from '@packages/strategy-lab/read-core/orderflo
 import { readOrderflowWindow } from '@packages/strategy-lab/read-core/orderflow/read-orderflow-window'
 import { combineAuctionOrderflow } from '@packages/strategy-lab/reader/reader-live/combine-auction-orderflow'
 import { buildReaderTradePlan } from '@packages/strategy-lab/backtest/trade-plan/build-reader-trade-plan'
+import { runJudgmentPipeline, type JudgmentPipelineResult } from './judgment-pipeline'
 
 export const VALID_INTERVALS = new Set(['1m', '5m', '15m', '1h', '4h', '1d'])
 export const INTERVAL_MS: Record<string, number> = {
@@ -210,6 +211,8 @@ export interface AgentReadResult {
   auction: { location: string; locationLabel: string; bias: string; narrative: string; profile: { poc: number; valueAreaLow: number; valueAreaHigh: number; bins: { low: number; high: number; volume: number }[] } | null; level: { price: number; kind: string; touches: number } | null } | null
   read: { stance: string; narrative: string; invalidation: string | null; target: string | null; orderflow: { pressure: string; delta: number; tradeCount: number; events: string[] } } | null
   plan: { status: string; asset: string; side?: string; entryLow?: number; entryHigh?: number; stop?: number; target?: number; invalidation?: string; confidence: number; reasons: string[] } | null
+  judgment: { id: string; action: string; side?: string; confidence: number; reason: string; allJudgments: { configId: string; label: string; confidence: number; reason: string }[] } | null
+  portfolio: { equity: number; totalPnl: number; dailyPnl: number; tradeCount: number; winCount: number; lossCount: number; openPositionCount: number } | null
   asset: string
   error: string | null
 }
@@ -219,7 +222,7 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
 
   const result = await loadAndAnalyze(url, { lookback: 300, interval: '1h' })
   if (result.error) {
-    return { candles: [], segments: [], regime: null, auction: null, read: null, plan: null, asset, error: result.error }
+    return { candles: [], segments: [], regime: null, auction: null, read: null, plan: null, judgment: null, portfolio: null, asset, error: result.error }
   }
 
   const { candles, segments, regime: rawRegime, auction: rawAuction } = result
@@ -284,5 +287,25 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
         invalidation: plan.invalidation, confidence: plan.confidence, reasons: plan.reasons,
       }
 
-  return { candles, segments, regime, auction, read: readerRead, plan: tradePlan, asset, error: null }
+  const judgmentResult = runJudgmentPipeline(asset, '1h', candles)
+
+  const judgment = {
+    id: judgmentResult.judgment.judgment.id,
+    action: judgmentResult.judgment.bestJudgment?.action.type ?? 'no-trade',
+    side: judgmentResult.judgment.bestJudgment?.action.type === 'enter'
+      ? judgmentResult.judgment.bestJudgment.action.side
+      : undefined,
+    confidence: judgmentResult.judgment.bestJudgment?.confidence ?? 0,
+    reason: judgmentResult.judgment.bestJudgment?.reason ?? 'no judgment',
+    allJudgments: judgmentResult.judgment.allJudgments.map((j) => ({
+      configId: j.configId,
+      label: j.label,
+      confidence: j.confidence,
+      reason: j.reason,
+    })),
+  }
+
+  const portfolioSnap = judgmentResult.portfolio
+
+  return { candles, segments, regime, auction, read: readerRead, plan: tradePlan, judgment, portfolio: portfolioSnap, asset, error: null }
 }
