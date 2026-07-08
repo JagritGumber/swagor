@@ -1,6 +1,6 @@
-import type { JudgmentAction } from "./judgment";
-import type { MarketMetrics } from "../market/metrics";
-import type { EngineState } from "../engine/state";
+import type { JudgmentAction } from "./judgment-types";
+import type { MarketMetrics } from "../shared/market/metrics";
+import type { EngineState } from "./engine-state";
 
 export type JudgeConfig = {
   id: string;

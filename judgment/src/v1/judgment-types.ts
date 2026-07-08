@@ -1,5 +1,5 @@
-import type { Side } from "../types";
-import type { MarketMetrics } from "../market/metrics";
+import type { Side } from "../shared/types";
+import type { MarketMetrics } from "../shared/market/metrics";
 
 export type JudgmentAction =
   | { type: "enter"; side: Side; entry: number; stop: number; target: number; confidence: number }

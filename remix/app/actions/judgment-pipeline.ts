@@ -1,6 +1,6 @@
 import type { Candle } from '@shared/candle'
-import { createJudgmentEngine, DEFAULT_JUDGE_CONFIGS } from '../../../judgment/src'
-import type { EngineJudgmentResult } from '../../../judgment/src/engine/engine'
+import { resolveVersion } from '../../../judgment/src'
+import type { EngineJudgmentResult } from '../../../judgment/src/v1/engine'
 import { createPortfolioEngine } from '../../../portfolio/src'
 import type { PortfolioSnapshot } from '../../../portfolio/src/types'
 
@@ -9,23 +9,23 @@ export type JudgmentPipelineResult = {
   portfolio: PortfolioSnapshot
 }
 
-const judgmentStore = new Map<string, EngineJudgmentResult>()
-const portfolio = createPortfolioEngine({ initialEquity: 10_000 })
-
-export function runJudgmentPipeline(
+export async function runJudgmentPipeline(
   asset: string,
   interval: string,
   candles: Candle[],
-): JudgmentPipelineResult {
-  const engine = createJudgmentEngine(
+  versionId: string = 'v1',
+): Promise<JudgmentPipelineResult> {
+  const version = await resolveVersion(versionId)
+
+  const engine = version.createJudgmentEngine(
     { asset, regimeWindowMs: 24 * 60 * 60 * 1000 },
-    DEFAULT_JUDGE_CONFIGS,
+    version.DEFAULT_JUDGE_CONFIGS,
   )
 
   engine.boot(candles)
   const result = engine.onCandle(candles[candles.length - 1])
 
-  judgmentStore.set(asset, result)
+  const portfolio = createPortfolioEngine({ initialEquity: 10_000 })
 
   if (result.bestJudgment && result.bestJudgment.action.type === 'enter') {
     portfolio.processJudgment(

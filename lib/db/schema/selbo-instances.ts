@@ -27,6 +27,7 @@ export const selboInstances = pgTable("selbo_instances", {
       "Moderate risk perp futures on Hyperliquid. Trade ETH and BTC. Cut losers fast, let winners run. No more than 3x leverage. Wait for clear setups, hold cash when uncertain.",
     ),
   strategyParsed: jsonb("strategy_parsed"),
+  version: text("version").notNull().default("v1"),
   killSwitchActive: boolean("kill_switch_active").notNull().default(false),
   publicProfile: boolean("public_profile").notNull().default(false),
   username: text("username").unique(), // for /selbo/{username} public page

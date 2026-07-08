@@ -1,5 +1,5 @@
-import type { Candle } from "../types";
-import type { RegimeMetrics } from "../market/metrics";
+import type { Candle } from "../../shared/types";
+import type { RegimeMetrics } from "../../shared/market/metrics";
 
 const MIN_CANDLES = 12;
 const HIGH_VOL_RANGE_PCT = 0.025;

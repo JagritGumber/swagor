@@ -287,7 +287,7 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
         invalidation: plan.invalidation, confidence: plan.confidence, reasons: plan.reasons,
       }
 
-  const judgmentResult = runJudgmentPipeline(asset, '1h', candles)
+  const judgmentResult = await runJudgmentPipeline(asset, '1h', candles)
 
   const judgment = {
     id: judgmentResult.judgment.judgment.id,

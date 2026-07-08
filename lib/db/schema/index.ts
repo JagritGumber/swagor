@@ -14,6 +14,7 @@ export * from "./llm-calls";
 export * from "./equity-snapshots";
 export * from "./strategy-revisions";
 export * from "./tick-stages";
+export * from "./judgment-ticks";
 export * from "./daily-plans";
 export * from "./backtest-runs";
 export * from "./backtest-trades";

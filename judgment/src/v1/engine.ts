@@ -1,15 +1,15 @@
-import type { Candle } from "../types";
-import type { OrderflowTrade, BboSnapshot } from "../market/input";
-import type { MarketMetrics } from "../market/metrics";
-import type { Judgment, JudgmentRecord } from "../judge/judgment";
-import type { JudgeConfig, JudgeResult } from "../judge/judge";
-import type { EngineState, EngineConfig } from "./state";
-import { createVolumeProfileState, addCandleToProfile } from "../update/volume-profile";
-import { computeRegime, slideRegimeWindow } from "../update/regime";
-import { detectSwings, updateLevels } from "../update/levels";
-import { classifyPriceLocation, findNearestLevel } from "../update/price-location";
-import { createEmptyOrderflowStats, addTradeToStats, recomputeOrderflowStats, expireOldTrades } from "../update/orderflow";
-import { collectJudgments, pickBestJudgment } from "../judge/judge";
+import type { Candle } from "../shared/types";
+import type { OrderflowTrade, BboSnapshot } from "../shared/market/input";
+import type { MarketMetrics } from "../shared/market/metrics";
+import type { Judgment, JudgmentRecord } from "./judgment-types";
+import type { JudgeConfig, JudgeResult } from "./judge";
+import type { EngineState, EngineConfig } from "./engine-state";
+import { createVolumeProfileState, addCandleToProfile } from "./update/volume-profile";
+import { computeRegime, slideRegimeWindow } from "./update/regime";
+import { detectSwings, updateLevels } from "./update/levels";
+import { classifyPriceLocation, findNearestLevel } from "./update/price-location";
+import { createEmptyOrderflowStats, addTradeToStats, recomputeOrderflowStats, expireOldTrades } from "./update/orderflow";
+import { collectJudgments, pickBestJudgment } from "./judge";
 
 export type JudgmentEngine = {
   boot(candles: Candle[]): void;
