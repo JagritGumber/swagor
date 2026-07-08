@@ -1,5 +1,5 @@
 import type { AppContext } from '../router.ts'
-import { AgentPage } from '../pages/agent.tsx'
+import { LandingPage } from '../pages/landing/page.tsx'
 import { buildAgentRead } from './shared.ts'
 
 export async function home(context: AppContext) {
@@ -7,11 +7,12 @@ export async function home(context: AppContext) {
   const { candles, segments, regime, auction, read, plan, asset, error } = await buildAgentRead(url)
 
   if (error) {
-    return context.render(<AgentPage candles={[]} segments={[]} auction={null} regime={null} asset={asset} />)
+    console.error('[home] buildAgentRead failed:', error)
+    return context.render(<LandingPage candles={[]} segments={[]} auction={null} regime={null} asset={asset} />)
   }
 
   return context.render(
-    <AgentPage candles={candles} segments={segments} auction={auction} regime={regime}
-      read={read} plan={plan} asset={asset} publicRoute />,
+    <LandingPage candles={candles} segments={segments} auction={auction} regime={regime}
+      read={read} plan={plan} asset={asset} />,
   )
 }

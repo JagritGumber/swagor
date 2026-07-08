@@ -15,6 +15,8 @@ export const chartArea = css({
   flex: 1,
   position: 'relative',
   minHeight: 0,
+  display: 'flex',
+  flexDirection: 'column',
 })
 
 export const bottomStrip = css({

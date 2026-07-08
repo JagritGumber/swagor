@@ -36,28 +36,32 @@ export const AgentChartEntry = clientEntry(
   function AgentChartEntry(_handle: Handle<{}>) {
     return () => (
       <div
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', flex: 1, minHeight: 0 }}
         mix={ref((node, signal) => {
           if (!(node instanceof HTMLElement)) return
-          const { candles, segments, auction, plan } = readAgentData()
-          const params = new URLSearchParams(window.location.search)
-          const asset = params.get('asset') ?? 'ETH'
-          const interval = params.get('interval') ?? '1h'
+          try {
+            const { candles, segments, auction, plan } = readAgentData()
+            const params = new URLSearchParams(window.location.search)
+            const asset = params.get('asset') ?? 'ETH'
+            const interval = params.get('interval') ?? '1h'
 
-          const chart = createLWChart({
-            container: node,
-            candles,
-            segments,
-            auction,
-            plan,
-          })
+            const chart = createLWChart({
+              container: node,
+              candles,
+              segments,
+              auction,
+              plan,
+            })
 
-          connectLiveCandles(asset, interval, {
-            onUpdate: (candle) => chart.updateCandle(candle),
-            onClose: (candle) => chart.appendCandle(candle),
-          }, signal)
+            connectLiveCandles(asset, interval, {
+              onUpdate: (candle) => chart.updateCandle(candle),
+              onClose: (candle) => chart.appendCandle(candle),
+            }, signal)
 
-          signal.addEventListener('abort', () => chart.destroy())
+            signal.addEventListener('abort', () => chart.destroy())
+          } catch (e) {
+            console.error('[AgentChartEntry] Failed to initialize chart:', e)
+          }
         })}
       />
     )
