@@ -82,6 +82,12 @@ export interface LWChartInstance {
   destroy(): void
 }
 
+function parseRGBA(color: string): [number, number, number, number] {
+  const m = color.match(/[\d.]+/g)
+  if (!m || m.length < 4) return [255, 255, 255, 0.25]
+  return [Number(m[0]), Number(m[1]), Number(m[2]), Number(m[3])]
+}
+
 function drawHistogramBars(
   ctx: CanvasRenderingContext2D,
   x1: number,
@@ -89,6 +95,7 @@ function drawHistogramBars(
   bins: { low: number; high: number; mid: number; volume: number }[],
   series: any,
   color: string,
+  poc: number,
 ): void {
   if (bins.length === 0) return
 
@@ -101,6 +108,11 @@ function drawHistogramBars(
 
   const barAreaX = x2 - barAreaWidth
   const gap = 1
+  const [r, g, b, baseAlpha] = parseRGBA(color)
+
+  const profileLow = bins[0].low
+  const profileHigh = bins[bins.length - 1].high
+  const halfRange = Math.max(poc - profileLow, profileHigh - poc, 1)
 
   for (const bin of bins) {
     const yHigh = series.priceToCoordinate(bin.high)
@@ -113,7 +125,11 @@ function drawHistogramBars(
 
     if (barWidth < 0.5) continue
 
-    ctx.fillStyle = color
+    const dist = Math.abs(bin.mid - poc) / halfRange
+    const fade = 1 - dist * dist
+    const alpha = baseAlpha * (0.3 + 0.7 * fade)
+
+    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`
     ctx.fillRect(barAreaX + barAreaWidth - barWidth, top, barWidth, barHeight)
   }
 }
@@ -329,7 +345,7 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
 
                   const segColor = HISTOGRAM_COLOR[seg.mode] ?? HISTOGRAM_COLOR['unknown']
                   if (seg.bins && seg.bins.length > 0) {
-                    drawHistogramBars(ctx, x1, x2, seg.bins, series, segColor)
+                    drawHistogramBars(ctx, x1, x2, seg.bins, series, segColor, seg.poc)
                   } else {
                     drawPOCFallback(ctx, x1, x2, seg.poc, seg.valueAreaLow, seg.valueAreaHigh, series, segColor)
                   }
