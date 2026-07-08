@@ -8,6 +8,7 @@ import {
   timestamp,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { selboInstances } from "./selbo-instances";
 
 /**
@@ -49,3 +50,15 @@ export const judgmentTicks = pgTable("judgment_ticks", {
 
 export type JudgmentTick = typeof judgmentTicks.$inferSelect;
 export type NewJudgmentTick = typeof judgmentTicks.$inferInsert;
+
+export const judgmentTickRelations = relations(judgmentTicks, ({ one }) => ({
+  selboInstance: one(selboInstances, {
+    fields: [judgmentTicks.selboInstanceId],
+    references: [selboInstances.id],
+  }),
+  previousJudgment: one(judgmentTicks, {
+    fields: [judgmentTicks.previousJudgmentId],
+    references: [judgmentTicks.id],
+    relationName: "judgmentChain",
+  }),
+}));

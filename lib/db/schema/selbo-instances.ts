@@ -1,4 +1,6 @@
 import { pgTable, uuid, text, numeric, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { judgmentTicks } from "./judgment-ticks";
 
 const DEFAULT_WATCHLIST = ["ETH", "BTC", "SOL"];
 
@@ -70,3 +72,7 @@ export const selboInstances = pgTable("selbo_instances", {
 
 export type SelboInstance = typeof selboInstances.$inferSelect;
 export type NewSelboInstance = typeof selboInstances.$inferInsert;
+
+export const selboInstanceRelations = relations(selboInstances, ({ many }) => ({
+  judgmentTicks: many(judgmentTicks),
+}));
