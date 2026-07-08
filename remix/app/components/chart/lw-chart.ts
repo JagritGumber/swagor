@@ -6,7 +6,6 @@ import {
   type CandlestickData,
   type UTCTimestamp,
   type CreatePriceLineOptions,
-  type Logical,
   LineStyle,
   CrosshairMode,
   ColorType,
@@ -350,13 +349,21 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
                 const ctx = scope.context
                 ctx.clearRect(0, 0, scope.mediaSize.width, scope.mediaSize.height)
 
+                const visible = chart.timeScale().getVisibleLogicalRange()
+                if (!visible) return
+
+                const { from, to } = visible
+                const totalW = chart.timeScale().width()
+                const pxPerIndex = totalW / Math.max(1, to - from)
+
                 for (const seg of segments) {
                   const segStart = seg.startIndex + segmentOffset
                   const segEnd = seg.endIndex + segmentOffset
 
-                  const x1 = chart.timeScale().logicalToCoordinate(segStart as Logical)
-                  const x2 = chart.timeScale().logicalToCoordinate(segEnd as Logical)
-                  if (x1 === null || x2 === null) continue
+                  if (segEnd < from || segStart > to) continue
+
+                  const x1 = (segStart - from) * pxPerIndex
+                  const x2 = (segEnd - from) * pxPerIndex
 
                   const vaHigh = series.priceToCoordinate(seg.valueAreaHigh)
                   const vaLow = series.priceToCoordinate(seg.valueAreaLow)
@@ -382,7 +389,12 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
 
                   const segColor = HISTOGRAM_COLOR[seg.mode] ?? HISTOGRAM_COLOR['unknown']
                   if (seg.bins && seg.bins.length > 0) {
+                    ctx.save()
+                    ctx.beginPath()
+                    ctx.rect(x1, 0, x2 - x1, scope.mediaSize.height)
+                    ctx.clip()
                     drawHistogramBars(ctx, x1, x2, seg.bins, series, segColor, seg.poc)
+                    ctx.restore()
                   } else {
                     drawPOCFallback(ctx, x1, x2, seg.poc, seg.valueAreaLow, seg.valueAreaHigh, series, segColor)
                   }
