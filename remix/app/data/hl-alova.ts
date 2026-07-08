@@ -7,7 +7,7 @@ const HL_TIMEOUT = 10_000
 
 const memoryStore = new Map<string, unknown>()
 const l2Cache = {
-  get: (key: string): any => memoryStore.get(key) ?? undefined,
+  get: (key: string): any => memoryStore.get(key) ?? null,
   set: (key: string, value: unknown) => { memoryStore.set(key, value) },
   remove: (key: string) => { memoryStore.delete(key) },
   clear: () => { memoryStore.clear() },
