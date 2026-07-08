@@ -3,7 +3,8 @@ import type { OverlaySegment } from '../components/chart/types.ts'
 import type { SelboReasoning, ReaderReadResult } from '../types/reader.ts'
 import { buildSelboReasoning } from '../data/selbo-reasoning.ts'
 import { tryCatch } from '../lib/api/try-catch.ts'
-import { fetchCandles } from '../data/hyperliquid.ts'
+import { retry, hlRateLimit } from '../lib/alova'
+import { getCandles, type HyperliquidCandle } from '../lib/alova/methods/hyperliquid.ts'
 import { readMarketRegime } from '@packages/strategy-lab/read-core/market-regime/read-market-regime'
 import { readMarketAuction } from '@packages/strategy-lab/read-core/read/read-market-auction'
 import { readRegimeSegments } from '@packages/strategy-lab/read-core/market-regime/read-regime-segments'
@@ -126,7 +127,13 @@ export async function loadAndAnalyze(
   } else {
     lookback = options?.lookback ?? Math.min(Math.max(Number(url.searchParams.get('lookback') ?? '200'), 20), 800)
     const startTime = now - INTERVAL_MS[interval] * lookback
-    const { data: rawCandles, error: err } = await tryCatch(fetchCandles(asset, interval, startTime, now))
+    const method = getCandles('testnet', asset, interval, startTime, now)
+    const limited = hlRateLimit(method, { key: 'hl' })
+    const hooked = retry(limited, {
+      retry: 3,
+      backoff: { delay: 1000, multiplier: 2, startQuiver: 0.3, endQuiver: 0.7 },
+    })
+    const { data: rawCandles, error: err } = await tryCatch(hooked.send() as Promise<HyperliquidCandle[]>)
     if (err !== null) {
       return { candles: [], segments: [], regime: undefined as never, auction: undefined as never, error: err.message }
     }

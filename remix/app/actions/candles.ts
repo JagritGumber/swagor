@@ -1,8 +1,15 @@
 import type { AppContext } from '../router.ts'
-import { fetchCandles } from '../data/hyperliquid.ts'
+import { retry, hlRateLimit } from '../lib/alova'
+import { getCandles, type HyperliquidCandle } from '../lib/alova/methods/hyperliquid.ts'
 import { tryCatch } from '../lib/api/try-catch.ts'
-import { VALID_INTERVALS, toCandle } from './shared.ts'
+import { VALID_INTERVALS } from './shared.ts'
 import { apiSuccess, apiError } from '../lib/api/response.ts'
+
+type Candle = { t: number; o: number; h: number; l: number; c: number; v: number }
+
+function toCandle(raw: HyperliquidCandle): Candle {
+  return { t: raw.t, o: Number(raw.o), h: Number(raw.h), l: Number(raw.l), c: Number(raw.c), v: Number(raw.v) }
+}
 
 export async function candles(context: AppContext) {
   const url = new URL(context.request.url)
@@ -15,11 +22,18 @@ export async function candles(context: AppContext) {
     return apiError('INVALID_INTERVAL', `Invalid interval: ${interval}`, 400)
   }
 
-  const { data: raw, error } = await tryCatch(fetchCandles(asset, interval, start, end))
+  const method = getCandles('testnet', asset, interval, start, end)
+  const limited = hlRateLimit(method, { key: 'hl' })
+  const hooked = retry(limited, {
+    retry: 3,
+    backoff: { delay: 1000, multiplier: 2, startQuiver: 0.3, endQuiver: 0.7 },
+  })
+
+  const { data: raw, error } = await tryCatch(hooked.send() as Promise<HyperliquidCandle[]>)
   if (error) {
     return apiError('UPSTREAM_ERROR', error.message, 502)
   }
 
-  const candles = raw.map(toCandle)
-  return apiSuccess({ candles })
+  const candleList = raw.map(toCandle)
+  return apiSuccess({ candles: candleList })
 }
