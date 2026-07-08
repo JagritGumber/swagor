@@ -27,6 +27,7 @@ export interface OverlaySegment {
   valueAreaHigh: number
   high?: number
   low?: number
+  bins?: { low: number; high: number; mid: number; volume: number }[]
 }
 
 export interface OverlayData {
