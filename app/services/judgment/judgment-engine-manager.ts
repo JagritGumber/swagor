@@ -14,6 +14,8 @@ type EngineEntry = {
 
 const engines = new Map<string, EngineEntry>();
 
+const DEFAULT_REGIME_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 export async function getOrCreateEngine(
   instanceId: string,
   asset: string,
@@ -27,7 +29,7 @@ export async function getOrCreateEngine(
   const version = await resolveVersion("v1");
   const engineConfig: EngineConfig = {
     asset,
-    regimeWindowMs: 24 * 60 * 60 * 1000,
+    regimeWindowMs: DEFAULT_REGIME_WINDOW_MS,
   };
   const engine = version.createJudgmentEngine(engineConfig, DEFAULT_JUDGE_CONFIGS);
   engine.boot(candles);
@@ -56,10 +58,11 @@ export function updateLastJudgment(
   judgmentId: string,
 ): void {
   const entry = engines.get(instanceId);
-  if (entry) {
-    entry.previousJudgmentId = judgmentId;
-    entry.lastEvaluatedAt = Date.now();
+  if (!entry) {
+    throw new Error(`No engine entry found for instanceId "${instanceId}"`);
   }
+  entry.previousJudgmentId = judgmentId;
+  entry.lastEvaluatedAt = Date.now();
 }
 
 export function listEngines(): Array<{
