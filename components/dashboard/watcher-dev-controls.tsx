@@ -3,10 +3,9 @@
 import { useState } from "react";
 
 /**
- * Dev-only watcher control buttons. Force tick runs the watcher for the
- * current user bypassing the cron cadence check; force escalate skips the
- * watcher entirely and creates a cycle directly. Both useful for testing
- * the panel locally where the cron is not firing.
+ * Dev-only control buttons for manual testing. Force tick runs the watcher
+ * bypassing cron cadence; force escalate skips the watcher entirely;
+ * force judgment triggers a single judgment tick for the user's Selbo instance.
  */
 export function WatcherDevControls() {
   const [busy, setBusy] = useState<"tick" | "escalate" | "judgment" | null>(null);
