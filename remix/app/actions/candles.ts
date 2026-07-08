@@ -1,6 +1,6 @@
 import type { AppContext } from '../router.ts'
-import { retry, hlRateLimit } from '../lib/alova'
-import { getCandles, type HyperliquidCandle } from '../lib/alova/methods/hyperliquid.ts'
+import { retry, hlRateLimit } from '../../../alova'
+import { getCandles, type HyperliquidCandle } from '../../../alova/methods/hyperliquid.ts'
 import { tryCatch } from '../lib/api/try-catch.ts'
 import { VALID_INTERVALS } from './shared.ts'
 import { apiSuccess, apiError } from '../lib/api/response.ts'
