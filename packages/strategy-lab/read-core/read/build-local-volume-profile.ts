@@ -6,9 +6,11 @@ export function buildLocalVolumeProfile(input: {
   anchorPrice: number;
   radiusPct: number;
   binCount: number;
+  low?: number;
+  high?: number;
 }): LocalVolumeProfile | null {
-  const low = input.anchorPrice * (1 - input.radiusPct);
-  const high = input.anchorPrice * (1 + input.radiusPct);
+  const low = input.low ?? input.anchorPrice * (1 - input.radiusPct);
+  const high = input.high ?? input.anchorPrice * (1 + input.radiusPct);
   if (high <= low || input.binCount <= 0) return null;
 
   const binSize = (high - low) / input.binCount;

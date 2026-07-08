@@ -100,6 +100,7 @@ function drawHistogramBars(
   if (barAreaWidth < 4) return
 
   const barAreaX = x2 - barAreaWidth
+  const gap = 1
 
   for (const bin of bins) {
     const yHigh = series.priceToCoordinate(bin.high)
@@ -107,7 +108,7 @@ function drawHistogramBars(
     if (yHigh === null || yLow === null) continue
 
     const top = Math.min(yHigh, yLow)
-    const barHeight = Math.max(1, Math.abs(yLow - yHigh))
+    const barHeight = Math.max(1, Math.abs(yLow - yHigh) - gap)
     const barWidth = (bin.volume / maxVolume) * barAreaWidth
 
     if (barWidth < 0.5) continue

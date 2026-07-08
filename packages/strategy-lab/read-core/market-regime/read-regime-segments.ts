@@ -46,11 +46,22 @@ export function readRegimeSegments(input: {
     const segCandles = target.slice(seg.startIndex, seg.endIndex + 1);
     if (segCandles.length === 0) continue;
     const lastPrice = segCandles[segCandles.length - 1].c;
+
+    let segLow = Infinity;
+    let segHigh = -Infinity;
+    for (const c of segCandles) {
+      if (c.l < segLow) segLow = c.l;
+      if (c.h > segHigh) segHigh = c.h;
+    }
+    const padding = (segHigh - segLow) * 0.05 || 1;
+
     const profile = buildLocalVolumeProfile({
       candles: segCandles,
       anchorPrice: lastPrice,
       radiusPct: 0.015,
       binCount: 24,
+      low: segLow - padding,
+      high: segHigh + padding,
     });
     if (profile) {
       seg.poc = profile.poc;
