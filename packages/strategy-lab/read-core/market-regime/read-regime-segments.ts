@@ -37,6 +37,7 @@ export function readRegimeSegments(input: {
         poc: 0,
         valueAreaLow: 0,
         valueAreaHigh: 0,
+        bins: [],
       });
     }
   }
@@ -55,6 +56,7 @@ export function readRegimeSegments(input: {
       seg.poc = profile.poc;
       seg.valueAreaLow = profile.valueAreaLow;
       seg.valueAreaHigh = profile.valueAreaHigh;
+      seg.bins = profile.bins;
     }
   }
 
