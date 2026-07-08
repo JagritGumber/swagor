@@ -133,6 +133,7 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
   async function tryLoadHistory(): Promise<void> {
     if (loadingHistory) return
     if (performance.now() - lastLoadTime < 3000) return
+    if (earliestMs === 0) return
 
     const logicalRange = chart.timeScale().getVisibleLogicalRange()
     if (!logicalRange) return
@@ -291,8 +292,11 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
 
   return {
     updateCandle(candle: Candle): void {
+      const time = (candle.t / 1000) as UTCTimestamp
+      const earliestSec = allCandles.length > 0 ? allCandles[0].t / 1000 : 0
+      if ((time as number) < earliestSec) return
       series.update({
-        time: (candle.t / 1000) as UTCTimestamp,
+        time,
         open: candle.o,
         high: candle.h,
         low: candle.l,

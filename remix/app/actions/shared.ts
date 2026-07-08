@@ -125,8 +125,11 @@ export async function loadAndAnalyze(
     lookback = candles.length
   } else {
     lookback = options?.lookback ?? Math.min(Math.max(Number(url.searchParams.get('lookback') ?? '200'), 20), 800)
-    const { data: rawCandles, error: err } = await tryCatch(fetchCandles(asset, interval, now - INTERVAL_MS[interval] * lookback, now))
-    if (err !== null) return { candles: [], segments: [], regime: undefined as never, auction: undefined as never, error: err.message }
+    const startTime = now - INTERVAL_MS[interval] * lookback
+    const { data: rawCandles, error: err } = await tryCatch(fetchCandles(asset, interval, startTime, now))
+    if (err !== null) {
+      return { candles: [], segments: [], regime: undefined as never, auction: undefined as never, error: err.message }
+    }
     if (rawCandles.length === 0) return { candles: [], segments: [], regime: undefined as never, auction: undefined as never, error: 'No candle data' }
     candles = rawCandles.map(toCandle)
   }

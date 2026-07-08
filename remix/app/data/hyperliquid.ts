@@ -1,20 +1,4 @@
-import { createAlova } from 'alova'
-import { xhrRequestAdapter } from '@alova/adapter-xhr'
-import { ApiError } from '../lib/api/error.ts'
 import { networks } from '../lib/networks.ts'
-
-const hlApi = createAlova({
-  baseURL: networks.testnet.hlInfoUrl,
-  requestAdapter: xhrRequestAdapter({ onCreate: xhr => { xhr.timeout = 10_000 } }),
-  responded: {
-    onSuccess: async (response) => {
-      if (response.status >= 400) {
-        throw new ApiError(`HL ${response.status}: ${String(response.data ?? '')}`, response.status, 'HL_ERROR')
-      }
-      return response.data
-    },
-  },
-})
 
 export type Candle = {
   t: number
@@ -26,16 +10,32 @@ export type Candle = {
   n: number
 }
 
-export function fetchCandles(
+export async function fetchCandles(
   coin: string,
   interval: string,
   startMs: number,
   endMs: number,
 ): Promise<Candle[]> {
-  return hlApi.Post<Candle[]>('/info', {
-    type: 'candleSnapshot',
-    req: { coin, interval, startTime: startMs, endTime: endMs },
-  }, {
-    name: `candles-${coin}-${interval}-${startMs}-${endMs}`,
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 10_000)
+
+  try {
+    const res = await fetch(networks.testnet.hlInfoUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'candleSnapshot',
+        req: { coin, interval, startTime: startMs, endTime: endMs },
+      }),
+      signal: controller.signal,
+    })
+
+    if (!res.ok) {
+      throw new Error(`HL ${res.status}: ${await res.text()}`)
+    }
+
+    return res.json() as Promise<Candle[]>
+  } finally {
+    clearTimeout(timeout)
+  }
 }
