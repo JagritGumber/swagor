@@ -9,10 +9,10 @@ import { useState } from "react";
  * the panel locally where the cron is not firing.
  */
 export function WatcherDevControls() {
-  const [busy, setBusy] = useState<"tick" | "escalate" | null>(null);
+  const [busy, setBusy] = useState<"tick" | "escalate" | "judgment" | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
 
-  async function hit(path: string, key: "tick" | "escalate") {
+  async function hit(path: string, key: "tick" | "escalate" | "judgment") {
     if (busy) return;
     setBusy(key);
     setLastError(null);
@@ -49,6 +49,14 @@ export function WatcherDevControls() {
             className="inline-flex h-9 items-center justify-center border border-[var(--neon-cyan)] bg-[var(--neon-cyan)] px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-black hover:text-[var(--neon-cyan)] disabled:opacity-50"
           >
             {busy === "escalate" ? "Firing..." : "Force escalate"}
+          </button>
+          <button
+            type="button"
+            onClick={() => hit("/api/judgment/force-tick", "judgment")}
+            disabled={!!busy}
+            className="inline-flex h-9 items-center justify-center border border-[var(--hairline-strong)] bg-black px-4 font-mono text-xs font-bold uppercase tracking-[0.18em] text-foreground transition hover:border-[var(--neon-cyan)] hover:text-[var(--neon-cyan)] disabled:opacity-50"
+          >
+            {busy === "judgment" ? "Judging..." : "Force judgment"}
           </button>
         </div>
       </div>
