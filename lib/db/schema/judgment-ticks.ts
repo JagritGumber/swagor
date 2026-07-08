@@ -1,4 +1,13 @@
-import { pgTable, uuid, text, real, jsonb, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  text,
+  real,
+  jsonb,
+  boolean,
+  timestamp,
+  type AnyPgColumn,
+} from "drizzle-orm/pg-core";
 import { selboInstances } from "./selbo-instances";
 
 /**
@@ -6,6 +15,9 @@ import { selboInstances } from "./selbo-instances";
  * Stores the side, confidence, reason, and full metrics snapshot so the
  * landing page and dashboards can query historical judgments without
  * re-running the engine.
+ *
+ * Chains: each record links to the previous via previousJudgmentId,
+ * forming a linear audit trail of Selbo's decisions.
  */
 export const judgmentTicks = pgTable("judgment_ticks", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -23,6 +35,15 @@ export const judgmentTicks = pgTable("judgment_ticks", {
   invalidation: text("invalidation"),
   allJudgments: jsonb("all_judgments"),
   metricsSnapshot: jsonb("metrics_snapshot"),
+  // Audit trail: link to previous judgment in the chain
+  previousJudgmentId: uuid("previous_judgment_id").references(
+    (): AnyPgColumn => judgmentTicks.id,
+    { onDelete: "set null" },
+  ),
+  // Link to trade if this judgment triggered one
+  tradeId: uuid("trade_id"),
+  // True for the shared admin engine that feeds the public dashboard
+  adminJudgment: boolean("admin_judgment").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
