@@ -12,7 +12,7 @@ const l2Cache = {
   clear: () => { memoryStore.clear() },
 }
 
-function createHlInstance(baseURL: string) {
+function createHlAlova(baseURL: string) {
   return createAlova({
     baseURL,
     requestAdapter: xhrRequestAdapter(),
@@ -27,13 +27,11 @@ function createHlInstance(baseURL: string) {
   })
 }
 
-export const hlTestnet = createHlInstance('https://api.hyperliquid-testnet.xyz/info')
-export const hlMainnet = createHlInstance('https://api.hyperliquid.xyz/info')
+export const hlAlovaTestnet = createHlAlova('https://api.hyperliquid-testnet.xyz/info')
+export const hlAlovaMainnet = createHlAlova('https://api.hyperliquid.xyz/info')
 
-export const hlRateLimit = createRateLimiter({
+export const hlRateLimiter = createRateLimiter({
   duration: 60_000,
   points: 20,
   keyPrefix: 'hl-api',
 })
-
-export { retry } from 'alova/server'

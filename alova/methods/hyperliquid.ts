@@ -1,10 +1,10 @@
-import { hlTestnet, hlMainnet } from '../index.ts'
+import { hlAlovaTestnet, hlAlovaMainnet } from '../index.ts'
 import type { HyperliquidNetwork, HyperliquidCandle } from '../../packages/market-data/shared/types'
 
 export type { HyperliquidCandle }
 
 const hlInstance = (network: HyperliquidNetwork) =>
-  network === 'mainnet' ? hlMainnet : hlTestnet
+  network === 'mainnet' ? hlAlovaMainnet : hlAlovaTestnet
 
 export const getCandles = (
   network: HyperliquidNetwork,

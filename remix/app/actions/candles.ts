@@ -1,15 +1,10 @@
 import type { AppContext } from '../router.ts'
-import { retry, hlRateLimit } from '../../../alova'
+import { retry } from 'alova/server'
+import { hlRateLimiter } from '../../../alova'
 import { getCandles, type HyperliquidCandle } from '../../../alova/methods/hyperliquid.ts'
 import { tryCatch } from '../lib/api/try-catch.ts'
-import { VALID_INTERVALS } from './shared.ts'
+import { VALID_INTERVALS, toCandle } from './shared.ts'
 import { apiSuccess, apiError } from '../lib/api/response.ts'
-
-type Candle = { t: number; o: number; h: number; l: number; c: number; v: number }
-
-function toCandle(raw: HyperliquidCandle): Candle {
-  return { t: raw.t, o: Number(raw.o), h: Number(raw.h), l: Number(raw.l), c: Number(raw.c), v: Number(raw.v) }
-}
 
 export async function candles(context: AppContext) {
   const url = new URL(context.request.url)
@@ -23,8 +18,8 @@ export async function candles(context: AppContext) {
   }
 
   const method = getCandles('testnet', asset, interval, start, end)
-  const limited = hlRateLimit(method, { key: 'hl' })
-  const hooked = retry(limited, {
+  const limiter = hlRateLimiter(method, { key: 'hl' })
+  const hooked = retry(limiter, {
     retry: 3,
     backoff: { delay: 1000, multiplier: 2, startQuiver: 0.3, endQuiver: 0.7 },
   })

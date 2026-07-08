@@ -3,7 +3,8 @@ import type { OverlaySegment } from '../components/chart/types.ts'
 import type { SelboReasoning, ReaderReadResult } from '../types/reader.ts'
 import { buildSelboReasoning } from '../data/selbo-reasoning.ts'
 import { tryCatch } from '../lib/api/try-catch.ts'
-import { retry, hlRateLimit } from '../../../alova'
+import { retry } from 'alova/server'
+import { hlRateLimiter } from '../../../alova'
 import { getCandles, type HyperliquidCandle } from '../../../alova/methods/hyperliquid.ts'
 import { readMarketRegime } from '@packages/strategy-lab/read-core/market-regime/read-market-regime'
 import { readMarketAuction } from '@packages/strategy-lab/read-core/read/read-market-auction'
@@ -128,8 +129,8 @@ export async function loadAndAnalyze(
     lookback = options?.lookback ?? Math.min(Math.max(Number(url.searchParams.get('lookback') ?? '200'), 20), 800)
     const startTime = now - INTERVAL_MS[interval] * lookback
     const method = getCandles('testnet', asset, interval, startTime, now)
-    const limited = hlRateLimit(method, { key: 'hl' })
-    const hooked = retry(limited, {
+    const limiter = hlRateLimiter(method, { key: 'hl' })
+    const hooked = retry(limiter, {
       retry: 3,
       backoff: { delay: 1000, multiplier: 2, startQuiver: 0.3, endQuiver: 0.7 },
     })

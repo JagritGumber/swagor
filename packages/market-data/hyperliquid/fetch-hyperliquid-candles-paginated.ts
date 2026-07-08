@@ -1,5 +1,6 @@
-import { retry, hlRateLimit } from '../../../alova'
-import { getCandles } from '../../../alova/methods/hyperliquid.ts'
+import { retry } from 'alova/server'
+import { hlRateLimiter } from '../../../alova'
+import { getCandles } from '../../../alova/methods/hyperliquid'
 import { intervalMs } from "../shared/interval-ms";
 import type { CandleQuery, HyperliquidCandle } from "../shared/types";
 import { validateHyperliquidCandles } from "./validate-hyperliquid-candles";
@@ -15,8 +16,8 @@ export async function fetchHyperliquidCandlesPaginated(query: CandleQuery): Prom
   while (cursor < query.endMs) {
     const windowEnd = Math.min(query.endMs, cursor + step * PAGE_LIMIT);
     const method = getCandles(query.network, query.asset.toUpperCase(), query.interval, cursor, windowEnd);
-    const limited = hlRateLimit(method, { key: 'hl' });
-    const hooked = retry(limited, {
+    const limiter = hlRateLimiter(method, { key: 'hl' });
+    const hooked = retry(limiter, {
       retry: 3,
       backoff: { delay: 1000, multiplier: 2, startQuiver: 0.3, endQuiver: 0.7 },
     });
