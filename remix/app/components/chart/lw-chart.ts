@@ -33,6 +33,16 @@ const SEG_BG: Record<string, string> = {
   'unknown': 'rgba(128, 128, 128, 0.04)',
 }
 
+const HISTOGRAM_COLOR: Record<string, string> = {
+  'trend-up': 'rgba(0, 212, 255, 0.25)',
+  'trend-down': 'rgba(255, 80, 80, 0.25)',
+  'high-vol': 'rgba(255, 200, 50, 0.25)',
+  'range': 'rgba(100, 150, 255, 0.25)',
+  'unknown': 'rgba(128, 128, 128, 0.15)',
+}
+
+const HISTOGRAM_WIDTH_PX = 50
+
 function toLWData(candles: Candle[]): CandlestickData[] {
   return candles.map(c => ({
     time: (c.t / 1000) as UTCTimestamp,
@@ -70,6 +80,76 @@ export interface LWChartInstance {
   updateCandle(candle: Candle): void
   appendCandle(candle: Candle): void
   destroy(): void
+}
+
+function drawHistogramBars(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  x2: number,
+  bins: { low: number; high: number; mid: number; volume: number }[],
+  series: any,
+  color: string,
+): void {
+  if (bins.length === 0) return
+
+  const maxVolume = Math.max(...bins.map(b => b.volume))
+  if (maxVolume <= 0) return
+
+  const segmentWidth = x2 - x1
+  const barAreaWidth = Math.min(HISTOGRAM_WIDTH_PX, segmentWidth * 0.4)
+  if (barAreaWidth < 4) return
+
+  const barAreaX = x2 - barAreaWidth
+
+  for (const bin of bins) {
+    const yHigh = series.priceToCoordinate(bin.high)
+    const yLow = series.priceToCoordinate(bin.low)
+    if (yHigh === null || yLow === null) continue
+
+    const top = Math.min(yHigh, yLow)
+    const barHeight = Math.max(1, Math.abs(yLow - yHigh))
+    const barWidth = (bin.volume / maxVolume) * barAreaWidth
+
+    if (barWidth < 0.5) continue
+
+    ctx.fillStyle = color
+    ctx.fillRect(barAreaX + barAreaWidth - barWidth, top, barWidth, barHeight)
+  }
+}
+
+function drawPOCFallback(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  x2: number,
+  poc: number,
+  valueAreaLow: number,
+  valueAreaHigh: number,
+  series: any,
+  color: string,
+): void {
+  const pocY = series.priceToCoordinate(poc)
+  if (pocY === null) return
+
+  const vaHighY = series.priceToCoordinate(valueAreaHigh)
+  const vaLowY = series.priceToCoordinate(valueAreaLow)
+
+  const fallbackColor = color.replace(/[\d.]+\)$/, '0.15)')
+
+  if (vaHighY !== null && vaLowY !== null) {
+    const top = Math.min(vaHighY, vaLowY)
+    const h = Math.abs(vaLowY - vaHighY)
+    if (h > 0) {
+      ctx.fillStyle = fallbackColor
+      const barW = 4
+      ctx.fillRect(x2 - barW, top, barW, h)
+    }
+  }
+
+  ctx.fillStyle = color
+  const dotR = 2
+  ctx.beginPath()
+  ctx.arc(x2 - 2, pocY, dotR, 0, Math.PI * 2)
+  ctx.fill()
 }
 
 export function createLWChart(opts: LWChartOptions): LWChartInstance {
@@ -244,6 +324,13 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
                     ctx.moveTo(x1, pocY)
                     ctx.lineTo(x2, pocY)
                     ctx.stroke()
+                  }
+
+                  const segColor = HISTOGRAM_COLOR[seg.mode] ?? HISTOGRAM_COLOR['unknown']
+                  if (seg.bins && seg.bins.length > 0) {
+                    drawHistogramBars(ctx, x1, x2, seg.bins, series, segColor)
+                  } else {
+                    drawPOCFallback(ctx, x1, x2, seg.poc, seg.valueAreaLow, seg.valueAreaHigh, series, segColor)
                   }
                 }
               })
