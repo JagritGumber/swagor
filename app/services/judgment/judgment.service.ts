@@ -72,12 +72,16 @@ async function persistJudgment(params: {
     .returning({ id: judgmentTicks.id });
 
   const savedId = record[0]?.id;
-  if (savedId) {
+  if (!savedId) throw new Error("Failed to persist judgment - no ID returned");
+
+  try {
     updateLastJudgment(instanceId, savedId);
+  } catch {
+    // Non-fatal: DB insert succeeded, engine state can be reconciled on next tick
   }
 
   return {
-    judgmentId: savedId ?? judgment.id,
+    judgmentId: savedId,
     side:
       judgment.action.type === "enter"
         ? (judgment.action.side ?? null)
