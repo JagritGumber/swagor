@@ -9,6 +9,7 @@ import type { DB } from '../db/index.ts'
 import { trades, candles } from '../db/schema.ts'
 import { NETWORK } from '../../env.ts'
 import { INTERVAL_MS } from '../http/subscribe.ts'
+import { publishCandleClose } from '../queue.ts'
 
 globalThis.WebSocket = WebSocket as unknown as typeof globalThis.WebSocket
 
@@ -66,6 +67,14 @@ export function connectAndStream(
           })
 
           sseManager.broadcast(trade.asset, 'candle-close', { ...candle, t: candle.t * 1000 })
+          await publishCandleClose(trade.asset, candle.interval, {
+            t: candle.t * 1000,
+            o: candle.o,
+            h: candle.h,
+            l: candle.l,
+            c: candle.c,
+            v: candle.v,
+          })
         }
       }
 
