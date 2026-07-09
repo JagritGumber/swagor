@@ -1,6 +1,8 @@
 import { index } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
 import { pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+export { selboInstances } from '../../lib/db/schema/selbo-instances'
+export { judgmentTicks } from '../../lib/db/schema/judgment-ticks'
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
