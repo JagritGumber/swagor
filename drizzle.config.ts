@@ -39,7 +39,6 @@ export default defineConfig({
     "equity_snapshots",
     "strategy_revisions",
     "tick_stages",
-    "judgment_ticks",
     "daily_plans",
     "backtest_runs",
     "backtest_trades",

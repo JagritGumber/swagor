@@ -58,15 +58,12 @@ export interface LandingJudgment {
   side?: string
   confidence: number
   reason: string
-  previousJudgmentId: string | null
   allJudgments: {
     configId: string
     label: string
     confidence: number
     reason: string
   }[]
-  metricsSnapshot: Record<string, unknown> | null
-  createdAt: string
 }
 
 export interface LandingPortfolio {
