@@ -211,7 +211,7 @@ export interface AgentReadResult {
   auction: { location: string; locationLabel: string; bias: string; narrative: string; profile: { poc: number; valueAreaLow: number; valueAreaHigh: number; bins: { low: number; high: number; volume: number }[] } | null; level: { price: number; kind: string; touches: number } | null } | null
   read: { stance: string; narrative: string; invalidation: string | null; target: string | null; orderflow: { pressure: string; delta: number; tradeCount: number; events: string[] } } | null
   plan: { status: string; asset: string; side?: string; entryLow?: number; entryHigh?: number; stop?: number; target?: number; invalidation?: string; confidence: number; reasons: string[] } | null
-  judgment: { id: string; action: string; side?: string; confidence: number; reason: string; allJudgments: { configId: string; label: string; confidence: number; reason: string }[] } | null
+  judgment: { id: string; action: string; side?: string; confidence: number; reason: string; previousJudgmentId: string | null; allJudgments: { configId: string; label: string; confidence: number; reason: string }[]; metricsSnapshot: Record<string, unknown> | null; createdAt: string } | null
   portfolio: { equity: number; totalPnl: number; dailyPnl: number; tradeCount: number; winCount: number; lossCount: number; openPositionCount: number } | null
   asset: string
   error: string | null
@@ -287,25 +287,60 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
         invalidation: plan.invalidation, confidence: plan.confidence, reasons: plan.reasons,
       }
 
-  const judgmentResult = await runJudgmentPipeline(asset, '1h', candles)
+  // Fetch persisted admin judgment instead of computing fresh
+  const appUrl = process.env.APP_URL ?? 'http://localhost:44100'
+  const judgmentResponse = await fetch(
+    `${appUrl}/api/judgment/history?asset=${asset}&limit=1`,
+  ).catch(() => null)
 
-  const judgment = {
-    id: judgmentResult.judgment.judgment.id,
-    action: judgmentResult.judgment.bestJudgment?.action.type ?? 'no-trade',
-    side: judgmentResult.judgment.bestJudgment?.action.type === 'enter'
-      ? judgmentResult.judgment.bestJudgment.action.side
-      : undefined,
-    confidence: judgmentResult.judgment.bestJudgment?.confidence ?? 0,
-    reason: judgmentResult.judgment.bestJudgment?.reason ?? 'no judgment',
-    allJudgments: judgmentResult.judgment.allJudgments.map((j) => ({
-      configId: j.configId,
-      label: j.label,
-      confidence: j.confidence,
-      reason: j.reason,
-    })),
+  let judgment: AgentReadResult['judgment'] = null
+  if (judgmentResponse?.ok) {
+    const judgmentData = await judgmentResponse.json()
+    if (judgmentData.ok && judgmentData.data?.latest) {
+      const j = judgmentData.data.latest
+      judgment = {
+        id: j.id,
+        action: j.side ? `enter-${j.side}` : 'no-trade',
+        side: j.side ?? undefined,
+        confidence: j.confidence ?? 0,
+        reason: j.reason ?? 'no judgment',
+        previousJudgmentId: j.previousJudgmentId ?? null,
+        allJudgments: (j.allJudgments as Array<{
+          configId: string
+          label: string
+          confidence: number
+          reason: string
+        }>) ?? [],
+        metricsSnapshot: j.metricsSnapshot ?? null,
+        createdAt: j.createdAt ?? new Date().toISOString(),
+      }
+    }
   }
 
-  const portfolioSnap = judgmentResult.portfolio
+  // Fallback: compute fresh if no persisted judgment
+  let portfolioSnap: AgentReadResult['portfolio'] = null
+  if (!judgment) {
+    const judgmentResult = await runJudgmentPipeline(asset, '1h', candles)
+    judgment = {
+      id: judgmentResult.judgment.judgment.id,
+      action: judgmentResult.judgment.bestJudgment?.action.type ?? 'no-trade',
+      side: judgmentResult.judgment.bestJudgment?.action.type === 'enter'
+        ? judgmentResult.judgment.bestJudgment.action.side
+        : undefined,
+      confidence: judgmentResult.judgment.bestJudgment?.confidence ?? 0,
+      reason: judgmentResult.judgment.bestJudgment?.reason ?? 'no judgment',
+      previousJudgmentId: null,
+      allJudgments: judgmentResult.judgment.allJudgments.map((j) => ({
+        configId: j.configId,
+        label: j.label,
+        confidence: j.confidence,
+        reason: j.reason,
+      })),
+      metricsSnapshot: null,
+      createdAt: new Date().toISOString(),
+    }
+    portfolioSnap = judgmentResult.portfolio
+  }
 
   return { candles, segments, regime, auction, read: readerRead, plan: tradePlan, judgment, portfolio: portfolioSnap, asset, error: null }
 }
