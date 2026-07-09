@@ -1,8 +1,8 @@
 import { Auth } from 'remix/middleware/auth'
 import type { AppContext } from '../router.ts'
 import { eq } from 'drizzle-orm'
-import { getSupabaseDb } from '../db/supabase.ts'
-import { selboInstances } from '../../../lib/db/schema/index.ts'
+import { selboInstances } from '../db/schema.ts'
+import { getDb } from '../db/client.ts'
 import {
   getLatestJudgment,
   getLatestAdminJudgment,
@@ -22,17 +22,17 @@ export async function judgmentHistory(context: AppContext) {
 
   const auth = context.get(Auth)
   if (auth.ok) {
-    const db = await getSupabaseDb()
+    const db = await getDb()
     const [instance] = await db
       .select()
-      .from(selboInstances as any)
-      .where(eq((selboInstances as any).userId, auth.identity.id))
+      .from(selboInstances)
+      .where(eq(selboInstances.userId, auth.identity.id))
       .limit(1)
 
     if (instance) {
       const [latest, history] = await Promise.all([
-        getLatestJudgment((instance as any).id),
-        getJudgmentHistory((instance as any).id, limit),
+        getLatestJudgment(instance.id),
+        getJudgmentHistory(instance.id, limit),
       ])
       return apiSuccess({ latest, history, source: 'user' })
     }

@@ -1,7 +1,7 @@
 import type { AppContext } from '../router.ts'
 import { eq, and } from 'drizzle-orm'
-import { getSupabaseDb } from '../db/supabase.ts'
-import { selboInstances } from '../../../lib/db/schema/index.ts'
+import { selboInstances } from '../db/schema.ts'
+import { getDb } from '../db/client.ts'
 import {
   runJudgmentForInstance,
   runAdminJudgment,
@@ -29,18 +29,17 @@ export async function judgmentTick(context: AppContext) {
     }
   }
 
-  // Root schema types are incompatible with Remix's Drizzle - cast to any
-  const db = await getSupabaseDb()
-  const activeInstances = await (db as any)
+  const db = await getDb()
+  const activeInstances = await db
     .select()
     .from(selboInstances)
     .where(and(
-      eq((selboInstances as any).killSwitchActive, false),
-      eq((selboInstances as any).betaAccessGranted, true),
+      eq(selboInstances.killSwitchActive, false),
+      eq(selboInstances.betaAccessGranted, true),
     ))
 
   const instanceResults = await Promise.allSettled(
-    activeInstances.map((i: any) => runJudgmentForInstance(i.id)),
+    activeInstances.map(i => runJudgmentForInstance(i.id)),
   )
 
   let adminResult: { status: 'fulfilled'; value: unknown } | { status: 'rejected'; reason: unknown }
@@ -51,14 +50,14 @@ export async function judgmentTick(context: AppContext) {
     adminResult = { status: 'rejected' as const, reason: e }
   }
 
-  const summary = activeInstances.map((instance: any, idx: number) => {
+  const summary = activeInstances.map((instance, idx) => {
     const r = instanceResults[idx]
     if (!r) return { instanceId: instance.id, status: 'missing' as const }
     return {
       instanceId: instance.id,
       status: r.status,
       ...(r.status === 'fulfilled'
-        ? { judgmentId: r.value.judgmentId, side: r.value.side, confidence: r.value.confidence }
+        ? { judgmentId: r.value }
         : { error: r.reason instanceof Error ? r.reason.message : String(r.reason) }),
     }
   })

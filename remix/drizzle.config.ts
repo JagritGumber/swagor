@@ -6,7 +6,7 @@ export default defineConfig({
   schema: './app/db/schema.ts',
   out: './drizzle',
   dialect: 'postgresql',
-  tablesFilter: ['tick_stages', 'judgment_ticks'],
+  tablesFilter: ['tick_stages', 'judgment_ticks', 'selbo_instances'],
   ...(driver ? { driver } : {}),
   dbCredentials: {
     url: driver
