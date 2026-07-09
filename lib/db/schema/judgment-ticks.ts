@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, real, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, real, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
 import { selboInstances } from "./selbo-instances";
 
 /**
@@ -10,7 +10,6 @@ import { selboInstances } from "./selbo-instances";
 export const judgmentTicks = pgTable("judgment_ticks", {
   id: uuid("id").primaryKey().defaultRandom(),
   selboInstanceId: uuid("selbo_instance_id")
-    .notNull()
     .references(() => selboInstances.id, { onDelete: "cascade" }),
   asset: text("asset").notNull(),
   version: text("version").notNull(),
@@ -21,6 +20,9 @@ export const judgmentTicks = pgTable("judgment_ticks", {
   stopPrice: text("stop_price"),
   targetPrice: text("target_price"),
   invalidation: text("invalidation"),
+  previousJudgmentId: uuid("previous_judgment_id"),
+  tradeId: uuid("trade_id"),
+  adminJudgment: boolean("admin_judgment").notNull().default(false),
   allJudgments: jsonb("all_judgments"),
   metricsSnapshot: jsonb("metrics_snapshot"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
