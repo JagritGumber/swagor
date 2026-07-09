@@ -6,7 +6,7 @@ export const routes = route({
   agent: '/agent',
   dashboard: '/dashboard',
   candles: get('/api/candles'),
-  judgmentTick: get('/api/judgment/tick'),
+  judgmentTick: get('/admin/judgment/tick'),
   judgmentHistory: get('/api/judgment/history'),
   login: '/login',
   nonce: get('/api/nonce'),
