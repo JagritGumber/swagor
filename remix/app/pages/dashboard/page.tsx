@@ -5,51 +5,7 @@ import { Tooltip } from '../../components/tooltip.tsx'
 import { BalanceDisplay } from '../../assets/balance-display.tsx'
 import { WalletAddress } from '../../assets/wallet-address.tsx'
 import type { DashboardData } from './types.ts'
-import {
-  page,
-  topBar,
-  statusSection,
-  statusText,
-  statusSub,
-  equityBlock,
-  riskBlock,
-  emptyBlock,
-  tradingLabel,
-  toggleButton,
-  toggleKnob,
-  dataLabel,
-  dataValue,
-  labelRow,
-  riskValue,
-  metricsRow,
-  metricBlock,
-  metricLabel,
-  metricValue,
-  metricValueGreen,
-  metricValueRed,
-  activityRow,
-  leftPanel,
-  centerPanel,
-  activityPanel,
-  panelHeader,
-  panelTitle,
-  panelContent,
-  readRow,
-  readLabel,
-  readValue,
-  positionRow,
-  positionMarket,
-  positionSide,
-  positionPnl,
-  activityHeader,
-  activityTitle,
-  activityList,
-  activityItem,
-  activityTime,
-  activityDot,
-  activityText,
-  content,
-} from './style.ts'
+import * as s from './style.ts'
 import type { ActivityEntry } from './types.ts'
 
 interface DashboardPageProps {
@@ -82,129 +38,129 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
         </>
       }
     >
-      <div mix={page}>
-        <div mix={topBar}>
-          <div mix={statusSection}>
+      <div mix={s.page}>
+        <div mix={s.topBar}>
+          <div mix={s.statusSection}>
             <div mix={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '2px' } as any}>
-              <div mix={statusText}>{data.statusMessage}</div>
+              <div mix={s.statusText}>{data.statusMessage}</div>
             </div>
-            <div mix={statusSub}>{data.statusSubtext}</div>
+            <div mix={s.statusSub}>{data.statusSubtext}</div>
           </div>
 
-          <div mix={equityBlock}>
-            <div mix={labelRow}>
-              <div mix={dataLabel}>Wallet Balance</div>
+          <div mix={s.equityBlock}>
+            <div mix={s.labelRow}>
+              <div mix={s.dataLabel}>Wallet Balance</div>
               <Tooltip content="This is the wallet balance of Selbo" />
             </div>
-            <div mix={dataValue}>
+            <div mix={s.dataValue}>
               <BalanceDisplay initialBalance={data.balanceUsd} />
             </div>
             <WalletAddress address={data.walletAddress} />
           </div>
 
-          <div mix={riskBlock}>
-            <div mix={labelRow}>
-              <div mix={dataLabel}>Risk</div>
+          <div mix={s.riskBlock}>
+            <div mix={s.labelRow}>
+              <div mix={s.dataLabel}>Risk</div>
               <Tooltip content="Current risk exposure level based on open positions" />
             </div>
-            <div mix={riskValue(data.riskLevel)}>{data.riskLevel}</div>
+            <div mix={s.riskValue(data.riskLevel)}>{data.riskLevel}</div>
           </div>
 
-          <div mix={emptyBlock}>
-            <div mix={labelRow}>
-              <span mix={tradingLabel}>Trading</span>
+          <div mix={s.emptyBlock}>
+            <div mix={s.labelRow}>
+              <span mix={s.tradingLabel}>Trading</span>
               <Tooltip content="Toggle automated trading on or off" />
             </div>
-            <button mix={toggleButton(isActive)} type="button">
-              <span mix={toggleKnob(isActive)} />
+            <button mix={s.toggleButton(isActive)} type="button">
+              <span mix={s.toggleKnob(isActive)} />
             </button>
           </div>
         </div>
 
-        <div mix={metricsRow}>
-          <div mix={metricBlock}>
-            <div mix={labelRow}>
-              <div mix={metricLabel}>Daily Avg P&L</div>
+        <div mix={s.metricsRow}>
+          <div mix={s.metricBlock}>
+            <div mix={s.labelRow}>
+              <div mix={s.metricLabel}>Daily Avg P&L</div>
               <Tooltip content="Average daily profit or loss over the active period" />
             </div>
-            <div mix={dailyUp ? metricValueGreen : metricValueRed}>{dailyUp ? '+' : ''}${data.dailyAvgPnl.toFixed(2)}</div>
+            <div mix={dailyUp ? s.metricValueGreen : s.metricValueRed}>{dailyUp ? '+' : ''}${data.dailyAvgPnl.toFixed(2)}</div>
           </div>
-          <div mix={metricBlock}>
-            <div mix={labelRow}>
-              <div mix={metricLabel}>Total P&L</div>
+          <div mix={s.metricBlock}>
+            <div mix={s.labelRow}>
+              <div mix={s.metricLabel}>Total P&L</div>
               <Tooltip content="Cumulative profit or loss since activation" />
             </div>
-            <div mix={totalUp ? metricValueGreen : metricValueRed}>{totalUp ? '+' : ''}${data.totalPnl.toFixed(2)}</div>
+            <div mix={totalUp ? s.metricValueGreen : s.metricValueRed}>{totalUp ? '+' : ''}${data.totalPnl.toFixed(2)}</div>
           </div>
-          <div mix={metricBlock}>
-            <div mix={labelRow}>
-              <div mix={metricLabel}>Sharpe Ratio</div>
+          <div mix={s.metricBlock}>
+            <div mix={s.labelRow}>
+              <div mix={s.metricLabel}>Sharpe Ratio</div>
               <Tooltip content="Risk-adjusted return measure (higher is better)" />
             </div>
-            <div mix={metricValue}>{data.sharpeRatio.toFixed(2)}</div>
+            <div mix={s.metricValue}>{data.sharpeRatio.toFixed(2)}</div>
           </div>
-          <div mix={metricBlock}>
-            <div mix={labelRow}>
-              <div mix={metricLabel}>Win Rate</div>
+          <div mix={s.metricBlock}>
+            <div mix={s.labelRow}>
+              <div mix={s.metricLabel}>Win Rate</div>
               <Tooltip content="Percentage of closed trades that were profitable" />
             </div>
-            <div mix={metricValue}>{data.winRate.toFixed(1)}%</div>
+            <div mix={s.metricValue}>{data.winRate.toFixed(1)}%</div>
           </div>
-          <div mix={metricBlock}>
-            <div mix={labelRow}>
-              <div mix={metricLabel}>Total Trades</div>
+          <div mix={s.metricBlock}>
+            <div mix={s.labelRow}>
+              <div mix={s.metricLabel}>Total Trades</div>
               <Tooltip content="Total number of trades executed since activation" />
             </div>
-            <div mix={metricValue}>{data.totalTrades}</div>
+            <div mix={s.metricValue}>{data.totalTrades}</div>
           </div>
-          <div mix={metricBlock}>
-            <div mix={labelRow}>
-              <div mix={metricLabel}>Max Drawdown</div>
+          <div mix={s.metricBlock}>
+            <div mix={s.labelRow}>
+              <div mix={s.metricLabel}>Max Drawdown</div>
               <Tooltip content="Largest peak-to-trough decline in equity" />
             </div>
             <div mix={{ fontSize: '18px', fontWeight: 600, color: ddColor, fontFamily: "'Inter', system-ui, sans-serif" } as any}>{data.maxDrawdown.toFixed(1)}%</div>
           </div>
         </div>
 
-        <div mix={activityRow}>
+        <div mix={s.activityRow}>
           {/* Market Read */}
-          <div mix={leftPanel}>
-            <div mix={panelHeader}>
-              <div mix={panelTitle}>Market Read</div>
+          <div mix={s.leftPanel}>
+            <div mix={s.panelHeader}>
+              <div mix={s.panelTitle}>Market Read</div>
             </div>
-            <div mix={panelContent}>
-              <div mix={readRow}>
-                <span mix={readLabel}>Asset</span>
-                <span mix={readValue}>{data.marketRead.asset}</span>
+            <div mix={s.panelContent}>
+              <div mix={s.readRow}>
+                <span mix={s.readLabel}>Asset</span>
+                <span mix={s.readValue}>{data.marketRead.asset}</span>
               </div>
-              <div mix={readRow}>
-                <span mix={readLabel}>Regime</span>
-                <span mix={readValue}>{data.marketRead.regime}</span>
+              <div mix={s.readRow}>
+                <span mix={s.readLabel}>Regime</span>
+                <span mix={s.readValue}>{data.marketRead.regime}</span>
               </div>
-              <div mix={readRow}>
-                <span mix={readLabel}>Bias</span>
-                <span mix={readValue}>{data.marketRead.bias}</span>
+              <div mix={s.readRow}>
+                <span mix={s.readLabel}>Bias</span>
+                <span mix={s.readValue}>{data.marketRead.bias}</span>
               </div>
-              <div mix={readRow}>
-                <span mix={readLabel}>Narrative</span>
-                <span mix={readValue}>{data.marketRead.narrative}</span>
+              <div mix={s.readRow}>
+                <span mix={s.readLabel}>Narrative</span>
+                <span mix={s.readValue}>{data.marketRead.narrative}</span>
               </div>
             </div>
           </div>
 
           {/* Active Positions */}
-          <div mix={centerPanel}>
-            <div mix={panelHeader}>
-              <div mix={panelTitle}>Active Positions</div>
+          <div mix={s.centerPanel}>
+            <div mix={s.panelHeader}>
+              <div mix={s.panelTitle}>Active Positions</div>
             </div>
-            <div mix={panelContent}>
+            <div mix={s.panelContent}>
               {data.positions.map((pos, i: number) => (
-                <div key={String(i)} mix={positionRow}>
+                <div key={String(i)} mix={s.positionRow}>
                   <div>
-                    <div mix={positionMarket}>{pos.market}</div>
-                    <div mix={positionSide(pos.side)}>{pos.side} · {pos.size} · {pos.leverage}</div>
+                    <div mix={s.positionMarket}>{pos.market}</div>
+                    <div mix={s.positionSide(pos.side)}>{pos.side} · {pos.size} · {pos.leverage}</div>
                   </div>
-                  <div mix={positionPnl(pos.pnl >= 0)}>
+                  <div mix={s.positionPnl(pos.pnl >= 0)}>
                     {pos.pnl >= 0 ? '+' : ''}${pos.pnl.toFixed(2)}
                   </div>
                 </div>
@@ -213,61 +169,61 @@ export function DashboardPage(handle: Handle<DashboardPageProps>) {
           </div>
 
           {/* Live Activity */}
-          <div mix={activityPanel}>
-            <div mix={activityHeader}>
-              <div mix={activityTitle}>Live Activity</div>
+          <div mix={s.activityPanel}>
+            <div mix={s.activityHeader}>
+              <div mix={s.activityTitle}>Live Activity</div>
             </div>
-            <div mix={activityList}>
+            <div mix={s.activityList}>
               {data.activity.map((entry: ActivityEntry, i: number) => (
-                <div key={String(i)} mix={activityItem}>
-                  <span mix={activityTime}>{entry.time}</span>
-                  <span mix={activityDot(entry.type)} />
-                  <span mix={activityText}>{entry.text}</span>
+                <div key={String(i)} mix={s.activityItem}>
+                  <span mix={s.activityTime}>{entry.time}</span>
+                  <span mix={s.activityDot(entry.type)} />
+                  <span mix={s.activityText}>{entry.text}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div mix={activityRow}>
-          <div mix={leftPanel}>
-            <div mix={panelHeader}>
-              <div mix={panelTitle}>Portfolio Performance</div>
+        <div mix={s.activityRow}>
+          <div mix={s.leftPanel}>
+            <div mix={s.panelHeader}>
+              <div mix={s.panelTitle}>Portfolio Performance</div>
             </div>
-            <div mix={panelContent}>
-              <div mix={readRow}>
-                <span mix={readLabel}>Total Return</span>
-                <span mix={readValue}>{data.portfolioPerformance.totalReturn}</span>
+            <div mix={s.panelContent}>
+              <div mix={s.readRow}>
+                <span mix={s.readLabel}>Total Return</span>
+                <span mix={s.readValue}>{data.portfolioPerformance.totalReturn}</span>
               </div>
-              <div mix={readRow}>
-                <span mix={readLabel}>Monthly Return</span>
-                <span mix={readValue}>{data.portfolioPerformance.monthlyReturn}</span>
+              <div mix={s.readRow}>
+                <span mix={s.readLabel}>Monthly Return</span>
+                <span mix={s.readValue}>{data.portfolioPerformance.monthlyReturn}</span>
               </div>
-              <div mix={readRow}>
-                <span mix={readLabel}>Sharpe Ratio</span>
-                <span mix={readValue}>{data.portfolioPerformance.sharpeRatio}</span>
+              <div mix={s.readRow}>
+                <span mix={s.readLabel}>Sharpe Ratio</span>
+                <span mix={s.readValue}>{data.portfolioPerformance.sharpeRatio}</span>
               </div>
-              <div mix={readRow}>
-                <span mix={readLabel}>Sortino Ratio</span>
-                <span mix={readValue}>{data.portfolioPerformance.sortinoRatio}</span>
+              <div mix={s.readRow}>
+                <span mix={s.readLabel}>Sortino Ratio</span>
+                <span mix={s.readValue}>{data.portfolioPerformance.sortinoRatio}</span>
               </div>
-              <div mix={readRow}>
-                <span mix={readLabel}>Max Drawdown</span>
-                <span mix={readValue}>{data.portfolioPerformance.maxDrawdown}</span>
+              <div mix={s.readRow}>
+                <span mix={s.readLabel}>Max Drawdown</span>
+                <span mix={s.readValue}>{data.portfolioPerformance.maxDrawdown}</span>
               </div>
-              <div mix={readRow}>
-                <span mix={readLabel}>Calmar Ratio</span>
-                <span mix={readValue}>{data.portfolioPerformance.calmarRatio}</span>
+              <div mix={s.readRow}>
+                <span mix={s.readLabel}>Calmar Ratio</span>
+                <span mix={s.readValue}>{data.portfolioPerformance.calmarRatio}</span>
               </div>
             </div>
           </div>
 
-          <div mix={centerPanel}></div>
+          <div mix={s.centerPanel}></div>
 
-          <div mix={activityPanel}></div>
+          <div mix={s.activityPanel}></div>
         </div>
 
-        <div mix={content} />
+        <div mix={s.content} />
       </div>
     </Document>
   )
