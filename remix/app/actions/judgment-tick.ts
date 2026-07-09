@@ -9,58 +9,56 @@ import {
 import { apiSuccess, apiError } from '../lib/api/response.ts'
 
 /**
- * Cron heartbeat endpoint for judgment engine. Called by external scheduler
- * on candle close. Evaluates all active Selbo instances plus the shared
- * admin judgment engine.
- *
- * Auth: shared secret in Authorization: Bearer ${CRON_SECRET} header.
+ * Manual trigger for judgment tick. Used for dev testing and admin force-runs.
+ * In production, judgment is triggered via BullMQ queue (candle close events
+ * from the ingestion service).
  */
 export async function judgmentTick(context: AppContext) {
-  const secret = process.env.CRON_SECRET
-  if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      return apiError('CRON_SECRET_MISSING', 'CRON_SECRET not configured', 503)
-    }
-  } else {
-    const auth = context.request.headers.get('authorization') ?? ''
-    if (auth !== `Bearer ${secret}`) {
-      return apiError('UNAUTHORIZED', 'Unauthorized', 401)
+  const url = new URL(context.request.url)
+  const asset = url.searchParams.get('asset') ?? 'ETH'
+  const adminOnly = url.searchParams.get('admin') === 'true'
+
+  const now = new Date()
+
+  if (adminOnly) {
+    try {
+      const result = await runAdminJudgment(asset)
+      return apiSuccess({ ranAt: now.toISOString(), adminJudgment: result })
+    } catch (e) {
+      return apiError('ADMIN_JUDGMENT_FAILED', e instanceof Error ? e.message : String(e), 500)
     }
   }
 
-  const now = new Date()
+  // Root schema types are incompatible with Remix's Drizzle - cast to any
   const db = await getSupabaseDb()
-
-  const activeInstances = await db
+  const activeInstances = await (db as any)
     .select()
-    .from(selboInstances as any)
-    .where(
-      and(
-        eq((selboInstances as any).killSwitchActive, false),
-        eq((selboInstances as any).betaAccessGranted, true),
-      ),
-    )
+    .from(selboInstances)
+    .where(and(
+      eq((selboInstances as any).killSwitchActive, false),
+      eq((selboInstances as any).betaAccessGranted, true),
+    ))
 
   const instanceResults = await Promise.allSettled(
-    activeInstances.map((i) => runJudgmentForInstance((i as any).id)),
+    activeInstances.map((i: any) => runJudgmentForInstance(i.id)),
   )
 
-  let adminResult: { status: 'fulfilled'; value: string } | { status: 'rejected'; reason: unknown }
+  let adminResult: { status: 'fulfilled'; value: unknown } | { status: 'rejected'; reason: unknown }
   try {
-    const judgmentId = await runAdminJudgment('ETH')
-    adminResult = { status: 'fulfilled' as const, value: judgmentId }
+    const adminJudgment = await runAdminJudgment(asset)
+    adminResult = { status: 'fulfilled' as const, value: adminJudgment }
   } catch (e) {
     adminResult = { status: 'rejected' as const, reason: e }
   }
 
-  const summary = activeInstances.map((instance, idx) => {
+  const summary = activeInstances.map((instance: any, idx: number) => {
     const r = instanceResults[idx]
-    if (!r) return { instanceId: (instance as any).id, status: 'missing' as const }
+    if (!r) return { instanceId: instance.id, status: 'missing' as const }
     return {
-      instanceId: (instance as any).id,
+      instanceId: instance.id,
       status: r.status,
       ...(r.status === 'fulfilled'
-        ? { judgmentId: r.value }
+        ? { judgmentId: r.value.judgmentId, side: r.value.side, confidence: r.value.confidence }
         : { error: r.reason instanceof Error ? r.reason.message : String(r.reason) }),
     }
   })
@@ -72,7 +70,7 @@ export async function judgmentTick(context: AppContext) {
     adminJudgment: {
       status: adminResult.status,
       ...(adminResult.status === 'fulfilled'
-        ? { judgmentId: adminResult.value }
+        ? { judgmentId: (adminResult.value as any).judgmentId, side: (adminResult.value as any).side }
         : { error: adminResult.reason instanceof Error ? adminResult.reason.message : String(adminResult.reason) }),
     },
   })
