@@ -13,7 +13,7 @@ import { publishCandleClose } from '../queue.ts'
 
 globalThis.WebSocket = WebSocket as unknown as typeof globalThis.WebSocket
 
-const ASSETS = ['ETH', 'BTC']
+const ASSETS = ['ETH', 'BTC', 'SOL', 'XRP', 'DOGE']
 const INTERVALS: { name: string; ms: number }[] = Object.entries(INTERVAL_MS).map(([name, ms]) => ({ name, ms }))
 
 export function connectAndStream(
