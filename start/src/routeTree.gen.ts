@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiNonceRouteImport } from './routes/api/nonce'
+import { Route as ApiCandlesRouteImport } from './routes/api/candles'
+import { Route as ApiBalanceRouteImport } from './routes/api/balance'
+import { Route as ApiJudgmentStreamRouteImport } from './routes/api/judgment.stream'
+import { Route as ApiJudgmentHistoryRouteImport } from './routes/api/judgment.history'
+import { Route as AdminJudgmentTickRouteImport } from './routes/admin/judgment.tick'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiNonceRoute = ApiNonceRouteImport.update({
+  id: '/api/nonce',
+  path: '/api/nonce',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCandlesRoute = ApiCandlesRouteImport.update({
+  id: '/api/candles',
+  path: '/api/candles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBalanceRoute = ApiBalanceRouteImport.update({
+  id: '/api/balance',
+  path: '/api/balance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiJudgmentStreamRoute = ApiJudgmentStreamRouteImport.update({
+  id: '/api/judgment/stream',
+  path: '/api/judgment/stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiJudgmentHistoryRoute = ApiJudgmentHistoryRouteImport.update({
+  id: '/api/judgment/history',
+  path: '/api/judgment/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminJudgmentTickRoute = AdminJudgmentTickRouteImport.update({
+  id: '/admin/judgment/tick',
+  path: '/admin/judgment/tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/balance': typeof ApiBalanceRoute
+  '/api/candles': typeof ApiCandlesRoute
+  '/api/nonce': typeof ApiNonceRoute
+  '/admin/judgment/tick': typeof AdminJudgmentTickRoute
+  '/api/judgment/history': typeof ApiJudgmentHistoryRoute
+  '/api/judgment/stream': typeof ApiJudgmentStreamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/balance': typeof ApiBalanceRoute
+  '/api/candles': typeof ApiCandlesRoute
+  '/api/nonce': typeof ApiNonceRoute
+  '/admin/judgment/tick': typeof AdminJudgmentTickRoute
+  '/api/judgment/history': typeof ApiJudgmentHistoryRoute
+  '/api/judgment/stream': typeof ApiJudgmentStreamRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/balance': typeof ApiBalanceRoute
+  '/api/candles': typeof ApiCandlesRoute
+  '/api/nonce': typeof ApiNonceRoute
+  '/admin/judgment/tick': typeof AdminJudgmentTickRoute
+  '/api/judgment/history': typeof ApiJudgmentHistoryRoute
+  '/api/judgment/stream': typeof ApiJudgmentStreamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/api/balance'
+    | '/api/candles'
+    | '/api/nonce'
+    | '/admin/judgment/tick'
+    | '/api/judgment/history'
+    | '/api/judgment/stream'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/api/balance'
+    | '/api/candles'
+    | '/api/nonce'
+    | '/admin/judgment/tick'
+    | '/api/judgment/history'
+    | '/api/judgment/stream'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/balance'
+    | '/api/candles'
+    | '/api/nonce'
+    | '/admin/judgment/tick'
+    | '/api/judgment/history'
+    | '/api/judgment/stream'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiBalanceRoute: typeof ApiBalanceRoute
+  ApiCandlesRoute: typeof ApiCandlesRoute
+  ApiNonceRoute: typeof ApiNonceRoute
+  AdminJudgmentTickRoute: typeof AdminJudgmentTickRoute
+  ApiJudgmentHistoryRoute: typeof ApiJudgmentHistoryRoute
+  ApiJudgmentStreamRoute: typeof ApiJudgmentStreamRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/nonce': {
+      id: '/api/nonce'
+      path: '/api/nonce'
+      fullPath: '/api/nonce'
+      preLoaderRoute: typeof ApiNonceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/candles': {
+      id: '/api/candles'
+      path: '/api/candles'
+      fullPath: '/api/candles'
+      preLoaderRoute: typeof ApiCandlesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/balance': {
+      id: '/api/balance'
+      path: '/api/balance'
+      fullPath: '/api/balance'
+      preLoaderRoute: typeof ApiBalanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/judgment/stream': {
+      id: '/api/judgment/stream'
+      path: '/api/judgment/stream'
+      fullPath: '/api/judgment/stream'
+      preLoaderRoute: typeof ApiJudgmentStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/judgment/history': {
+      id: '/api/judgment/history'
+      path: '/api/judgment/history'
+      fullPath: '/api/judgment/history'
+      preLoaderRoute: typeof ApiJudgmentHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/judgment/tick': {
+      id: '/admin/judgment/tick'
+      path: '/admin/judgment/tick'
+      fullPath: '/admin/judgment/tick'
+      preLoaderRoute: typeof AdminJudgmentTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiBalanceRoute: ApiBalanceRoute,
+  ApiCandlesRoute: ApiCandlesRoute,
+  ApiNonceRoute: ApiNonceRoute,
+  AdminJudgmentTickRoute: AdminJudgmentTickRoute,
+  ApiJudgmentHistoryRoute: ApiJudgmentHistoryRoute,
+  ApiJudgmentStreamRoute: ApiJudgmentStreamRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
