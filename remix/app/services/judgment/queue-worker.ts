@@ -1,8 +1,6 @@
 import { Worker, Job } from 'bullmq'
-import {
-  runJudgmentForInstance,
-  runAdminJudgment,
-} from './judgment.service.ts'
+import { runJudgmentPipeline } from './judgment-pipeline.ts'
+import { loadCandlesForAsset } from './candle-loader.ts'
 import { getSSEManager } from '@/services/sse/sse-manager'
 
 type CandleCloseMessage = {
@@ -30,17 +28,12 @@ export function startJudgmentWorker(redisUrl: string): void {
       console.log(`[judgment-worker] processing candle close for ${asset}`)
 
       try {
-        await runAdminJudgment(asset)
-
-        // Broadcast judgment update to SSE clients
         const sseManager = getSSEManager()
         if (sseManager.getSubscriberCount(asset) > 0) {
-          const { runJudgmentPipeline } = await import('./judgment-pipeline.ts')
-          const { loadCandlesForAsset } = await import('./candle-loader.ts')
           const candles = await loadCandlesForAsset(asset, 200, '1h')
           if (candles.length > 0) {
             const result = await runJudgmentPipeline(asset, '1h', candles)
-            if (result?.judgment) {
+            if (result.judgment) {
               sseManager.broadcast(asset, 'judgment-update', {
                 asset,
                 regime: result.judgment.regime ?? null,
@@ -54,7 +47,7 @@ export function startJudgmentWorker(redisUrl: string): void {
           }
         }
       } catch (err) {
-        console.error(`[judgment-worker] admin judgment failed for ${asset}:`, err)
+        console.error(`[judgment-worker] judgment pipeline failed for ${asset}:`, err)
       }
 
       return { processed: true, asset }

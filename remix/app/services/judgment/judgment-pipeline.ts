@@ -1,9 +1,7 @@
 import type { Candle } from '@judgment/src/shared/types'
-import {
-  getOrCreateEngine,
-} from './judgment-engine-manager.ts'
-import { loadCandlesForAsset } from './candle-loader.ts'
+import { getOrCreateEngine } from './judgment-engine-manager.ts'
 
+// Pipeline-only instance ID for SSE broadcast; does not correspond to a persisted DB record.
 const PIPELINE_INSTANCE_ID = '00000000-0000-0000-0000-000000000000'
 
 export type JudgmentPipelineResult = {
@@ -29,7 +27,7 @@ export async function runJudgmentPipeline(
   const engine = await getOrCreateEngine(PIPELINE_INSTANCE_ID, asset, candles)
   const result = engine.onCandle(candles[candles.length - 1])
 
-  if (!result.bestJudgment) {
+  if (!result.bestJudgment || !result.judgment) {
     return { judgment: null }
   }
 
