@@ -7,7 +7,7 @@ import { JudgmentPanel } from '@/components/landing/judgment-panel'
 import { connectLiveJudgment } from '@/data/live-judgment'
 import type { JudgmentUpdate } from '@/data/live-judgment'
 import { routes } from '@/routes'
-import type { LandingViewProps } from './types.ts'
+import type { LandingRegime, LandingAuction, LandingViewProps } from './types.ts'
 import * as s from './style.ts'
 
 interface LandingPageProps extends LandingViewProps {
@@ -48,10 +48,10 @@ const LandingView = clientEntry(
 
     return () => {
       const assetData = assets[activeAsset]
-      const regime = judgment?.regime
+      const regimeData: LandingRegime | null = judgment?.regime
         ? { ...judgment.regime, label: judgment.regime.mode }
         : assetData?.regime ?? null
-      const auction = judgment?.auction
+      const auctionData: LandingAuction | null = judgment?.auction
         ? { ...judgment.auction, profile: assetData?.auction?.profile ?? null, level: assetData?.auction?.level ?? null }
         : assetData?.auction ?? null
 
@@ -70,8 +70,8 @@ const LandingView = clientEntry(
             </script>
             <LandingChartEntry />
             <JudgmentPanel
-              regime={regime as any}
-              auction={auction as any}
+              regime={regimeData}
+              auction={auctionData}
               read={assetData?.read ?? null}
               updatedAt={updatedAt}
             />

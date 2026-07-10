@@ -1,7 +1,7 @@
 export interface JudgmentUpdate {
   asset: string
   regime: {
-    mode: string
+    mode: 'range' | 'trend-up' | 'trend-down' | 'high-vol' | 'unknown'
     highVol: boolean
     rangePct: number
     driftPct: number
