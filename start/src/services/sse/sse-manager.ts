@@ -41,9 +41,16 @@ export function createSSEManager(): SSEManager {
   return { subscribe, unsubscribe, broadcast, getSubscriberCount }
 }
 
-let manager: SSEManager | null = null
+// globalThis so production server.ts (source queue-worker) and the built
+// dist/server handler share one in-process SSE manager.
+const GLOBAL_KEY = '__selboSseManager' as const
+
+type GlobalSse = typeof globalThis & { [GLOBAL_KEY]?: SSEManager }
 
 export function getSSEManager(): SSEManager {
-  if (!manager) manager = createSSEManager()
-  return manager
+  const g = globalThis as GlobalSse
+  if (!g[GLOBAL_KEY]) {
+    g[GLOBAL_KEY] = createSSEManager()
+  }
+  return g[GLOBAL_KEY]
 }
