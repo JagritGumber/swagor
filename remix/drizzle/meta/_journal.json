@@ -8,6 +8,13 @@
       "when": 1783335929118,
       "tag": "0000_even_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783681778800,
+      "tag": "0001_unknown_hiroim",
+      "breakpoints": true
     }
   ]
 }
