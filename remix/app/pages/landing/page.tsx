@@ -1,55 +1,13 @@
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
 import { LandingChartEntry } from '../../components/landing/chart-entry.tsx'
+import { regimeBadgeClass, stanceBadgeClass, stanceLabel, planStatusLabel } from '../../components/agent/badge-maps.ts'
 import { routes } from '../../routes.ts'
 import type { LandingViewProps } from './types.ts'
 import * as s from './style.ts'
 
 interface LandingPageProps extends LandingViewProps {
   user?: { address: string }
-}
-
-function regimeBadgeClass(mode: string) {
-  switch (mode) {
-    case 'range': return s.regimeRange
-    case 'trend-up': return s.regimeTrendUp
-    case 'trend-down': return s.regimeTrendDown
-    case 'high-vol': return s.regimeHighVol
-    default: return s.regimeRange
-  }
-}
-
-function stanceBadgeClass(stance: string) {
-  switch (stance) {
-    case 'possible-long': return s.stancePossibleLong
-    case 'possible-short': return s.stancePossibleShort
-    case 'watch-long-confirmation': return s.stanceWatchLong
-    case 'watch-short-confirmation': return s.stanceWatchShort
-    case 'avoid-balanced-auction': return s.stanceAvoid
-    default: return s.stanceWait
-  }
-}
-
-function stanceLabel(stance: string): string {
-  switch (stance) {
-    case 'possible-long': return 'Possible Long'
-    case 'possible-short': return 'Possible Short'
-    case 'watch-long-confirmation': return 'Watch Long'
-    case 'watch-short-confirmation': return 'Watch Short'
-    case 'avoid-balanced-auction': return 'Avoid Balanced'
-    case 'wait': return 'Wait'
-    default: return stance
-  }
-}
-
-function planStatusLabel(status: string): string {
-  switch (status) {
-    case 'ready': return 'Ready'
-    case 'watch': return 'Watch'
-    case 'ready-if-reclaim': return 'Ready if Reclaim'
-    case 'no-trade': return 'No Trade'
-    default: return status
-  }
 }
 
 export function LandingPage(handle: Handle<LandingPageProps>) {
@@ -82,7 +40,7 @@ export function LandingPage(handle: Handle<LandingPageProps>) {
               {regime && (
                 <div mix={s.analysisSection}>
                   <div mix={s.analysisLabel}>Regime</div>
-                  <span mix={[s.regimeBadge, regimeBadgeClass(regime.mode)]}>
+                  <span mix={[s.regimeBadge, regimeBadgeClass[regime.mode]]}>
                     {regime.label}
                   </span>
                 </div>
@@ -90,8 +48,8 @@ export function LandingPage(handle: Handle<LandingPageProps>) {
               {read && (
                 <div mix={s.analysisSection}>
                   <div mix={s.analysisLabel}>Stance</div>
-                  <span mix={[s.stanceBadge, stanceBadgeClass(read.stance)]}>
-                    {stanceLabel(read.stance)}
+                  <span mix={[s.stanceBadge, stanceBadgeClass[read.stance]]}>
+                    {stanceLabel[read.stance]}
                   </span>
                 </div>
               )}
@@ -125,7 +83,7 @@ export function LandingPage(handle: Handle<LandingPageProps>) {
                     <span mix={[s.planBadge, plan.side === 'long' ? s.planLong : s.planShort]}>
                       {plan.side?.toUpperCase()}
                     </span>
-                    <span mix={s.planStatusLabel}>{planStatusLabel(plan.status)}</span>
+                    <span mix={s.planStatusLabel}>{planStatusLabel[plan.status]}</span>
                   </div>
                   <div mix={s.planLevels}>
                     <div mix={s.planLevel}>

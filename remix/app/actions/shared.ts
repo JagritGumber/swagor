@@ -2,6 +2,9 @@ import type { Candle } from '@shared/candle'
 import { toCandle } from '@shared/candle'
 import type { OverlaySegment } from '../components/chart/types.ts'
 import type { SelboReasoning, ReaderReadResult } from '../types/reader.ts'
+import type { ReaderMarketRegimeMode } from '../../../packages/strategy-lab/read-core/market-regime/types.ts'
+import type { LiveReaderStance } from '../../../packages/strategy-lab/reader/reader-live/types.ts'
+import type { ReaderTradePlanStatus } from '../../../packages/strategy-lab/backtest/trade-plan/types.ts'
 import { buildSelboReasoning } from '../data/selbo-reasoning.ts'
 import { tryCatch } from '../lib/api/try-catch.ts'
 import { retry } from 'alova/server'
@@ -207,10 +210,10 @@ export async function buildReaderRead(url: URL, lookback?: number, existingCandl
 export interface AgentReadResult {
   candles: Candle[]
   segments: OverlaySegment[]
-  regime: { mode: string; label: string; rangePct: number; driftPct: number; directionalEfficiency: number } | null
+  regime: { mode: ReaderMarketRegimeMode; label: string; rangePct: number; driftPct: number; directionalEfficiency: number } | null
   auction: { location: string; locationLabel: string; bias: string; narrative: string; profile: { poc: number; valueAreaLow: number; valueAreaHigh: number; bins: { low: number; high: number; volume: number }[] } | null; level: { price: number; kind: string; touches: number } | null } | null
-  read: { stance: string; narrative: string; invalidation: string | null; target: string | null; orderflow: { pressure: string; delta: number; tradeCount: number; events: string[] } } | null
-  plan: { status: string; asset: string; side?: string; entryLow?: number; entryHigh?: number; stop?: number; target?: number; invalidation?: string; confidence: number; reasons: string[] } | null
+  read: { stance: LiveReaderStance; narrative: string; invalidation: string | null; target: string | null; orderflow: { pressure: string; delta: number; tradeCount: number; events: string[] } } | null
+  plan: { status: ReaderTradePlanStatus; asset: string; side?: string; entryLow?: number; entryHigh?: number; stop?: number; target?: number; invalidation?: string; confidence: number; reasons: string[] } | null
   judgment: { id: string; action: string; side?: string; confidence: number; reason: string; previousJudgmentId: string | null; allJudgments: { configId: string; label: string; confidence: number; reason: string }[]; metricsSnapshot: Record<string, unknown> | null; createdAt: string } | null
   portfolio: { equity: number; totalPnl: number; dailyPnl: number; tradeCount: number; winCount: number; lossCount: number; openPositionCount: number } | null
   asset: string

@@ -1,5 +1,8 @@
 import type { Candle } from '@shared/candle'
 import type { OverlaySegment } from '../../components/chart/types.ts'
+import type { ReaderMarketRegimeMode } from '../../../../packages/strategy-lab/read-core/market-regime/types.ts'
+import type { LiveReaderStance } from '../../../../packages/strategy-lab/reader/reader-live/types.ts'
+import type { ReaderTradePlanStatus } from '../../../../packages/strategy-lab/backtest/trade-plan/types.ts'
 
 export interface LandingAuction {
   location: string
@@ -20,7 +23,7 @@ export interface LandingAuction {
 }
 
 export interface LandingRegime {
-  mode: string
+  mode: ReaderMarketRegimeMode
   label: string
   rangePct: number
   driftPct: number
@@ -28,7 +31,7 @@ export interface LandingRegime {
 }
 
 export interface LandingReaderRead {
-  stance: string
+  stance: LiveReaderStance
   narrative: string
   invalidation: string | null
   target: string | null
@@ -41,7 +44,7 @@ export interface LandingReaderRead {
 }
 
 export interface LandingTradePlan {
-  status: string
+  status: ReaderTradePlanStatus
   side?: string
   entryLow?: number
   entryHigh?: number

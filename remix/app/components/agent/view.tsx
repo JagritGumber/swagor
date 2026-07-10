@@ -2,7 +2,11 @@ import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import type { Candle } from '@shared/candle'
 import type { OverlaySegment } from '../chart/types.ts'
+import type { ReaderMarketRegimeMode } from '../../../../packages/strategy-lab/read-core/market-regime/types.ts'
+import type { LiveReaderStance } from '../../../../packages/strategy-lab/reader/reader-live/types.ts'
+import type { ReaderTradePlanStatus } from '../../../../packages/strategy-lab/backtest/trade-plan/types.ts'
 import { AgentChartEntry } from './chart-entry.tsx'
+import { regimeBadgeClass, stanceBadgeClass, stanceLabel, planStatusLabel } from './badge-maps.ts'
 import * as s from './style.ts'
 
 interface AgentAuction {
@@ -24,7 +28,7 @@ interface AgentAuction {
 }
 
 interface AgentRegime {
-  mode: string
+  mode: ReaderMarketRegimeMode
   label: string
   rangePct: number
   driftPct: number
@@ -32,7 +36,7 @@ interface AgentRegime {
 }
 
 interface AgentReaderRead {
-  stance: string
+  stance: LiveReaderStance
   narrative: string
   invalidation: string | null
   target: string | null
@@ -45,7 +49,7 @@ interface AgentReaderRead {
 }
 
 interface AgentTradePlan {
-  status: string
+  status: ReaderTradePlanStatus
   side?: string
   entryLow?: number
   entryHigh?: number
@@ -66,49 +70,6 @@ export interface AgentViewProps {
   asset: string
 }
 
-function regimeBadgeClass(mode: string) {
-  switch (mode) {
-    case 'range': return s.regimeRange
-    case 'trend-up': return s.regimeTrendUp
-    case 'trend-down': return s.regimeTrendDown
-    case 'high-vol': return s.regimeHighVol
-    default: return s.regimeRange
-  }
-}
-
-function stanceBadgeClass(stance: string) {
-  switch (stance) {
-    case 'possible-long': return s.stancePossibleLong
-    case 'possible-short': return s.stancePossibleShort
-    case 'watch-long-confirmation': return s.stanceWatchLong
-    case 'watch-short-confirmation': return s.stanceWatchShort
-    case 'avoid-balanced-auction': return s.stanceAvoid
-    default: return s.stanceWait
-  }
-}
-
-function stanceLabel(stance: string): string {
-  switch (stance) {
-    case 'possible-long': return 'Possible Long'
-    case 'possible-short': return 'Possible Short'
-    case 'watch-long-confirmation': return 'Watch Long'
-    case 'watch-short-confirmation': return 'Watch Short'
-    case 'avoid-balanced-auction': return 'Avoid Balanced'
-    case 'wait': return 'Wait'
-    default: return stance
-  }
-}
-
-function planStatusLabel(status: string): string {
-  switch (status) {
-    case 'ready': return 'Ready'
-    case 'watch': return 'Watch'
-    case 'ready-if-reclaim': return 'Ready if Reclaim'
-    case 'no-trade': return 'No Trade'
-    default: return status
-  }
-}
-
 export function AgentView(handle: Handle<AgentViewProps>) {
   return () => {
     const { candles, segments, auction, regime, read, plan, asset } = handle.props
@@ -122,7 +83,7 @@ export function AgentView(handle: Handle<AgentViewProps>) {
             {regime && (
               <div mix={s.analysisSection}>
                 <div mix={s.analysisLabel}>Regime</div>
-                <span mix={[s.regimeBadge, regimeBadgeClass(regime.mode)]}>
+                <span mix={[s.regimeBadge, regimeBadgeClass[regime.mode]]}>
                   {regime.label}
                 </span>
               </div>
@@ -130,8 +91,8 @@ export function AgentView(handle: Handle<AgentViewProps>) {
             {read && (
               <div mix={s.analysisSection}>
                 <div mix={s.analysisLabel}>Stance</div>
-                <span mix={[s.stanceBadge, stanceBadgeClass(read.stance)]}>
-                  {stanceLabel(read.stance)}
+                <span mix={[s.stanceBadge, stanceBadgeClass[read.stance]]}>
+                  {stanceLabel[read.stance]}
                 </span>
               </div>
             )}
@@ -165,7 +126,7 @@ export function AgentView(handle: Handle<AgentViewProps>) {
                   <span mix={[s.planBadge, plan.side === 'long' ? s.planLong : s.planShort]}>
                     {plan.side?.toUpperCase()}
                   </span>
-                  <span mix={s.planStatusLabel}>{planStatusLabel(plan.status)}</span>
+                  <span mix={s.planStatusLabel}>{planStatusLabel[plan.status]}</span>
                 </div>
                 <div mix={s.planLevels}>
                   <div mix={s.planLevel}>
