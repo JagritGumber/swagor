@@ -26,7 +26,8 @@
     "lightweight-charts": "^5.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "viem": "^2.54.6"
+    "viem": "^2.54.6",
+    "xhr2": "^0.2.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.2",
