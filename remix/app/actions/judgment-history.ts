@@ -7,6 +7,7 @@ import {
   getLatestJudgment,
   getLatestAdminJudgment,
   getJudgmentHistory,
+  ADMIN_INSTANCE_ID,
 } from '../services/judgment/judgment.service.ts'
 import { apiSuccess } from '../lib/api/response.ts'
 
@@ -40,7 +41,7 @@ export async function judgmentHistory(context: AppContext) {
 
   const [latest, history] = await Promise.all([
     getLatestAdminJudgment(asset),
-    getJudgmentHistory('admin-judge-zero', limit),
+    getJudgmentHistory(ADMIN_INSTANCE_ID, limit),
   ])
   return apiSuccess({ latest, history, source: 'admin' })
 }

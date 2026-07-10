@@ -8,7 +8,7 @@ import {
 } from './judgment-engine-manager.ts'
 import { loadCandlesForAsset } from './candle-loader.ts'
 
-const ADMIN_INSTANCE_ID = 'admin-judge-zero'
+export const ADMIN_INSTANCE_ID = '00000000-0000-0000-0000-000000000000'
 const DEFAULT_LOOKBACK = 200
 const DEFAULT_INTERVAL = '1h'
 
@@ -72,8 +72,28 @@ export async function runJudgmentForInstance(
   return judgmentId
 }
 
+type DrizzleDb = Awaited<ReturnType<typeof getDb>>
+
+async function ensureAdminInstanceExists(db: DrizzleDb) {
+  const existing = await db
+    .select()
+    .from(selboInstances)
+    .where(eq(selboInstances.id, ADMIN_INSTANCE_ID))
+    .limit(1)
+
+  if (existing.length === 0) {
+    await db.insert(selboInstances).values({
+      id: ADMIN_INSTANCE_ID,
+      userId: 'admin',
+      circleWalletId: 'admin',
+      circleWalletAddress: '0x0000000000000000000000000000000000000000',
+    })
+  }
+}
+
 export async function runAdminJudgment(asset: string): Promise<string> {
   const db = await getDb()
+  await ensureAdminInstanceExists(db)
 
   const candles = await loadCandlesForAsset(asset, DEFAULT_LOOKBACK, DEFAULT_INTERVAL)
   const engine = await getOrCreateEngine(ADMIN_INSTANCE_ID, asset, candles)
