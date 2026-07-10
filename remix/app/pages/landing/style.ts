@@ -73,6 +73,12 @@ export const analysisNarrative = css({
   color: '#8892a4',
 })
 
+export const volumeProfileValue = css({
+  fontSize: '12px',
+  fontFamily: FONT_DATA,
+  color: '#ffffff',
+})
+
 export const regimeBadge = css({
   display: 'inline-flex',
   alignItems: 'center',

@@ -45,10 +45,10 @@ export function JudgmentPanel(handle: Handle<JudgmentPanelProps>) {
             {auction.profile && (
               <div mix={s.analysisSection}>
                 <div mix={s.analysisLabel}>Volume Profile</div>
-                <div mix={s.analysisValue} style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
+                <div mix={s.volumeProfileValue}>
                   POC ${auction.profile.poc.toFixed(2)}
                 </div>
-                <div mix={s.analysisValue} style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
+                <div mix={s.volumeProfileValue}>
                   VA ${auction.profile.valueAreaLow.toFixed(2)} - ${auction.profile.valueAreaHigh.toFixed(2)}
                 </div>
               </div>
