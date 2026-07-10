@@ -1,6 +1,12 @@
 export interface JudgmentUpdate {
   asset: string
-  regime: { mode: string; label: string; rangePct: number; driftPct: number } | null
+  regime: {
+    mode: string
+    highVol: boolean
+    rangePct: number
+    driftPct: number
+    directionalEfficiency: number
+  } | null
   auction: { location: string; locationLabel: string; bias: string; narrative: string } | null
   stance: string
   confidence: number

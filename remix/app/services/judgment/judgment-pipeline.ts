@@ -6,7 +6,7 @@ const PIPELINE_INSTANCE_ID = '00000000-0000-0000-0000-000000000000'
 
 export type JudgmentPipelineResult = {
   judgment: {
-    regime: string | null
+    regime: { mode: string; highVol: boolean; rangePct: number; driftPct: number; directionalEfficiency: number } | null
     auction: string | null
     stance: string
     confidence: number
@@ -31,7 +31,7 @@ export async function runJudgmentPipeline(
     return { judgment: null }
   }
 
-  const regime = result.judgment.metrics.regime.mode
+  const regime = result.judgment.metrics.regime
   const stance = result.judgment.action.type === 'enter'
     ? result.judgment.action.side
     : result.judgment.action.type
