@@ -8,6 +8,7 @@ export const routes = route({
   candles: get('/api/candles'),
   judgmentTick: get('/admin/judgment/tick'),
   judgmentHistory: get('/api/judgment/history'),
+  judgmentStream: get('/api/judgment/stream'),
   login: '/login',
   nonce: get('/api/nonce'),
   balance: get('/api/balance'),
