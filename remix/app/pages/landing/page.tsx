@@ -1,7 +1,11 @@
 import type { Handle } from 'remix/ui'
+import { clientEntry } from 'remix/ui'
 import { Document } from '@/document'
 import { LandingChartEntry } from '@/components/landing/chart-entry'
-import { regimeBadgeClass, stanceBadgeClass, stanceLabel } from '@/components/agent/badge-maps'
+import { LandingTabs, type Asset } from '@/components/landing/tabs'
+import { JudgmentPanel } from '@/components/landing/judgment-panel'
+import { connectLiveJudgment } from '@/data/live-judgment'
+import type { JudgmentUpdate } from '@/data/live-judgment'
 import { routes } from '@/routes'
 import type { LandingViewProps } from './types.ts'
 import * as s from './style.ts'
@@ -10,10 +14,77 @@ interface LandingPageProps extends LandingViewProps {
   user?: { address: string }
 }
 
+function readLandingAssets(): { assets: LandingViewProps['assets']; activeAsset: Asset } {
+  const el = document.getElementById('landing-assets-data')
+  if (!(el instanceof HTMLElement)) throw new Error('Missing landing-assets-data')
+  return JSON.parse(el.textContent!)
+}
+
+const LandingView = clientEntry(
+  import.meta.url,
+  function LandingView(handle: Handle<{}>) {
+    let { assets, activeAsset } = readLandingAssets()
+    let judgment: JudgmentUpdate | null = null
+    let updatedAt: number | null = null
+    let sseAbort: AbortController | null = null
+
+    function startSSE(asset: string) {
+      if (sseAbort) sseAbort.abort()
+      sseAbort = new AbortController()
+      connectLiveJudgment(asset, {
+        onJudgment: (data) => {
+          judgment = data
+          updatedAt = data.updatedAt
+          handle.update()
+        },
+        onError: () => {},
+      }, sseAbort.signal)
+    }
+
+    startSSE(activeAsset)
+    handle.signal.addEventListener('abort', () => {
+      if (sseAbort) sseAbort.abort()
+    })
+
+    return () => {
+      const assetData = assets[activeAsset]
+      const regime = judgment?.regime
+        ? { ...judgment.regime, label: judgment.regime.mode }
+        : assetData?.regime ?? null
+      const auction = judgment?.auction
+        ? { ...judgment.auction, profile: assetData?.auction?.profile ?? null, level: assetData?.auction?.level ?? null }
+        : assetData?.auction ?? null
+
+      return (
+        <div mix={s.landingPage}>
+          {LandingTabs({ active: activeAsset, onChange: (asset: Asset) => {
+            activeAsset = asset
+            judgment = null
+            updatedAt = null
+            startSSE(asset)
+            handle.update()
+          }})}
+          <div mix={s.chartArea}>
+            <script id="landing-chart-data" type="application/json">
+              {JSON.stringify({ candles: assetData.candles, segments: assetData.segments, auction: assetData.auction })}
+            </script>
+            <LandingChartEntry />
+            <JudgmentPanel
+              regime={regime as any}
+              auction={auction as any}
+              read={assetData?.read ?? null}
+              updatedAt={updatedAt}
+            />
+          </div>
+        </div>
+      )
+    }
+  },
+)
+
 export function LandingPage(handle: Handle<LandingPageProps>) {
   return () => {
     const { assets, activeAsset, user } = handle.props
-    const data = assets[activeAsset]
 
     return (
       <Document
@@ -33,93 +104,10 @@ export function LandingPage(handle: Handle<LandingPageProps>) {
           </>
         }
       >
-        <div mix={s.landingPage}>
-          <div mix={s.chartArea}>
-            <script id="landing-chart-data" type="application/json">{JSON.stringify({ candles: data.candles, segments: data.segments, auction: data.auction })}</script>
-            <LandingChartEntry />
-            <div mix={s.analysisPanel}>
-              {data.regime && (
-                <div mix={s.analysisSection}>
-                  <div mix={s.analysisLabel}>Regime</div>
-                  <span mix={[s.regimeBadge, regimeBadgeClass[data.regime.mode]]}>
-                    {data.regime.label}
-                  </span>
-                </div>
-              )}
-              {data.read && (
-                <div mix={s.analysisSection}>
-                  <div mix={s.analysisLabel}>Stance</div>
-                  <span mix={[s.stanceBadge, stanceBadgeClass[data.read.stance]]}>
-                    {stanceLabel[data.read.stance]}
-                  </span>
-                </div>
-              )}
-              {data.auction && (
-                <>
-                  <div mix={s.analysisSection}>
-                    <div mix={s.analysisLabel}>Location</div>
-                    <div mix={s.analysisValue}>{data.auction.locationLabel}</div>
-                  </div>
-                  <div mix={s.analysisSection}>
-                    <div mix={s.analysisLabel}>Bias</div>
-                    <div mix={s.analysisValue}>{data.auction.bias}</div>
-                  </div>
-                  {data.auction.profile && (
-                    <div mix={s.analysisSection}>
-                      <div mix={s.analysisLabel}>Volume Profile</div>
-                      <div mix={s.analysisValue} style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
-                        POC ${data.auction.profile.poc.toFixed(2)}
-                      </div>
-                      <div mix={s.analysisValue} style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
-                        VA ${data.auction.profile.valueAreaLow.toFixed(2)} - ${data.auction.profile.valueAreaHigh.toFixed(2)}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-              {data.read && (
-                <div mix={s.analysisSection}>
-                  <div mix={s.analysisLabel}>Orderflow</div>
-                  <div mix={s.orderflowRow}>
-                    <span mix={s.orderflowLabel}>Pressure</span>
-                    <span mix={[s.orderflowValue, data.read.orderflow.pressure === 'buy-pressure' ? s.orderflowBuy : data.read.orderflow.pressure === 'sell-pressure' ? s.orderflowSell : '']}>
-                      {data.read.orderflow.pressure}
-                    </span>
-                  </div>
-                  <div mix={s.orderflowRow}>
-                    <span mix={s.orderflowLabel}>Delta</span>
-                    <span mix={[s.orderflowValue, data.read.orderflow.delta > 0 ? s.orderflowBuy : data.read.orderflow.delta < 0 ? s.orderflowSell : '']}>
-                      {data.read.orderflow.delta.toFixed(4)}
-                    </span>
-                  </div>
-                  <div mix={s.orderflowRow}>
-                    <span mix={s.orderflowLabel}>Trades</span>
-                    <span mix={s.orderflowValue}>{data.read.orderflow.tradeCount}</span>
-                  </div>
-                </div>
-              )}
-              {data.auction && (
-                <div mix={s.analysisSection}>
-                  <div mix={s.analysisLabel}>Narrative</div>
-                  <div mix={s.analysisNarrative}>{data.auction.narrative}</div>
-                </div>
-              )}
-            </div>
-          </div>
-          <div mix={s.bottomStrip}>
-            <div mix={s.tradeLogHeader}>
-              <span>Time</span>
-              <span>Side</span>
-              <span>Entry</span>
-              <span>Exit</span>
-              <span>R</span>
-              <span>Thesis</span>
-            </div>
-            <div mix={s.tradeLogEmpty}>
-              No trades yet - agent is observing
-            </div>
-          </div>
-        </div>
+        <script id="landing-assets-data" type="application/json">
+          {JSON.stringify(assets)}
+        </script>
+        <LandingView />
       </Document>
     )
   }
