@@ -4,8 +4,31 @@ import {
   createRootRoute,
   HeadContent,
   Scripts,
+  useRouterState,
 } from '@tanstack/react-router'
+import { createServerFn } from '@tanstack/react-start'
+import { getRequest } from '@tanstack/react-start/server'
+import { Navbar } from '@/components/navigation/navbar'
 import appCss from '../styles/app.css?url'
+
+type NavUser = { address: string }
+
+const getOptionalNavUser = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<NavUser | null> => {
+    const request = getRequest()
+    // Lazy auth import keeps session secret resolution on the request path.
+    const { getOptionalUser } = await import('@/lib/auth.ts')
+    const identity = await getOptionalUser(request)
+    if (!identity) return null
+
+    const first = identity.wallets[0]
+    if (!first) return null
+    if (!first.address) {
+      throw new Error('getOptionalNavUser: wallet address missing on user identity')
+    }
+    return { address: first.address }
+  },
+)
 
 export const Route = createRootRoute({
   head: () => ({
@@ -19,13 +42,23 @@ export const Route = createRootRoute({
       { rel: 'stylesheet', href: appCss },
     ],
   }),
+  loader: async () => {
+    const user = await getOptionalNavUser()
+    return { user }
+  },
   component: RootComponent,
 })
 
 function RootComponent() {
+  const { user } = Route.useLoaderData()
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+
   return (
     <RootDocument>
-      <Outlet />
+      <Navbar user={user} currentPath={pathname} />
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <Outlet />
+      </div>
     </RootDocument>
   )
 }
@@ -36,7 +69,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="m-0 flex h-screen flex-col overflow-hidden bg-surface-body text-text-primary">
         {children}
         <Scripts />
       </body>

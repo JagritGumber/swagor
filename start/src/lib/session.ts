@@ -10,17 +10,25 @@ export type SessionData = {
   [key: string]: unknown
 }
 
-const SESSION_SECRET = process.env.SELBO_SESSION_SECRET
-if (!SESSION_SECRET) {
-  throw new Error(
-    'SELBO_SESSION_SECRET environment variable is required. ' +
-      'Set it to a random string (e.g. openssl rand -hex 32)',
-  )
-}
-
 const COOKIE_NAME = 'selbo_session'
 const IS_PRODUCTION = process.env.NODE_ENV === 'production'
 const SESSIONS_DIR = path.resolve(import.meta.dirname, '../../.data/sessions')
+
+/**
+ * Lazy secret so importing this module (or auth helpers) does not crash
+ * public pages when SELBO_SESSION_SECRET is unset. Throws only when a
+ * signed cookie is read or written.
+ */
+function getSessionSecret(): string {
+  const secret = process.env.SELBO_SESSION_SECRET
+  if (!secret) {
+    throw new Error(
+      'SELBO_SESSION_SECRET environment variable is required. ' +
+        'Set it to a random string (e.g. openssl rand -hex 32)',
+    )
+  }
+  return secret
+}
 
 function ensureSessionsDir(): void {
   try {
@@ -128,7 +136,7 @@ export function createSessionId(): string {
 }
 
 function sign(value: string): string {
-  const sig = createHmac('sha256', SESSION_SECRET).update(value).digest('base64url')
+  const sig = createHmac('sha256', getSessionSecret()).update(value).digest('base64url')
   return `${value}.${sig}`
 }
 
@@ -138,7 +146,7 @@ function unsign(signed: string): string | null {
 
   const value = signed.slice(0, index)
   const provided = signed.slice(index + 1)
-  const expected = createHmac('sha256', SESSION_SECRET).update(value).digest('base64url')
+  const expected = createHmac('sha256', getSessionSecret()).update(value).digest('base64url')
 
   const a = Buffer.from(provided)
   const b = Buffer.from(expected)
@@ -201,6 +209,7 @@ function isNoEntityError(error: unknown): error is NodeJS.ErrnoException & { cod
 
 /**
  * Load session for a request from the signed `selbo_session` cookie + filesystem store.
+ * No cookie => empty session without reading SELBO_SESSION_SECRET.
  */
 export async function getSession(request: Request): Promise<Session> {
   const raw = parseCookieHeader(request.headers.get('Cookie'))
