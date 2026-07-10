@@ -52,10 +52,11 @@ export const Route = createRootRoute({
 function RootComponent() {
   const { user } = Route.useLoaderData()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const hideLinks = pathname === '/login'
 
   return (
     <RootDocument>
-      <Navbar user={user} currentPath={pathname} />
+      <Navbar user={user} currentPath={pathname} hideLinks={hideLinks} />
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <Outlet />
       </div>

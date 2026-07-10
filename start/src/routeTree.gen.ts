@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LogoutRouteImport } from './routes/logout'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiNonceRouteImport } from './routes/api/nonce'
 import { Route as ApiCandlesRouteImport } from './routes/api/candles'
@@ -17,6 +19,16 @@ import { Route as ApiJudgmentStreamRouteImport } from './routes/api/judgment.str
 import { Route as ApiJudgmentHistoryRouteImport } from './routes/api/judgment.history'
 import { Route as AdminJudgmentTickRouteImport } from './routes/admin/judgment.tick'
 
+const LogoutRoute = LogoutRouteImport.update({
+  id: '/logout',
+  path: '/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -55,6 +67,8 @@ const AdminJudgmentTickRoute = AdminJudgmentTickRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/logout': typeof LogoutRoute
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
   '/api/nonce': typeof ApiNonceRoute
@@ -64,6 +78,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/logout': typeof LogoutRoute
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
   '/api/nonce': typeof ApiNonceRoute
@@ -74,6 +90,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/logout': typeof LogoutRoute
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
   '/api/nonce': typeof ApiNonceRoute
@@ -85,6 +103,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
+    | '/logout'
     | '/api/balance'
     | '/api/candles'
     | '/api/nonce'
@@ -94,6 +114,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
+    | '/logout'
     | '/api/balance'
     | '/api/candles'
     | '/api/nonce'
@@ -103,6 +125,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/login'
+    | '/logout'
     | '/api/balance'
     | '/api/candles'
     | '/api/nonce'
@@ -113,6 +137,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
+  LogoutRoute: typeof LogoutRoute
   ApiBalanceRoute: typeof ApiBalanceRoute
   ApiCandlesRoute: typeof ApiCandlesRoute
   ApiNonceRoute: typeof ApiNonceRoute
@@ -123,6 +149,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/logout': {
+      id: '/logout'
+      path: '/logout'
+      fullPath: '/logout'
+      preLoaderRoute: typeof LogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -177,6 +217,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
+  LogoutRoute: LogoutRoute,
   ApiBalanceRoute: ApiBalanceRoute,
   ApiCandlesRoute: ApiCandlesRoute,
   ApiNonceRoute: ApiNonceRoute,
