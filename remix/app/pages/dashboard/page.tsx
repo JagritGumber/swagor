@@ -1,7 +1,7 @@
 // Dashboard page — full layout with market read, positions, activity
 import type { Handle } from 'remix/ui'
 import { Document } from '../../document.tsx'
-import { Tooltip } from '../../components/tooltip.tsx'
+import { Tooltip } from '../../components/composables/tooltip'
 import { BalanceDisplay } from '../../assets/balance-display.tsx'
 import { WalletAddress } from '../../assets/wallet-address.tsx'
 import type { DashboardData } from './types.ts'

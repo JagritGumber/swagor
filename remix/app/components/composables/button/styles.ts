@@ -1,20 +1,7 @@
-import type { Handle, RemixNode } from 'remix/ui'
 import { css } from 'remix/ui'
+import type { Variant, Size } from './types.ts'
 
-type Variant = 'primary' | 'ghost' | 'outline' | 'danger'
-type Size = 'sm' | 'md' | 'lg'
-
-interface ButtonProps {
-  variant?: Variant
-  size?: Size
-  disabled?: boolean
-  type?: 'button' | 'submit' | 'reset'
-  children?: RemixNode
-  mix?: unknown
-  title?: string
-}
-
-const base = css({
+export const base = css({
   appearance: 'none',
   border: 0,
   borderRadius: '8px',
@@ -37,31 +24,15 @@ const base = css({
   animation: 'buttonBlurIn 0.2s ease-out both',
 })
 
-const variants: Record<Variant, ReturnType<typeof css>> = {
+export const variants: Record<Variant, ReturnType<typeof css>> = {
   primary: css({ background: '#00d4ff', color: '#000', '&:hover': { background: '#33e0ff' } }),
   ghost: css({ background: 'transparent', color: 'inherit', '&:hover': { background: 'rgba(255, 255, 255, 0.08)' } }),
   outline: css({ background: 'transparent', border: '1px solid #1e293b', color: '#e2e8f0', '&:hover': { borderColor: '#334155', background: 'rgba(255, 255, 255, 0.04)' } }),
   danger: css({ background: 'transparent', color: '#ff5050', '&:hover': { background: 'rgba(255, 80, 80, 0.1)' } }),
 }
 
-const sizes: Record<Size, ReturnType<typeof css>> = {
+export const sizes: Record<Size, ReturnType<typeof css>> = {
   sm: css({ padding: '4px 10px', fontSize: '11px', fontWeight: 500 }),
   md: css({ padding: '12px 24px', fontSize: '15px', fontWeight: 600 }),
   lg: css({ padding: '16px 32px', fontSize: '16px', fontWeight: 600 }),
-}
-
-export function Button(handle: Handle<ButtonProps>) {
-  return () => {
-    const { variant = 'primary', size = 'md', disabled, type = 'button', children, mix: extraMix, title } = handle.props
-    const composed = extraMix
-      ? Array.isArray(extraMix)
-        ? [base, variants[variant], sizes[size], ...extraMix]
-        : [base, variants[variant], sizes[size], extraMix]
-      : [base, variants[variant], sizes[size]]
-    return (
-      <button type={type} disabled={disabled} title={title} mix={composed}>
-        {children}
-      </button>
-    )
-  }
 }

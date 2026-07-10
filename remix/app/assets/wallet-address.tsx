@@ -1,5 +1,5 @@
 import { clientEntry, css, on, type Handle, type SerializableProps } from 'remix/ui'
-import { Button } from '../components/button.tsx'
+import { Button } from '../components/composables/button'
 
 interface WalletAddressProps extends SerializableProps {
   address: string

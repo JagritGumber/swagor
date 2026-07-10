@@ -1,9 +1,5 @@
 import type { Handle } from 'remix/ui'
-
-export interface IdenticonProps {
-  address: string
-  size?: number
-}
+import type { IdenticonProps } from './types.ts'
 
 function hashBytes(address: string): number[] {
   const lower = address.toLowerCase().replace('0x', '')

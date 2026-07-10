@@ -1,5 +1,5 @@
 import { clientEntry, css, on, type Handle } from 'remix/ui'
-import { Button } from '../components/button.tsx'
+import { Button } from '../components/composables/button'
 import { WalletIcon } from '../components/icons/wallet.tsx'
 import { ArrowRightIcon } from '../components/icons/arrow-right.tsx'
 import { getNonce, postLogin } from '../data/api.ts'
