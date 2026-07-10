@@ -1,0 +1,28 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  font-family: var(--font-ui);
+  background: var(--surface-body);
+  color: var(--text-primary);
+}
+
+@keyframes buttonBlurIn {
+  from {
+    opacity: 0.6;
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}

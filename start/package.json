@@ -1,0 +1,45 @@
+{
+  "name": "start",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --bun vite dev --port 44100",
+    "build": "bun --bun vite build",
+    "start": "bun run server.ts",
+    "typecheck": "tsgo --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@alova/adapter-xhr": "^2.3.1",
+    "@circle-fin/developer-controlled-wallets": "^10.8.0",
+    "@electric-sql/pglite": "^0.5.4",
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
+    "@tanstack/react-router": "^1.170.17",
+    "@tanstack/react-start": "^1.168.27",
+    "alova": "^3.5.1",
+    "bullmq": "^5.79.3",
+    "drizzle-orm": "^0.45.2",
+    "ioredis": "^5.11.1",
+    "lightweight-charts": "^5.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "viem": "^2.54.6",
+    "xhr2": "^0.2.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/bun": "latest",
+    "@types/node": "latest",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260705.1",
+    "@vitejs/plugin-react": "^6.0.1",
+    "drizzle-kit": "^0.31.10",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.8.0",
+    "vite": "^8.0.14"
+  }
+}
