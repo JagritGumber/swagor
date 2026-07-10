@@ -331,3 +331,24 @@ export const tabActive = css({
   color: '#ffffff',
   backgroundColor: 'rgba(255, 255, 255, 0.1)',
 })
+
+export const lastRead = css({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  paddingTop: '12px',
+  borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+})
+
+export const lastReadLabel = css({
+  fontSize: '11px',
+  color: '#8892a4',
+  textTransform: 'uppercase',
+  letterSpacing: '0.5px',
+})
+
+export const lastReadValue = css({
+  fontSize: '12px',
+  fontFamily: FONT_DATA,
+  color: '#8892a4',
+})
