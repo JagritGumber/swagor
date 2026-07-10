@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["node", "bun", "vite/client"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@packages/*": ["../packages/*"],
+      "@alova/*": ["../alova/*"],
+      "@shared/*": ["../shared/*"],
+      "@judgment/*": ["../judgment/*"],
+      "@portfolio/*": ["../portfolio/*"],
+      "@strategy-lab": ["../packages/strategy-lab"],
+      "@strategy-lab/*": ["../packages/strategy-lab/*"],
+      "@judgment-shared/*": ["../judgment/src/shared/*"]
+    }
+  },
+  "include": ["src/**/*", "server.ts", "vite.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}
