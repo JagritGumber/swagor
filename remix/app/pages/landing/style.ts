@@ -301,3 +301,33 @@ export const orderflowBuy = css({
 export const orderflowSell = css({
   color: '#ff5050',
 })
+
+export const tabBar = css({
+  display: 'flex',
+  gap: '2px',
+  padding: '8px 24px',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+  backgroundColor: 'rgba(10, 14, 20, 0.8)',
+})
+
+export const tab = css({
+  padding: '8px 16px',
+  borderRadius: '4px',
+  fontSize: '13px',
+  fontWeight: '600',
+  fontFamily: FONT_DATA,
+  color: '#8892a4',
+  backgroundColor: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  transition: 'all 0.15s',
+  ':hover': {
+    color: '#ffffff',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+})
+
+export const tabActive = css({
+  color: '#ffffff',
+  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+})
