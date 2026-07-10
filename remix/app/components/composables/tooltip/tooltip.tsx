@@ -1,5 +1,5 @@
 import { clientEntry, on, type Handle } from 'remix/ui'
-import { InfoIcon } from '../../icons/info.tsx'
+import { InfoIcon } from '@/components/icons/info'
 import { triggerStyle, hiddenStyle, tooltipStyle, tooltipAnim, GAP, VIEWPORT_PAD, SHOW_DELAY } from './styles.ts'
 import type { TooltipProps } from './types.ts'
 

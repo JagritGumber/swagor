@@ -1,5 +1,5 @@
-import type { Candle } from "../../shared/types";
-import type { VolumeProfile, VolumeBin } from "../../shared/market/metrics";
+import type { Candle } from "@judgment-shared/types";
+import type { VolumeProfile, VolumeBin } from "@judgment-shared/market/metrics";
 
 export function createVolumeProfileState(input: {
   candles: Candle[];

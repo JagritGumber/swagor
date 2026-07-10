@@ -29,6 +29,24 @@
       ],
       "@shared/*": [
         "./shared/*"
+      ],
+      "@strategy-lab": [
+        "./packages/strategy-lab"
+      ],
+      "@strategy-lab/*": [
+        "./packages/strategy-lab/*"
+      ],
+      "@market-data/*": [
+        "./packages/market-data/*"
+      ],
+      "@packages/*": [
+        "./packages/*"
+      ],
+      "@alova/*": [
+        "./alova/*"
+      ],
+      "@judgment-shared/*": [
+        "./judgment/src/shared/*"
       ]
     }
   },

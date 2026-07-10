@@ -13,7 +13,7 @@ import {
 } from 'lightweight-charts'
 import type { Candle } from '@shared/candle'
 import type { OverlaySegment } from './types.ts'
-import { getCandles } from '../../data/api.ts'
+import { getCandles } from '@/data/api'
 
 const INTERVAL_MS: Record<string, number> = {
   '1m': 60_000,

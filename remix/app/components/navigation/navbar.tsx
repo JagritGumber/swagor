@@ -1,6 +1,6 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
-import { SURFACE_HEADER, BORDER_HEADER, TEXT_PRIMARY, TEXT_MUTED, FONT_UI } from '../../constants/theme.ts'
+import { SURFACE_HEADER, BORDER_HEADER, TEXT_PRIMARY, TEXT_MUTED, FONT_UI } from '@/constants/theme'
 import { NativeSelect, NativeSelectOption } from '../composables/native-select'
 import { ProfileMenu } from './profile-menu.tsx'
 

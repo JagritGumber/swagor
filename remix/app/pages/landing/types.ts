@@ -1,8 +1,8 @@
 import type { Candle } from '@shared/candle'
-import type { OverlaySegment } from '../../components/chart/types.ts'
-import type { ReaderMarketRegimeMode } from '../../../../packages/strategy-lab/read-core/market-regime/types.ts'
-import type { LiveReaderStance } from '../../../../packages/strategy-lab/reader/reader-live/types.ts'
-import type { ReaderTradePlanStatus } from '../../../../packages/strategy-lab/backtest/trade-plan/types.ts'
+import type { OverlaySegment } from '@/components/chart/types'
+import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'
+import type { LiveReaderStance } from '@packages/strategy-lab/reader/reader-live/types'
+import type { ReaderTradePlanStatus } from '@packages/strategy-lab/backtest/trade-plan/types'
 
 export interface LandingAuction {
   location: string

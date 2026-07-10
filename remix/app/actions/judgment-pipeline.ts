@@ -1,8 +1,8 @@
 import type { Candle } from '@shared/candle'
-import { resolveVersion } from '../../../judgment/src'
-import type { EngineJudgmentResult } from '../../../judgment/src/v1/engine'
-import { createPortfolioEngine } from '../../../portfolio/src'
-import type { PortfolioSnapshot } from '../../../portfolio/src/types'
+import { resolveVersion } from '@judgment/src'
+import type { EngineJudgmentResult } from '@judgment/src/v1/engine'
+import { createPortfolioEngine } from '@portfolio/src'
+import type { PortfolioSnapshot } from '@portfolio/src/types'
 
 export type JudgmentPipelineResult = {
   judgment: EngineJudgmentResult

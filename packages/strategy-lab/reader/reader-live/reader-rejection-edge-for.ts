@@ -1,5 +1,5 @@
-import type { AuctionRead } from "../../read-core/read/types";
-import type { Side } from "../../types";
+import type { AuctionRead } from "@strategy-lab/read-core/read/types";
+import type { Side } from "@strategy-lab/types";
 
 export type ReaderRejectionEdge = {
   side: Side;

@@ -1,5 +1,5 @@
-import type { Candle } from "../../shared/types";
-import type { PriceLevel } from "../../shared/market/metrics";
+import type { Candle } from "@judgment-shared/types";
+import type { PriceLevel } from "@judgment-shared/market/metrics";
 
 export function detectSwings(candles: Candle[], left: number, right: number): Array<{ price: number; time: number }> {
   const swings: Array<{ price: number; time: number }> = [];

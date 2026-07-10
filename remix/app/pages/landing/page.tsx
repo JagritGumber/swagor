@@ -1,8 +1,8 @@
 import type { Handle } from 'remix/ui'
-import { Document } from '../../document.tsx'
-import { LandingChartEntry } from '../../components/landing/chart-entry.tsx'
-import { regimeBadgeClass, stanceBadgeClass, stanceLabel, planStatusLabel } from '../../components/agent/badge-maps.ts'
-import { routes } from '../../routes.ts'
+import { Document } from '@/document'
+import { LandingChartEntry } from '@/components/landing/chart-entry'
+import { regimeBadgeClass, stanceBadgeClass, stanceLabel, planStatusLabel } from '@/components/agent/badge-maps'
+import { routes } from '@/routes'
 import type { LandingViewProps } from './types.ts'
 import * as s from './style.ts'
 

@@ -1,5 +1,5 @@
 import { css } from 'remix/ui'
-import { FONT_UI } from '../../../constants/theme.ts'
+import { FONT_UI } from '@/constants/theme'
 
 export const selectWrapper = css({
   position: 'relative',

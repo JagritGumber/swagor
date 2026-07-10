@@ -1,7 +1,7 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 
-import type { SelboReasoning } from '../../types/reader.ts'
+import type { SelboReasoning } from '@/types/reader'
 import {
   FONT_UI,
   FONT_DATA,
@@ -12,7 +12,7 @@ import {
   TEXT_SECONDARY,
   TEXT_MUTED,
   ACCENT_GREEN,
-} from '../../constants/theme.ts'
+} from '@/constants/theme'
 
 interface ReasoningPanelProps {
   reasoning: SelboReasoning

@@ -1,7 +1,7 @@
 import { readReaderCandidate, type ReaderCandidateDraft } from "../reader-candidates/read-reader-candidate";
 import type { ReaderSetupResult, ReaderSetupState } from "../reader-setup/types";
-import type { ReaderActionableTradePlan } from "../../backtest/trade-plan/types";
-import type { Side } from "../../types";
+import type { ReaderActionableTradePlan } from "@strategy-lab/backtest/trade-plan/types";
+import type { Side } from "@strategy-lab/types";
 import { readerRadarKeyFor } from "./reader-radar-key-for";
 import type {
   ReaderRadarCandidate,

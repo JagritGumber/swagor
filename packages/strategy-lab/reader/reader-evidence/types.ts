@@ -1,5 +1,5 @@
 import type { LiveReaderRead } from "../reader-live/types";
-import type { AuctionLocation, PriceLevel } from "../../read-core/read/types";
+import type { AuctionLocation, PriceLevel } from "@strategy-lab/read-core/read/types";
 import type { ReaderAuctionMode } from "../reader-auction-mode/types";
 import type { ReaderExecutionDiagnosis, ReaderExecutionQuality, ReaderExecutionQualityReport } from "../reader-execution-quality/types";
 import type { ReaderFormationRead } from "../reader-formation/types";
@@ -7,7 +7,7 @@ import type { ReaderHistoryStep } from "../reader-history/types";
 import type { ReaderReplaySummary } from "../reader-replay/types";
 import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome } from "../reader-result/types";
 import type { ReaderSetupEvent, ReaderSetupResult } from "../reader-setup/types";
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 
 export type ReaderEvidenceWindowConfig = {
   beforeEntryCandles?: number;

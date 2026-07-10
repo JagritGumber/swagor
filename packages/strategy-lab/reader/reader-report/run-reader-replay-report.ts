@@ -1,11 +1,11 @@
-import { intervalMs, readVmCandles } from "../../../market-data";
+import { intervalMs, readVmCandles } from "@packages/market-data";
 import { analyzeReaderExecutionQuality } from "../reader-execution-quality/analyze-reader-execution-quality";
 import { buildReaderEvidenceReport } from "../reader-evidence/build-reader-evidence-report";
 import { runReaderHistoryReplay } from "../reader-history/run-reader-history-replay";
 import { readReportOrderflowEvents } from "./read-report-orderflow-events";
 import type { ReaderReplayReport, ReaderReplayReportInput } from "./types";
-import type { OrderflowEvent } from "../../read-core/orderflow/types";
-import type { Candle } from "../../types";
+import type { OrderflowEvent } from "@strategy-lab/read-core/orderflow/types";
+import type { Candle } from "@strategy-lab/types";
 
 export async function runReaderReplayReport(input: ReaderReplayReportInput): Promise<ReaderReplayReport> {
   const candles = await readVmCandles(input);

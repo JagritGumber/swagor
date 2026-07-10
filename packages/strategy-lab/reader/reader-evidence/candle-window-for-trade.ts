@@ -1,7 +1,7 @@
 import { candleIndexForTime } from "./candle-index-for-time";
 import type { ReaderCandleEvidence, ReaderCandleStats } from "./types";
 import type { ReaderResultEntry, ReaderResultOutcome } from "../reader-result/types";
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 
 export function candleWindowForTrade(input: {
   candles: Candle[];

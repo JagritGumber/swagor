@@ -1,6 +1,6 @@
-import type { AuctionRead } from "../../read-core/read/types";
-import type { OrderflowRead } from "../../read-core/orderflow/types";
-import type { Candle, Side } from "../../types";
+import type { AuctionRead } from "@strategy-lab/read-core/read/types";
+import type { OrderflowRead } from "@strategy-lab/read-core/orderflow/types";
+import type { Candle, Side } from "@strategy-lab/types";
 import { absorptionPolicyAllowsReclaim } from "../reader-absorption-quality/read-reader-absorption-quality";
 import type { ReaderAbsorptionPolicy, ReaderAbsorptionQuality } from "../reader-absorption-quality/types";
 import { readerRejectionEdgeFor } from "../reader-live/reader-rejection-edge-for";

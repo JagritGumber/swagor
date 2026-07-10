@@ -1,5 +1,5 @@
 import { css } from 'remix/ui'
-import { FONT_UI, FONT_DATA, SURFACE_BODY } from '../../constants/theme.ts'
+import { FONT_UI, FONT_DATA, SURFACE_BODY } from '@/constants/theme'
 
 export const landingPage = css({
   backgroundColor: SURFACE_BODY,

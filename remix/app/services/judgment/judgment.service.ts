@@ -1,6 +1,6 @@
 import { eq, desc, and } from 'drizzle-orm'
-import { judgmentTicks, selboInstances } from '../../db/schema.ts'
-import { getDb } from '../../db/client.ts'
+import { judgmentTicks, selboInstances } from '@/db/schema'
+import { getDb } from '@/db/client'
 import {
   getOrCreateEngine,
   getEngineEntry,

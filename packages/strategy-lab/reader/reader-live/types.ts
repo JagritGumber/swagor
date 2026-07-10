@@ -1,11 +1,11 @@
-import type { AuctionRead } from "../../read-core/read/types";
-import type { OrderflowRead } from "../../read-core/orderflow/types";
-import type { ReaderMarketRegime } from "../../read-core/market-regime/types";
+import type { AuctionRead } from "@strategy-lab/read-core/read/types";
+import type { OrderflowRead } from "@strategy-lab/read-core/orderflow/types";
+import type { ReaderMarketRegime } from "@strategy-lab/read-core/market-regime/types";
 import type { ReaderAuctionMode } from "../reader-auction-mode/types";
 import type { ReaderAbsorptionPolicy, ReaderAbsorptionQuality } from "../reader-absorption-quality/types";
 import type { ReaderNarrative } from "../reader-narrative/types";
 import type { ReaderVpState } from "../reader-vp-state/types";
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 
 export type LiveReaderStance =
   | "wait"

@@ -1,5 +1,5 @@
 import type { ReaderCandidate, ReaderCandidateFamily } from "../reader-candidates/types";
-import type { Side } from "../../types";
+import type { Side } from "@strategy-lab/types";
 
 export type ReaderHypothesisConfirmationType = "none" | "first-reaction" | "max-favorable";
 

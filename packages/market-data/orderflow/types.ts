@@ -1,4 +1,4 @@
-import type { OrderflowEvent } from "../../strategy-lab";
+import type { OrderflowEvent } from "@strategy-lab";
 import type { HyperliquidNetwork } from "../shared/types";
 
 export type HyperliquidWsTrade = {

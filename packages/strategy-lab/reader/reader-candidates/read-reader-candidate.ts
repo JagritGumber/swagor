@@ -1,7 +1,7 @@
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderResultUpdate } from "../reader-result/types";
 import type { ReaderSetupResult } from "../reader-setup/types";
-import type { Side } from "../../types";
+import type { Side } from "@strategy-lab/types";
 import type {
   ReaderCandidate,
   ReaderCandidateBuilderResponse,

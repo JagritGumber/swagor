@@ -1,4 +1,4 @@
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 import type { LocalVolumeProfile, VolumeBin } from "./types";
 
 export function buildLocalVolumeProfile(input: {

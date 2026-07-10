@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { OrderflowEvent } from "../../read-core/orderflow/types";
-import type { Candle } from "../../types";
+import type { OrderflowEvent } from "@strategy-lab/read-core/orderflow/types";
+import type { Candle } from "@strategy-lab/types";
 import { buildReaderHistoryReads } from "./build-reader-history-reads";
 import { runReaderHistoryReplay } from "./run-reader-history-replay";
 

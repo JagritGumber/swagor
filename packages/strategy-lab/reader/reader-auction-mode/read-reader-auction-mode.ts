@@ -1,7 +1,7 @@
-import type { AuctionRead } from "../../read-core/read/types";
-import type { OrderflowRead } from "../../read-core/orderflow/types";
-import type { ReaderMarketRegime } from "../../read-core/market-regime/types";
-import type { Side } from "../../types";
+import type { AuctionRead } from "@strategy-lab/read-core/read/types";
+import type { OrderflowRead } from "@strategy-lab/read-core/orderflow/types";
+import type { ReaderMarketRegime } from "@strategy-lab/read-core/market-regime/types";
+import type { Side } from "@strategy-lab/types";
 import type { ReaderAuctionMode, ReaderAuctionModeState } from "./types";
 
 export function readReaderAuctionMode(input: {

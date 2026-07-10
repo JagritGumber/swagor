@@ -10,7 +10,10 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "incremental": true
+    "incremental": true,
+    "paths": {
+      "@judgment-shared/*": ["./src/shared/*"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

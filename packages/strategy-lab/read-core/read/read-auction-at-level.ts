@@ -1,4 +1,4 @@
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 import type { OrderflowTrade } from "../orderflow/types";
 import { buildLocalVolumeProfile } from "./build-local-volume-profile";
 import { buildTradeVolumeProfile } from "./build-trade-volume-profile";

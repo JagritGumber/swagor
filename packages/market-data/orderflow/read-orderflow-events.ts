@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import type { OrderflowEvent } from "../../strategy-lab";
+import type { OrderflowEvent } from "@strategy-lab";
 import { parseOrderflowEventLine } from "./parse-orderflow-event-line";
 
 export async function readOrderflowEvents(path: string): Promise<OrderflowEvent[]> {

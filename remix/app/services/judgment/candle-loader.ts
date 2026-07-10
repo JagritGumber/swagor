@@ -1,9 +1,9 @@
-import type { Candle } from '../../../../judgment/src/shared/types.ts'
+import type { Candle } from '@judgment/src/shared/types'
 import { toCandle } from '@shared/candle'
 import { getCandles, type HyperliquidCandle } from '@alova/methods/hyperliquid'
 import { hlRateLimiter } from '@alova/index'
 import { retry } from 'alova/server'
-import { tryCatch } from '../../lib/api/try-catch.ts'
+import { tryCatch } from '@/lib/api/try-catch'
 
 const INTERVAL_MS: Record<string, number> = {
   '1m': 60_000,

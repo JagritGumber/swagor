@@ -1,4 +1,4 @@
-import type { PriceLocation, VolumeProfile, PriceLevel } from "../../shared/market/metrics";
+import type { PriceLocation, VolumeProfile, PriceLevel } from "@judgment-shared/market/metrics";
 
 export function classifyPriceLocation(
   price: number,

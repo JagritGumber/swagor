@@ -1,8 +1,8 @@
 import { access } from "node:fs/promises";
-import { orderflowFilePath, readOrderflowEvents } from "../../../market-data";
+import { orderflowFilePath, readOrderflowEvents } from "@packages/market-data";
 import { orderflowFileTimesFor } from "./orderflow-file-times-for";
 import type { ReaderReplayReportInput } from "./types";
-import type { OrderflowEvent } from "../../read-core/orderflow/types";
+import type { OrderflowEvent } from "@strategy-lab/read-core/orderflow/types";
 
 export async function readReportOrderflowEvents(input: ReaderReplayReportInput): Promise<{
   events: OrderflowEvent[];

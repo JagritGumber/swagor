@@ -1,4 +1,4 @@
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 
 export function atrAt(candles: Candle[], index: number, length: number): number | null {
   if (length <= 0 || index < length || index >= candles.length) return null;

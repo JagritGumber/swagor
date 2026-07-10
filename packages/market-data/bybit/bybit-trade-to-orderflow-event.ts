@@ -1,4 +1,4 @@
-import type { OrderflowEvent } from "../../strategy-lab";
+import type { OrderflowEvent } from "@strategy-lab";
 import type { BybitTradeRow } from "./parse-bybit-trade-csv";
 
 export function bybitTradeToOrderflowEvent(row: BybitTradeRow): OrderflowEvent {

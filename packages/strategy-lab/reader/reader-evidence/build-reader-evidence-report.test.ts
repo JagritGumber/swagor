@@ -4,7 +4,7 @@ import type { ReaderEvidenceInput } from "./types";
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome } from "../reader-result/types";
 import type { ReaderSetupResult } from "../reader-setup/types";
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 
 describe("buildReaderEvidenceReport", () => {
   test("uses only candles closed at entry and exit time", () => {

@@ -1,9 +1,9 @@
-import type { ReaderMarketRegime } from "../../read-core/market-regime/types";
-import { readReaderNarrative } from "../../reader/reader-narrative/read-reader-narrative";
-import type { ReaderNarrative } from "../../reader/reader-narrative/types";
-import type { Side } from "../../types";
-import type { LiveReaderRead } from "../../reader/reader-live/types";
-import { readReaderVpPlaybook } from "../../reader/reader-vp-playbook/read-reader-vp-playbook";
+import type { ReaderMarketRegime } from "@strategy-lab/read-core/market-regime/types";
+import { readReaderNarrative } from "@strategy-lab/reader/reader-narrative/read-reader-narrative";
+import type { ReaderNarrative } from "@strategy-lab/reader/reader-narrative/types";
+import type { Side } from "@strategy-lab/types";
+import type { LiveReaderRead } from "@strategy-lab/reader/reader-live/types";
+import { readReaderVpPlaybook } from "@strategy-lab/reader/reader-vp-playbook/read-reader-vp-playbook";
 import type { ReaderActionableTradePlan, ReaderSetupFamily, ReaderTradePlan, ReaderTradePlanConfig } from "./types";
 
 export function buildReaderTradePlan(read: LiveReaderRead, _config: ReaderTradePlanConfig = {}): ReaderTradePlan {

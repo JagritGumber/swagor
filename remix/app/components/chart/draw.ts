@@ -1,5 +1,5 @@
 // status: Unused — replaced by lightweight-charts lw-chart.ts
-import type { P, Coordinate } from '../../types/shared.ts'
+import type { P, Coordinate } from '@/types/shared'
 
 type RectState = P<Coordinate & { w: number; h: number; color: string }>
 export function rect(ctx: CanvasRenderingContext2D) {

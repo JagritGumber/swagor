@@ -7,7 +7,7 @@ import type { CandleAggregator } from '../candle-aggregator.ts'
 import type { SSEManager } from '../sse-manager.ts'
 import type { DB } from '../db/index.ts'
 import { trades, candles } from '../db/schema.ts'
-import { NETWORK } from '../../env.ts'
+import { NETWORK } from '@env'
 import { INTERVAL_MS } from '../http/subscribe.ts'
 import { publishCandleClose } from '../queue.ts'
 

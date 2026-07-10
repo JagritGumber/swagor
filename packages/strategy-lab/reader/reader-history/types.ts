@@ -1,7 +1,7 @@
-import type { OrderflowEvent } from "../../read-core/orderflow/types";
+import type { OrderflowEvent } from "@strategy-lab/read-core/orderflow/types";
 import type { LiveReaderConfig, LiveReaderRead } from "../reader-live/types";
 import type { ReaderReplayInput, ReaderReplayResult, ReaderReplayStep } from "../reader-replay/types";
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 
 export type ReaderHistoryAuctionConfig = {
   swingLeft?: number;

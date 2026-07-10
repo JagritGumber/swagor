@@ -1,5 +1,5 @@
-import type { AuctionLocation } from "../../read-core/read/types";
-import type { Side } from "../../types";
+import type { AuctionLocation } from "@strategy-lab/read-core/read/types";
+import type { Side } from "@strategy-lab/types";
 
 export type ReaderAuctionModeName =
   | "balanced-value"

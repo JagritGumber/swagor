@@ -3,7 +3,7 @@ import { enterLong } from "../signals/enter-long";
 import { hold } from "../signals/hold";
 import { rollingHighAt } from "../indicators/rolling-high-at";
 import { smaAt } from "../indicators/sma-at";
-import type { Strategy } from "../../types";
+import type { Strategy } from "@strategy-lab/types";
 
 export const momentumBreakout: Strategy = {
   id: "trend.momentum-breakout",

@@ -1,5 +1,5 @@
-import type { OrderflowTrade } from "../../shared/market/input";
-import type { AbsorptionEvent, OrderflowStats } from "../../shared/market/metrics";
+import type { OrderflowTrade } from "@judgment-shared/market/input";
+import type { AbsorptionEvent, OrderflowStats } from "@judgment-shared/market/metrics";
 
 export function createEmptyOrderflowStats(): OrderflowStats {
   return {

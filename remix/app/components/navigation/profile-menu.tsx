@@ -1,7 +1,7 @@
 import { clientEntry, type Handle, type SerializableProps, ref, css, on } from 'remix/ui'
 import { Identicon } from '../composables/identicon'
 import { Button } from '../composables/button'
-import { FONT_UI, TEXT_MUTED } from '../../constants/theme.ts'
+import { FONT_UI, TEXT_MUTED } from '@/constants/theme'
 
 const contentBase = css({
   position: 'absolute',

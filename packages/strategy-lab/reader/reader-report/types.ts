@@ -1,4 +1,4 @@
-import type { CandleInterval, HyperliquidNetwork } from "../../../market-data";
+import type { CandleInterval, HyperliquidNetwork } from "@packages/market-data";
 import type { ReaderExecutionQualityReport } from "../reader-execution-quality/types";
 import type { ReaderEvidenceReport } from "../reader-evidence/types";
 import type { ReaderHistoryAuctionConfig, ReaderHistoryReplayResult } from "../reader-history/types";

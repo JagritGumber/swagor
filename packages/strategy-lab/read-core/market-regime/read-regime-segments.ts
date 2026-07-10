@@ -1,4 +1,4 @@
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 import { buildLocalVolumeProfile } from "../read/build-local-volume-profile";
 import { classifyCandles } from "./classify-candles";
 import type { RegimeSegment } from "./types";

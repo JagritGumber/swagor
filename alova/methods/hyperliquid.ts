@@ -1,5 +1,5 @@
 import { hlAlovaTestnet, hlAlovaMainnet } from '../index.ts'
-import type { HyperliquidNetwork, HyperliquidCandle } from '../../packages/market-data/shared/types'
+import type { HyperliquidNetwork, HyperliquidCandle } from '@packages/market-data/shared/types'
 
 export type { HyperliquidCandle }
 

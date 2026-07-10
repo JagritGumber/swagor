@@ -1,8 +1,8 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 
-import type { ReaderReadSuccess } from '../../types/reader.ts'
-import { widget, FONT_DATA, POSITIVE, NEGATIVE } from '../../constants/theme.ts'
+import type { ReaderReadSuccess } from '@/types/reader'
+import { widget, FONT_DATA, POSITIVE, NEGATIVE } from '@/constants/theme'
 
 interface AuctionWidgetProps {
   read: ReaderReadSuccess

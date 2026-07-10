@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { createReaderAuctionModeState } from "./create-reader-auction-mode-state";
 import { readReaderAuctionMode } from "./read-reader-auction-mode";
-import type { AuctionRead } from "../../read-core/read/types";
-import type { OrderflowRead } from "../../read-core/orderflow/types";
+import type { AuctionRead } from "@strategy-lab/read-core/read/types";
+import type { OrderflowRead } from "@strategy-lab/read-core/orderflow/types";
 
 describe("readReaderAuctionMode", () => {
   test("marks failed expansion when price returns into value", () => {

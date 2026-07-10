@@ -1,4 +1,4 @@
-import { createValidator } from "../../shared";
+import { createValidator } from "@packages/shared";
 import type { HyperliquidWsBbo, HyperliquidWsTrade } from "./types";
 import { HyperliquidBboMessageSchema, HyperliquidTradesMessageSchema } from "./hyperliquid-orderflow-message-schema";
 

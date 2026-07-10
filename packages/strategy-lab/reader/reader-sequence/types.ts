@@ -1,4 +1,4 @@
-import type { ReaderSetupFamily } from "../../backtest/trade-plan/types";
+import type { ReaderSetupFamily } from "@strategy-lab/backtest/trade-plan/types";
 
 export type ReaderSequencePhase =
   | "observing"

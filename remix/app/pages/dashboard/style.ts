@@ -1,6 +1,6 @@
 // Dashboard styles — 8fr 2fr 2fr grid, border-left separators
 import { css } from 'remix/ui'
-import { SURFACE_BODY, FONT_UI } from '../../constants/theme.ts'
+import { SURFACE_BODY, FONT_UI } from '@/constants/theme'
 import type { RiskLevel } from './types.ts'
 
 export const page = css({

@@ -1,4 +1,4 @@
-import { createValidator } from "../../shared";
+import { createValidator } from "@packages/shared";
 import type { VictoriaMetricsExportSeries } from "../shared/types";
 import { VictoriaMetricsExportSeriesSchema } from "./victoria-metrics-export-series-schema";
 

@@ -1,4 +1,4 @@
-import type { MarketCosts, Side } from "../../types";
+import type { MarketCosts, Side } from "@strategy-lab/types";
 
 export function tradePnl(side: Side, entry: number, exit: number, costs: MarketCosts): number {
   const gross = side === "long" ? exit / entry - 1 : entry / exit - 1;

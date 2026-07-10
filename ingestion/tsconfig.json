@@ -15,7 +15,8 @@
     "types": ["node"],
     "paths": {
       "@packages/*": ["../packages/*"],
-      "@shared/*": ["../shared/*"]
+      "@shared/*": ["../shared/*"],
+      "@env": ["../env.ts"]
     }
   },
   "include": ["**/*.ts"],

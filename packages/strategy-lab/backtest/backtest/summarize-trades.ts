@@ -1,5 +1,5 @@
 import { maxDrawdown } from "./max-drawdown";
-import type { BacktestMetrics, Trade } from "../../types";
+import type { BacktestMetrics, Trade } from "@strategy-lab/types";
 
 export function summarizeTrades(trades: Trade[]): BacktestMetrics {
   const equityCurve = [0];

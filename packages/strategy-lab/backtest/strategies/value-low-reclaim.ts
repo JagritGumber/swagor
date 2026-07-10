@@ -4,7 +4,7 @@ import { crossedAboveAt } from "../indicators/crossed-above-at";
 import { enterLong } from "../signals/enter-long";
 import { hold } from "../signals/hold";
 import { rollingLowAt } from "../indicators/rolling-low-at";
-import type { Strategy } from "../../types";
+import type { Strategy } from "@strategy-lab/types";
 
 export const valueLowReclaim: Strategy = {
   id: "mean-reversion.value-low-reclaim",

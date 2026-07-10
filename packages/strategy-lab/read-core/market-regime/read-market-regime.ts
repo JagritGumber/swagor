@@ -1,4 +1,4 @@
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 import type { ReaderMarketRegime } from "./types";
 import { classifyCandles } from "./classify-candles";
 

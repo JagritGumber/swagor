@@ -1,4 +1,4 @@
-import { createValidator } from "../../shared";
+import { createValidator } from "@packages/shared";
 import type { HyperliquidCandle } from "../shared/types";
 import { HyperliquidCandlesSchema } from "./hyperliquid-candle-schema";
 

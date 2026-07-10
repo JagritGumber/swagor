@@ -1,8 +1,8 @@
-import type { JudgmentEngine } from '../../../../judgment/src/v1/engine.ts'
-import type { EngineConfig } from '../../../../judgment/src/v1/engine-state.ts'
-import type { Candle } from '../../../../judgment/src/shared/types.ts'
-import { resolveVersion } from '../../../../judgment/src/index.ts'
-import { DEFAULT_JUDGE_CONFIGS } from '../../../../judgment/src/v1/defaults.ts'
+import type { JudgmentEngine } from '@judgment/src/v1/engine'
+import type { EngineConfig } from '@judgment/src/v1/engine-state'
+import type { Candle } from '@judgment/src/shared/types'
+import { resolveVersion } from '@judgment/src/index'
+import { DEFAULT_JUDGE_CONFIGS } from '@judgment/src/v1/defaults'
 
 type EngineEntry = {
   engine: JudgmentEngine

@@ -1,4 +1,4 @@
-import type { OrderflowEvent } from "../../strategy-lab";
+import type { OrderflowEvent } from "@strategy-lab";
 import type { HyperliquidWsBbo, HyperliquidWsTrade } from "./types";
 import { validateHyperliquidBboData, validateHyperliquidTradesData } from "./validate-hyperliquid-orderflow-message";
 

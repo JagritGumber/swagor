@@ -1,6 +1,6 @@
 import { retry } from 'alova/server'
-import { hlRateLimiter } from '../../../alova'
-import { getCandles } from '../../../alova/methods/hyperliquid'
+import { hlRateLimiter } from '@alova/'
+import { getCandles } from '@alova/methods/hyperliquid'
 import { intervalMs } from "../shared/interval-ms";
 import type { CandleQuery, HyperliquidCandle } from "../shared/types";
 import { validateHyperliquidCandles } from "./validate-hyperliquid-candles";
