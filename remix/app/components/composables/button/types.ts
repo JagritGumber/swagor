@@ -1,4 +1,4 @@
-import type { RemixNode } from 'remix/ui'
+import type { RemixNode, MixinDescriptor } from 'remix/ui'
 
 export type Variant = 'primary' | 'ghost' | 'outline' | 'danger'
 export type Size = 'sm' | 'md' | 'lg'
@@ -9,6 +9,6 @@ export interface ButtonProps {
   disabled?: boolean
   type?: 'button' | 'submit' | 'reset'
   children?: RemixNode
-  mix?: unknown
+  mix?: MixinDescriptor<any, any>
   title?: string
 }
