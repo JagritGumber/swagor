@@ -1,5 +1,5 @@
 import type { Handle } from 'remix/ui'
-import { clientEntry } from 'remix/ui'
+import { clientEntry, ref } from 'remix/ui'
 import { Document } from '@/document'
 import { LandingChartEntry } from '@/components/landing/chart-entry'
 import { LandingTabs, type Asset } from '@/components/landing/tabs'
@@ -23,7 +23,8 @@ function readLandingAssets(): { assets: LandingViewProps['assets']; activeAsset:
 const LandingView = clientEntry(
   import.meta.url,
   function LandingView(handle: Handle<{}>) {
-    let { assets, activeAsset } = readLandingAssets()
+    let assets: LandingViewProps['assets'] = {} as LandingViewProps['assets']
+    let activeAsset: Asset = 'ETH'
     let judgment: JudgmentUpdate | null = null
     let updatedAt: number | null = null
     let sseAbort: AbortController | null = null
@@ -41,44 +42,46 @@ const LandingView = clientEntry(
       }, sseAbort.signal)
     }
 
-    startSSE(activeAsset)
     handle.signal.addEventListener('abort', () => {
       if (sseAbort) sseAbort.abort()
     })
 
-    return () => {
-      const assetData = assets[activeAsset]
-      const regimeData: LandingRegime | null = judgment?.regime
-        ? { ...judgment.regime, label: judgment.regime.mode }
-        : assetData?.regime ?? null
-      const auctionData: LandingAuction | null = judgment?.auction
-        ? { ...judgment.auction, profile: assetData?.auction?.profile ?? null, level: assetData?.auction?.level ?? null }
-        : assetData?.auction ?? null
-
-      return (
-        <div mix={s.landingPage}>
-          {LandingTabs({ active: activeAsset, onChange: (asset: Asset) => {
-            activeAsset = asset
-            judgment = null
-            updatedAt = null
-            startSSE(asset)
+    return () => (
+      <div
+        mix={ref((node, signal) => {
+          if (!(node instanceof HTMLElement)) return
+          try {
+            const data = readLandingAssets()
+            assets = data.assets
+            activeAsset = data.activeAsset
+            startSSE(activeAsset)
             handle.update()
-          }})}
-          <div mix={s.chartArea}>
-            <script id="landing-chart-data" type="application/json">
-              {JSON.stringify({ candles: assetData.candles, segments: assetData.segments, auction: assetData.auction })}
-            </script>
-            <LandingChartEntry />
-            <JudgmentPanel
-              regime={regimeData}
-              auction={auctionData}
-              read={assetData?.read ?? null}
-              updatedAt={updatedAt}
-            />
-          </div>
+          } catch (e) {
+            console.error('[LandingView] Failed to read landing assets:', e)
+          }
+        })}
+      >
+        {LandingTabs({ active: activeAsset, onChange: (asset: Asset) => {
+          activeAsset = asset
+          judgment = null
+          updatedAt = null
+          startSSE(asset)
+          handle.update()
+        }})}
+        <div mix={s.chartArea}>
+          <script id="landing-chart-data" type="application/json">
+            {JSON.stringify({ candles: assets[activeAsset]?.candles ?? [], segments: assets[activeAsset]?.segments ?? [], auction: assets[activeAsset]?.auction })}
+          </script>
+          <LandingChartEntry />
+          <JudgmentPanel
+            regime={judgment?.regime ? { ...judgment.regime, label: judgment.regime.mode } : assets[activeAsset]?.regime ?? null}
+            auction={judgment?.auction ? { ...judgment.auction, profile: assets[activeAsset]?.auction?.profile ?? null, level: assets[activeAsset]?.auction?.level ?? null } : assets[activeAsset]?.auction ?? null}
+            read={assets[activeAsset]?.read ?? null}
+            updatedAt={updatedAt}
+          />
         </div>
-      )
-    }
+      </div>
+    )
   },
 )
 
