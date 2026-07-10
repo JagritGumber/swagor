@@ -1,7 +1,7 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
-import { SURFACE_HEADER, BORDER_HEADER, TEXT_PRIMARY, TEXT_MUTED, FONT_UI } from '../constants/theme.ts'
-import { NativeSelect, NativeSelectOption } from './native-select.tsx'
+import { SURFACE_HEADER, BORDER_HEADER, TEXT_PRIMARY, TEXT_MUTED, FONT_UI } from '../../constants/theme.ts'
+import { NativeSelect, NativeSelectOption } from '../composables/native-select'
 import { ProfileMenu } from './profile-menu.tsx'
 
 export function Navbar(handle: Handle<{ user?: { address: string }; hideLinks?: boolean; currentPath?: string; publicRoute?: boolean }>) {

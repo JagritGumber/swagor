@@ -2,7 +2,7 @@ import type { Handle, RemixNode } from 'remix/ui'
 import { css } from 'remix/ui'
 
 import { routes } from './routes.ts'
-import { Navbar } from './components/navbar.tsx'
+import { Navbar } from './components/navigation/navbar.tsx'
 
 export interface DocumentProps {
   children?: RemixNode
