@@ -2,7 +2,7 @@ import type { Candle } from '@shared/candle'
 import type { OverlaySegment } from '@/components/chart/types'
 import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'
 import type { LiveReaderStance } from '@packages/strategy-lab/reader/reader-live/types'
-import type { ReaderTradePlanStatus } from '@packages/strategy-lab/backtest/trade-plan/types'
+import type { Asset } from '@/components/landing/tabs'
 
 export interface LandingAuction {
   location: string
@@ -43,53 +43,15 @@ export interface LandingReaderRead {
   }
 }
 
-export interface LandingTradePlan {
-  status: ReaderTradePlanStatus
-  side?: string
-  entryLow?: number
-  entryHigh?: number
-  stop?: number
-  target?: number
-  invalidation?: string
-  confidence?: number
-  reasons: string[]
-}
-
-export interface LandingJudgment {
-  id: string
-  action: string
-  side?: string
-  confidence: number
-  reason: string
-  previousJudgmentId: string | null
-  allJudgments: {
-    configId: string
-    label: string
-    confidence: number
-    reason: string
-  }[]
-  metricsSnapshot: Record<string, unknown> | null
-  createdAt: string
-}
-
-export interface LandingPortfolio {
-  equity: number
-  totalPnl: number
-  dailyPnl: number
-  tradeCount: number
-  winCount: number
-  lossCount: number
-  openPositionCount: number
-}
-
-export interface LandingViewProps {
+export interface LandingAssetData {
   candles: Candle[]
   segments: OverlaySegment[]
   auction: LandingAuction | null
   regime: LandingRegime | null
-  read?: LandingReaderRead | null
-  plan?: LandingTradePlan | null
-  judgment?: LandingJudgment | null
-  portfolio?: LandingPortfolio | null
-  asset: string
+  read: LandingReaderRead | null
+}
+
+export interface LandingViewProps {
+  assets: Record<Asset, LandingAssetData>
+  activeAsset: Asset
 }

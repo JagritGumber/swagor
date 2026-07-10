@@ -1,6 +1,20 @@
 import type { AppContext } from '../router.ts'
 import { LandingPage } from '../pages/landing/page.tsx'
 import { buildAgentRead } from './shared.ts'
+import { ASSETS, type Asset } from '@/components/landing/tabs'
+import type { LandingAssetData } from '../pages/landing/types.ts'
+
+function emptyAssetData(): LandingAssetData {
+  return { candles: [], segments: [], auction: null, regime: null, read: null }
+}
+
+function buildAssets(activeKey: Asset, activeData: LandingAssetData): Record<Asset, LandingAssetData> {
+  const assets = {} as Record<Asset, LandingAssetData>
+  for (const key of ASSETS) {
+    assets[key] = key === activeKey ? activeData : emptyAssetData()
+  }
+  return assets
+}
 
 export async function home(context: AppContext) {
   const url = new URL(context.request.url)
@@ -8,11 +22,38 @@ export async function home(context: AppContext) {
 
   if (error) {
     console.error('[home] buildAgentRead failed:', error)
-    return context.render(<LandingPage candles={[]} segments={[]} auction={null} regime={null} asset={asset} />)
+    const assetKey = asset as Asset
+    return context.render(<LandingPage assets={buildAssets(assetKey, emptyAssetData())} activeAsset={assetKey} />)
+  }
+
+  const assetKey = asset as Asset
+  const assetData: LandingAssetData = {
+    candles,
+    segments,
+    auction: auction ? {
+      location: auction.location,
+      locationLabel: auction.locationLabel,
+      bias: auction.bias,
+      narrative: auction.narrative,
+      profile: auction.profile ? {
+        poc: auction.profile.poc,
+        valueAreaLow: auction.profile.valueAreaLow,
+        valueAreaHigh: auction.profile.valueAreaHigh,
+        bins: auction.profile.bins,
+      } : null,
+      level: auction.level,
+    } : null,
+    regime: regime ? {
+      mode: regime.mode,
+      label: regime.label,
+      rangePct: regime.rangePct,
+      driftPct: regime.driftPct,
+      directionalEfficiency: regime.directionalEfficiency,
+    } : null,
+    read,
   }
 
   return context.render(
-    <LandingPage candles={candles} segments={segments} auction={auction} regime={regime}
-      read={read} plan={plan} judgment={judgment} portfolio={portfolio} asset={asset} />,
+    <LandingPage assets={buildAssets(assetKey, assetData)} activeAsset={assetKey} />,
   )
 }
