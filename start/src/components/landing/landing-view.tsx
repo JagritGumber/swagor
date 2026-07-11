@@ -1,23 +1,68 @@
 import { useEffect, useState } from 'react'
-import { connectLiveJudgment, type JudgmentUpdate } from '@/data/live-judgment'
+import { connectLiveJudgment } from '@/data/live-judgment'
+import { getCandles } from '@/data/api'
+import { ASSETS, type Asset } from './tabs'
 import { LandingChartEntry } from './chart-entry'
 import { EquityCurve } from './equity-curve'
-import { JudgmentPanel } from './judgment-panel'
+import { JudgmentPanel, type MindLogEntry } from './judgment-panel'
 import { OpenPositions } from './open-positions'
 import { PortfolioPulse } from './portfolio-pulse'
 import { TradeHistory } from './trade-history'
-import type { Asset } from './tabs'
 import type { LandingPortfolio, LandingViewProps } from './types'
 
-export function LandingView({ assets, activeAsset: initialAsset }: LandingViewProps) {
+const REGIME_LABEL: Record<string, string> = {
+  'range': 'Ranging',
+  'trend-up': 'Trending up',
+  'trend-down': 'Trending down',
+  'high-vol': 'High volatility',
+  'unknown': 'Unclear',
+}
+
+const STANCE_LABEL: Record<string, string> = {
+  'possible-long': 'Looking at a long',
+  'possible-short': 'Looking at a short',
+  'watch-long': 'Watching for a long',
+  'watch-short': 'Watching for a short',
+  'wait': 'Waiting for confirmation',
+  'avoid': 'Staying away',
+  'avoid-balanced-auction': 'No clear opportunity here',
+  'long': 'Looking at a long',
+  'short': 'Looking at a short',
+  'hold': 'Holding position',
+  'exit': 'Exiting position',
+  'no-trade': 'No trade right now',
+}
+
+export function LandingView({ assets, activeAsset: initialAsset, page = 'portfolio' }: LandingViewProps) {
   const [activeAsset, setActiveAsset] = useState<Asset>(initialAsset)
-  const [judgment, setJudgment] = useState<JudgmentUpdate | null>(null)
   const [updatedAt, setUpdatedAt] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'positions' | 'history' | 'equity'>('positions')
+  const [mindLog, setMindLog] = useState<MindLogEntry[]>(() => {
+    const assetData = assets[initialAsset]
+    if (!assetData) return []
+    const entries: MindLogEntry[] = []
+    if (assetData.regime || assetData.auction || assetData.read) {
+      const regimeText = assetData.regime
+        ? `${REGIME_LABEL[assetData.regime.label] ?? assetData.regime.label}, drift ${assetData.regime.driftPct.toFixed(1)}%`
+        : null
+      const narrativeText = assetData.read?.narrative ?? assetData.auction?.narrative ?? null
+      const stanceText = assetData.read?.stance ? STANCE_LABEL[assetData.read.stance] ?? assetData.read.stance : null
+      entries.push({
+        timestamp: Date.now(),
+        regime: regimeText,
+        narrative: narrativeText,
+        stance: stanceText,
+      })
+    }
+    return entries
+  })
 
   useEffect(() => {
     setActiveAsset(initialAsset)
   }, [initialAsset])
+
+  const handleAssetChange = (asset: Asset) => {
+    window.location.href = `/live/${asset}`
+  }
 
   useEffect(() => {
     const abort = new AbortController()
@@ -25,8 +70,21 @@ export function LandingView({ assets, activeAsset: initialAsset }: LandingViewPr
       activeAsset,
       {
         onJudgment: (data) => {
-          setJudgment(data)
           setUpdatedAt(data.updatedAt)
+          setMindLog((prev) => {
+            const regimeText = data.regime
+              ? `${REGIME_LABEL[data.regime.mode] ?? data.regime.mode}, drift ${(data.regime.driftPct * 100).toFixed(1)}%`
+              : null
+            const stanceText = data.stance ? STANCE_LABEL[data.stance] ?? data.stance : null
+            const entry: MindLogEntry = {
+              timestamp: data.updatedAt,
+              regime: regimeText,
+              narrative: data.narrative || null,
+              stance: stanceText,
+            }
+            const next = [...prev, entry]
+            return next.length > 50 ? next.slice(-50) : next
+          })
         },
         onError: () => {},
       },
@@ -36,74 +94,90 @@ export function LandingView({ assets, activeAsset: initialAsset }: LandingViewPr
   }, [activeAsset])
 
   const assetData = assets[activeAsset]
-  const candles = assetData?.candles ?? []
+  const serverCandles = assetData?.candles ?? []
   const segments = assetData?.segments ?? []
   const auction = assetData?.auction ?? null
-  const read = assetData?.read ?? null
   const portfolio: LandingPortfolio | null = assetData?.portfolio ?? null
 
-  const regime = judgment?.regime
-    ? { ...judgment.regime, label: judgment.regime.mode }
-    : (assetData?.regime ?? null)
+  const [liveCandles, setLiveCandles] = useState(serverCandles)
 
-  const panelAuction = judgment?.auction
-    ? {
-        ...judgment.auction,
-        profile: assetData?.auction?.profile ?? null,
-        level: assetData?.auction?.level ?? null,
-      }
-    : auction
+  useEffect(() => {
+    setLiveCandles(serverCandles)
+    if (serverCandles.length > 0) return
+
+    const now = Date.now()
+    const intervalMs = 3_600_000
+    const start = now - intervalMs * 300
+    getCandles(activeAsset, '1h', start, now).then((res) => {
+      if (res.ok) setLiveCandles(res.data.candles)
+    }).catch(() => {})
+  }, [activeAsset, serverCandles])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface-body font-ui text-white">
-      <PortfolioPulse portfolio={portfolio} />
+      <PortfolioPulse portfolio={portfolio} activeAsset={activeAsset} onAssetChange={handleAssetChange} />
 
-      <div className="relative flex min-h-0 flex-1 flex-col">
-        <LandingChartEntry
-          candles={candles}
-          segments={segments}
-          asset={activeAsset}
-          interval="1h"
-          auction={auction}
-        />
-        <JudgmentPanel
-          regime={regime}
-          auction={panelAuction}
-          read={read}
-          updatedAt={updatedAt}
-        />
-      </div>
+      {page === 'live' ? (
+        <div className="grid min-h-0 flex-1 grid-cols-[2fr_1fr_1fr] overflow-hidden">
+          <div className="flex min-h-0 flex-col overflow-hidden border-r border-border-default">
+            <LandingChartEntry
+              candles={liveCandles}
+              segments={segments}
+              asset={activeAsset}
+              interval="1h"
+              auction={auction}
+            />
+            <div className="border-t border-border-default">
+              <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-2">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">Positions</span>
+              </div>
+              <div className="max-h-[280px] overflow-y-auto">
+                <OpenPositions positions={portfolio?.positions ?? []} />
+              </div>
+            </div>
+          </div>
 
-      <div className="border-t border-white/10">
-        <div className="flex border-b border-white/10">
-          {(['positions', 'history', 'equity'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 text-xs font-mono transition-colors ${
-                activeTab === tab
-                  ? 'border-b border-white text-white'
-                  : 'text-white/40 hover:text-white/60'
-              }`}
-            >
-              {tab === 'positions' && 'Open Positions'}
-              {tab === 'history' && 'Trade History'}
-              {tab === 'equity' && 'Equity Curve'}
-            </button>
-          ))}
+          <div className="border-r border-border-default bg-surface-panel" />
+
+          <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
         </div>
-        <div className="max-h-40 overflow-y-auto">
-          {activeTab === 'positions' && (
-            <OpenPositions positions={portfolio?.positions ?? []} />
-          )}
-          {activeTab === 'history' && (
-            <TradeHistory positions={portfolio?.positions ?? []} />
-          )}
-          {activeTab === 'equity' && (
-            <EquityCurve data={portfolio?.equityCurve ?? []} />
-          )}
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <LandingChartEntry
+                candles={liveCandles}
+                segments={segments}
+                asset={activeAsset}
+                interval="1h"
+                auction={auction}
+              />
+            </div>
+            <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
+          </div>
+
+          <div className="grid min-h-[180px] grid-cols-[1fr_280px_1fr] border-t border-border-default">
+            <div className="overflow-y-auto border-r border-border-default">
+              <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-2">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">Positions</span>
+              </div>
+              <OpenPositions positions={portfolio?.positions ?? []} />
+            </div>
+            <div className="overflow-hidden border-r border-border-default">
+              <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-2">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">Equity</span>
+              </div>
+              <EquityCurve data={portfolio?.equityCurve ?? []} />
+            </div>
+            <div className="overflow-y-auto">
+              <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-2">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">Recent Trades</span>
+              </div>
+              <TradeHistory positions={portfolio?.positions ?? []} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

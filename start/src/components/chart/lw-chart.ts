@@ -205,40 +205,67 @@ function drawPOCFallback(
   ctx.fill()
 }
 
+function calcATR(candles: Candle[], period = 14): number {
+  if (candles.length < 2) return 0
+  const trs: number[] = []
+  for (let i = 1; i < candles.length; i++) {
+    const c = candles[i]
+    const prev = candles[i - 1]
+    const tr = Math.max(c.h - c.l, Math.abs(c.h - prev.c), Math.abs(c.l - prev.c))
+    trs.push(tr)
+  }
+  if (trs.length === 0) return 0
+  const slice = trs.slice(-period)
+  return slice.reduce((s, v) => s + v, 0) / slice.length
+}
+
+function pricePrecision(atr: number): { precision: number; minMove: number } {
+  if (atr >= 100) return { precision: 2, minMove: 0.01 }
+  if (atr >= 10) return { precision: 3, minMove: 0.001 }
+  if (atr >= 1) return { precision: 4, minMove: 0.0001 }
+  if (atr >= 0.1) return { precision: 5, minMove: 0.00001 }
+  return { precision: 6, minMove: 0.000001 }
+}
+
 export function createLWChart(opts: LWChartOptions): LWChartInstance {
   const { container, candles, segments } = opts
 
+  const atr = calcATR(candles)
+  const { precision, minMove } = pricePrecision(atr)
+  const priceScaleWidth = atr < 1 ? 100 : 70
+
   const chart = createChart(container, {
     layout: {
-      background: { type: ColorType.Solid, color: 'transparent' },
-      textColor: '#8a8f99',
+      background: { type: ColorType.Solid, color: '#131722' },
+      textColor: '#6b7280',
       fontFamily: '"JetBrains Mono", monospace',
       fontSize: 10,
     },
     grid: {
-      vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
-      horzLines: { color: 'rgba(255, 255, 255, 0.04)' },
+      vertLines: { color: 'rgba(99, 130, 190, 0.06)' },
+      horzLines: { color: 'rgba(99, 130, 190, 0.06)' },
     },
     crosshair: {
       mode: CrosshairMode.Normal,
       vertLine: {
-        color: 'rgba(0, 212, 255, 0.3)',
+        color: 'rgba(99, 179, 237, 0.4)',
         width: 1,
-        labelBackgroundColor: '#0a0e14',
+        labelBackgroundColor: '#1a2332',
       },
       horzLine: {
-        color: 'rgba(0, 212, 255, 0.3)',
+        color: 'rgba(99, 179, 237, 0.4)',
         width: 1,
-        labelBackgroundColor: '#0a0e14',
+        labelBackgroundColor: '#1a2332',
       },
     },
     timeScale: {
-      borderColor: 'rgba(255, 255, 255, 0.08)',
+      borderColor: 'rgba(99, 130, 190, 0.1)',
       timeVisible: true,
       secondsVisible: false,
     },
     rightPriceScale: {
-      borderColor: 'rgba(255, 255, 255, 0.08)',
+      borderColor: 'rgba(99, 130, 190, 0.1)',
+      minimumWidth: priceScaleWidth,
     },
   })
 
@@ -249,6 +276,7 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
     borderDownColor: '#ff5050',
     wickUpColor: '#00d4ff',
     wickDownColor: '#ff5050',
+    priceFormat: { type: 'price', precision, minMove },
   })
 
   series.setData(toLWData(candles))
@@ -443,6 +471,18 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
   }
   chart.timeScale().subscribeVisibleTimeRangeChange(onRangeChange)
 
+  requestAnimationFrame(() => repositionSegments())
+
+  const resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const { width, height } = entry.contentRect
+      if (width > 0 && height > 0) {
+        chart.resize(width, height)
+      }
+    }
+  })
+  resizeObserver.observe(container)
+
   return {
     updateCandle(candle: Candle): void {
       const time = (candle.t / 1000) as UTCTimestamp
@@ -466,6 +506,7 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
       })
     },
     destroy(): void {
+      resizeObserver.disconnect()
       series.detachPrimitive(overlayPrimitive as never)
       chart.timeScale().unsubscribeVisibleTimeRangeChange(onRangeChange)
       clearTimeout(loadTimer)
