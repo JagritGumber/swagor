@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AgentRouteImport } from './routes/agent'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LiveAssetRouteImport } from './routes/live.$asset'
 import { Route as ApiNonceRouteImport } from './routes/api/nonce'
 import { Route as ApiCandlesRouteImport } from './routes/api/candles'
 import { Route as ApiBalanceRouteImport } from './routes/api/balance'
@@ -44,6 +45,11 @@ const AgentRoute = AgentRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiveAssetRoute = LiveAssetRouteImport.update({
+  id: '/live/$asset',
+  path: '/live/$asset',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiNonceRoute = ApiNonceRouteImport.update({
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
   '/api/nonce': typeof ApiNonceRoute
+  '/live/$asset': typeof LiveAssetRoute
   '/admin/judgment/tick': typeof AdminJudgmentTickRoute
   '/api/judgment/history': typeof ApiJudgmentHistoryRoute
   '/api/judgment/stream': typeof ApiJudgmentStreamRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
   '/api/nonce': typeof ApiNonceRoute
+  '/live/$asset': typeof LiveAssetRoute
   '/admin/judgment/tick': typeof AdminJudgmentTickRoute
   '/api/judgment/history': typeof ApiJudgmentHistoryRoute
   '/api/judgment/stream': typeof ApiJudgmentStreamRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
   '/api/nonce': typeof ApiNonceRoute
+  '/live/$asset': typeof LiveAssetRoute
   '/admin/judgment/tick': typeof AdminJudgmentTickRoute
   '/api/judgment/history': typeof ApiJudgmentHistoryRoute
   '/api/judgment/stream': typeof ApiJudgmentStreamRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/api/balance'
     | '/api/candles'
     | '/api/nonce'
+    | '/live/$asset'
     | '/admin/judgment/tick'
     | '/api/judgment/history'
     | '/api/judgment/stream'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/api/balance'
     | '/api/candles'
     | '/api/nonce'
+    | '/live/$asset'
     | '/admin/judgment/tick'
     | '/api/judgment/history'
     | '/api/judgment/stream'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/api/balance'
     | '/api/candles'
     | '/api/nonce'
+    | '/live/$asset'
     | '/admin/judgment/tick'
     | '/api/judgment/history'
     | '/api/judgment/stream'
@@ -168,6 +180,7 @@ export interface RootRouteChildren {
   ApiBalanceRoute: typeof ApiBalanceRoute
   ApiCandlesRoute: typeof ApiCandlesRoute
   ApiNonceRoute: typeof ApiNonceRoute
+  LiveAssetRoute: typeof LiveAssetRoute
   AdminJudgmentTickRoute: typeof AdminJudgmentTickRoute
   ApiJudgmentHistoryRoute: typeof ApiJudgmentHistoryRoute
   ApiJudgmentStreamRoute: typeof ApiJudgmentStreamRoute
@@ -208,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/live/$asset': {
+      id: '/live/$asset'
+      path: '/live/$asset'
+      fullPath: '/live/$asset'
+      preLoaderRoute: typeof LiveAssetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/nonce': {
@@ -264,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBalanceRoute: ApiBalanceRoute,
   ApiCandlesRoute: ApiCandlesRoute,
   ApiNonceRoute: ApiNonceRoute,
+  LiveAssetRoute: LiveAssetRoute,
   AdminJudgmentTickRoute: AdminJudgmentTickRoute,
   ApiJudgmentHistoryRoute: ApiJudgmentHistoryRoute,
   ApiJudgmentStreamRoute: ApiJudgmentStreamRoute,

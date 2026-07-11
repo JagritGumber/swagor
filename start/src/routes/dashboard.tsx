@@ -6,11 +6,11 @@ import type { DashboardData } from '@/components/dashboard/types'
 
 async function fetchBalanceUsd(userId: string): Promise<number> {
   try {
-    const { getCircleWalletForUser } = await import('@/data/circle-wallet.ts')
+    const { getAgentWithWallet } = await import('@/data/agent.ts')
     const { getWalletBalance } = await import('@/data/balance.ts')
-    const wallet = await getCircleWalletForUser(userId)
-    if (!wallet) return 0
-    return await getWalletBalance(wallet.circle_wallet_address)
+    const result = await getAgentWithWallet(userId)
+    if (!result?.wallet?.circleWalletAddress) return 0
+    return await getWalletBalance(result.wallet.circleWalletAddress)
   } catch {
     return 0
   }
@@ -18,10 +18,9 @@ async function fetchBalanceUsd(userId: string): Promise<number> {
 
 async function fetchWalletAddress(userId: string): Promise<string> {
   try {
-    const { getCircleWalletForUser } = await import('@/data/circle-wallet.ts')
-    const wallet = await getCircleWalletForUser(userId)
-    if (!wallet) return ''
-    return wallet.circle_wallet_address
+    const { getAgentWithWallet } = await import('@/data/agent.ts')
+    const result = await getAgentWithWallet(userId)
+    return result?.wallet?.circleWalletAddress ?? ''
   } catch {
     return ''
   }

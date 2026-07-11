@@ -14,7 +14,7 @@ function formatRelativeTime(timestamp: number): string {
 
 export function LastRead({ updatedAt }: LastReadProps) {
   return (
-    <div className="flex items-center justify-between border-t border-white/[0.06] pt-3">
+    <div className="flex items-center justify-between border-t border-border-default pt-3">
       <span className="text-[11px] uppercase tracking-[0.5px] text-[#8892a4]">Last read</span>
       <span className="font-data text-xs text-[#8892a4]">{formatRelativeTime(updatedAt)}</span>
     </div>

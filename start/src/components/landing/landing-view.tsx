@@ -5,10 +5,7 @@ import { ASSETS, type Asset } from './tabs'
 import { LandingChartEntry } from './chart-entry'
 import { EquityCurve } from './equity-curve'
 import { JudgmentPanel, type MindLogEntry } from './judgment-panel'
-import { OpenPositions } from './open-positions'
-import { PortfolioPulse } from './portfolio-pulse'
-import { TradeHistory } from './trade-history'
-import type { LandingPortfolio, LandingViewProps } from './types'
+import type { LandingEquity, LandingViewProps } from './types'
 
 const REGIME_LABEL: Record<string, string> = {
   'range': 'Ranging',
@@ -97,7 +94,7 @@ export function LandingView({ assets, activeAsset: initialAsset, page = 'portfol
   const serverCandles = assetData?.candles ?? []
   const segments = assetData?.segments ?? []
   const auction = assetData?.auction ?? null
-  const portfolio: LandingPortfolio | null = assetData?.portfolio ?? null
+  const equity: LandingEquity | null = assetData?.equity ?? null
 
   const [liveCandles, setLiveCandles] = useState(serverCandles)
 
@@ -115,10 +112,8 @@ export function LandingView({ assets, activeAsset: initialAsset, page = 'portfol
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface-body font-ui text-white">
-      <PortfolioPulse portfolio={portfolio} activeAsset={activeAsset} onAssetChange={handleAssetChange} />
-
       {page === 'live' ? (
-        <div className="grid min-h-0 flex-1 grid-cols-[2fr_1fr_1fr] overflow-hidden">
+        <div className="grid min-h-0 flex-1 grid-cols-[2fr_1fr] overflow-hidden">
           <div className="flex min-h-0 flex-col overflow-hidden border-r border-border-default">
             <LandingChartEntry
               candles={liveCandles}
@@ -127,17 +122,7 @@ export function LandingView({ assets, activeAsset: initialAsset, page = 'portfol
               interval="1h"
               auction={auction}
             />
-            <div className="border-t border-border-default">
-              <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-2">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">Positions</span>
-              </div>
-              <div className="max-h-[280px] overflow-y-auto">
-                <OpenPositions positions={portfolio?.positions ?? []} />
-              </div>
-            </div>
           </div>
-
-          <div className="border-r border-border-default bg-surface-panel" />
 
           <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
         </div>
@@ -156,25 +141,11 @@ export function LandingView({ assets, activeAsset: initialAsset, page = 'portfol
             <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
           </div>
 
-          <div className="grid min-h-[180px] grid-cols-[1fr_280px_1fr] border-t border-border-default">
-            <div className="overflow-y-auto border-r border-border-default">
-              <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-2">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">Positions</span>
-              </div>
-              <OpenPositions positions={portfolio?.positions ?? []} />
+          <div className="border-t border-border-default">
+            <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-2">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">Equity</span>
             </div>
-            <div className="overflow-hidden border-r border-border-default">
-              <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-2">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">Equity</span>
-              </div>
-              <EquityCurve data={portfolio?.equityCurve ?? []} />
-            </div>
-            <div className="overflow-y-auto">
-              <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-2">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">Recent Trades</span>
-              </div>
-              <TradeHistory positions={portfolio?.positions ?? []} />
-            </div>
+            <EquityCurve data={equity?.equityCurve ?? []} />
           </div>
         </>
       )}

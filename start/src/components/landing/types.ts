@@ -43,30 +43,10 @@ export interface LandingReaderRead {
   }
 }
 
-export interface LandingPortfolio {
-  equity: number
-  totalPnl: number
-  dailyPnl: number
-  tradeCount: number
-  winCount: number
-  lossCount: number
-  openPositionCount: number
-  positions: {
-    id: string
-    asset: string
-    side: string
-    entryPrice: number
-    entryTime: number
-    size: number
-    stop: number
-    target: number
-    status: string
-    exitPrice?: number
-    exitTime?: number
-    exitReason?: string
-    pnlPct?: number
-    judgmentId: string
-  }[]
+export interface LandingEquity {
+  totalEquity: number
+  dailyChange: number
+  dailyChangePct: number
   equityCurve: { timestamp: number; equity: number }[]
 }
 
@@ -76,10 +56,11 @@ export interface LandingAssetData {
   auction: LandingAuction | null
   regime: LandingRegime | null
   read: LandingReaderRead | null
-  portfolio: LandingPortfolio | null
+  equity: LandingEquity | null
 }
 
 export interface LandingViewProps {
   assets: Record<Asset, LandingAssetData>
   activeAsset: Asset
+  page?: 'live' | 'portfolio'
 }

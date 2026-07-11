@@ -14,22 +14,23 @@
   --spacing-gap-6: 24px;
   --spacing-gap-12: 48px;
 
-  --color-surface-body: #0a0e14;
-  --color-surface-header: #0a0e14;
-  --color-surface-widget-header: oklch(0.14 0.03 260);
-  --color-surface-widget: oklch(0.11 0.025 260);
+  --color-surface-body: #131722;
+  --color-surface-header: #131722;
+  --color-surface-widget-header: #1a1f2e;
+  --color-surface-widget: #161b26;
+  --color-surface-panel: #161b26;
 
-  --color-border-default: rgba(255, 255, 255, 0.1);
-  --color-border-header: rgba(255, 255, 255, 0.1);
+  --color-border-default: rgba(99, 130, 190, 0.15);
+  --color-border-header: rgba(99, 130, 190, 0.15);
 
-  --color-text-primary: oklch(1 0 0);
-  --color-text-secondary: oklch(1 0 0);
-  --color-text-muted: oklch(1 0 0);
-  --color-text-data: oklch(1 0 0);
+  --color-text-primary: #e1e4ea;
+  --color-text-secondary: #a3a8b5;
+  --color-text-muted: #6b7280;
+  --color-text-data: #e1e4ea;
 
   --color-accent-green: #00d4ff;
   --color-positive: #00d4ff;
-  --color-negative: oklch(0.55 0.2 30);
+  --color-negative: #f87171;
 }
 
 :root {
@@ -42,6 +43,7 @@
   --surface-header: var(--color-surface-header);
   --surface-widget-header: var(--color-surface-widget-header);
   --surface-widget: var(--color-surface-widget);
+  --surface-panel: var(--color-surface-panel);
 
   --border-default: var(--color-border-default);
   --border-header: var(--color-border-header);

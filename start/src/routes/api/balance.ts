@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { getCircleWalletForUser } from '@/data/circle-wallet.ts'
+import { getAgentWithWallet } from '@/data/agent.ts'
 import { getWalletBalance } from '@/data/balance.ts'
 import { apiSuccess, apiError } from '@/lib/api/response.ts'
 
@@ -13,13 +13,13 @@ export const Route = createFileRoute('/api/balance')({
         const user = await getOptionalUser(request)
         if (!user) return apiError('UNAUTHORIZED', 'Not authenticated', 401)
 
-        const circleWallet = await getCircleWalletForUser(user.id)
-        if (!circleWallet) {
+        const result = await getAgentWithWallet(user.id)
+        if (!result?.wallet?.circleWalletAddress) {
           return apiSuccess({ balanceUsd: 0 })
         }
 
         try {
-          const balanceUsd = await getWalletBalance(circleWallet.circle_wallet_address)
+          const balanceUsd = await getWalletBalance(result.wallet.circleWalletAddress)
           return apiSuccess({ balanceUsd })
         } catch {
           return apiSuccess({ balanceUsd: 0 })

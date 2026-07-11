@@ -1,7 +1,6 @@
 import type { Candle } from '@judgment/src/shared/types'
 import { getOrCreateEngine } from './judgment-engine-manager.ts'
 
-// Pipeline-only instance ID for SSE broadcast; does not correspond to a persisted DB record.
 const PIPELINE_INSTANCE_ID = '00000000-0000-0000-0000-000000000000'
 
 export type JudgmentPipelineResult = {

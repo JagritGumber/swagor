@@ -96,19 +96,19 @@ export function JudgmentPanel({ log, updatedAt, asset }: JudgmentPanelProps) {
   const [history, setHistory] = useState<MindLogEntry[]>([])
 
   useEffect(() => {
-    fetch(`/api/judgment/history?asset=${asset}&limit=20`)
+    fetch(`/api/decisions?asset=${asset}&limit=20`)
       .then((r) => r.json())
       .then((data) => {
         if (data.ok && data.data?.history) {
           const entries: MindLogEntry[] = data.data.history.map((h: {
-            side: string | null
-            reason: string | null
-            createdAt: string
+            action: string
+            thesis: string | null
+            decidedAt: string
           }) => ({
-            timestamp: new Date(h.createdAt).getTime(),
+            timestamp: new Date(h.decidedAt).getTime(),
             regime: null,
-            narrative: h.reason ?? null,
-            stance: h.side ?? null,
+            narrative: h.thesis ?? null,
+            stance: h.action === 'no_trade' ? 'no-trade' : h.action,
           }))
           setHistory(entries)
         }

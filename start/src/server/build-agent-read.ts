@@ -3,11 +3,9 @@ import { toCandle } from '@shared/candle'
 import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'
 import type { LiveReaderStance } from '@packages/strategy-lab/reader/reader-live/types'
 import type { ReaderTradePlanStatus } from '@packages/strategy-lab/backtest/trade-plan/types'
-import type { EngineJudgmentResult } from '@judgment/src/v1/engine'
 import { resolveVersion } from '@judgment/src'
-import { createPortfolioEngine } from '@portfolio/src'
-import type { PortfolioSnapshot } from '@portfolio/src/types'
-import { loadOpenPositions, savePosition, updatePosition, saveSnapshot, getLatestSnapshot, getEquityCurve, getPositions } from '@/services/portfolio/portfolio-service'
+import { getLatestDecision, type DecisionWithEvidence } from '@/services/decision/decision-service'
+import { getSelboEquity } from '@/data/selbo-equity'
 import { tryCatch } from '@/lib/api/try-catch.ts'
 import { retry } from 'alova/server'
 import { hlRateLimiter } from '@alova/index'
@@ -57,7 +55,6 @@ export function formatRegime(mode: string): string {
   return map[mode] ?? mode
 }
 
-/** Chart overlay segment shape (ported without remix chart package). */
 export interface OverlaySegment {
   startIndex: number
   endIndex: number
@@ -68,76 +65,6 @@ export interface OverlaySegment {
   high?: number
   low?: number
   bins?: { low: number; high: number; mid: number; volume: number }[]
-}
-
-type AgentJudgmentPipelineResult = {
-  judgment: EngineJudgmentResult
-  portfolio: PortfolioSnapshot & {
-    positions: PortfolioSnapshot['positions']
-    equityCurve: { timestamp: number; equity: number }[]
-  }
-}
-
-/** Full engine+portfolio pipeline used by agent read fallback (from remix actions). */
-async function runAgentJudgmentPipeline(
-  asset: string,
-  _interval: string,
-  candles: Candle[],
-  versionId: string = 'v1',
-): Promise<AgentJudgmentPipelineResult> {
-  const version = await resolveVersion(versionId)
-
-  const engine = version.createJudgmentEngine(
-    { asset, regimeWindowMs: 24 * 60 * 60 * 1000 },
-    version.DEFAULT_JUDGE_CONFIGS,
-  )
-
-  engine.boot(candles)
-  const result = engine.onCandle(candles[candles.length - 1])
-
-  const [openPositions, latestSnapshot] = await Promise.all([
-    loadOpenPositions(),
-    getLatestSnapshot(),
-  ])
-
-  const portfolio = createPortfolioEngine({
-    initialEquity: latestSnapshot?.equity ?? 10_000,
-  })
-  portfolio.hydrate(openPositions, latestSnapshot?.equity ?? 10_000)
-
-  if (result.bestJudgment && result.bestJudgment.action.type === 'enter') {
-    const position = portfolio.processJudgment(
-      result.bestJudgment.action,
-      asset,
-      Date.now(),
-      result.judgment.id,
-    )
-    if (position) {
-      await savePosition(position)
-    }
-  }
-
-  const closed = portfolio.tick(asset, candles[candles.length - 1].c)
-  for (const pos of closed) {
-    await updatePosition(pos)
-  }
-
-  const snapshot = portfolio.snapshot()
-  await saveSnapshot(snapshot)
-
-  const [equityCurve, allPositions] = await Promise.all([
-    getEquityCurve(100),
-    getPositions(),
-  ])
-
-  return {
-    judgment: result,
-    portfolio: {
-      ...snapshot,
-      positions: allPositions,
-      equityCurve,
-    },
-  }
 }
 
 export async function loadAndAnalyze(
@@ -192,6 +119,28 @@ export async function loadAndAnalyze(
   return { candles, segments, regime, auction, error: null }
 }
 
+function decisionToView(d: DecisionWithEvidence | null) {
+  if (!d) return null
+  return {
+    id: d.id,
+    action: d.action,
+    asset: d.asset,
+    conviction: d.conviction,
+    entry: d.entry,
+    stop: d.stop,
+    target: d.target,
+    invalidation: d.invalidation,
+    thesis: d.thesis,
+    decidedAt: d.decidedAt?.toISOString() ?? new Date().toISOString(),
+    evidence: d.evidence.map((e) => ({
+      category: e.category,
+      title: e.title,
+      value: e.value,
+      stance: e.stance,
+    })),
+  }
+}
+
 export interface AgentReadResult {
   candles: Candle[]
   segments: OverlaySegment[]
@@ -199,18 +148,25 @@ export interface AgentReadResult {
   auction: { location: string; locationLabel: string; bias: string; narrative: string; profile: { poc: number; valueAreaLow: number; valueAreaHigh: number; bins: { low: number; high: number; volume: number }[] } | null; level: { price: number; kind: string; touches: number } | null } | null
   read: { stance: LiveReaderStance; narrative: string; invalidation: string | null; target: string | null; orderflow: { pressure: string; delta: number; tradeCount: number; events: string[] } } | null
   plan: { status: ReaderTradePlanStatus; asset: string; side?: string; entryLow?: number; entryHigh?: number; stop?: number; target?: number; invalidation?: string; confidence: number; reasons: string[] } | null
-  judgment: { id: string; action: string; side?: string; confidence: number; reason: string; previousJudgmentId: string | null; allJudgments: { configId: string; label: string; confidence: number; reason: string }[]; metricsSnapshot: Record<string, unknown> | null; createdAt: string } | null
-  portfolio: {
-    equity: number
-    totalPnl: number
-    dailyPnl: number
-    tradeCount: number
-    winCount: number
-    lossCount: number
-    openPositionCount: number
-    positions: { id: string; asset: string; side: string; entryPrice: number; entryTime: number; size: number; stop: number; target: number; status: string; exitPrice?: number; exitTime?: number; exitReason?: string; pnlPct?: number; judgmentId: string }[]
-    equityCurve: { timestamp: number; equity: number }[]
+  decision: {
+    id: string
+    action: string
+    asset: string
+    conviction: string
+    entry: number | null
+    stop: number | null
+    target: number | null
+    invalidation: string | null
+    thesis: string | null
+    decidedAt: string
+    evidence: { category: string; title: string; value: string; stance: string }[]
   } | null
+  equity: {
+    totalEquity: number
+    dailyChange: number
+    dailyChangePct: number
+    equityCurve: { timestamp: number; equity: number }[]
+  }
   asset: string
   error: string | null
 }
@@ -220,11 +176,10 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
 
   const result = await loadAndAnalyze(url, { lookback: 300, interval: '1h' })
   if (result.error) {
-    return { candles: [], segments: [], regime: null, auction: null, read: null, plan: null, judgment: null, portfolio: null, asset, error: result.error }
+    return { candles: [], segments: [], regime: null, auction: null, read: null, plan: null, decision: null, equity: { totalEquity: 0, dailyChange: 0, dailyChangePct: 0, equityCurve: [] }, asset, error: result.error }
   }
 
   const { candles, segments, regime: rawRegime, auction: rawAuction } = result
-  const lastCandle = candles[candles.length - 1]
 
   const regime = {
     mode: rawRegime.mode,
@@ -256,7 +211,7 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
 
   const orderflowWindow = createOrderflowWindow(60_000)
   const orderflow = readOrderflowWindow({ asset, window: orderflowWindow })
-  orderflow.lastPrice = lastCandle.c
+  orderflow.lastPrice = candles[candles.length - 1].c
 
   const read = combineAuctionOrderflow({
     auction: rawAuction, orderflow, regime: rawRegime,
@@ -285,77 +240,61 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
         invalidation: plan.invalidation, confidence: plan.confidence, reasons: plan.reasons,
       }
 
-  // Fetch persisted admin judgment instead of computing fresh
+  // Fetch persisted admin decision
   const appUrl = process.env.APP_URL ?? 'http://localhost:44100'
-  const judgmentResponse = await fetch(
-    `${appUrl}/api/judgment/history?asset=${asset}&limit=1`,
+  const decisionResponse = await fetch(
+    `${appUrl}/api/decisions?asset=${asset}&limit=1`,
   ).catch(() => null)
 
-  let judgment: AgentReadResult['judgment'] = null
-  if (judgmentResponse?.ok) {
-    const judgmentData = await judgmentResponse.json()
-    if (judgmentData.ok && judgmentData.data?.latest) {
-      const j = judgmentData.data.latest
-      judgment = {
-        id: j.id,
-        action: j.side ? `enter-${j.side}` : 'no-trade',
-        side: j.side ?? undefined,
-        confidence: j.confidence ?? 0,
-        reason: j.reason ?? 'no judgment',
-        previousJudgmentId: j.previousJudgmentId ?? null,
-        allJudgments: (j.allJudgments as Array<{
-          configId: string
-          label: string
-          confidence: number
-          reason: string
-        }>) ?? [],
-        metricsSnapshot: j.metricsSnapshot ?? null,
-        createdAt: j.createdAt ?? new Date().toISOString(),
+  let decision: AgentReadResult['decision'] = null
+  if (decisionResponse?.ok) {
+    const data = await decisionResponse.json()
+    if (data.ok && data.data?.latest) {
+      decision = decisionToView(data.data.latest)
+    }
+  }
+
+  // Fallback: compute fresh decision from engine if none persisted
+  if (!decision) {
+    try {
+      const version = await resolveVersion('v1')
+      const engine = version.createJudgmentEngine(
+        { asset, regimeWindowMs: 24 * 60 * 60 * 1000 },
+        version.DEFAULT_JUDGE_CONFIGS,
+      )
+      engine.boot(candles)
+      const engineResult = engine.onCandle(candles[candles.length - 1])
+
+      const best = engineResult.bestJudgment
+      if (best && best.action.type === 'enter') {
+        decision = {
+          id: engineResult.judgment.id,
+          action: `enter-${best.action.side}`,
+          asset,
+          conviction: best.confidence >= 0.7 ? 'high' : best.confidence >= 0.5 ? 'medium' : 'low',
+          entry: best.action.entry,
+          stop: best.action.stop,
+          target: best.action.target,
+          invalidation: best.invalidation,
+          thesis: best.reason,
+          decidedAt: new Date().toISOString(),
+          evidence: engineResult.allJudgments.map((j) => ({
+            category: 'regime' as const,
+            title: j.label,
+            value: j.reason,
+            stance: 'supporting' as const,
+          })),
+        }
       }
+    } catch {
+      // Engine not available, leave decision null
     }
   }
 
-  // Fallback: compute fresh if no persisted judgment
-  if (!judgment) {
-    const judgmentResult = await runAgentJudgmentPipeline(asset, '1h', candles)
-    judgment = {
-      id: judgmentResult.judgment.judgment.id,
-      action: judgmentResult.judgment.bestJudgment?.action.type ?? 'no-trade',
-      side: judgmentResult.judgment.bestJudgment?.action.type === 'enter'
-        ? judgmentResult.judgment.bestJudgment.action.side
-        : undefined,
-      confidence: judgmentResult.judgment.bestJudgment?.confidence ?? 0,
-      reason: judgmentResult.judgment.bestJudgment?.reason ?? 'no judgment',
-      previousJudgmentId: null,
-      allJudgments: judgmentResult.judgment.allJudgments.map((j) => ({
-        configId: j.configId,
-        label: j.label,
-        confidence: j.confidence,
-        reason: j.reason,
-      })),
-      metricsSnapshot: null,
-      createdAt: new Date().toISOString(),
-    }
-  }
+  // Fetch equity from outcomes
+  const equity = await getSelboEquity().catch(() => ({
+    totalEquity: 0, dailyChange: 0, dailyChangePct: 0, equityCurve: [],
+  }))
 
-  // Always fetch portfolio state regardless of judgment source
-  const [latestSnapshot, allPositions, equityCurve] = await Promise.all([
-    getLatestSnapshot(),
-    getPositions(),
-    getEquityCurve(100),
-  ])
-
-  const portfolioSnap: AgentReadResult['portfolio'] = {
-    equity: latestSnapshot?.equity ?? 10_000,
-    totalPnl: latestSnapshot?.totalPnl ?? 0,
-    dailyPnl: latestSnapshot?.dailyPnl ?? 0,
-    tradeCount: latestSnapshot?.tradeCount ?? 0,
-    winCount: latestSnapshot?.winCount ?? 0,
-    lossCount: latestSnapshot?.lossCount ?? 0,
-    openPositionCount: latestSnapshot?.openPositionCount ?? 0,
-    positions: allPositions,
-    equityCurve,
-  }
-
-  return { candles, segments, regime, auction, read: readerRead, plan: tradePlan, judgment, portfolio: portfolioSnap, asset, error: null }
+  return { candles, segments, regime, auction, read: readerRead, plan: tradePlan, decision, equity, asset, error: null }
 }

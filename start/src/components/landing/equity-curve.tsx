@@ -23,7 +23,7 @@ export function EquityCurve({ data }: EquityCurveProps) {
 
     const width = rect.width
     const height = rect.height
-    const padding = { top: 8, right: 8, bottom: 8, left: 8 }
+    const padding = { top: 6, right: 4, bottom: 6, left: 4 }
 
     const equities = data.map((d) => d.equity)
     const minEq = Math.min(...equities)
@@ -54,16 +54,14 @@ export function EquityCurve({ data }: EquityCurveProps) {
   }, [data])
 
   if (data.length < 2) {
-    return <div className="px-4 py-6 text-center text-xs text-white/40">Not enough data for chart</div>
+    return <div className="flex h-full items-center justify-center text-[11px] text-[#8892a4]">No data yet</div>
   }
 
   return (
-    <div className="px-2 py-2">
-      <canvas
-        ref={canvasRef}
-        className="h-24 w-full"
-        style={{ imageRendering: 'crisp-edges' }}
-      />
-    </div>
+    <canvas
+      ref={canvasRef}
+      className="h-full w-full"
+      style={{ imageRendering: 'crisp-edges' }}
+    />
   )
 }

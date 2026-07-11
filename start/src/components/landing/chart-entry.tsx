@@ -72,7 +72,7 @@ export function LandingChartEntry({
   return (
     <div
       ref={ref}
-      className="min-h-0 w-full flex-1"
+      className="relative min-h-0 w-full flex-1"
       style={{ width: '100%', flex: 1, minHeight: 0 }}
     />
   )

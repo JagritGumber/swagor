@@ -1,25 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { eq } from 'drizzle-orm'
-import { selboInstances } from '@/db/schema.ts'
 import { getDb } from '@/db/client.ts'
+import { agents } from '@/db/schema.ts'
 import {
-  getLatestJudgment,
-  getLatestAdminJudgment,
-  getJudgmentHistory,
-  ADMIN_INSTANCE_ID,
-} from '@/services/judgment/judgment.service.ts'
+  getLatestDecision,
+  getDecisionHistory,
+  getLatestAdminDecision,
+  ADMIN_AGENT_ID,
+} from '@/services/decision/decision-service.ts'
 import { apiSuccess } from '@/lib/api/response.ts'
-import type { UserIdentity } from '@/data/user.ts'
 
-/**
- * Query judgment history. Supports two modes:
- * - Authed user: returns their instance's latest judgment + history
- * - No auth: returns admin judgment (public dashboard)
- *
- * Auth is loaded lazily so missing SELBO_SESSION_SECRET does not break
- * the public admin path at module import time.
- */
-async function tryGetOptionalUser(request: Request): Promise<UserIdentity | null> {
+async function tryGetOptionalUser(request: Request) {
   const cookie = request.headers.get('Cookie')
   if (!cookie || !cookie.includes('selbo_session=')) return null
   try {
@@ -30,7 +21,7 @@ async function tryGetOptionalUser(request: Request): Promise<UserIdentity | null
   }
 }
 
-export const Route = createFileRoute('/api/judgment/history')({
+export const Route = createFileRoute('/api/decisions')({
   server: {
     handlers: {
       GET: async ({ request }) => {
@@ -41,24 +32,24 @@ export const Route = createFileRoute('/api/judgment/history')({
         const user = await tryGetOptionalUser(request)
         if (user) {
           const db = await getDb()
-          const [instance] = await db
+          const [agent] = await db
             .select()
-            .from(selboInstances)
-            .where(eq(selboInstances.userId, user.id))
+            .from(agents)
+            .where(eq(agents.userId, user.id))
             .limit(1)
 
-          if (instance) {
+          if (agent) {
             const [latest, history] = await Promise.all([
-              getLatestJudgment(instance.id),
-              getJudgmentHistory(instance.id, limit),
+              getLatestDecision(agent.id),
+              getDecisionHistory(agent.id, limit),
             ])
             return apiSuccess({ latest, history, source: 'user' })
           }
         }
 
         const [latest, history] = await Promise.all([
-          getLatestAdminJudgment(asset),
-          getJudgmentHistory(ADMIN_INSTANCE_ID, limit),
+          getLatestAdminDecision(asset),
+          getDecisionHistory(ADMIN_AGENT_ID, limit),
         ])
         return apiSuccess({ latest, history, source: 'admin' })
       },

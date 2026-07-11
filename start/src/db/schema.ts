@@ -1,11 +1,46 @@
-import { index } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
-import { pgTable, uuid, text, numeric, boolean, jsonb, timestamp, real, integer } from 'drizzle-orm/pg-core'
+import {
+  pgTable,
+  uuid,
+  text,
+  numeric,
+  boolean,
+  jsonb,
+  timestamp,
+  real,
+  integer,
+  pgEnum,
+  index,
+} from 'drizzle-orm/pg-core'
+
+// ─── Enums ────────────────────────────────────────────
+
+export const agentModeEnum = pgEnum('agent_mode', ['live', 'paper', 'simulation'])
+export const decisionActionEnum = pgEnum('decision_action', ['long', 'short', 'no_trade'])
+export const convictionEnum = pgEnum('conviction', ['low', 'medium', 'high'])
+export const evidenceCategoryEnum = pgEnum('evidence_category', [
+  'regime',
+  'volume_profile',
+  'orderflow',
+  'price_level',
+  'liquidity',
+  'tape',
+  'volatility',
+  'funding',
+  'open_interest',
+])
+export const evidenceStanceEnum = pgEnum('evidence_stance', ['supporting', 'contradicting'])
+export const executionStatusEnum = pgEnum('execution_status', ['pending', 'filled', 'cancelled', 'expired'])
+export const outcomeStatusEnum = pgEnum('outcome_status', ['win', 'loss', 'breakeven', 'invalidated', 'expired'])
+
+// ─── Users ────────────────────────────────────────────
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
   createdAt: timestamp('created_at').notNull(),
 })
+
+// ─── User wallets (auth - the wallet the human connects) ──
 
 export const wallets = pgTable(
   'wallets',
@@ -23,114 +58,106 @@ export const wallets = pgTable(
   ],
 )
 
-export const circleWallets = pgTable(
-  'circle_wallets',
-  {
-    id: text('id').primaryKey(),
-    userId: text('user_id')
-      .notNull()
-      .references(() => users.id),
-    circleWalletId: text('circle_wallet_id').notNull().unique(),
-    circleWalletAddress: text('circle_wallet_address').notNull(),
-    createdAt: timestamp('created_at').notNull(),
-  },
-  t => [index('circle_wallets_user_id_idx').on(t.userId)],
-)
+// ─── Agents ───────────────────────────────────────────
 
-const DEFAULT_WATCHLIST = ['ETH', 'BTC', 'SOL']
-
-export const selboInstances = pgTable('selbo_instances', {
+export const agents = pgTable('agents', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().unique(),
-  circleWalletId: text('circle_wallet_id').notNull().unique(),
-  circleWalletAddress: text('circle_wallet_address').notNull(),
-  simulatedBalanceUsd: numeric('simulated_balance_usd', { precision: 20, scale: 6 })
+  userId: text('user_id')
     .notNull()
-    .default('1000'),
-  strategyText: text('strategy_text')
-    .notNull()
-    .default(
-      'Moderate risk perp futures on Hyperliquid. Trade ETH and BTC. Cut losers fast, let winners run. No more than 3x leverage. Wait for clear setups, hold cash when uncertain.',
-    ),
-  strategyParsed: jsonb('strategy_parsed'),
+    .references(() => users.id)
+    .unique(),
+  mode: agentModeEnum('mode').notNull().default('paper'),
+  enabled: boolean('enabled').notNull().default(true),
   version: text('version').notNull().default('v1'),
-  killSwitchActive: boolean('kill_switch_active').notNull().default(false),
-  publicProfile: boolean('public_profile').notNull().default(false),
-  username: text('username').unique(),
-  nextWatcherAt: timestamp('next_watcher_at', { withTimezone: true }).defaultNow().notNull(),
-  currentlyWatching: jsonb('currently_watching').$type<string[]>().notNull().default(DEFAULT_WATCHLIST),
-  subscriptionTier: text('subscription_tier').notNull().default('free'),
-  billingCustomerId: text('billing_customer_id').unique(),
-  billingSubscriptionId: text('billing_subscription_id').unique(),
-  externalWalletAddress: text('external_wallet_address').unique(),
-  betaAccessGranted: boolean('beta_access_granted').notNull().default(false),
-  betaGrantedAt: timestamp('beta_granted_at', { withTimezone: true }),
-  tosAcceptedAt: timestamp('tos_accepted_at', { withTimezone: true }),
-  erc8004TokenId: text('erc8004_token_id'),
-  erc8004RegistrationTxHash: text('erc8004_registration_tx_hash'),
-  betaInviteSentAt: timestamp('beta_invite_sent_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
-export const judgmentTicks = pgTable('judgment_ticks', {
+// ─── Agent wallets (optional - only when mode = live) ──
+
+export const agentWallets = pgTable('agent_wallets', {
   id: uuid('id').primaryKey().defaultRandom(),
-  selboInstanceId: uuid('selbo_instance_id')
-    .references(() => selboInstances.id, { onDelete: 'cascade' }),
+  agentId: uuid('agent_id')
+    .notNull()
+    .references(() => agents.id, { onDelete: 'cascade' })
+    .unique(),
+  circleWalletId: text('circle_wallet_id'),
+  circleWalletAddress: text('circle_wallet_address'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// ─── Decisions ────────────────────────────────────────
+
+export const decisions = pgTable('decisions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  agentId: uuid('agent_id')
+    .notNull()
+    .references(() => agents.id, { onDelete: 'cascade' }),
+  decidedAt: timestamp('decided_at', { withTimezone: true }).defaultNow().notNull(),
+  action: decisionActionEnum('action').notNull(),
   asset: text('asset').notNull(),
-  version: text('version').notNull(),
-  side: text('side'),
-  confidence: real('confidence'),
-  reason: text('reason'),
-  entryPrice: text('entry_price'),
-  stopPrice: text('stop_price'),
-  targetPrice: text('target_price'),
+  entry: real('entry'),
+  stop: real('stop'),
+  target: real('target'),
   invalidation: text('invalidation'),
-  previousJudgmentId: uuid('previous_judgment_id'),
-  tradeId: uuid('trade_id'),
-  adminJudgment: boolean('admin_judgment').notNull().default(false),
-  allJudgments: jsonb('all_judgments'),
-  metricsSnapshot: jsonb('metrics_snapshot'),
+  conviction: convictionEnum('conviction').notNull(),
+  thesis: text('thesis'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [
+  index('decisions_agent_id_idx').on(t.agentId),
+  index('decisions_decided_at_idx').on(t.decidedAt),
+])
+
+// ─── Evidence ─────────────────────────────────────────
+
+export const evidence = pgTable('evidence', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  decisionId: uuid('decision_id')
+    .notNull()
+    .references(() => decisions.id, { onDelete: 'cascade' }),
+  category: evidenceCategoryEnum('category').notNull(),
+  title: text('title').notNull(),
+  value: text('value').notNull(),
+  stance: evidenceStanceEnum('stance').notNull(),
+}, t => [
+  index('evidence_decision_id_idx').on(t.decisionId),
+])
+
+// ─── Executions ───────────────────────────────────────
+
+export const executions = pgTable('executions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  decisionId: uuid('decision_id')
+    .notNull()
+    .references(() => decisions.id, { onDelete: 'cascade' }),
+  executedPrice: real('executed_price').notNull(),
+  executedAt: timestamp('executed_at', { withTimezone: true }).notNull(),
+  txHash: text('tx_hash'),
+  status: executionStatusEnum('status').notNull().default('pending'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [
+  index('executions_decision_id_idx').on(t.decisionId),
+])
+
+// ─── Outcomes ─────────────────────────────────────────
+
+export const outcomes = pgTable('outcomes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  executionId: uuid('execution_id')
+    .notNull()
+    .references(() => executions.id, { onDelete: 'cascade' })
+    .unique(),
+  status: outcomeStatusEnum('status').notNull(),
+  exitPrice: real('exit_price'),
+  pnl: real('pnl'),
+  closedAt: timestamp('closed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
-export const portfolioPositions = pgTable('portfolio_positions', {
-  id: text('id').primaryKey(),
-  asset: text('asset').notNull(),
-  side: text('side').notNull(),
-  entryPrice: real('entry_price').notNull(),
-  entryTime: integer('entry_time').notNull(),
-  size: real('size').notNull(),
-  stop: real('stop').notNull(),
-  target: real('target').notNull(),
-  status: text('status').notNull().default('open'),
-  exitPrice: real('exit_price'),
-  exitTime: integer('exit_time'),
-  exitReason: text('exit_reason'),
-  pnlPct: real('pnl_pct'),
-  judgmentId: text('judgment_id'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-})
-
-export const portfolioSnapshots = pgTable('portfolio_snapshots', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  equity: real('equity').notNull(),
-  totalPnl: real('total_pnl').notNull(),
-  dailyPnl: real('daily_pnl').notNull(),
-  tradeCount: integer('trade_count').notNull(),
-  winCount: integer('win_count').notNull(),
-  lossCount: integer('loss_count').notNull(),
-  openPositionCount: integer('open_position_count').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-})
-
-export type SelboInstance = typeof selboInstances.$inferSelect
-export type JudgmentTick = typeof judgmentTicks.$inferSelect
-export type PortfolioPositionRow = typeof portfolioPositions.$inferSelect
-export type PortfolioSnapshotRow = typeof portfolioSnapshots.$inferSelect
+// ─── Relations ────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many }) => ({
   wallets: many(wallets),
-  circleWallets: many(circleWallets),
+  agents: many(agents),
 }))
 
 export const walletsRelations = relations(wallets, ({ one }) => ({
@@ -140,25 +167,69 @@ export const walletsRelations = relations(wallets, ({ one }) => ({
   }),
 }))
 
-export const circleWalletsRelations = relations(circleWallets, ({ one }) => ({
+export const agentsRelations = relations(agents, ({ one, many }) => ({
   user: one(users, {
-    fields: [circleWallets.userId],
+    fields: [agents.userId],
     references: [users.id],
   }),
+  wallet: one(agentWallets),
+  decisions: many(decisions),
 }))
 
-export const selboInstanceRelations = relations(selboInstances, ({ many }) => ({
-  judgmentTicks: many(judgmentTicks),
+export const agentWalletsRelations = relations(agentWallets, ({ one }) => ({
+  agent: one(agents, {
+    fields: [agentWallets.agentId],
+    references: [agents.id],
+  }),
 }))
 
-export const judgmentTickRelations = relations(judgmentTicks, ({ one }) => ({
-  selboInstance: one(selboInstances, {
-    fields: [judgmentTicks.selboInstanceId],
-    references: [selboInstances.id],
+export const decisionsRelations = relations(decisions, ({ one, many }) => ({
+  agent: one(agents, {
+    fields: [decisions.agentId],
+    references: [agents.id],
   }),
-  previousJudgment: one(judgmentTicks, {
-    fields: [judgmentTicks.previousJudgmentId],
-    references: [judgmentTicks.id],
-    relationName: 'judgmentChain',
+  evidence: many(evidence),
+  execution: one(executions),
+}))
+
+export const evidenceRelations = relations(evidence, ({ one }) => ({
+  decision: one(decisions, {
+    fields: [evidence.decisionId],
+    references: [decisions.id],
   }),
 }))
+
+export const executionsRelations = relations(executions, ({ one }) => ({
+  decision: one(decisions, {
+    fields: [executions.decisionId],
+    references: [decisions.id],
+  }),
+  outcome: one(outcomes),
+}))
+
+export const outcomesRelations = relations(outcomes, ({ one }) => ({
+  execution: one(executions, {
+    fields: [outcomes.executionId],
+    references: [executions.id],
+  }),
+}))
+
+// ─── Types ────────────────────────────────────────────
+
+// Select types (what comes out of the DB)
+export type SelectUser = typeof users.$inferSelect
+export type SelectAgent = typeof agents.$inferSelect
+export type SelectAgentWallet = typeof agentWallets.$inferSelect
+export type SelectDecision = typeof decisions.$inferSelect
+export type SelectEvidence = typeof evidence.$inferSelect
+export type SelectExecution = typeof executions.$inferSelect
+export type SelectOutcome = typeof outcomes.$inferSelect
+
+// Insert types (what goes into the DB)
+export type InsertUser = typeof users.$inferInsert
+export type InsertAgent = typeof agents.$inferInsert
+export type InsertAgentWallet = typeof agentWallets.$inferInsert
+export type InsertDecision = typeof decisions.$inferInsert
+export type InsertEvidence = typeof evidence.$inferInsert
+export type InsertExecution = typeof executions.$inferInsert
+export type InsertOutcome = typeof outcomes.$inferInsert
