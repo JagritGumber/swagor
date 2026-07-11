@@ -7,7 +7,6 @@ TanStack Start app under `start/`. Port of the Remix v3 app for full route/API/a
 | Path | Role |
 |------|------|
 | `start/` | **This app** - TanStack Start + Bun (port `44100`) |
-| `remix/` | Remix v3 behavioral reference - leave intact |
 | Root Next.js (`app/`, root `package.json`) | Unrelated product surface - do not modify for this port |
 
 ## Quick start
@@ -91,6 +90,6 @@ dist/
 
 - Package manager: Bun only inside `start/`
 - Session cookie: `selbo_session` (payload `{ userId: string }`)
-- Default port: `44100` (matches remix)
-- Do not delete or repoint `remix/` or the root Next.js app for this work
+- Default port: `44100`
+- Do not delete or repoint the root Next.js app for this work
 - Stop dev Vite before `bun run start` (both default to `44100`)

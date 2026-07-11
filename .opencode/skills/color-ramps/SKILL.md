@@ -31,7 +31,7 @@ metadata:
 | `--positive` | `#00B86B` | Upward drift |
 | `--negative` | `#E54040` | Downward drift |
 
-Full color system is documented in `remix/DESIGN.md`.
+Full color system is documented in `start/` Tailwind tokens.
 
 ## Font ramp
 

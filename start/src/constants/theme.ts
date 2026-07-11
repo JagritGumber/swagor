@@ -1,6 +1,6 @@
 /**
- * Runtime dark theme tokens mirrored from remix/app/constants/theme.ts.
- * Plain values only - no remix/ui or css() helpers.
+ * Runtime dark theme tokens.
+ * Plain values only - no framework helpers.
  */
 
 export const FONT_UI = "'Inter', system-ui, -apple-system, sans-serif"
