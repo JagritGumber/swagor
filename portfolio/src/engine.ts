@@ -9,6 +9,7 @@ export type PortfolioEngine = {
   getPositions(): Position[];
   getOpenPositions(): Position[];
   getClosedPositions(): Position[];
+  hydrate(positions: Position[], equity: number): void;
 };
 
 const DEFAULT_CONFIG: PortfolioConfig = {
@@ -108,5 +109,12 @@ export function createPortfolioEngine(config?: Partial<PortfolioConfig>): Portfo
     getPositions: () => [...positions],
     getOpenPositions: () => allOpenPositions(),
     getClosedPositions: () => positions.filter((p) => p.status === "closed"),
+
+    hydrate(loadedPositions: Position[], loadedEquity: number) {
+      for (const pos of loadedPositions) {
+        positions.push(pos);
+      }
+      equity = loadedEquity;
+    },
   };
 }
