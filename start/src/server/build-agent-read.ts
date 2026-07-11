@@ -316,7 +316,6 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
   }
 
   // Fallback: compute fresh if no persisted judgment
-  let portfolioSnap: AgentReadResult['portfolio'] = null
   if (!judgment) {
     const judgmentResult = await runAgentJudgmentPipeline(asset, '1h', candles)
     judgment = {
@@ -337,7 +336,25 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
       metricsSnapshot: null,
       createdAt: new Date().toISOString(),
     }
-    portfolioSnap = judgmentResult.portfolio
+  }
+
+  // Always fetch portfolio state regardless of judgment source
+  const [latestSnapshot, allPositions, equityCurve] = await Promise.all([
+    getLatestSnapshot(),
+    getPositions(),
+    getEquityCurve(100),
+  ])
+
+  const portfolioSnap: AgentReadResult['portfolio'] = {
+    equity: latestSnapshot?.equity ?? 10_000,
+    totalPnl: latestSnapshot?.totalPnl ?? 0,
+    dailyPnl: latestSnapshot?.dailyPnl ?? 0,
+    tradeCount: latestSnapshot?.tradeCount ?? 0,
+    winCount: latestSnapshot?.winCount ?? 0,
+    lossCount: latestSnapshot?.lossCount ?? 0,
+    openPositionCount: latestSnapshot?.openPositionCount ?? 0,
+    positions: allPositions,
+    equityCurve,
   }
 
   return { candles, segments, regime, auction, read: readerRead, plan: tradePlan, judgment, portfolio: portfolioSnap, asset, error: null }

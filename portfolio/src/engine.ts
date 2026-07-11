@@ -111,6 +111,7 @@ export function createPortfolioEngine(config?: Partial<PortfolioConfig>): Portfo
     getClosedPositions: () => positions.filter((p) => p.status === "closed"),
 
     hydrate(loadedPositions: Position[], loadedEquity: number) {
+      positions.length = 0;
       for (const pos of loadedPositions) {
         positions.push(pos);
       }
