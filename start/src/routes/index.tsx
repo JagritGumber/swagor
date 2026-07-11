@@ -1,80 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ASSETS, type Asset } from '@/components/landing/tabs'
-import { LandingView } from '@/components/landing/landing-view'
-import type { LandingAssetData } from '@/components/landing/types'
-import type { AgentReadResult } from '@/server/build-agent-read'
-
-function emptyAssetData(): LandingAssetData {
-  return { candles: [], segments: [], auction: null, regime: null, read: null, portfolio: null }
-}
-
-function buildAssets(
-  activeKey: Asset,
-  activeData: LandingAssetData,
-): Record<Asset, LandingAssetData> {
-  const assets = {} as Record<Asset, LandingAssetData>
-  for (const key of ASSETS) {
-    assets[key] = key === activeKey ? activeData : emptyAssetData()
-  }
-  return assets
-}
-
-function isAsset(value: string): value is Asset {
-  return (ASSETS as readonly string[]).includes(value)
-}
-
-function mapAgentReadToAssetData(result: AgentReadResult): LandingAssetData {
-  const { candles, segments, regime, auction, read, portfolio } = result
-  return {
-    candles,
-    segments,
-    auction: auction
-      ? {
-          location: auction.location,
-          locationLabel: auction.locationLabel,
-          bias: auction.bias,
-          narrative: auction.narrative,
-          profile: auction.profile
-            ? {
-                poc: auction.profile.poc,
-                valueAreaLow: auction.profile.valueAreaLow,
-                valueAreaHigh: auction.profile.valueAreaHigh,
-                bins: auction.profile.bins,
-              }
-            : null,
-          level: auction.level,
-        }
-      : null,
-    regime: regime
-      ? {
-          mode: regime.mode,
-          label: regime.label,
-          rangePct: regime.rangePct,
-          driftPct: regime.driftPct,
-          directionalEfficiency: regime.directionalEfficiency,
-        }
-      : null,
-    read,
-    portfolio: portfolio ?? null,
-  }
-}
-
-/** Ensure XMLHttpRequest exists for alova xhr adapter under Bun. */
-async function ensureXhrPolyfill(): Promise<void> {
-  if (typeof globalThis.XMLHttpRequest !== 'undefined') return
-  try {
-    const mod = await import('xhr2')
-    const XHR2 = (mod as { default?: typeof XMLHttpRequest }).default ?? (mod as unknown as typeof XMLHttpRequest)
-    globalThis.XMLHttpRequest = XHR2 as typeof XMLHttpRequest
-  } catch {
-    // Leave unset; buildAgentRead will fail and we fall back to empty assets.
-  }
-}
+import { SelboEquityPage } from '@/components/portfolio/selbo-equity-page'
+import { getSelboEquity } from '@/data/selbo-equity'
+import type { SelboEquityData } from '@/data/selbo-equity'
 
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
-      { title: 'Selbo - AI Trading Agent' },
+      { title: 'Selbo - Portfolio' },
       { name: 'color-scheme', content: 'dark' },
     ],
     links: [
@@ -86,41 +18,26 @@ export const Route = createFileRoute('/')({
       },
     ],
   }),
-  loader: async ({ location }) => {
-    const url = new URL(location.href, 'http://local')
-    const paramAsset = (url.searchParams.get('asset') ?? 'ETH').toUpperCase()
-    const assetKey: Asset = isAsset(paramAsset) ? paramAsset : 'ETH'
-
+  loader: async () => {
     try {
-      await ensureXhrPolyfill()
-      const { buildAgentRead } = await import('@/server/build-agent-read')
-      const result = await buildAgentRead(url)
-
-      if (result.error) {
-        console.error('[home] buildAgentRead failed:', result.error)
-        return {
-          assets: buildAssets(assetKey, emptyAssetData()),
-          activeAsset: assetKey,
-        }
-      }
-
-      const key: Asset = isAsset(result.asset) ? result.asset : assetKey
+      const data = await getSelboEquity()
+      return { data }
+    } catch (error) {
+      console.error('[home] getSelboEquity failed:', error)
       return {
-        assets: buildAssets(key, mapAgentReadToAssetData(result)),
-        activeAsset: key,
-      }
-    } catch (err) {
-      console.error('[home] buildAgentRead failed:', err)
-      return {
-        assets: buildAssets(assetKey, emptyAssetData()),
-        activeAsset: assetKey,
+        data: {
+          totalEquity: 0,
+          dailyChange: 0,
+          dailyChangePct: 0,
+          equityCurve: [],
+        } satisfies SelboEquityData,
       }
     }
   },
-  component: LandingRoute,
+  component: PortfolioRoute,
 })
 
-function LandingRoute() {
-  const { assets, activeAsset } = Route.useLoaderData()
-  return <LandingView assets={assets} activeAsset={activeAsset} />
+function PortfolioRoute() {
+  const { data } = Route.useLoaderData()
+  return <SelboEquityPage data={data} />
 }
