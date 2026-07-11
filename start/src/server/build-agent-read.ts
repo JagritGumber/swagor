@@ -7,6 +7,7 @@ import type { EngineJudgmentResult } from '@judgment/src/v1/engine'
 import { resolveVersion } from '@judgment/src'
 import { createPortfolioEngine } from '@portfolio/src'
 import type { PortfolioSnapshot } from '@portfolio/src/types'
+import { loadOpenPositions, savePosition, updatePosition, saveSnapshot, getLatestSnapshot, getEquityCurve, getPositions } from '@/services/portfolio/portfolio-service'
 import { tryCatch } from '@/lib/api/try-catch.ts'
 import { retry } from 'alova/server'
 import { hlRateLimiter } from '@alova/index'
@@ -71,7 +72,10 @@ export interface OverlaySegment {
 
 type AgentJudgmentPipelineResult = {
   judgment: EngineJudgmentResult
-  portfolio: PortfolioSnapshot
+  portfolio: PortfolioSnapshot & {
+    positions: PortfolioSnapshot['positions']
+    equityCurve: { timestamp: number; equity: number }[]
+  }
 }
 
 /** Full engine+portfolio pipeline used by agent read fallback (from remix actions). */
@@ -91,22 +95,48 @@ async function runAgentJudgmentPipeline(
   engine.boot(candles)
   const result = engine.onCandle(candles[candles.length - 1])
 
-  const portfolio = createPortfolioEngine({ initialEquity: 10_000 })
+  const [openPositions, latestSnapshot] = await Promise.all([
+    loadOpenPositions(),
+    getLatestSnapshot(),
+  ])
+
+  const portfolio = createPortfolioEngine({
+    initialEquity: latestSnapshot?.equity ?? 10_000,
+  })
+  portfolio.hydrate(openPositions, latestSnapshot?.equity ?? 10_000)
 
   if (result.bestJudgment && result.bestJudgment.action.type === 'enter') {
-    portfolio.processJudgment(
+    const position = portfolio.processJudgment(
       result.bestJudgment.action,
       asset,
       Date.now(),
       result.judgment.id,
     )
+    if (position) {
+      await savePosition(position)
+    }
   }
 
-  portfolio.tick(asset, candles[candles.length - 1].c)
+  const closed = portfolio.tick(asset, candles[candles.length - 1].c)
+  for (const pos of closed) {
+    await updatePosition(pos)
+  }
+
+  const snapshot = portfolio.snapshot()
+  await saveSnapshot(snapshot)
+
+  const [equityCurve, allPositions] = await Promise.all([
+    getEquityCurve(100),
+    getPositions(),
+  ])
 
   return {
     judgment: result,
-    portfolio: portfolio.snapshot(),
+    portfolio: {
+      ...snapshot,
+      positions: allPositions,
+      equityCurve,
+    },
   }
 }
 
@@ -170,7 +200,17 @@ export interface AgentReadResult {
   read: { stance: LiveReaderStance; narrative: string; invalidation: string | null; target: string | null; orderflow: { pressure: string; delta: number; tradeCount: number; events: string[] } } | null
   plan: { status: ReaderTradePlanStatus; asset: string; side?: string; entryLow?: number; entryHigh?: number; stop?: number; target?: number; invalidation?: string; confidence: number; reasons: string[] } | null
   judgment: { id: string; action: string; side?: string; confidence: number; reason: string; previousJudgmentId: string | null; allJudgments: { configId: string; label: string; confidence: number; reason: string }[]; metricsSnapshot: Record<string, unknown> | null; createdAt: string } | null
-  portfolio: { equity: number; totalPnl: number; dailyPnl: number; tradeCount: number; winCount: number; lossCount: number; openPositionCount: number } | null
+  portfolio: {
+    equity: number
+    totalPnl: number
+    dailyPnl: number
+    tradeCount: number
+    winCount: number
+    lossCount: number
+    openPositionCount: number
+    positions: { id: string; asset: string; side: string; entryPrice: number; entryTime: number; size: number; stop: number; target: number; status: string; exitPrice?: number; exitTime?: number; exitReason?: string; pnlPct?: number; judgmentId: string }[]
+    equityCurve: { timestamp: number; equity: number }[]
+  } | null
   asset: string
   error: string | null
 }
