@@ -5,7 +5,7 @@ import type { LandingAssetData } from '@/components/landing/types'
 import type { AgentReadResult } from '@/server/build-agent-read'
 
 function emptyAssetData(): LandingAssetData {
-  return { candles: [], segments: [], auction: null, regime: null, read: null }
+  return { candles: [], segments: [], auction: null, regime: null, read: null, portfolio: null }
 }
 
 function buildAssets(
@@ -24,7 +24,7 @@ function isAsset(value: string): value is Asset {
 }
 
 function mapAgentReadToAssetData(result: AgentReadResult): LandingAssetData {
-  const { candles, segments, regime, auction, read } = result
+  const { candles, segments, regime, auction, read, portfolio } = result
   return {
     candles,
     segments,
@@ -55,6 +55,7 @@ function mapAgentReadToAssetData(result: AgentReadResult): LandingAssetData {
         }
       : null,
     read,
+    portfolio: portfolio ?? null,
   }
 }
 
