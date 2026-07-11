@@ -15,6 +15,13 @@
       "when": 1783681778800,
       "tag": "0001_unknown_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783769436431,
+      "tag": "0002_past_kronos",
+      "breakpoints": true
     }
   ]
 }

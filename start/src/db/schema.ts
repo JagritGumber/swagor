@@ -1,6 +1,6 @@
 import { index } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
-import { pgTable, uuid, text, numeric, boolean, jsonb, timestamp, real } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, text, numeric, boolean, jsonb, timestamp, real, integer } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -93,8 +93,40 @@ export const judgmentTicks = pgTable('judgment_ticks', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const portfolioPositions = pgTable('portfolio_positions', {
+  id: text('id').primaryKey(),
+  asset: text('asset').notNull(),
+  side: text('side').notNull(),
+  entryPrice: real('entry_price').notNull(),
+  entryTime: integer('entry_time').notNull(),
+  size: real('size').notNull(),
+  stop: real('stop').notNull(),
+  target: real('target').notNull(),
+  status: text('status').notNull().default('open'),
+  exitPrice: real('exit_price'),
+  exitTime: integer('exit_time'),
+  exitReason: text('exit_reason'),
+  pnlPct: real('pnl_pct'),
+  judgmentId: text('judgment_id'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const portfolioSnapshots = pgTable('portfolio_snapshots', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  equity: real('equity').notNull(),
+  totalPnl: real('total_pnl').notNull(),
+  dailyPnl: real('daily_pnl').notNull(),
+  tradeCount: integer('trade_count').notNull(),
+  winCount: integer('win_count').notNull(),
+  lossCount: integer('loss_count').notNull(),
+  openPositionCount: integer('open_position_count').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 export type SelboInstance = typeof selboInstances.$inferSelect
 export type JudgmentTick = typeof judgmentTicks.$inferSelect
+export type PortfolioPositionRow = typeof portfolioPositions.$inferSelect
+export type PortfolioSnapshotRow = typeof portfolioSnapshots.$inferSelect
 
 export const usersRelations = relations(users, ({ many }) => ({
   wallets: many(wallets),
