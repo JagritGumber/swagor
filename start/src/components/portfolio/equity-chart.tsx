@@ -1,57 +1,130 @@
 import { useEffect, useRef } from 'react'
+import {
+  createChart,
+  LineSeries,
+  CrosshairMode,
+  ColorType,
+  type UTCTimestamp,
+} from 'lightweight-charts'
 
 interface EquityChartProps {
   data: { timestamp: number; equity: number }[]
 }
 
+function formatDate(ts: number): string {
+  const d = new Date(ts)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatPrice(val: number): string {
+  return `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
 export function EquityChart({ data }: EquityChartProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas || data.length < 2) return
+    const container = containerRef.current
+    if (!container || data.length < 2) return
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
-    ctx.scale(dpr, dpr)
-
-    const width = rect.width
-    const height = rect.height
-    const padding = { top: 16, right: 16, bottom: 16, left: 16 }
-
-    const equities = data.map((d) => d.equity)
-    const minEq = Math.min(...equities)
-    const maxEq = Math.max(...equities)
-    const range = maxEq - minEq || 1
-
-    ctx.clearRect(0, 0, width, height)
-
-    // Draw gradient fill
-    ctx.beginPath()
-    data.forEach((d, i) => {
-      const x = padding.left + (i / (data.length - 1)) * (width - padding.left - padding.right)
-      const y = padding.top + (1 - (d.equity - minEq) / range) * (height - padding.top - padding.bottom)
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
+    const chart = createChart(container, {
+      layout: {
+        background: { type: ColorType.Solid, color: 'transparent' },
+        textColor: '#6b7280',
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: 10,
+      },
+      grid: {
+        vertLines: { color: 'rgba(99, 130, 190, 0.06)' },
+        horzLines: { color: 'rgba(99, 130, 190, 0.06)' },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+        vertLine: {
+          color: 'rgba(99, 179, 237, 0.4)',
+          width: 1,
+          labelBackgroundColor: '#1a2332',
+        },
+        horzLine: {
+          color: 'rgba(99, 179, 237, 0.4)',
+          width: 1,
+          labelBackgroundColor: '#1a2332',
+        },
+      },
+      timeScale: {
+        borderColor: 'rgba(99, 130, 190, 0.1)',
+        timeVisible: false,
+        secondsVisible: false,
+      },
+      rightPriceScale: {
+        borderColor: 'rgba(99, 130, 190, 0.1)',
+        minimumWidth: 80,
+      },
     })
-    ctx.strokeStyle = '#00d4ff'
-    ctx.lineWidth = 2
-    ctx.stroke()
 
-    // Fill area under curve
-    ctx.lineTo(
-      padding.left + (width - padding.left - padding.right),
-      height - padding.bottom,
-    )
-    ctx.lineTo(padding.left, height - padding.bottom)
-    ctx.closePath()
-    ctx.fillStyle = 'rgba(0, 212, 255, 0.08)'
-    ctx.fill()
+    const series = chart.addSeries(LineSeries, {
+      color: '#00d4ff',
+      lineWidth: 2,
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 4,
+      crosshairMarkerBackgroundColor: '#00d4ff',
+      crosshairMarkerBorderColor: '#ffffff',
+      lastValueVisible: true,
+      priceLineVisible: false,
+      priceFormat: { type: 'custom', formatter: formatPrice },
+    })
+
+    const lwData = data.map((d) => ({
+      time: (d.timestamp / 1000) as UTCTimestamp,
+      value: d.equity,
+    }))
+
+    series.setData(lwData)
+    chart.timeScale().fitContent()
+
+    const tooltip = document.createElement('div')
+    tooltip.style.cssText =
+      'position:absolute;display:none;pointer-events:none;z-index:10;padding:6px 10px;border-radius:4px;background:#1a2332;border:1px solid rgba(99,130,190,0.2);font-family:"JetBrains Mono",monospace;font-size:11px;color:#e1e4ea;white-space:nowrap;transform:translate(-50%,-100%);margin-top:-8px;'
+    container.appendChild(tooltip)
+
+    chart.subscribeCrosshairMove((param) => {
+      if (!param.time || !param.point) {
+        tooltip.style.display = 'none'
+        return
+      }
+      const dataAt = param.seriesData.get(series)
+      if (!dataAt) {
+        tooltip.style.display = 'none'
+        return
+      }
+      const ts = (param.time as number) * 1000
+      tooltip.innerHTML = `<div style="color:#a3a8b5;margin-bottom:2px">${formatDate(ts)}</div><div style="color:#00d4ff;font-weight:600">${formatPrice(dataAt.value)}</div>`
+      tooltip.style.display = 'block'
+
+      const chartRect = container.getBoundingClientRect()
+      const x = param.point.x
+      const y = param.point.y
+      const tooltipW = tooltip.offsetWidth
+      const left = Math.max(tooltipW / 2, Math.min(x, chartRect.width - tooltipW / 2))
+      tooltip.style.left = `${left}px`
+      tooltip.style.top = `${y}px`
+    })
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        if (width > 0 && height > 0) {
+          chart.resize(width, height)
+        }
+      }
+    })
+    resizeObserver.observe(container)
+
+    return () => {
+      resizeObserver.disconnect()
+      tooltip.remove()
+      chart.remove()
+    }
   }, [data])
 
   if (data.length < 2) {
@@ -62,11 +135,5 @@ export function EquityChart({ data }: EquityChartProps) {
     )
   }
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="h-full w-full"
-      style={{ imageRendering: 'crisp-edges' }}
-    />
-  )
+  return <div ref={containerRef} className="h-full w-full" />
 }
