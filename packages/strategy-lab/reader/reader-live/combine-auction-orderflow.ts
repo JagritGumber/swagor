@@ -88,8 +88,21 @@ function stanceFor(narrative: ReaderNarrative): LiveReaderStance {
   return "wait";
 }
 
-function narrativeFor(asset: string, narrative: ReaderNarrative): string {
-  return `${asset} narrative=${narrative.intent} direction=${narrative.direction} participation=${narrative.participation} level=${narrative.levelStory}. ${narrative.reasons.join(" ")}`;
+function narrativeFor(_asset: string, narrative: ReaderNarrative): string {
+  if (narrative.reasons.length > 0) {
+    const seen = new Set<string>()
+    const unique: string[] = []
+    for (const r of narrative.reasons) {
+      const lower = r.toLowerCase()
+      if (!seen.has(lower)) {
+        seen.add(lower)
+        unique.push(r)
+      }
+    }
+    return unique.join(". ") + "."
+  }
+  const dir = narrative.direction === "none" ? "" : ` ${narrative.direction}`
+  return `${narrative.intent}${dir}.`
 }
 
 

@@ -275,20 +275,19 @@ function narrativeFor(
   asset: string,
   pressure: OrderflowRead["pressure"],
   events: string[],
-  delta: number,
-  tape: OrderflowTapeContext,
+  _delta: number,
+  _tape: OrderflowTapeContext,
 ): string {
-  const rank = tape.largestTradeRank === null ? "n/a" : tape.largestTradeRank.toFixed(2);
-  if (events.includes("confirmed-absorption") && events.includes("buy-absorption")) return `${asset} shows confirmed buyer absorption; largest print rank ${rank}.`;
-  if (events.includes("confirmed-absorption") && events.includes("sell-absorption")) return `${asset} shows confirmed seller absorption; largest print rank ${rank}.`;
-  if (events.includes("buy-absorption")) return `${asset} shows aggressive buyer absorption without standout print confirmation.`;
-  if (events.includes("sell-absorption")) return `${asset} shows aggressive seller absorption without standout print confirmation.`;
-  if (events.includes("stalled-buying")) return `${asset} has buy-heavy tape but buyers are not holding the offer.`;
-  if (events.includes("stalled-selling")) return `${asset} has sell-heavy tape but sellers are not holding the bid.`;
-  if (events.includes("lifting-offers")) return `${asset} buyers are lifting offers with positive delta ${delta.toFixed(4)}.`;
-  if (events.includes("hitting-bids")) return `${asset} sellers are hitting bids with negative delta ${delta.toFixed(4)}.`;
-  if (pressure === "buy-pressure") return `${asset} tape is buy-heavy with buy share ${tape.buyShare.toFixed(2)}.`;
-  if (pressure === "sell-pressure") return `${asset} tape is sell-heavy with sell share ${tape.sellShare.toFixed(2)}.`;
-  return `${asset} tape is balanced in the current window.`;
+  if (events.includes("confirmed-absorption") && events.includes("buy-absorption")) return `Strong buyer absorption confirmed.`;
+  if (events.includes("confirmed-absorption") && events.includes("sell-absorption")) return `Strong seller absorption confirmed.`;
+  if (events.includes("buy-absorption")) return `Buyers are absorbing aggressively.`;
+  if (events.includes("sell-absorption")) return `Sellers are absorbing aggressively.`;
+  if (events.includes("stalled-buying")) return `Buy-heavy tape but buyers are not holding.`;
+  if (events.includes("stalled-selling")) return `Sell-heavy tape but sellers are not holding.`;
+  if (events.includes("lifting-offers")) return `Buyers are lifting offers.`;
+  if (events.includes("hitting-bids")) return `Sellers are hitting bids.`;
+  if (pressure === "buy-pressure") return `Buyers are in control.`;
+  if (pressure === "sell-pressure") return `Sellers are in control.`;
+  return `Trading activity is balanced.`;
 }
 

@@ -16,7 +16,7 @@
     "paths": {
       "@packages/*": ["../packages/*"],
       "@shared/*": ["../shared/*"],
-      "@env": ["../env.ts"]
+      "@env": ["./env.ts"]
     }
   },
   "include": ["**/*.ts"],

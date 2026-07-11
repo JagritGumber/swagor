@@ -43,22 +43,22 @@ function readBias(kind: PriceLevel["kind"], location: AuctionRead["location"]): 
   return "wait";
 }
 
-function narrative(asset: string, kind: PriceLevel["kind"], location: AuctionRead["location"], price: number, poc: number): string {
-  if (location === "near-poc") return `${asset} is trading around local POC, so auction is balanced and the reader waits.`;
+function narrative(_asset: string, kind: PriceLevel["kind"], location: AuctionRead["location"], _price: number, _poc: number): string {
+  if (location === "near-poc") return `Price is balanced in the value area.`;
   if (kind === "support" && (location === "value-low" || location === "below-value")) {
-    return `${asset} is testing support near local value low; long idea needs rejection or reclaim toward POC.`;
+    return `Price is near support at the value area low.`;
   }
   if (kind === "resistance" && (location === "value-high" || location === "above-value")) {
-    return `${asset} is testing resistance near local value high; short idea needs rejection or failure back toward POC.`;
+    return `Price is near resistance at the value area high.`;
   }
-  return `${asset} is near a ${kind} level but price ${price.toFixed(2)} is not at a clean auction edge versus POC ${poc.toFixed(2)}.`;
+  return `Price is near a ${kind} level.`;
 }
 
-function invalidation(kind: PriceLevel["kind"], bias: AuctionRead["bias"], profile: LocalVolumeProfile): string | null {
-  if (bias === "long") return `Acceptance below ${profile.valueAreaLow.toFixed(2)} invalidates the support read.`;
-  if (bias === "short") return `Acceptance above ${profile.valueAreaHigh.toFixed(2)} invalidates the resistance read.`;
-  if (kind === "support") return `Support read is invalid if price accepts below ${profile.valueAreaLow.toFixed(2)}.`;
-  return `Resistance read is invalid if price accepts above ${profile.valueAreaHigh.toFixed(2)}.`;
+function invalidation(kind: PriceLevel["kind"], bias: AuctionRead["bias"], _profile: LocalVolumeProfile): string | null {
+  if (bias === "long") return `A close below the value area low would invalidate the long read.`
+  if (bias === "short") return `A close above the value area high would invalidate the short read.`
+  if (kind === "support") return `Support is invalid if price closes below the value area low.`
+  return `Resistance is invalid if price closes above the value area high.`
 }
 
 function target(bias: AuctionRead["bias"], profile: LocalVolumeProfile): string | null {

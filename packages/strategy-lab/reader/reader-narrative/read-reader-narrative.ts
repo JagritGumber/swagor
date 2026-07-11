@@ -42,7 +42,7 @@ export function readReaderNarrative(input: {
     participation,
     levelStory,
     reasons: [
-      `${input.auction.location} does not have a complete initiative or rejection story`,
+      `${input.auction.location} has no clear direction yet`,
       input.orderflow.narrative,
     ],
     invalidation: null,
@@ -175,7 +175,7 @@ function waitNarrative(
     direction: "none",
     participation: participationFor(orderflow),
     levelStory,
-    reasons: [reason, auction.narrative, orderflow.narrative],
+    reasons: [reason, orderflow.narrative],
     invalidation: null,
     target: null,
   };

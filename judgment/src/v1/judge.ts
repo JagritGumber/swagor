@@ -38,19 +38,19 @@ export function runJudge(
     reason,
   });
 
-  if (!volumeProfile || levels.length === 0) return fail("no profile or levels");
-  if (regime.mode === "unknown") return fail("unknown regime");
+  if (!volumeProfile || levels.length === 0) return fail("Not enough data to read the market right now.");
+  if (regime.mode === "unknown") return fail("Market regime is unclear, waiting for clarity.");
 
   if (config.regimeFilter && config.regimeFilter !== "all" && regime.mode !== config.regimeFilter) {
-    return fail(`regime ${regime.mode} does not match filter ${config.regimeFilter}`);
+    return fail(`Market is ${regime.mode} but this setup needs ${config.regimeFilter}.`);
   }
 
   if (config.requireActiveTape && orderflow.tapeActivity === "thin") {
-    return fail("tape too thin");
+    return fail("Trading activity is too thin to confirm a read.");
   }
 
   if (orderflow.tradeCount < (config.minTradeCount ?? 10)) {
-    return fail(`trade count ${orderflow.tradeCount} below minimum`);
+    return fail("Not enough trades yet to form a view.");
   }
 
   const nearestLevel = levels.reduce((closest, level) => {
@@ -61,12 +61,12 @@ export function runJudge(
 
   const invalidationBps = Math.abs(metrics.lastPrice - nearestLevel.price) / metrics.lastPrice * 10000;
   if (invalidationBps > (config.maxInvalidationBps ?? 50)) {
-    return fail(`invalidation ${invalidationBps.toFixed(1)} bps exceeds max`);
+    return fail("Price is too far from a key level to act on.");
   }
 
   const hasAbsorption = orderflow.absorption !== "none";
   if (config.requireAbsorption && !hasAbsorption) {
-    return fail("no absorption event");
+    return fail("No absorption event to confirm the read.");
   }
 
   const alignedRegimeLong = regime.mode === "trend-up" || regime.mode === "range";
@@ -93,7 +93,7 @@ export function runJudge(
       },
       invalidation: `below ${nearestLevel.price.toFixed(2)}`,
       confidence,
-      reason: `support at value-low, buy dominant, regime=${regime.mode}`,
+      reason: `Support at value low with buying pressure in a ${regime.mode.replace('-', ' ')} market.`,
     };
   }
 
@@ -118,11 +118,11 @@ export function runJudge(
       },
       invalidation: `above ${nearestLevel.price.toFixed(2)}`,
       confidence,
-      reason: `resistance at value-high, sell dominant, regime=${regime.mode}`,
+      reason: `Resistance at value high with selling pressure in a ${regime.mode.replace('-', ' ')} market.`,
     };
   }
 
-  return fail("no setup matched");
+  return fail("No clear setup found right now.");
 }
 
 function computeConfidence(alignedRegime: boolean, hasAbsorption: boolean, tapeActivity: string): number {
