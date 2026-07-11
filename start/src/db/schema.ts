@@ -3,12 +3,9 @@ import {
   pgTable,
   uuid,
   text,
-  numeric,
   boolean,
-  jsonb,
   timestamp,
   real,
-  integer,
   pgEnum,
   index,
 } from 'drizzle-orm/pg-core'
