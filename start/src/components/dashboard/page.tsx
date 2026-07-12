@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Tooltip } from '@/components/composables/tooltip'
 import { WalletAddress } from '@/components/wallet'
+import { Wallet, Shield, Crosshair, TrendUp, Clock, ChartPieSlice } from '@phosphor-icons/react'
 import { BalanceDisplay } from './balance-display'
 import type { ActivityEntry, DashboardData, RiskLevel } from './types'
 
@@ -22,8 +23,6 @@ const label =
   'text-[11px] font-medium uppercase tracking-[0.08em] text-[#94a3b8] font-ui'
 const value = 'text-xl font-semibold text-[#f1f5f9] font-ui'
 const metricValue = 'text-lg font-semibold text-[#f1f5f9] font-ui'
-const panelTitle =
-  'px-6 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#f1f5f9] font-ui'
 
 export interface DashboardPageProps {
   data: DashboardData
@@ -53,6 +52,7 @@ export function DashboardPage({ data }: DashboardPageProps) {
 
         <div className={`border-r px-6 py-5 ${border}`}>
           <div className="mb-0.5 flex items-center gap-1.5 leading-[18px]">
+            <Wallet size={14} className="text-[#94a3b8]" />
             <div className={label}>Wallet Balance</div>
             <Tooltip content="This is the wallet balance of Selbo" />
           </div>
@@ -64,6 +64,7 @@ export function DashboardPage({ data }: DashboardPageProps) {
 
         <div className={`border-r px-6 py-5 ${border}`}>
           <div className="mb-0.5 flex items-center gap-1.5 leading-[18px]">
+            <Shield size={14} className="text-[#94a3b8]" />
             <div className={label}>Risk</div>
             <Tooltip content="Current risk exposure level based on open positions" />
           </div>
@@ -136,7 +137,10 @@ export function DashboardPage({ data }: DashboardPageProps) {
       <div className={`grid min-h-[300px] grid-cols-3 border-b ${border}`}>
         <section className={`flex flex-col border-r ${border}`}>
           <header className={`border-b py-4 ${border}`}>
-            <div className={panelTitle}>Market Read</div>
+            <div className="flex items-center gap-2 px-6 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#f1f5f9] font-ui">
+              <Crosshair size={14} className="text-[#00d4ff]" />
+              Market Read
+            </div>
           </header>
           <div className="flex-1 overflow-auto py-4">
             <ReadRow label="Asset" value={data.marketRead.asset} />
@@ -148,7 +152,10 @@ export function DashboardPage({ data }: DashboardPageProps) {
 
         <section className={`flex flex-col border-r ${border}`}>
           <header className={`border-b py-4 ${border}`}>
-            <div className={panelTitle}>Active Positions</div>
+            <div className="flex items-center gap-2 px-6 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#f1f5f9] font-ui">
+              <TrendUp size={14} className="text-[#00d4ff]" />
+              Active Positions
+            </div>
           </header>
           <div className="flex-1 overflow-auto py-4">
             {data.positions.map((pos, i) => (
@@ -182,7 +189,10 @@ export function DashboardPage({ data }: DashboardPageProps) {
 
         <section className="flex flex-col">
           <header className={`border-b py-4 ${border}`}>
-            <div className={panelTitle}>Live Activity</div>
+            <div className="flex items-center gap-2 px-6 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#f1f5f9] font-ui">
+              <Clock size={14} className="text-[#00d4ff]" />
+              Live Activity
+            </div>
           </header>
           <div className="flex-1 overflow-auto">
             {data.activity.map((entry, i) => (
@@ -209,7 +219,10 @@ export function DashboardPage({ data }: DashboardPageProps) {
       <div className={`grid min-h-[300px] grid-cols-3 border-b ${border}`}>
         <section className={`flex flex-col border-r ${border}`}>
           <header className={`border-b py-4 ${border}`}>
-            <div className={panelTitle}>Portfolio Performance</div>
+            <div className="flex items-center gap-2 px-6 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#f1f5f9] font-ui">
+              <ChartPieSlice size={14} className="text-[#00d4ff]" />
+              Portfolio Performance
+            </div>
           </header>
           <div className="flex-1 overflow-auto py-4">
             <ReadRow label="Total Return" value={data.portfolioPerformance.totalReturn} />
