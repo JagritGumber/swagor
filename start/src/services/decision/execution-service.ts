@@ -1,36 +1,26 @@
-import { eq, desc, and } from 'drizzle-orm'
+import { eq, and, desc } from 'drizzle-orm'
 import { getDb } from '@/db/client.ts'
 import {
   executions,
-  outcomes,
+  decisions,
   type InsertExecution,
-  type InsertOutcome,
   type SelectExecution,
-  type SelectOutcome,
 } from '@/db/schema.ts'
 
-// ─── Types ────────────────────────────────────────────
-
-export type ExecutionWithOutcome = SelectExecution & {
-  outcome: SelectOutcome | null
-}
-
-// ─── Create execution ─────────────────────────────────
-
-export async function createExecution(input: {
+export type CreateExecutionInput = {
   decisionId: string
   executedPrice: number
-  executedAt: Date
-  txHash?: string | null
-}): Promise<SelectExecution> {
+  status?: SelectExecution['status']
+}
+
+export async function createExecution(input: CreateExecutionInput): Promise<SelectExecution> {
   const db = await getDb()
 
   const row: InsertExecution = {
     decisionId: input.decisionId,
     executedPrice: input.executedPrice,
-    executedAt: input.executedAt,
-    txHash: input.txHash ?? null,
-    status: 'filled',
+    executedAt: new Date(),
+    status: input.status ?? 'pending',
   }
 
   const [inserted] = await db
@@ -38,130 +28,90 @@ export async function createExecution(input: {
     .values(row)
     .returning()
 
-  return inserted!
+  return inserted
 }
 
-// ─── Close execution with outcome ─────────────────────
-
-export async function closeExecution(input: {
-  executionId: string
-  status: 'win' | 'loss' | 'breakeven' | 'invalidated' | 'expired'
-  exitPrice: number
-  pnl: number
-  closedAt: Date
-}): Promise<SelectOutcome> {
+export async function updateExecutionStatus(
+  executionId: string,
+  status: SelectExecution['status'],
+  txHash?: string,
+): Promise<SelectExecution | null> {
   const db = await getDb()
 
-  // Mark execution as completed
-  await db
+  const [updated] = await db
     .update(executions)
-    .set({ status: 'filled' })
-    .where(eq(executions.id, input.executionId))
-
-  const row: InsertOutcome = {
-    executionId: input.executionId,
-    status: input.status,
-    exitPrice: input.exitPrice,
-    pnl: input.pnl,
-    closedAt: input.closedAt,
-  }
-
-  const [inserted] = await db
-    .insert(outcomes)
-    .values(row)
+    .set({
+      status,
+      ...(txHash !== undefined ? { txHash } : {}),
+    })
+    .where(eq(executions.id, executionId))
     .returning()
 
-  return inserted!
+  return updated ?? null
 }
 
-// ─── Read ─────────────────────────────────────────────
-
-export async function getExecutionWithOutcome(
-  executionId: string,
-): Promise<ExecutionWithOutcome | null> {
-  const db = await getDb()
-
-  const [exec] = await db
-    .select()
-    .from(executions)
-    .where(eq(executions.id, executionId))
-    .limit(1)
-
-  if (!exec) return null
-
-  const [out] = await db
-    .select()
-    .from(outcomes)
-    .where(eq(outcomes.executionId, executionId))
-    .limit(1)
-
-  return { ...exec, outcome: out ?? null }
-}
-
-export async function getExecutionsForDecision(
-  decisionId: string,
-): Promise<ExecutionWithOutcome[]> {
+export async function getActiveExecutions(asset?: string): Promise<Array<SelectExecution & { decision: { asset: string; action: string; entry: number | null; stop: number | null; target: number | null } }>> {
   const db = await getDb()
 
   const rows = await db
+    .select({
+      execution: executions,
+      decision: {
+        asset: decisions.asset,
+        action: decisions.action,
+        entry: decisions.entry,
+        stop: decisions.stop,
+        target: decisions.target,
+      },
+    })
+    .from(executions)
+    .innerJoin(decisions, eq(executions.decisionId, decisions.id))
+    .where(
+      and(
+        eq(executions.status, 'pending'),
+        asset !== undefined ? eq(decisions.asset, asset) : undefined,
+      ),
+    )
+    .orderBy(desc(executions.executedAt))
+
+  return rows.map((row) => ({
+    ...row.execution,
+    decision: row.decision,
+  }))
+}
+
+export async function getExecutionByDecisionId(decisionId: string): Promise<SelectExecution | null> {
+  const db = await getDb()
+
+  const [row] = await db
     .select()
     .from(executions)
     .where(eq(executions.decisionId, decisionId))
+    .limit(1)
 
-  const result: ExecutionWithOutcome[] = []
-  for (const exec of rows) {
-    const [out] = await db
-      .select()
-      .from(outcomes)
-      .where(eq(outcomes.executionId, exec.id))
-      .limit(1)
-    result.push({ ...exec, outcome: out ?? null })
-  }
-
-  return result
+  return row ?? null
 }
 
-export async function getOpenExecutions(): Promise<ExecutionWithOutcome[]> {
-  const db = await getDb()
-
-  const rows = await db
-    .select()
-    .from(executions)
-    .where(eq(executions.status, 'pending'))
-
-  const result: ExecutionWithOutcome[] = []
-  for (const exec of rows) {
-    const [out] = await db
-      .select()
-      .from(outcomes)
-      .where(eq(outcomes.executionId, exec.id))
-      .limit(1)
-    result.push({ ...exec, outcome: out ?? null })
-  }
-
-  return result
+export type ExecuteDecisionInput = {
+  decisionId: string
+  entryPrice: number
+  agentMode: 'live' | 'paper' | 'simulation'
 }
 
-export async function getExecutionHistory(
-  limit = 50,
-): Promise<ExecutionWithOutcome[]> {
-  const db = await getDb()
-
-  const rows = await db
-    .select()
-    .from(executions)
-    .orderBy(desc(executions.executedAt))
-    .limit(limit)
-
-  const result: ExecutionWithOutcome[] = []
-  for (const exec of rows) {
-    const [out] = await db
-      .select()
-      .from(outcomes)
-      .where(eq(outcomes.executionId, exec.id))
-      .limit(1)
-    result.push({ ...exec, outcome: out ?? null })
+export async function executeDecision(input: ExecuteDecisionInput): Promise<SelectExecution> {
+  if (input.agentMode === 'paper' || input.agentMode === 'simulation') {
+    return createExecution({
+      decisionId: input.decisionId,
+      executedPrice: input.entryPrice,
+      status: 'filled',
+    })
   }
 
-  return result
+  // Live mode: would call Circle wallet API here
+  // For now, create as pending - the Circle integration will update this
+  return createExecution({
+    decisionId: input.decisionId,
+    executedPrice: input.entryPrice,
+    status: 'pending',
+  })
 }
