@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { WalletIcon } from '@/components/icons/wallet.tsx'
+import { Wallet } from '@phosphor-icons/react'
 import { PageLoader, WalletConnect } from '@/components/wallet'
 import { resolveUser } from '@/data/user.ts'
 import { allocateCircleWallet } from '@/data/agent.ts'
@@ -19,7 +19,7 @@ export const Route = createFileRoute('/login')({
       { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
       {
         rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap',
+        href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
       },
     ],
   }),
@@ -73,7 +73,7 @@ function LoginPage() {
     <>
       <div className="flex flex-1 flex-col items-center justify-center gap-gap-6 bg-surface-body p-gap-6 font-ui">
         <h1 className="m-0 inline-flex items-center gap-2.5 text-2xl font-bold text-white">
-          <WalletIcon size={24} /> Sign In
+          <Wallet size={24} /> Sign In
         </h1>
         <p className="m-0 max-w-[360px] text-center text-[13px] leading-relaxed text-text-muted">
           Connect your wallet to access your Selbo dashboard. Your wallet is your identity.
