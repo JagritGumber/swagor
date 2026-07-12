@@ -1,5 +1,6 @@
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultState, ReaderResultUpdate } from "../reader-result/types";
+import type { ReaderEntryFilterConfig } from "../reader-result/update-reader-result";
 import type { ReaderNarrativeStateMemory } from "../reader-narrative-state/types";
 import type { ReaderRadarConfig, ReaderRadarEvent, ReaderRadarMemory, ReaderRadarUpdate } from "../reader-radar/types";
 import type { ReaderSetupConfig, ReaderSetupEvent, ReaderSetupMemory, ReaderSetupResult } from "../reader-setup/types";
@@ -38,6 +39,7 @@ export type ReaderReplayInput = {
   resultState?: ReaderResultState;
   resultMaxEvents?: number;
   requireTimestamps?: boolean;
+  entryFilter?: ReaderEntryFilterConfig;
 };
 
 export type ReaderReplayResult = {

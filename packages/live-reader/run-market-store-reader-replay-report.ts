@@ -7,6 +7,7 @@ import type { ReaderExecutionQualityReport } from "../strategy-lab/reader/reader
 import type { ReaderEvidenceReport } from "../strategy-lab/reader/reader-evidence/types";
 import type { ReaderRadarConfig } from "../strategy-lab/reader/reader-radar/types";
 import type { ReaderSetupConfig } from "../strategy-lab/reader/reader-setup/types";
+import type { ReaderEntryFilterConfig } from "../strategy-lab/reader/reader-result/update-reader-result";
 import type { OrderflowEvent, OrderflowSide } from "../strategy-lab/read-core/orderflow/types";
 import type { Candle } from "../strategy-lab/types";
 import type { CandleInterval, MarketStoreMarket, MarketStoreVenue, OrderflowBucket } from "../market-data";
@@ -26,6 +27,7 @@ export type MarketStoreReaderReplayInput = {
   auctionConfig?: ReaderHistoryAuctionConfig;
   setupConfig?: ReaderSetupConfig;
   radarConfig?: ReaderRadarConfig;
+  entryFilter?: ReaderEntryFilterConfig;
 };
 
 export type MarketStoreReaderReplayDiagnostics = {
@@ -67,6 +69,7 @@ export async function runMarketStoreReaderReplayReport(input: MarketStoreReaderR
         ...(input.setupTtlMs === undefined ? {} : { setupTtlMs: input.setupTtlMs }),
       },
       radarConfig: input.radarConfig,
+      entryFilter: input.entryFilter,
     },
   });
   const executionQuality = analyzeReaderExecutionQuality({

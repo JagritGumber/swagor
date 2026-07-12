@@ -39,8 +39,8 @@ export function buildReaderHistoryReads(input: ReaderHistoryInput): ReaderHistor
   const window = createOrderflowWindow(input.orderflowWindowMs ?? 60_000);
   const profileWindowMs = input.auctionConfig?.profileTradeWindowMs ?? (input.auctionConfig?.profileCandles ?? 120) * input.candleIntervalMs;
   const profileWindow = createOrderflowWindow(profileWindowMs);
-  const auctionModeState = createReaderAuctionModeState();
-  const vpStateMemory = createReaderVpStateMemory();
+  const auctionModeState = input.auctionModeState ?? createReaderAuctionModeState();
+  const vpStateMemory = input.vpStateMemory ?? createReaderVpStateMemory();
   const steps: ReaderHistoryStep[] = [];
   let candleIndex = 0;
   let eventIndex = 0;

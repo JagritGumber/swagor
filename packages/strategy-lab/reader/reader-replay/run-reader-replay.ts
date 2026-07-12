@@ -61,6 +61,7 @@ export function runReaderReplay(input: ReaderReplayInput): ReaderReplayResult {
       state: resultState,
       result: setup,
       now: step.now,
+      entryFilter: input.entryFilter,
     });
 
     setupResults.push(setup);

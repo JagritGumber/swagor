@@ -4,10 +4,20 @@ import type { ReaderActionableTradePlan } from "@strategy-lab/backtest/trade-pla
 import { readerResultForPrice } from "./reader-result-for-price";
 import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultState, ReaderResultUpdate } from "./types";
 
+export type ReaderEntryFilterConfig = {
+  /** Skip entries when regime is "unknown" */
+  requireKnownRegime?: boolean;
+  /** Skip entries when auction is not at an extreme (above-value / below-value) */
+  requireExtremeAuction?: boolean;
+  /** Max allowed stop distance as fraction of entry price (e.g. 0.002 = 0.2%) */
+  maxStopDistancePct?: number;
+};
+
 export function updateReaderResult(input: {
   state: ReaderResultState;
   result: ReaderSetupResult;
   now?: number;
+  entryFilter?: ReaderEntryFilterConfig;
 }): ReaderResultUpdate {
   const now = input.now ?? Date.now();
   const price = input.result.read.orderflow.lastPrice;
@@ -62,6 +72,18 @@ export function updateReaderResult(input: {
   }
 
   if (input.result.plan.status !== "ready") {
+    return { input: input.result, state: input.state, events, opened, closed };
+  }
+
+  const filterReject = entryFilterRejects(input.result, input.entryFilter);
+  if (filterReject) {
+    events.push({
+      type: "entry-skipped",
+      asset: input.result.read.asset,
+      at: now,
+      reason: filterReject,
+    });
+    appendEvents(input.state, events);
     return { input: input.result, state: input.state, events, opened, closed };
   }
 
@@ -237,6 +259,36 @@ function appendEvents(state: ReaderResultState, events: ReaderResultEvent[]): vo
   if (state.events.length > state.maxEvents) {
     state.events.splice(0, state.events.length - state.maxEvents);
   }
+}
+
+function entryFilterRejects(result: ReaderSetupResult, filter?: ReaderEntryFilterConfig): string | null {
+  if (!filter) return null;
+  const plan = result.plan;
+  if (plan.status !== "ready") return null;
+
+  if (filter.requireKnownRegime) {
+    const regime = result.read.regime;
+    if (!regime || regime.mode === "unknown") {
+      return "entry filter: regime is unknown";
+    }
+  }
+
+  if (filter.requireExtremeAuction) {
+    const location = result.read.auction.location;
+    if (location !== "above-value" && location !== "below-value") {
+      return `entry filter: auction location "${location}" is not an extreme`;
+    }
+  }
+
+  if (filter.maxStopDistancePct !== undefined && filter.maxStopDistancePct > 0) {
+    const risk = Math.abs(plan.entryLow - plan.stop);
+    const midEntry = (plan.entryLow + plan.entryHigh) / 2;
+    if (midEntry > 0 && risk / midEntry > filter.maxStopDistancePct) {
+      return `entry filter: stop distance ${(risk / midEntry * 100).toFixed(3)}% exceeds max ${filter.maxStopDistancePct * 100}%`;
+    }
+  }
+
+  return null;
 }
 
 
