@@ -17,6 +17,7 @@
     "@electric-sql/pglite": "^0.5.4",
     "@noble/curves": "^2.2.0",
     "@noble/hashes": "^2.2.0",
+    "@phosphor-icons/react": "^2.1.10",
     "@tanstack/react-router": "^1.170.17",
     "@tanstack/react-start": "^1.168.27",
     "alova": "^3.5.1",
