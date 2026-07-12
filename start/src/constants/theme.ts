@@ -4,7 +4,7 @@
  */
 
 export const FONT_UI = "'Inter', system-ui, -apple-system, sans-serif"
-export const FONT_DATA = "'JetBrains Mono', ui-monospace, monospace"
+export const FONT_DATA = "'Inter', system-ui, -apple-system, sans-serif"
 
 export const GAP_2 = '8px'
 export const GAP_4 = '16px'

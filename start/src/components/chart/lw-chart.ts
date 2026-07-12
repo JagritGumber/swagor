@@ -238,7 +238,7 @@ export function createLWChart(opts: LWChartOptions): LWChartInstance {
     layout: {
       background: { type: ColorType.Solid, color: '#131722' },
       textColor: '#6b7280',
-      fontFamily: '"JetBrains Mono", monospace',
+      fontFamily: '"Inter", system-ui, sans-serif',
       fontSize: 10,
     },
     grid: {

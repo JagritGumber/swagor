@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { Hammer, ChartBar, Pulse } from '@phosphor-icons/react'
 
 export interface NavbarProps {
   activePage?: 'live' | 'portfolio'
@@ -16,7 +17,8 @@ function navLinkClass(active: boolean): string {
 export function Navbar({ activePage = 'portfolio' }: NavbarProps) {
   return (
     <div className="flex h-12 items-center bg-surface-header px-gap-6 font-ui text-sm font-medium text-text-primary border-b border-border-header">
-      <Link to="/" className="text-base font-semibold text-text-primary no-underline">
+      <Link to="/" className="flex items-center gap-2 text-base font-semibold text-text-primary no-underline">
+        <Hammer size={18} className="text-[#00d4ff]" />
         Selbo
       </Link>
 
@@ -25,13 +27,19 @@ export function Navbar({ activePage = 'portfolio' }: NavbarProps) {
           to="/"
           className={navLinkClass(activePage === 'portfolio')}
         >
-          Portfolio
+          <span className="flex items-center gap-1.5">
+            <ChartBar size={14} />
+            Portfolio
+          </span>
         </Link>
         <Link
           to="/live/ETH"
           className={navLinkClass(activePage === 'live')}
         >
-          Live
+          <span className="flex items-center gap-1.5">
+            <Pulse size={14} />
+            Live
+          </span>
         </Link>
       </nav>
     </div>

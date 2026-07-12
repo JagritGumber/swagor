@@ -31,7 +31,7 @@ export function EquityChart({ data }: EquityChartProps) {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#6b7280',
-        fontFamily: '"JetBrains Mono", monospace',
+        fontFamily: '"Inter", system-ui, sans-serif',
         fontSize: 10,
       },
       grid: {
@@ -84,7 +84,7 @@ export function EquityChart({ data }: EquityChartProps) {
 
     const tooltip = document.createElement('div')
     tooltip.style.cssText =
-      'position:absolute;display:none;pointer-events:none;z-index:10;padding:6px 10px;border-radius:4px;background:#1a2332;border:1px solid rgba(99,130,190,0.2);font-family:"JetBrains Mono",monospace;font-size:11px;color:#e1e4ea;white-space:nowrap;transform:translate(-50%,-100%);margin-top:-8px;'
+      'position:absolute;display:none;pointer-events:none;z-index:10;padding:6px 10px;border-radius:4px;background:#1a2332;border:1px solid rgba(99,130,190,0.2);font-family:"Inter",system-ui,sans-serif;font-size:11px;color:#e1e4ea;white-space:nowrap;transform:translate(-50%,-100%);margin-top:-8px;'
     container.appendChild(tooltip)
 
     chart.subscribeCrosshairMove((param) => {

@@ -4,7 +4,7 @@ import type { ChartConfig, OverlaySegment, Scale } from './types.ts'
 import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'
 import { rect, line, text } from './draw.ts'
 
-const MONO_FONT = '10px "JetBrains Mono", ui-monospace, monospace'
+const MONO_FONT = '10px "Inter", system-ui, sans-serif'
 
 function css(name: string): string {
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()

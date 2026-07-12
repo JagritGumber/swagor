@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/composables/button'
-import { WalletIcon } from '@/components/icons/wallet.tsx'
-import { ArrowRightIcon } from '@/components/icons/arrow-right.tsx'
+import { Wallet, ArrowRight } from '@phosphor-icons/react'
 import { getNonce, postLogin } from '@/data/api.ts'
 
 declare global {
@@ -90,7 +89,7 @@ export function WalletConnect() {
             : onConnect
         }
       >
-        {status === 'not-installed' ? <ArrowRightIcon size={18} /> : <WalletIcon size={18} />}
+        {status === 'not-installed' ? <ArrowRight size={18} /> : <Wallet size={18} />}
         {status === 'connecting'
           ? 'Connecting\u2026'
           : status === 'signing'

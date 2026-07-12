@@ -1,5 +1,5 @@
 import { useId, useRef, useState, type MouseEvent } from 'react'
-import { InfoIcon } from '@/components/icons/info'
+import { Info } from '@phosphor-icons/react'
 import type { TooltipProps } from './types'
 
 const GAP = 8
@@ -71,7 +71,7 @@ export function Tooltip({ content, children }: TooltipProps) {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {children ?? <InfoIcon size={16} variant="bold" />}
+      {children ?? <Info size={16} weight="fill" />}
       {!positioned && (
         <span id={tooltipId} className={`${tipBase} invisible top-[-9999px] left-[-9999px]`}>
           {content}

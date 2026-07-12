@@ -4,7 +4,7 @@ import type { OverlaySegment } from '../chart/types.ts'
 import { createChart } from '../chart/create-chart.ts'
 import { rect, line, label } from '../chart/draw.ts'
 
-const MONO = '10px "JetBrains Mono", monospace'
+const MONO = '10px "Inter", system-ui, sans-serif'
 
 interface AgentAuction {
   profile: {
