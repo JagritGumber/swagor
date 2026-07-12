@@ -1,17 +1,16 @@
-import type { Candle } from '@judgment/src/shared/types'
-import { getOrCreateEngine } from './judgment-engine-manager.ts'
+import type { Candle } from '@packages/strategy-lab/types'
+import type { LiveReaderRead } from '@packages/strategy-lab/reader/reader-live/types'
+import type { ReaderTradePlan, ReaderTradePlanStatus } from '@packages/strategy-lab/backtest/trade-plan/types'
+import { buildReaderHistoryReads } from '@packages/strategy-lab/reader/reader-history/build-reader-history-reads'
+import { buildReaderTradePlan } from '@packages/strategy-lab/backtest/trade-plan/build-reader-trade-plan'
+import { getReaderState } from '@/server/reader-state'
 
-const PIPELINE_INSTANCE_ID = '00000000-0000-0000-0000-000000000000'
+const INTERVAL_MS = 3_600_000
 
 export type JudgmentPipelineResult = {
-  judgment: {
-    regime: { mode: string; highVol: boolean; rangePct: number; driftPct: number; directionalEfficiency: number } | null
-    auction: string | null
-    stance: string
-    confidence: number
-    narrative: string
-    updatedAt: number
-  } | null
+  read: LiveReaderRead | null
+  plan: ReaderTradePlan | null
+  updatedAt: number
 }
 
 export async function runJudgmentPipeline(
@@ -20,31 +19,32 @@ export async function runJudgmentPipeline(
   candles: Candle[],
 ): Promise<JudgmentPipelineResult> {
   if (candles.length === 0) {
-    return { judgment: null }
+    return { read: null, plan: null, updatedAt: Date.now() }
   }
 
-  const engine = await getOrCreateEngine(PIPELINE_INSTANCE_ID, asset, candles)
-  const result = engine.onCandle(candles[candles.length - 1])
+  const { auctionModeState, vpStateMemory } = getReaderState(asset)
 
-  if (!result.bestJudgment || !result.judgment) {
-    return { judgment: null }
+  const steps = buildReaderHistoryReads({
+    asset,
+    interval,
+    candleIntervalMs: INTERVAL_MS,
+    candles,
+    orderflowEvents: [],
+    readIntervalMs: INTERVAL_MS,
+    orderflowWindowMs: 60_000,
+    startAt: candles.length >= 2 ? candles[candles.length - 2].t : Date.now() - INTERVAL_MS,
+    endAt: candles[candles.length - 1]?.t ?? Date.now(),
+    auctionModeState,
+    vpStateMemory,
+  })
+
+  const latestStep = steps[steps.length - 1]
+  if (!latestStep) {
+    return { read: null, plan: null, updatedAt: Date.now() }
   }
 
-  const regime = result.judgment.metrics.regime
-  const stance = result.judgment.action.type === 'enter'
-    ? result.judgment.action.side
-    : result.judgment.action.type
-  const confidence = result.bestJudgment.confidence
-  const narrative = result.judgment.reason
+  const read = latestStep.read
+  const plan = buildReaderTradePlan(read)
 
-  return {
-    judgment: {
-      regime,
-      auction: null,
-      stance,
-      confidence,
-      narrative,
-      updatedAt: Date.now(),
-    },
-  }
+  return { read, plan, updatedAt: Date.now() }
 }

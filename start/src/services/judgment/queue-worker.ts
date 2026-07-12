@@ -33,15 +33,19 @@ export function startJudgmentWorker(redisUrl: string): void {
           const candles = await loadCandlesForAsset(asset, 200, '1h')
           if (candles.length > 0) {
             const result = await runJudgmentPipeline(asset, '1h', candles)
-            if (result.judgment) {
+            if (result.read) {
               sseManager.broadcast(asset, 'judgment-update', {
                 asset,
-                regime: result.judgment.regime ?? null,
-                auction: result.judgment.auction ?? null,
-                stance: result.judgment.stance ?? 'wait',
-                confidence: result.judgment.confidence ?? 0,
-                narrative: result.judgment.narrative ?? '',
-                updatedAt: Date.now(),
+                regime: result.read.regime ?? null,
+                auction: {
+                  location: result.read.auction.location,
+                  bias: result.read.auction.bias,
+                  narrative: result.read.auction.narrative,
+                },
+                stance: result.read.stance,
+                confidence: result.plan?.status !== 'no-trade' ? result.plan.confidence : 0,
+                narrative: result.read.narrative,
+                updatedAt: result.updatedAt,
               })
             }
           }
