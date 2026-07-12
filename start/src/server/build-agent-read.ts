@@ -3,8 +3,8 @@ import { toCandle } from '@shared/candle'
 import type { ReaderMarketRegimeMode } from '@packages/strategy-lab/read-core/market-regime/types'
 import type { LiveReaderStance } from '@packages/strategy-lab/reader/reader-live/types'
 import type { ReaderTradePlanStatus } from '@packages/strategy-lab/backtest/trade-plan/types'
-import { resolveVersion } from '@judgment/src'
-import { getLatestDecision, type DecisionWithEvidence } from '@/services/decision/decision-service'
+import type { DecisionWithEvidence } from '@/services/decision/decision-service'
+import { mapReadToEvidence } from '@/services/decision/map-read-to-evidence'
 import { getSelboEquity } from '@/data/selbo-equity'
 import { tryCatch } from '@/lib/api/try-catch.ts'
 import { retry } from 'alova/server'
@@ -13,10 +13,14 @@ import { getCandles, type HyperliquidCandle } from '@alova/methods/hyperliquid'
 import { readMarketRegime } from '@packages/strategy-lab/read-core/market-regime/read-market-regime'
 import { readMarketAuction } from '@packages/strategy-lab/read-core/read/read-market-auction'
 import { readRegimeSegments } from '@packages/strategy-lab/read-core/market-regime/read-regime-segments'
-import { createOrderflowWindow } from '@packages/strategy-lab/read-core/orderflow/create-orderflow-window'
 import { readOrderflowWindow } from '@packages/strategy-lab/read-core/orderflow/read-orderflow-window'
 import { combineAuctionOrderflow } from '@packages/strategy-lab/reader/reader-live/combine-auction-orderflow'
 import { buildReaderTradePlan } from '@packages/strategy-lab/backtest/trade-plan/build-reader-trade-plan'
+import { readOrderflowBuckets } from '@packages/market-data'
+import type { OrderflowEvent } from '@packages/strategy-lab/read-core/orderflow/types'
+import { buildReaderHistoryReads } from '@packages/strategy-lab/reader/reader-history/build-reader-history-reads'
+import { getReaderState } from './reader-state'
+import { startLiveOrderflow, getLiveOrderflowWindow, expireLiveOrderflow } from './live-orderflow'
 
 export const VALID_INTERVALS = new Set(['1m', '5m', '15m', '1h', '4h', '1d'])
 export const INTERVAL_MS: Record<string, number> = {
@@ -55,6 +59,74 @@ export function formatRegime(mode: string): string {
   return map[mode] ?? mode
 }
 
+const MARKET_STORE_ROOT = 'D:\\Projects\\agoratest\\.data\\market-store'
+
+async function loadOrderflowEvents(input: {
+  asset: string
+  startMs: number
+  endMs: number
+}): Promise<OrderflowEvent[]> {
+  const buckets = await readOrderflowBuckets({
+    rootDir: MARKET_STORE_ROOT,
+    venue: 'bybit',
+    market: 'trading',
+    symbol: `${input.asset}USDT`,
+    startMs: input.startMs,
+    endMs: input.endMs,
+  })
+  const events: OrderflowEvent[] = []
+  for (const bucket of buckets) {
+    const largestSide = bucket.largestTradeSide
+    const largestSize = Math.max(0, bucket.largestTradeSize)
+    if (largestSize > 0) {
+      events.push({
+        type: 'trade',
+        receivedAt: bucket.bucketMs,
+        trade: {
+          asset: input.asset,
+          side: largestSide,
+          price: Number.isFinite(bucket.largestTradePrice) && bucket.largestTradePrice > 0
+            ? bucket.largestTradePrice : bucket.close,
+          size: largestSize,
+          time: bucket.bucketMs,
+          id: `${bucket.bucketMs}:largest:${largestSide}`,
+        },
+      })
+    }
+    const buyResidual = Math.max(0, bucket.buyVolume - (largestSide === 'buy' ? largestSize : 0))
+    const sellResidual = Math.max(0, bucket.sellVolume - (largestSide === 'sell' ? largestSize : 0))
+    if (buyResidual > 0) {
+      events.push({
+        type: 'trade',
+        receivedAt: bucket.bucketMs + 1,
+        trade: {
+          asset: input.asset,
+          side: 'buy',
+          price: bucket.close,
+          size: buyResidual,
+          time: bucket.bucketMs + 1,
+          id: `${bucket.bucketMs}:buy-residual`,
+        },
+      })
+    }
+    if (sellResidual > 0) {
+      events.push({
+        type: 'trade',
+        receivedAt: bucket.bucketMs + 2,
+        trade: {
+          asset: input.asset,
+          side: 'sell',
+          price: bucket.close,
+          size: sellResidual,
+          time: bucket.bucketMs + 2,
+          id: `${bucket.bucketMs}:sell-residual`,
+        },
+      })
+    }
+  }
+  return events
+}
+
 export interface OverlaySegment {
   startIndex: number
   endIndex: number
@@ -69,19 +141,21 @@ export interface OverlaySegment {
 
 export async function loadAndAnalyze(
   url: URL,
-  options?: { lookback?: number; interval?: string; existingCandles?: Candle[] },
+  options?: { lookback?: number; interval?: string; existingCandles?: Candle[]; mode?: 'backtest' | 'live' },
 ): Promise<{
   candles: Candle[]
   segments: OverlaySegment[]
   regime: ReturnType<typeof readMarketRegime>
   auction: ReturnType<typeof readMarketAuction>
+  orderflowEvents: OrderflowEvent[]
   error: string | null
 }> {
   const asset = (url.searchParams.get('asset') ?? 'ETH').toUpperCase()
   const interval = options?.interval ?? url.searchParams.get('interval') ?? '1h'
+  const mode = options?.mode ?? url.searchParams.get('mode') ?? 'backtest'
 
   if (!VALID_INTERVALS.has(interval)) {
-    return { candles: [], segments: [], regime: undefined as never, auction: undefined as never, error: `Invalid interval. Use: ${Array.from(VALID_INTERVALS).join(', ')}` }
+    return { candles: [], segments: [], regime: undefined as never, auction: undefined as never, orderflowEvents: [], error: `Invalid interval. Use: ${Array.from(VALID_INTERVALS).join(', ')}` }
   }
 
   const now = Date.now()
@@ -101,10 +175,27 @@ export async function loadAndAnalyze(
     })
     const { data: rawCandles, error: err } = await tryCatch(hooked.send() as Promise<HyperliquidCandle[]>)
     if (err !== null) {
-      return { candles: [], segments: [], regime: undefined as never, auction: undefined as never, error: err.message }
+      return { candles: [], segments: [], regime: undefined as never, auction: undefined as never, orderflowEvents: [], error: err.message }
     }
-    if (rawCandles.length === 0) return { candles: [], segments: [], regime: undefined as never, auction: undefined as never, error: 'No candle data' }
+    if (rawCandles.length === 0) return { candles: [], segments: [], regime: undefined as never, auction: undefined as never, orderflowEvents: [], error: 'No candle data' }
     candles = rawCandles.map(toCandle)
+  }
+
+  let orderflowEvents: OrderflowEvent[] = []
+  if (mode === 'live') {
+    startLiveOrderflow(asset, 'testnet')
+    expireLiveOrderflow(now)
+    const window = getLiveOrderflowWindow()
+    const liveOrderflow = readOrderflowWindow({ asset, window })
+    if (liveOrderflow.lastPrice === null) {
+      orderflowEvents = []
+    }
+  } else {
+    orderflowEvents = await loadOrderflowEvents({
+      asset,
+      startMs: now - INTERVAL_MS[interval] * lookback,
+      endMs: now,
+    }).catch(() => [] as OrderflowEvent[])
   }
 
   const segments = readRegimeSegments({ candles, lookback }) as OverlaySegment[]
@@ -116,7 +207,7 @@ export async function loadAndAnalyze(
     price: candles[candles.length - 1].c,
   })
 
-  return { candles, segments, regime, auction, error: null }
+  return { candles, segments, regime, auction, orderflowEvents, error: null }
 }
 
 function decisionToView(d: DecisionWithEvidence | null) {
@@ -179,7 +270,7 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
     return { candles: [], segments: [], regime: null, auction: null, read: null, plan: null, decision: null, equity: { totalEquity: 0, dailyChange: 0, dailyChangePct: 0, equityCurve: [] }, asset, error: result.error }
   }
 
-  const { candles, segments, regime: rawRegime, auction: rawAuction } = result
+  const { candles, segments, regime: rawRegime, auction: rawAuction, orderflowEvents } = result
 
   const regime = {
     mode: rawRegime.mode,
@@ -209,13 +300,32 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
       : null,
   }
 
-  const orderflowWindow = createOrderflowWindow(60_000)
-  const orderflow = readOrderflowWindow({ asset, window: orderflowWindow })
-  orderflow.lastPrice = candles[candles.length - 1].c
+  const { auctionModeState, vpStateMemory } = getReaderState(asset)
 
-  const read = combineAuctionOrderflow({
-    auction: rawAuction, orderflow, regime: rawRegime,
-    lastClosedCandle: candles.length >= 2 ? candles[candles.length - 2] : null,
+  const steps = buildReaderHistoryReads({
+    asset,
+    interval: '1h',
+    candleIntervalMs: INTERVAL_MS['1h'],
+    candles,
+    orderflowEvents,
+    readIntervalMs: INTERVAL_MS['1h'],
+    orderflowWindowMs: 60_000,
+    startAt: candles.length >= 2 ? candles[candles.length - 2].t : Date.now() - INTERVAL_MS['1h'],
+    endAt: candles[candles.length - 1]?.t ?? Date.now(),
+    auctionModeState,
+    vpStateMemory,
+  })
+
+  const latestStep = steps[steps.length - 1]
+  const read = latestStep?.read ?? combineAuctionOrderflow({
+    auction: rawAuction,
+    orderflow: {
+      asset, windowSeconds: 60, lastPrice: candles.at(-1)?.c ?? null,
+      buyVolume: 0, sellVolume: 0, delta: 0, tradeCount: 0, averageTradeSize: 0,
+      largestTrade: null, dominantSide: 'none', pressure: 'balanced', events: [],
+      narrative: 'No orderflow data available.',
+    },
+    regime: rawRegime,
   })
 
   const plan = buildReaderTradePlan(read)
@@ -254,40 +364,20 @@ export async function buildAgentRead(url: URL): Promise<AgentReadResult> {
     }
   }
 
-  // Fallback: compute fresh decision from engine if none persisted
-  if (!decision) {
-    try {
-      const version = await resolveVersion('v1')
-      const engine = version.createJudgmentEngine(
-        { asset, regimeWindowMs: 24 * 60 * 60 * 1000 },
-        version.DEFAULT_JUDGE_CONFIGS,
-      )
-      engine.boot(candles)
-      const engineResult = engine.onCandle(candles[candles.length - 1])
-
-      const best = engineResult.bestJudgment
-      if (best && best.action.type === 'enter') {
-        decision = {
-          id: engineResult.judgment.id,
-          action: `enter-${best.action.side}`,
-          asset,
-          conviction: best.confidence >= 0.7 ? 'high' : best.confidence >= 0.5 ? 'medium' : 'low',
-          entry: best.action.entry,
-          stop: best.action.stop,
-          target: best.action.target,
-          invalidation: best.invalidation,
-          thesis: best.reason,
-          decidedAt: new Date().toISOString(),
-          evidence: engineResult.allJudgments.map((j) => ({
-            category: 'regime' as const,
-            title: j.label,
-            value: j.reason,
-            stance: 'supporting' as const,
-          })),
-        }
-      }
-    } catch {
-      // Engine not available, leave decision null
+  // Fallback: derive decision from reader trade plan if none persisted
+  if (!decision && plan.status !== 'no-trade') {
+    decision = {
+      id: `reader-${asset}-${Date.now()}`,
+      action: plan.side === 'long' ? 'enter-long' : 'enter-short',
+      asset,
+      conviction: plan.confidence >= 0.7 ? 'high' : plan.confidence >= 0.5 ? 'medium' : 'low',
+      entry: (plan.entryLow + plan.entryHigh) / 2,
+      stop: plan.stop,
+      target: plan.target,
+      invalidation: plan.invalidation,
+      thesis: plan.reasons.join('. '),
+      decidedAt: new Date().toISOString(),
+      evidence: mapReadToEvidence(read),
     }
   }
 
