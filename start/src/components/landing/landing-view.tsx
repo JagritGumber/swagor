@@ -1,11 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { connectLiveJudgment } from '@/data/live-judgment'
 import { getCandles } from '@/data/api'
+import { readRegimeSegments } from '@strategy-lab/read-core/market-regime/read-regime-segments'
 import { ASSETS, type Asset } from './tabs'
 import { LandingChartEntry } from './chart-entry'
 import { EquityCurve } from './equity-curve'
 import { JudgmentPanel, type MindLogEntry } from './judgment-panel'
+import { PositionsTable } from './positions-table'
+import { ContextTab } from './context-tab'
+import { AssetHeader } from './asset-header'
+import { TimeframeSelector } from './timeframe-selector'
 import type { LandingEquity, LandingViewProps } from './types'
+import type { OverlaySegment } from '@/components/chart/types'
+import type { Position } from '@/components/dashboard/types'
 
 const REGIME_LABEL: Record<string, string> = {
   'range': 'Ranging',
@@ -30,9 +37,21 @@ const STANCE_LABEL: Record<string, string> = {
   'no-trade': 'No trade right now',
 }
 
+const INTERVAL_MS: Record<string, number> = {
+  '1m': 60_000,
+  '5m': 300_000,
+  '15m': 900_000,
+  '1h': 3_600_000,
+  '4h': 14_400_000,
+  '1d': 86_400_000,
+}
+
 export function LandingView({ assets, activeAsset: initialAsset, page = 'portfolio' }: LandingViewProps) {
   const [activeAsset, setActiveAsset] = useState<Asset>(initialAsset)
+  const [interval, setInterval] = useState('1h')
+  const [bottomTab, setBottomTab] = useState<'context' | 'positions'>('context')
   const [updatedAt, setUpdatedAt] = useState<number | null>(null)
+  const [positions] = useState<Position[]>([])
   const [mindLog, setMindLog] = useState<MindLogEntry[]>(() => {
     const assetData = assets[initialAsset]
     if (!assetData) return []
@@ -92,36 +111,91 @@ export function LandingView({ assets, activeAsset: initialAsset, page = 'portfol
 
   const assetData = assets[activeAsset]
   const serverCandles = assetData?.candles ?? []
-  const segments = assetData?.segments ?? []
+  const serverSegments = assetData?.segments ?? []
   const auction = assetData?.auction ?? null
   const equity: LandingEquity | null = assetData?.equity ?? null
 
   const [liveCandles, setLiveCandles] = useState(serverCandles)
 
   useEffect(() => {
-    setLiveCandles(serverCandles)
-    if (serverCandles.length > 0) return
-
     const now = Date.now()
-    const intervalMs = 3_600_000
+    const intervalMs = INTERVAL_MS[interval] ?? 3_600_000
     const start = now - intervalMs * 300
-    getCandles(activeAsset, '1h', start, now).then((res) => {
+    getCandles(activeAsset, interval, start, now).then((res) => {
       if (res.ok) setLiveCandles(res.data.candles)
     }).catch(() => {})
-  }, [activeAsset, serverCandles])
+  }, [activeAsset, interval, serverCandles])
+
+  const liveSegments = useMemo(() => {
+    if (interval === '1h') return serverSegments
+    if (liveCandles.length < 20) return serverSegments
+    return readRegimeSegments({ candles: liveCandles, lookback: 200 }) as OverlaySegment[]
+  }, [liveCandles, interval, serverSegments])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface-body font-ui text-white">
       {page === 'live' ? (
         <div className="grid min-h-0 flex-1 grid-cols-[2fr_1fr] overflow-hidden">
           <div className="flex min-h-0 flex-col overflow-hidden border-r border-border-default">
-            <LandingChartEntry
-              candles={liveCandles}
-              segments={segments}
-              asset={activeAsset}
-              interval="1h"
-              auction={auction}
-            />
+            <div className="flex items-center gap-1 border-b border-border-default bg-surface-panel px-4 py-1.5">
+              {ASSETS.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => handleAssetChange(a)}
+                  className={`px-3 py-1 text-[13px] font-medium rounded transition-[transform,background-color,color] duration-150 scale-100 active:scale-95 ${
+                    a === activeAsset
+                      ? 'text-white bg-white/10'
+                      : 'text-[#8892a4] bg-transparent hover:text-white'
+                  }`}
+                >
+                  {a}
+                </button>
+              ))}
+              <div className="ml-auto">
+                <TimeframeSelector active={interval} onChange={setInterval} />
+              </div>
+            </div>
+            <AssetHeader asset={activeAsset} candles={liveCandles} />
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="flex min-h-0 flex-[7] flex-col overflow-hidden">
+                <LandingChartEntry
+                  candles={liveCandles}
+                  segments={liveSegments}
+                  asset={activeAsset}
+                  interval={interval}
+                  auction={auction}
+                />
+              </div>
+              <div className="flex min-h-0 flex-[3] flex-col overflow-hidden">
+                <div className="flex items-center gap-1 border-b border-border-default bg-surface-panel px-4 py-1.5">
+                  <button
+                    onClick={() => setBottomTab('context')}
+                    className={`px-3 py-1 text-[13px] font-medium rounded transition-[transform,background-color,color] duration-150 scale-100 active:scale-95 ${
+                      bottomTab === 'context'
+                        ? 'text-white bg-white/10'
+                        : 'text-[#8892a4] bg-transparent hover:text-white'
+                    }`}
+                  >
+                    Context
+                  </button>
+                  <button
+                    onClick={() => setBottomTab('positions')}
+                    className={`px-3 py-1 text-[13px] font-medium rounded transition-[transform,background-color,color] duration-150 scale-100 active:scale-95 ${
+                      bottomTab === 'positions'
+                        ? 'text-white bg-white/10'
+                        : 'text-[#8892a4] bg-transparent hover:text-white'
+                    }`}
+                  >
+                    Positions{positions.length > 0 ? ` (${positions.length})` : ''}
+                  </button>
+                </div>
+                {bottomTab === 'context' ? (
+                  <ContextTab data={assetData} />
+                ) : (
+                  <PositionsTable positions={positions} />
+                )}
+              </div>
+            </div>
           </div>
 
           <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
@@ -132,13 +206,16 @@ export function LandingView({ assets, activeAsset: initialAsset, page = 'portfol
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <LandingChartEntry
                 candles={liveCandles}
-                segments={segments}
+                segments={liveSegments}
                 asset={activeAsset}
-                interval="1h"
+                interval={interval}
                 auction={auction}
               />
             </div>
-            <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
+            <div className="flex flex-col">
+              <TimeframeSelector active={interval} onChange={setInterval} />
+              <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
+            </div>
           </div>
 
           <div className="border-t border-border-default">

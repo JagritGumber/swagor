@@ -16,11 +16,12 @@ import { Route as AgentRouteImport } from './routes/agent'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LiveAssetRouteImport } from './routes/live.$asset'
 import { Route as ApiNonceRouteImport } from './routes/api/nonce'
+import { Route as ApiDecisionsRouteImport } from './routes/api/decisions'
 import { Route as ApiCandlesRouteImport } from './routes/api/candles'
 import { Route as ApiBalanceRouteImport } from './routes/api/balance'
+import { Route as AdminBacktestRouteImport } from './routes/admin/backtest'
 import { Route as ApiJudgmentStreamRouteImport } from './routes/api/judgment.stream'
-import { Route as ApiJudgmentHistoryRouteImport } from './routes/api/judgment.history'
-import { Route as AdminJudgmentTickRouteImport } from './routes/admin/judgment.tick'
+import { Route as AdminDecisionTickRouteImport } from './routes/admin/decision.tick'
 
 const LogoutRoute = LogoutRouteImport.update({
   id: '/logout',
@@ -57,6 +58,11 @@ const ApiNonceRoute = ApiNonceRouteImport.update({
   path: '/api/nonce',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDecisionsRoute = ApiDecisionsRouteImport.update({
+  id: '/api/decisions',
+  path: '/api/decisions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCandlesRoute = ApiCandlesRouteImport.update({
   id: '/api/candles',
   path: '/api/candles',
@@ -67,19 +73,19 @@ const ApiBalanceRoute = ApiBalanceRouteImport.update({
   path: '/api/balance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminBacktestRoute = AdminBacktestRouteImport.update({
+  id: '/admin/backtest',
+  path: '/admin/backtest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiJudgmentStreamRoute = ApiJudgmentStreamRouteImport.update({
   id: '/api/judgment/stream',
   path: '/api/judgment/stream',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiJudgmentHistoryRoute = ApiJudgmentHistoryRouteImport.update({
-  id: '/api/judgment/history',
-  path: '/api/judgment/history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminJudgmentTickRoute = AdminJudgmentTickRouteImport.update({
-  id: '/admin/judgment/tick',
-  path: '/admin/judgment/tick',
+const AdminDecisionTickRoute = AdminDecisionTickRouteImport.update({
+  id: '/admin/decision/tick',
+  path: '/admin/decision/tick',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -89,12 +95,13 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
+  '/admin/backtest': typeof AdminBacktestRoute
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
+  '/api/decisions': typeof ApiDecisionsRoute
   '/api/nonce': typeof ApiNonceRoute
   '/live/$asset': typeof LiveAssetRoute
-  '/admin/judgment/tick': typeof AdminJudgmentTickRoute
-  '/api/judgment/history': typeof ApiJudgmentHistoryRoute
+  '/admin/decision/tick': typeof AdminDecisionTickRoute
   '/api/judgment/stream': typeof ApiJudgmentStreamRoute
 }
 export interface FileRoutesByTo {
@@ -103,12 +110,13 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
+  '/admin/backtest': typeof AdminBacktestRoute
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
+  '/api/decisions': typeof ApiDecisionsRoute
   '/api/nonce': typeof ApiNonceRoute
   '/live/$asset': typeof LiveAssetRoute
-  '/admin/judgment/tick': typeof AdminJudgmentTickRoute
-  '/api/judgment/history': typeof ApiJudgmentHistoryRoute
+  '/admin/decision/tick': typeof AdminDecisionTickRoute
   '/api/judgment/stream': typeof ApiJudgmentStreamRoute
 }
 export interface FileRoutesById {
@@ -118,12 +126,13 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
+  '/admin/backtest': typeof AdminBacktestRoute
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
+  '/api/decisions': typeof ApiDecisionsRoute
   '/api/nonce': typeof ApiNonceRoute
   '/live/$asset': typeof LiveAssetRoute
-  '/admin/judgment/tick': typeof AdminJudgmentTickRoute
-  '/api/judgment/history': typeof ApiJudgmentHistoryRoute
+  '/admin/decision/tick': typeof AdminDecisionTickRoute
   '/api/judgment/stream': typeof ApiJudgmentStreamRoute
 }
 export interface FileRouteTypes {
@@ -134,12 +143,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/logout'
+    | '/admin/backtest'
     | '/api/balance'
     | '/api/candles'
+    | '/api/decisions'
     | '/api/nonce'
     | '/live/$asset'
-    | '/admin/judgment/tick'
-    | '/api/judgment/history'
+    | '/admin/decision/tick'
     | '/api/judgment/stream'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -148,12 +158,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/logout'
+    | '/admin/backtest'
     | '/api/balance'
     | '/api/candles'
+    | '/api/decisions'
     | '/api/nonce'
     | '/live/$asset'
-    | '/admin/judgment/tick'
-    | '/api/judgment/history'
+    | '/admin/decision/tick'
     | '/api/judgment/stream'
   id:
     | '__root__'
@@ -162,12 +173,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/logout'
+    | '/admin/backtest'
     | '/api/balance'
     | '/api/candles'
+    | '/api/decisions'
     | '/api/nonce'
     | '/live/$asset'
-    | '/admin/judgment/tick'
-    | '/api/judgment/history'
+    | '/admin/decision/tick'
     | '/api/judgment/stream'
   fileRoutesById: FileRoutesById
 }
@@ -177,12 +189,13 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   LogoutRoute: typeof LogoutRoute
+  AdminBacktestRoute: typeof AdminBacktestRoute
   ApiBalanceRoute: typeof ApiBalanceRoute
   ApiCandlesRoute: typeof ApiCandlesRoute
+  ApiDecisionsRoute: typeof ApiDecisionsRoute
   ApiNonceRoute: typeof ApiNonceRoute
   LiveAssetRoute: typeof LiveAssetRoute
-  AdminJudgmentTickRoute: typeof AdminJudgmentTickRoute
-  ApiJudgmentHistoryRoute: typeof ApiJudgmentHistoryRoute
+  AdminDecisionTickRoute: typeof AdminDecisionTickRoute
   ApiJudgmentStreamRoute: typeof ApiJudgmentStreamRoute
 }
 
@@ -237,6 +250,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiNonceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/decisions': {
+      id: '/api/decisions'
+      path: '/api/decisions'
+      fullPath: '/api/decisions'
+      preLoaderRoute: typeof ApiDecisionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/candles': {
       id: '/api/candles'
       path: '/api/candles'
@@ -251,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBalanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/backtest': {
+      id: '/admin/backtest'
+      path: '/admin/backtest'
+      fullPath: '/admin/backtest'
+      preLoaderRoute: typeof AdminBacktestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/judgment/stream': {
       id: '/api/judgment/stream'
       path: '/api/judgment/stream'
@@ -258,18 +285,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiJudgmentStreamRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/judgment/history': {
-      id: '/api/judgment/history'
-      path: '/api/judgment/history'
-      fullPath: '/api/judgment/history'
-      preLoaderRoute: typeof ApiJudgmentHistoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/judgment/tick': {
-      id: '/admin/judgment/tick'
-      path: '/admin/judgment/tick'
-      fullPath: '/admin/judgment/tick'
-      preLoaderRoute: typeof AdminJudgmentTickRouteImport
+    '/admin/decision/tick': {
+      id: '/admin/decision/tick'
+      path: '/admin/decision/tick'
+      fullPath: '/admin/decision/tick'
+      preLoaderRoute: typeof AdminDecisionTickRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -281,12 +301,13 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   LogoutRoute: LogoutRoute,
+  AdminBacktestRoute: AdminBacktestRoute,
   ApiBalanceRoute: ApiBalanceRoute,
   ApiCandlesRoute: ApiCandlesRoute,
+  ApiDecisionsRoute: ApiDecisionsRoute,
   ApiNonceRoute: ApiNonceRoute,
   LiveAssetRoute: LiveAssetRoute,
-  AdminJudgmentTickRoute: AdminJudgmentTickRoute,
-  ApiJudgmentHistoryRoute: ApiJudgmentHistoryRoute,
+  AdminDecisionTickRoute: AdminDecisionTickRoute,
   ApiJudgmentStreamRoute: ApiJudgmentStreamRoute,
 }
 export const routeTree = rootRouteImport
