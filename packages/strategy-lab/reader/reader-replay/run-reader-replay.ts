@@ -66,7 +66,7 @@ export function runReaderReplay(input: ReaderReplayInput): ReaderReplayResult {
 
     setupResults.push(setup);
     setupEvents.push(...setup.events);
-    resultUpdates.push(snapshotResultUpdate(resultUpdate));
+    resultUpdates.push(input.skipResultSnapshots ? resultUpdate : snapshotResultUpdate(resultUpdate));
     resultEvents.push(...resultUpdate.events);
     if (resultUpdate.opened) entries.push(resultUpdate.opened);
     if (resultUpdate.closed && setupConfig.narrativeState?.enabled !== false) {

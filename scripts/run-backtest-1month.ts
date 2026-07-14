@@ -16,6 +16,7 @@ async function main() {
     endMs: Date.UTC(2025, 4, 31, 23, 59, 59, 999),
     readIntervalMs: 60_000,
     orderflowWindowMs: 300_000,
+    skipResultSnapshots: true,
   })
 
   const elapsed = ((Date.now() - start) / 1000).toFixed(1)

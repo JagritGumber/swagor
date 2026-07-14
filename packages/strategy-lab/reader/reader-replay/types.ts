@@ -40,6 +40,12 @@ export type ReaderReplayInput = {
   resultMaxEvents?: number;
   requireTimestamps?: boolean;
   entryFilter?: ReaderEntryFilterConfig;
+  /**
+   * Skip deep-copying result state on every tick. Returns raw mutable references
+   * instead of snapshots. Result updates will all share the same final state.
+   * Use for backtest performance when per-tick state inspection is not needed.
+   */
+  skipResultSnapshots?: boolean;
 };
 
 export type ReaderReplayResult = {

@@ -28,6 +28,7 @@ export type MarketStoreReaderReplayInput = {
   setupConfig?: ReaderSetupConfig;
   radarConfig?: ReaderRadarConfig;
   entryFilter?: ReaderEntryFilterConfig;
+  skipResultSnapshots?: boolean;
 };
 
 export type MarketStoreReaderReplayDiagnostics = {
@@ -70,6 +71,7 @@ export async function runMarketStoreReaderReplayReport(input: MarketStoreReaderR
       },
       radarConfig: input.radarConfig,
       entryFilter: input.entryFilter,
+      skipResultSnapshots: input.skipResultSnapshots,
     },
   });
   const executionQuality = analyzeReaderExecutionQuality({

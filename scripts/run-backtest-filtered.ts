@@ -23,6 +23,7 @@ async function runWithFilter(label: string, entryFilter?: { requireKnownRegime?:
       endMs: Date.UTC(m.year, m.month + 1, 0, 23, 59, 59, 999),
       readIntervalMs: 60_000, orderflowWindowMs: 300_000,
       entryFilter,
+      skipResultSnapshots: true,
     })
     agg.entries.push(...report.entries)
     agg.outcomes.push(...report.outcomes)

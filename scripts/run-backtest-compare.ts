@@ -42,6 +42,7 @@ async function main() {
       endMs,
       readIntervalMs: 60_000,
       orderflowWindowMs: 300_000,
+      skipResultSnapshots: true,
     })
 
     const elapsed = ((Date.now() - monthStart) / 1000).toFixed(1)
