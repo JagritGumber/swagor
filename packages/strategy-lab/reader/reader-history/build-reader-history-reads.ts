@@ -198,8 +198,9 @@ function localRangeFor(input: {
   price: number | null;
   windowCandles: number;
 }) {
-  const candles = input.candles.slice(Math.max(0, input.candles.length - input.windowCandles));
-  if (candles.length === 0 || input.price === null) {
+  const start = Math.max(0, input.candles.length - input.windowCandles);
+  const end = input.candles.length;
+  if (start >= end || input.price === null) {
     return {
       high: null,
       low: null,
@@ -207,8 +208,14 @@ function localRangeFor(input: {
       location: "unknown" as const,
     };
   }
-  const high = Math.max(...candles.map((candle) => candle.h));
-  const low = Math.min(...candles.map((candle) => candle.l));
+  let high = input.candles[start].h;
+  let low = input.candles[start].l;
+  for (let i = start + 1; i < end; i++) {
+    const h = input.candles[i].h;
+    const l = input.candles[i].l;
+    if (h > high) high = h;
+    if (l < low) low = l;
+  }
   if (!Number.isFinite(high) || !Number.isFinite(low) || high === low) {
     return {
       high: null,
