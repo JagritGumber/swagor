@@ -126,7 +126,7 @@ The 41-trade confirmed absorption variant is interesting but too small to replac
 
 ## Lessons
 
-- Equal sample comparison matters. Do not compare 41 trades against 100+ as if equivalent.
+- Equal sample comparison matters. Do not compare 41 trades against 100+ as equivalent.
 - Calendar-day and equal-trade results answer different questions.
 - More filters/hardcoded thresholds are not automatically progress.
 - Static strategy optimization repeatedly produced misleading confidence.
@@ -134,25 +134,162 @@ The 41-trade confirmed absorption variant is interesting but too small to replac
 - Reports must include costs before results are meaningful.
 - Tests that preserve wrong behavior are worse than no tests.
 
-## Next Plan
+## CVD Transition Analysis
 
-1. Stop broad random hypothesis hunting unless the benchmark is falsified.
-2. Run the benchmark on unseen months only.
-3. Run 100-trade Monte Carlo for benchmark and closest challengers.
-4. Produce dossiers for worst drawdown streaks.
-5. Integrate benchmark into Selbo as shadow/paper mode, not live execution.
-6. Persist every thesis, context, action, avoided action, management update, and outcome.
-7. Use that context memory to evolve the reader toward a true narrative engine.
+Added `--transition-analysis` flag to `scripts/backtest-market-structure.ts`. Evaluates every consecutive CVD transition (prev trade -> current trade) regardless of streak context. Breaks results into three context buckets:
 
-## Commands
+- **in-loss-streak**: current trade is a loss (always -1.00 R by definition)
+- **in-win-streak**: current trade is a win and previous trade was also a win
+- **at-boundary**: current trade is a win but previous trade was a loss (first win after a losing sequence)
 
-Typecheck:
+### Core Finding
 
-```powershell
-bun.cmd run typecheck
-```
+**The edge comes from the losing-streak context (boundary trades), not from the CVD transition type itself.**
 
-Do not use `tsc`; use `tsgo` through the package script.
+Evidence from 278 trades over 3 weeks (May 1-22, 2025):
+
+| Context | Avg R | Interpretation |
+| --- | ---: | --- |
+| in-loss-streak | -1.00 | All losses, by definition |
+| in-win-streak | moderate (15-25R) | Continuation wins |
+| at-boundary | highest (22-55R) | First win after loss streak |
+
+The previous `--state-analysis` finding that "falling->rising and high->low show consistent positive expectancy after losing sequences" was detecting a real effect, but the effect is **boundary trades** - not the CVD transition type. The CVD transition just happened to correlate with when boundaries occur.
+
+Key observations:
+- Within loss-streaks, ALL CVD transitions show -1.00 R. The CVD state during a losing sequence has no predictive power for that sequence's trades.
+- `bullish->none` divergence transition shows the highest boundary R (53.36R, n=6) but small sample.
+- `med->high` magnitude transition shows 56.84R at boundary (n=4) - too small.
+- The largest boundary samples (`none->none` divergence, n=37; `low->low` magnitude, n=23) show moderate but consistent positive R.
+
+### Implications
+
+1. Do not build CVD-transition-based entry filters expecting edge from the transition itself.
+2. The losing-streak recovery pattern is real but the R comes from the first-win-after-loss dynamic, not CVD state.
+3. Future reader work should focus on **when the system transitions out of a losing sequence** rather than what the CVD looks like during the sequence.
+
+## distToPoc: The Only Cross-Validated Predictor
+
+Feature discrimination analysis and response curves identified `distToPoc = |price - POC|` as the only pre-entry feature that:
+
+1. Shows a monotonic response curve (Spearman rho > 0.8 across months)
+2. Survives partial effect testing (predicts R within each profileRange decile)
+3. Works for both sides, both CVD trends, and both action types
+
+### Why It Works
+
+distToPoc measures **auction extension** - how far price has deviated from the market's accepted fair value (the highest-volume price level).
+
+When price is far from POC, the market is in directional discovery. The trend is either continuing (large R) or exhausting (small R). The paradox: high distToPoc trades have **lower win rate** (24% vs 45% for bottom quintile) but **much higher avg R** (17.2R vs 0.7R in May). The few big wins dominate.
+
+### Not a Proxy
+
+- Correlated with distToValueLow (r~0.65) and profileRange (r~0.65) but not fully explained by either
+- Partial effect test: within each profileRange decile, high distToPoc trades outperform by 2-11R
+- nodeVolume (r<0.1) is not a proxy
+
+### Key Numbers (May 2025)
+
+| distToPoc quintile | n | Win% | Avg R |
+| --- | ---: | ---: | ---: |
+| Bottom 20% | 56 | 45% | 0.7R |
+| Top 20% | 54 | 24% | 17.2R |
+
+### Implications
+
+1. distToPoc captures the degree of trend extension, not mean reversion
+2. It works because the R/R is asymmetric: lower hit rate but larger winners
+3. It should be treated as a **position sizing or confidence input**, not a binary filter
+
+## Why High distToPoc Trades Fail
+
+77-79% of high distToPoc trades lose. The discriminator between winners and losers is **CVD**.
+
+| Feature | May diff (winners higher) | Jun diff | Stable? |
+| --- | ---: | ---: | --- |
+| cvd | +186% | +72% | Yes |
+| cvdHigh | +62% | +24% | Yes |
+| priceChange | +89% | +17% | Yes |
+
+But CVD as a filter is inconsistent across months:
+- May: cvd>=25 improves avg R from 5.96 to 15.07
+- Jun: cvd>=25 barely moves avg R (5.73 to 4.94)
+- CVD distributions are nearly identical between months (same median, same P90)
+- The inconsistency is not a regime-scaling problem - CVD genuinely has power in May and not in June
+
+**Conclusion: CVD is a weak signal that helps in some regimes and hurts in others. Do not add as a hard filter.**
+
+## POC Migration
+
+Only 17 of 278 trades had >= 2 POC snapshots (trades lasting >5 minutes). Of those:
+- 16/17 showed POC migrating toward entry price
+- Big winners showed 98.5 points of POC migration vs 70.6 for losers
+- The mechanism: winners have POC moving toward price (value acceptance), losers have price moving toward POC (reversion)
+
+## Temporal Features
+
+15 temporal features computed from the last 120 seconds of orderflow before entry.
+
+### Key Finding
+
+Temporal features rank #1 in discrimination, above all static features:
+
+| Rank | May feature | May |d| | Jun feature | Jun |d| |
+| --- | --- | ---: | --- | ---: |
+| 1 | upCloseRatio (T) | 0.424 | volumeSlope (T) | 0.327 |
+| 2 | profileRange (S) | 0.373 | cvdSignChanges (T) | 0.276 |
+| 3 | tradeRate (T) | 0.370 | cvdImpulseCount (T) | 0.276 |
+
+Most temporal features are independent of distToPoc (r < 0.3).
+
+**But they are not stable across months.** Response curves flip direction. The signal is real but regime-dependent.
+
+## Event Sequences
+
+Built an event vocabulary: IMPULSE_START, EXHAUSTION, REVERSAL, ABSORPTION, PULLBACK, ACCEPTANCE, RATE_EXPANDS, RATE_CONTRACTS.
+
+### Core Finding
+
+**Sell-side events consistently distinguish winners across months:**
+
+| Event | May (more in winners) | Jun (more in winners) | Stable? |
+| --- | --- | --- | --- |
+| sell_ABSORPTION | +7.0% | +6.4% | **Yes** |
+| sell_IMPULSE_START | +6.2% | +8.8% | **Yes** |
+| buy_ABSORPTION | +4.6% | -7.0% | Flips |
+| buy_IMPULSE_START | +6.7% | -3.4% | Flips |
+
+**The market narrates: winners happen when selling is being absorbed (market rejecting lower prices). Losers happen when buying is being absorbed (market rejecting higher prices).**
+
+### Last event before entry
+
+RATE_CONTRACTS as last event: avg R 9.0 (May), 6.3 (Jun) - consistently higher than ACCEPTANCE (4.4/4.9). Volatility contraction before entry predicts larger moves.
+
+### Current Limitation
+
+The event detector is too sensitive (~70 events per trade). Most are neutral RATE/ACCEPTANCE events. The meaningful directional events are buried. Needs threshold tightening.
+
+## CLI Flags for `scripts/backtest-market-structure.ts`
+
+- `--start YYYY-MM-DD` / `--end YYYY-MM-DD`: date range
+- `--interval 60000`: read interval ms
+- `--orderflow-window 120000`: orderflow window ms
+- `--no-rejecting`: filter out rejecting hypothesis trades
+- `--discovering-only`: only keep discovering hypothesis trades
+- `--bullish-div`: filter to bullish divergence trades only
+- `--no-trail`: disable trailing stop
+- `--streak-analysis`: win/loss streak distribution
+- `--state-analysis`: CVD transition analysis around losing sequences
+- `--transition-analysis`: all CVD transitions with context breakdown
+- `--feature-analysis`: pre-entry feature discrimination (top 20% vs rest)
+- `--response-curves`: decile response curves for distToPoc, profileRange, nodeVolume, distToValueLow
+- `--explain-poc`: correlation matrix, partial effects, mechanism analysis for distToPoc
+- `--poc-migration`: POC snapshot tracking during trades
+- `--poc-failure`: high distToPoc winner vs loser comparison
+- `--cvd-filter`: CVD threshold evaluation with loser/winner removal stats
+- `--cvd-distribution`: CVD distribution stats and percentile-normalized filter
+- `--temporal-analysis`: 15 temporal features from pre-entry orderflow
+- `--event-analysis`: event vocabulary, sequence comparison, snapshot-matched pairs
 
 Do not read `.env.local` or production env files.
 

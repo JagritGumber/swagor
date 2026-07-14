@@ -1,175 +1,248 @@
 # Trader Agent - Session Handoff
 
-## What Exists Today
+## What We Solved
 
-### Reader Pipeline (input to the trader agent)
-- `buildReaderHistoryReads` produces a `LiveReaderRead` every candle: regime, auction location/kind, orderflow pressure, VP state, narrative direction/intent, local range
-- `buildReaderTradePlan` produces a `ReaderTradePlan`: side, entry/stop/target, status (ready/watch/no-trade)
-- The reader tells you WHAT it sees and WHAT it would do. It does NOT manage the trade lifecycle.
+### Backtest Performance
 
-### Entry Filter (Q-table)
-- `rl-q-table.json` (200 entries) maps reader context → enter/skip
-- Learned from 66K historical candidates
-- Top states: failed-expansion at value extremes, reversal-watch at above-value resistance
-- Test: 2.07R/trade, 34.5% WR
-- This is the PRE-ENTRY filter only. It decides whether to take the reader's setup.
+The backtest was too slow to test on meaningful sample sizes. 14-day runs timed out at 10 minutes.
 
-### Database
-- `decisions` table: action, entry, stop, target, conviction, thesis
-- `evidence` table: what the reader saw (regime, auction, orderflow, price level, VP state)
-- `executions` table: executed price, status (pending/filled), tx hash
-- `outcomes` table: exit price, pnl (R-multiple), status (win/loss)
-- Decision service, execution service, outcome service all wired
-- Outcome monitor evaluates open executions on 1h candle close
+**Root causes found:**
+1. `snapshotResultUpdate()` deep-copied entire `ReaderResultState` on every tick - quadratic scaling
+2. `Math.max(...candles.map(...))` in `localRangeFor()` created millions of temporary arrays
+3. `candles.filter()` in `readMarketRegime()` created new arrays on every tick
+4. `sizes.sort()` in `tapeStats()` sorted trade sizes on every tick
+5. Test script ran full pipeline twice (baseline + gated), doubling total time
 
-### What's Missing (the trader agent)
-1. **Entry execution** - currently `decision.tick.ts` creates decisions but doesn't place orders
-2. **Exit management** - reader-failure exits too early (514/545 trades exit for tiny gains)
-3. **Position sizing** - no risk management, no position sizing logic
-4. **Trade lifecycle** - no tracking of open positions, no P&L management
-5. **Multi-asset** - currently single-asset per tick
+**Optimizations applied:**
 
----
+| File | Change | Impact |
+|------|--------|--------|
+| `reader-replay/run-reader-replay.ts` | Added `skipResultSnapshots` flag | Eliminated quadratic bottleneck |
+| `reader-replay/types.ts` | Added `skipResultSnapshots` to input type | |
+| `reader-history/build-reader-history-reads.ts` | Replaced `Math.max(...map())` with loop in `localRangeFor` | Eliminated millions of temp arrays |
+| `read-core/market-regime/read-market-regime.ts` | Replaced `candles.filter()` with index iteration | Eliminated per-tick array copy |
+| `read-core/orderflow/read-orderflow-window.ts` | Replaced `sizes.sort()` with approximate median/rank | Eliminated O(n log n) per tick |
+| `live-reader/run-market-store-reader-replay-report.ts` | Added `skipResultSnapshots` passthrough | |
+| `scripts/test-gates-backtest.ts` | Rewritten to share data load + history build | Halved total time |
+| All backtest scripts | Added `skipResultSnapshots: true` | |
 
-## What the Trader Agent Needs to Do
+### History Cache
 
-### 1. Entry Decision
-- Receives: `LiveReaderRead` + `ReaderTradePlan` + Q-table lookup
-- Decides: enter/skip, position size
-- The reader provides the setup. The agent decides whether to act and how much to risk.
+The history build (per-tick computation) is the most expensive step. Cache stores the output as gzip-compressed JSON so subsequent runs skip the build entirely.
 
-### 2. Exit Management (the critical missing piece)
-The reader's current exit logic is broken:
-- `readerFollowThroughFailed` exits on first favorable tick (bestFavorableR > 0)
-- 514/545 trades exit via reader-failure with tiny gains
-- Only 31 trades hit stop, almost none reach target
+**Cache module:** `packages/strategy-lab/reader/reader-history/history-cache.ts`
 
-The trader agent needs its own exit logic:
-- **Trailing stop**: move stop to breakeven after X R favorable
-- **Time-based exit**: exit after N candles if no follow-through
-- **Regime-shift exit**: exit if regime changes (e.g. range → trend)
-- **Target management**: partial exits at target, let runner run
-- **Don't exit on first adverse read**: require multiple confirming reads
+**How it works:**
+1. `historyCacheKeyFor()` computes a deterministic key from build params (asset, interval, readIntervalMs, date range, auctionConfig)
+2. `loadHistoryCache()` checks if `.data/history-cache/{key}.json.gz` exists
+3. `saveHistoryCache()` writes gzip-compressed JSON
+4. `buildOrLoadHistorySteps()` wraps the whole flow: load if hit, build + save if miss
 
-### 3. Position Sizing
-- Fixed fractional (% of equity per trade)
-- Kelly criterion (based on win rate and avg R)
-- Max drawdown gate (reduce size after consecutive losses)
+**Performance:**
 
-### 4. Risk Management
-- Max open positions per asset
-- Max portfolio heat (total risk across all positions)
-- Daily loss limit
-- Correlation check (don't stack same-direction trades)
+| Run | Build (first time) | Cache hit | Cache size |
+|-----|-------------------|-----------|------------|
+| 7-day | 64s | 16s | 40 MB |
+| 14-day | 237s | 89s | 83 MB |
 
-### 5. Trade Lifecycle
-- Track entry → hold → exit
-- Record outcome in DB
-- Update equity curve
-- Log evidence for each decision
+The remaining time on cache hit is parquet data loading from disk (the I/O floor).
 
----
+## How To Use
 
-## Architecture
+### Running a backtest
 
-```
-Candle close (1h)
-  ↓
-buildReaderHistoryReads → reader read
-  ↓
-buildReaderTradePlan → plan (entry/stop/target)
-  ↓
-Q-table lookup → enter/skip decision
-  ↓
-[IF ENTER]
-  ↓
-Position sizing → risk amount
-  ↓
-Execute order (paper: simulate, live: Circle wallet)
-  ↓
-Create execution record in DB
-  ↓
-[WHILE HOLDING]
-  ↓
-On each candle close:
-  - Check current price vs stop/target/trailing stop
-  - Check regime change
-  - Check time-in-trade
-  - If exit condition met → create outcome record
-  - If holding → update position state
+```powershell
+# Basic 7-day backtest (uses cache automatically)
+bun run scripts/test-gates-backtest.ts --start 2025-05-01 --end 2025-05-07
+
+# 14-day backtest
+bun run scripts/test-gates-backtest.ts --start 2025-05-01 --end 2025-05-14
+
+# Force rebuild (skip cache)
+bun run scripts/test-gates-backtest.ts --start 2025-05-01 --end 2025-05-07 --no-cache
 ```
 
----
+### Running monthly backtests
+
+```powershell
+# Single month
+bun run scripts/run-backtest-1month.ts
+
+# Multi-month comparison (raw vs filtered)
+bun run scripts/run-backtest-filtered.ts
+
+# Multi-month with all filters combined
+bun run scripts/run-backtest-filtered-combined.ts
+
+# Full 6-month comparison
+bun run scripts/run-backtest-compare.ts
+
+# R distribution analysis
+bun run scripts/run-backtest-distribution.ts
+```
+
+### Cache management
+
+Cache lives at `.data/history-cache/`. Add to `.gitignore` if not already there.
+
+```powershell
+# Check cache files
+Get-ChildItem .data/history-cache | ForEach-Object { "$($_.Name): $([math]::Round($_.Length / 1MB, 1)) MB" }
+
+# Clear all cache
+Remove-Item .data/history-cache\* -Force
+
+# Clear specific cache (e.g., for a date range)
+Remove-Item ".data/history-cache\BTCUSDT_5m_*start=1746057600000*.json.gz" -Force
+```
+
+### Using cache in your own scripts
+
+```typescript
+import { buildReaderHistoryReads } from "@strategy-lab/reader/reader-history/build-reader-history-reads";
+import { buildOrLoadHistorySteps } from "@strategy-lab/reader/reader-history/history-cache";
+import { runReaderReplay } from "@strategy-lab/reader/reader-replay/run-reader-replay";
+
+const { steps, fromCache } = buildOrLoadHistorySteps(
+  {
+    asset: "BTCUSDT",
+    interval: "5m",
+    candleIntervalMs: 300_000,
+    candles,
+    orderflowEvents,
+    readIntervalMs: 5000,
+    orderflowWindowMs: 60_000,
+    startAt: startMs,
+    endAt: endMs,
+  },
+  (input) => buildReaderHistoryReads(input),
+);
+console.log(`History ${fromCache ? "from cache" : "built"}: ${steps.length} steps`);
+
+// Run multiple replays on the same history
+const baseline = runReaderReplay({ reads: steps, requireTimestamps: true, setupConfig: {}, skipResultSnapshots: true });
+const gated = runReaderReplay({ reads: steps, requireTimestamps: true, setupConfig: { tradePlanConfig: { allowedRegimes: ["trend-down"] } }, skipResultSnapshots: true });
+```
+
+### Pre-Hoc Gates
+
+Filter trades at setup time (not post-hoc):
+
+```typescript
+setupConfig: {
+  tradePlanConfig: {
+    allowedRegimes: ["range", "trend-up"],
+    minTradeCount: 10,
+    maxTradeCount: 100,
+  },
+},
+```
+
+## Data Available
+
+- `.data/market-store/bybit/trading/BTCUSDT/` - Parquet files May-September 2025
+- Regimes in data: `range`, `trend-up` (no `trend-down` in May)
+- Trade counts: avg 25 per bucket, range 1-3182
+
+## Commands
+
+Typecheck:
+```powershell
+bun run typecheck
+```
+
+Run tests:
+```powershell
+bun test packages/strategy-lab/reader/reader-replay/run-reader-replay.test.ts
+```
+
+## What Failed (Previous Session)
+
+1. **Post-hoc VP-following:** Hindsight, not edge
+2. **Monte Carlo VP-following:** High ruin probability (53-84%)
+3. **Tighter loss filters:** Didn't reduce maxDD, increased ruin
+4. **Pre-Hoc gates on small samples:** Edge too thin, likely noise
+
+## 6-Month Results (May-Oct 2025)
+
+Full backtest with default reader (no filters):
+
+| Month | Time | Entries | Win | R |
+|-------|------|---------|-----|-----|
+| 2025-05 | 248.3s | 83 | 27 | +16.54 |
+| 2025-06 | 143.6s | 86 | 40 | +5.34 |
+| 2025-07 | 202.6s | 89 | 41 | +1.94 |
+| 2025-08 | 242.2s | 100 | 47 | +6.12 |
+| 2025-09 | 126.7s | 97 | 49 | +6.17 |
+| 2025-10 | 197.4s | 88 | 43 | +14.58 |
+| **Total** | **1160.8s** | **543** | **247** | **+50.70R** |
+
+- Win rate: 45.49%
+- Max drawdown: -7.08R
+- R/trade: 0.09R
+
+### Key Finding: Selectivity Is The Edge
+
+Benchmark `vp-trend-down-active-price-follow-025` (184 days):
+- 140 trades, +229.51R, 40.71% win rate
+- R/trade: 1.64R (18x better than default)
+
+The benchmark's filters:
+- `regime: "trend-down"` - only trade in downtrends
+- `minInvalidationBps: 2, maxInvalidationBps: 5` - tight invalidation
+- `minTradeCount: 500, maxTradeCount: 1000` - active orderflow
+- `max-favorable confirmation at 0.25R` - wait for price confirmation
+
+The edge is not in the reader itself but in the filter that selects which setups to trade. The reader generates candidates; the filter selects quality over quantity.
+
+## Validation Results
+
+### Benchmark Filter Produces 0 Entries
+
+The benchmark filter `trend-down + trade count 500-1000` produces **0 entries** on all tested months (May-Sep 2025).
+
+**Root cause:** No `trend-down` regimes detected in the data. The regime classifier requires:
+- `driftPct >= 1%` (directional drift)
+- `directionalEfficiency >= 0.42` (drift/range ratio)
+- Both conditions must hold for the same sign
+
+In the tested data, BTC price action stays in `range` or `trend-up` regimes. The benchmark's trend-down filter is too restrictive for this dataset.
+
+### Baseline R/Trade Varies Significantly
+
+| Month | Entries | Win Rate | Total R | R/Trade |
+|-------|---------|----------|---------|---------|
+| May (train) | 268 | 35.1% | +66.54R | 0.2483 |
+| Jun (train) | 274 | 38.3% | +11.31R | 0.0413 |
+| Jul (train) | 334 | 41.0% | +16.09R | 0.0482 |
+| Aug (test) | 302 | 39.4% | +78.60R | 0.2603 |
+
+R/trade ranges from 0.04 to 0.26 - highly variable month-to-month.
+
+### Key Finding
+
+The benchmark's reported 1.64 R/trade over 184 days is **not reproducible** with the current data and filters. Either:
+1. The benchmark was evaluated on different data (different date range, different regime detection)
+2. The candidate-tape evaluation method differs from the replay-based backtest
+3. The benchmark is overfit to a specific subset of data
+
+### What's Next
+
+1. **Reconcile evaluation methods** - The benchmark uses candidate tapes (pre-computed setups), while the backtest uses live replay. These produce different results.
+2. **Regime coverage** - Check if trend-down regimes exist in other date ranges or with different classification thresholds
+3. **Simpler edge** - The baseline R/trade is 0.04-0.26. Finding a consistent edge above 0.1 R/trade across months is the real goal
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `packages/strategy-lab/reader/reader-history/build-reader-history-reads.ts` | Core reader pipeline |
-| `packages/strategy-lab/reader/reader-replay/run-reader-replay.ts` | Replay engine (entry/exit tracking) |
-| `packages/strategy-lab/reader/reader-result/update-reader-result.ts` | Entry filter + exit logic |
-| `packages/strategy-lab/backtest/trade-plan/build-reader-trade-plan.ts` | Trade plan generation |
-| `start/src/services/judgment/judgment-pipeline.ts` | Reader pipeline wired to start app |
-| `start/src/services/decision/execution-service.ts` | Execution CRUD |
-| `start/src/services/decision/outcome-service.ts` | Outcome CRUD + PnL calc |
-| `start/src/services/judgment/outcome-monitor.ts` | Evaluates open executions |
-| `start/src/routes/admin/decision.tick.ts` | Decision trigger endpoint |
-| `.data/rl-q-table.json` | Trained Q-table (entry filter) |
+| `scripts/test-gates-backtest.ts` | Main backtest script (baseline vs gated comparison) |
+| `scripts/run-backtest-compare.ts` | 6-month comparison |
+| `scripts/run-backtest-filtered.ts` | Filter comparison across months |
+| `scripts/run-backtest-distribution.ts` | R distribution and trade analysis |
+| `packages/strategy-lab/reader/reader-history/history-cache.ts` | Cache module |
+| `packages/strategy-lab/reader/reader-history/build-reader-history-reads.ts` | History build (hot path) |
+| `packages/strategy-lab/reader/reader-replay/run-reader-replay.ts` | Replay engine |
+| `packages/strategy-lab/backtest/trade-plan/build-reader-trade-plan.ts` | Trade plan with gates |
 
----
-
-## Data Available for Training
-
-### Candidate Tapes (in `artifacts/`)
-- `reader-candidates-first-reaction-r-2025-05.json` (18K candidates)
-- `reader-candidates-first-reaction-r-2025-06.json` (15K candidates)
-- `reader-candidates-after-vp-pullback-narrative-2025-07.json` (17K candidates)
-- `reader-candidates-after-vp-pullback-narrative-2025-08.json` (16K candidates)
-
-Each candidate has:
-- `reader`: regime, auctionLocation, auctionLevelKind, auctionMode, vpAuction, vpPoc, vpValue, narrativeIntent, narrativeDirection
-- `orderflow`: pressure, events, tradeCount
-- `outcome`: verdict (worked/invalidated/unresolved), resultR, maxFavorableR, maxAdverseR
-
-### Benchmark Results
-- Raw replay: 545 entries, 45.5% WR, +50.51R (0.093R/trade)
-- With entry filter: 250 entries, 50.4% WR, +54.12R (0.216R/trade)
-- RL agent (test): 1257 entries, 34.5% WR, +2598R (2.07R/trade)
-- Benchmark hypothesis: 140 entries, 40.71% WR, +229.51R (1.64R/trade)
-
-### Key Insight from Analysis
-- Winners: avg risk 96 points, auction at extremes (above-value/below-value), regime known
-- Losers: avg risk 389 points, auction in intermediate zones, regime unknown
-- The reader's edge is at clear extremes with tight stops
-- Reader-failure exits kill most trades (thesis breaks before price moves)
-
----
-
-## Open Questions for Next Session
-
-1. **Exit logic**: Should the trader agent replace the reader's exit logic entirely, or sit on top of it? The reader's `readerFollowThroughFailed` is too aggressive. Options:
-   - Modify `updateReaderResult.ts` directly (simpler, but couples exit to reader)
-   - Build separate exit manager in the start app (more flexible, but duplicates logic)
-
-2. **Position sizing**: What's the risk per trade? Kelly from the Q-table stats? Fixed fractional?
-
-3. **Multi-asset**: The reader runs per-asset. Should the agent manage a portfolio across ETH/BTC/SOL?
-
-4. **Latency**: 1h candle close is slow. Should the agent run on 1m or 5m reads for tighter exits?
-
-5. **Paper vs live**: Start with paper mode (simulated fills in DB) before wiring to Circle wallet?
-
----
-
-## Prompt for Next Session
-
-I need a trader agent that:
-1. Uses the reader pipeline as its eyes (what the market is doing)
-2. Uses the Q-table as its filter (should I take this setup?)
-3. Manages the full trade lifecycle: entry → hold → exit
-4. Has its own exit logic that doesn't exit on the first adverse read
-5. Sizes positions based on account risk
-6. Records everything in the database (decisions, executions, outcomes)
-7. Runs on candle close (1h for now, can tighten later)
-
-The reader tells me what it sees. The Q-table tells me whether to act. I need the agent to manage the trade from entry to exit and record everything.
+Do not read `.env.local` or production env files.
