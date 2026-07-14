@@ -1,14 +1,24 @@
 import { getActiveExecutions, updateExecutionStatus } from './execution-service'
 import { createOutcome, getOutcomeByExecutionId } from './outcome-service'
 import { loadCandlesForAsset } from '@/services/judgment/candle-loader.ts'
+import { createExitState, evaluateExit, type ExitConfig } from './exit-manager'
+
+const EXIT_CONFIG: ExitConfig = {
+  trailingStopActivationR: 1.5,
+  trailingStopDistanceR: 0.5,
+  timeExitCandles: 12,
+  regimeShiftExits: true,
+}
+
+type ExitStateMap = Map<string, ReturnType<typeof createExitState>>
 
 export async function evaluateOpenExecutions(): Promise<{
   evaluated: number
   closed: number
-  outcomes: Array<{ executionId: string; status: string; pnl: number | null }>
+  outcomes: Array<{ executionId: string; status: string; pnl: number | null; exitType?: string }>
 }> {
   const active = await getActiveExecutions()
-  const outcomes: Array<{ executionId: string; status: string; pnl: number | null }> = []
+  const outcomes: Array<{ executionId: string; status: string; pnl: number | null; exitType?: string }> = []
   let closed = 0
 
   const assetCandles = new Map<string, Array<{ t: number; c: number; h: number; l: number }>>()
@@ -36,36 +46,32 @@ export async function evaluateOpenExecutions(): Promise<{
 
     if (action === 'no_trade' || stop === null || target === null) continue
 
-    const side = action as 'long' | 'short'
-    let hitStatus: 'stop-hit' | 'target-hit' | null = null
-    let exitPrice = 0
+    // Create exit state for this execution
+    const exitState = createExitState(
+      execution.id,
+      execution.decision.entry ?? execution.executedPrice,
+      stop,
+      action as 'long' | 'short',
+      null,
+    )
 
-    if (side === 'long') {
-      if (low <= stop) {
-        hitStatus = 'stop-hit'
-        exitPrice = stop
-      } else if (high >= target) {
-        hitStatus = 'target-hit'
-        exitPrice = target
-      }
-    } else {
-      if (high >= stop) {
-        hitStatus = 'stop-hit'
-        exitPrice = stop
-      } else if (low <= target) {
-        hitStatus = 'target-hit'
-        exitPrice = target
-      }
-    }
+    const exitDecision = evaluateExit(
+      exitState,
+      currentPrice,
+      high,
+      low,
+      null,
+      EXIT_CONFIG,
+    )
 
-    if (hitStatus === null) continue
+    if (!exitDecision.shouldExit || exitDecision.exitPrice === undefined || exitDecision.exitType === undefined) continue
 
-    const outcomeStatus = hitStatus === 'target-hit' ? 'win' as const : 'loss' as const
+    const outcomeStatus = exitDecision.exitType === 'target-hit' ? 'win' as const : 'loss' as const
 
     await createOutcome({
       executionId: execution.id,
       status: outcomeStatus,
-      exitPrice,
+      exitPrice: exitDecision.exitPrice,
     })
 
     await updateExecutionStatus(execution.id, 'filled')
@@ -76,6 +82,7 @@ export async function evaluateOpenExecutions(): Promise<{
       executionId: execution.id,
       status: outcomeStatus,
       pnl: outcome?.pnl ?? null,
+      exitType: exitDecision.exitType,
     })
   }
 

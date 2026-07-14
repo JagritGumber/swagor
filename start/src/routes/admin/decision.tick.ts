@@ -4,16 +4,21 @@ import {
   getActiveAgents,
   createDecision,
 } from '@/services/decision/decision-service.ts'
-import { executeDecision } from '@/services/decision/execution-service.ts'
+import { executeDecision, getActiveExecutions } from '@/services/decision/execution-service.ts'
 import { mapReadToEvidence } from '@/services/decision/map-read-to-evidence'
 import { loadCandlesForAsset } from '@/services/judgment/candle-loader.ts'
 import { runJudgmentPipeline } from '@/services/judgment/judgment-pipeline.ts'
+import { loadQTable, lookupQTable, readToQFeatures } from '@/services/judgment/q-table'
+import { sizePosition, computeOpenRisk, type PositionSizingConfig } from '@/services/judgment/position-sizing'
 import { apiSuccess, apiError } from '@/lib/api/response.ts'
 
-/**
- * Manual trigger for decision tick. Used for dev testing and admin force-runs.
- * In production, decisions are triggered via the judgment pipeline on candle close.
- */
+const POSITION_SIZING_CONFIG: PositionSizingConfig = {
+  riskPerTradePct: 1.0,
+  maxPortfolioHeatPct: 6.0,
+  maxOpenPositions: 3,
+  accountBalance: 10_000,
+}
+
 export const Route = createFileRoute('/admin/decision/tick')({
   server: {
     handlers: {
@@ -23,6 +28,18 @@ export const Route = createFileRoute('/admin/decision/tick')({
         const adminOnly = url.searchParams.get('admin') === 'true'
 
         const now = new Date()
+
+        // Load Q-table
+        let qTable
+        try {
+          qTable = await loadQTable()
+        } catch {
+          return apiError('QTABLE_MISSING', 'Q-table not found. Run training script first.', 500)
+        }
+
+        // Check for duplicate decision (prevent stacking)
+        const activeExecutions = await getActiveExecutions(asset)
+        const hasOpenPosition = activeExecutions.length > 0
 
         const candles = await loadCandlesForAsset(asset, 200, '1h')
         if (candles.length === 0) {
@@ -34,19 +51,59 @@ export const Route = createFileRoute('/admin/decision/tick')({
           return apiError('PIPELINE_FAILED', 'Reader pipeline produced no read', 500)
         }
 
-        const action = result.plan && result.plan.status !== 'no-trade'
-          ? (result.plan.side === 'long' ? 'long' as const : 'short' as const)
-          : 'no_trade' as const
+        // Q-table lookup
+        const planReady = result.plan && result.plan.status !== 'no-trade'
+        const planSide = planReady ? result.plan!.side : 'none'
+        const qFeatures = readToQFeatures(result.read, planSide)
+        const qResult = lookupQTable(qTable, qFeatures)
 
-        const conviction = result.plan && result.plan.status !== 'no-trade'
-          ? (result.plan.confidence >= 0.7 ? 'high' as const : result.plan.confidence >= 0.5 ? 'medium' as const : 'low' as const)
-          : 'low' as const
+        // Determine action from plan + Q-table
+        const qTableApproves = qResult.action === 'enter' && qResult.margin > 0
+
+        let action: 'long' | 'short' | 'no_trade' = 'no_trade'
+        if (planReady && qTableApproves && !hasOpenPosition) {
+          action = result.plan!.side === 'long' ? 'long' : 'short'
+        }
+
+        // Conviction based on Q-table margin
+        let conviction: 'low' | 'medium' | 'high' = 'low'
+        if (planReady && action !== 'no_trade') {
+          if (qResult.margin >= 0.5) conviction = 'high'
+          else if (qResult.margin >= 0.2) conviction = 'medium'
+          else conviction = 'low'
+        }
+
+        // Position sizing
+        let positionSize: number | null = null
+        let riskAmount: number | null = null
+        if (planReady && action !== 'no_trade' && result.plan!.stop !== null) {
+          const entryPrice = (result.plan!.entryLow + result.plan!.entryHigh) / 2
+          const sizing = sizePosition({
+            config: POSITION_SIZING_CONFIG,
+            entryPrice,
+            stopPrice: result.plan!.stop!,
+            side: action as 'long' | 'short',
+            currentOpenRisk: computeOpenRisk(activeExecutions),
+            openPositionCount: activeExecutions.length,
+          })
+
+          if (!sizing.allowed) {
+            action = 'no_trade'
+          } else {
+            positionSize = sizing.size
+            riskAmount = sizing.riskAmount
+          }
+        }
 
         const evidence = mapReadToEvidence(result.read)
 
-        const thesis = result.plan && result.plan.status !== 'no-trade'
-          ? result.plan.reasons.join('. ')
+        const thesis = planReady && action !== 'no_trade'
+          ? result.plan!.reasons.join('. ')
           : result.read.narrative
+
+        const entryPrice = planReady && action !== 'no_trade'
+          ? (result.plan!.entryLow + result.plan!.entryHigh) / 2
+          : null
 
         if (adminOnly) {
           try {
@@ -55,20 +112,17 @@ export const Route = createFileRoute('/admin/decision/tick')({
               agentId: adminAgentId,
               asset,
               action,
-              entry: result.plan && result.plan.status !== 'no-trade'
-                ? (result.plan.entryLow + result.plan.entryHigh) / 2
-                : null,
-              stop: result.plan && result.plan.status !== 'no-trade' ? result.plan.stop : null,
-              target: result.plan && result.plan.status !== 'no-trade' ? result.plan.target : null,
-              invalidation: result.plan && result.plan.status !== 'no-trade' ? result.plan.invalidation : null,
+              entry: entryPrice,
+              stop: planReady && result.plan!.stop !== null ? result.plan!.stop : null,
+              target: planReady && result.plan!.target !== null ? result.plan!.target : null,
+              invalidation: planReady && result.plan!.invalidation !== null ? result.plan!.invalidation : null,
               conviction,
               thesis,
               evidence,
             })
 
             let executionId: string | null = null
-            if (action !== 'no_trade' && result.plan && result.plan.status !== 'no-trade') {
-              const entryPrice = (result.plan.entryLow + result.plan.entryHigh) / 2
+            if (action !== 'no_trade' && entryPrice !== null) {
               const execution = await executeDecision({
                 decisionId: decision.id,
                 entryPrice,
@@ -85,6 +139,16 @@ export const Route = createFileRoute('/admin/decision/tick')({
               executionId,
               action,
               stance: result.read.stance,
+              qTable: {
+                action: qResult.action,
+                margin: qResult.margin,
+                enterQ: qResult.enterQ,
+                skipQ: qResult.skipQ,
+                found: qResult.found,
+              },
+              positionSize,
+              riskAmount,
+              hasOpenPosition,
               status: 'ok',
             })
           } catch (e) {
@@ -103,19 +167,16 @@ export const Route = createFileRoute('/admin/decision/tick')({
               agentId: agent.id,
               asset,
               action,
-              entry: result.plan && result.plan.status !== 'no-trade'
-                ? (result.plan.entryLow + result.plan.entryHigh) / 2
-                : null,
-              stop: result.plan && result.plan.status !== 'no-trade' ? result.plan.stop : null,
-              target: result.plan && result.plan.status !== 'no-trade' ? result.plan.target : null,
-              invalidation: result.plan && result.plan.status !== 'no-trade' ? result.plan.invalidation : null,
+              entry: entryPrice,
+              stop: planReady && result.plan!.stop !== null ? result.plan!.stop : null,
+              target: planReady && result.plan!.target !== null ? result.plan!.target : null,
+              invalidation: planReady && result.plan!.invalidation !== null ? result.plan!.invalidation : null,
               conviction,
               thesis,
               evidence,
             })
 
-            if (action !== 'no_trade' && result.plan && result.plan.status !== 'no-trade') {
-              const entryPrice = (result.plan.entryLow + result.plan.entryHigh) / 2
+            if (action !== 'no_trade' && entryPrice !== null) {
               await executeDecision({
                 decisionId: decision.id,
                 entryPrice,
@@ -132,6 +193,14 @@ export const Route = createFileRoute('/admin/decision/tick')({
           agentCount: activeAgents.length,
           action,
           stance: result.read.stance,
+          qTable: {
+            action: qResult.action,
+            margin: qResult.margin,
+            found: qResult.found,
+          },
+          positionSize,
+          riskAmount,
+          hasOpenPosition,
           results: results.map((r, i) => ({
             agentId: activeAgents[i]!.id,
             status: r.status,
