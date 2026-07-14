@@ -13,6 +13,10 @@ export type ReaderHypothesisFilters = {
   side?: Side;
   regime?: string;
   event?: string;
+  vpAuction?: string;
+  vpPoc?: string;
+  vpValue?: string;
+  pressure?: string;
   minInvalidationBps?: number;
   maxInvalidationBps?: number;
   minTradeCount?: number;

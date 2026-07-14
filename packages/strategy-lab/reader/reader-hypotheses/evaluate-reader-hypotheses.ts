@@ -59,6 +59,10 @@ export function readerCandidateMatchesHypothesisFilters(candidate: ReaderCandida
   if (filters.side !== undefined && candidate.side !== filters.side) return false;
   if (filters.regime !== undefined && candidate.reader.regime !== filters.regime) return false;
   if (filters.event !== undefined && !candidate.orderflow.events.includes(filters.event)) return false;
+  if (filters.vpAuction !== undefined && candidate.reader.vpAuction !== filters.vpAuction) return false;
+  if (filters.vpPoc !== undefined && candidate.reader.vpPoc !== filters.vpPoc) return false;
+  if (filters.vpValue !== undefined && candidate.reader.vpValue !== filters.vpValue) return false;
+  if (filters.pressure !== undefined && candidate.orderflow.pressure !== filters.pressure) return false;
   if (filters.minInvalidationBps !== undefined && (invalidationBps === null || invalidationBps < filters.minInvalidationBps)) return false;
   if (filters.maxInvalidationBps !== undefined && (invalidationBps === null || invalidationBps >= filters.maxInvalidationBps)) return false;
   if (filters.minTradeCount !== undefined && (tradeCount === null || tradeCount < filters.minTradeCount)) return false;
