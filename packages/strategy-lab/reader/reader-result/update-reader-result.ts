@@ -251,6 +251,11 @@ function entryFromPlan(
       session: result.narrativeStateConfig?.session,
     }),
     reasons: plan.reasons,
+    orderflowPressure: result.read.orderflow.pressure,
+    orderflowInitiativeSide: result.read.orderflow.initiative?.side ?? 'none',
+    orderflowInitiativeConviction: result.read.orderflow.initiative?.conviction ?? 'none',
+    orderflowDelta: result.read.orderflow.delta,
+    orderflowAbsorptionEvent: result.read.orderflow.events.find(e => e.includes('absorption')) ?? 'none',
   };
 }
 

@@ -10,15 +10,18 @@ type Action = 'enter' | 'skip'
 type QTable = Map<string, number>
 
 function entryToState(entry: ReaderResultEntry): State {
+  const delta = entry.orderflowDelta ?? 0
+  const deltaDirection = delta > 0 ? 'positive' : delta < 0 ? 'negative' : 'zero'
+
   const parts: Feature[] = [
-    entry.regime?.mode ?? 'unknown',
-    entry.entryAuctionLocation ?? 'unknown',
-    entry.entryAuctionLevelKind ?? 'unknown',
+    entry.orderflowPressure ?? 'balanced',
+    entry.orderflowInitiativeSide ?? 'none',
+    entry.orderflowInitiativeConviction ?? 'none',
+    deltaDirection,
+    entry.orderflowAbsorptionEvent ?? 'none',
     entry.side,
-    entry.narrative?.direction ?? 'none',
     entry.narrative?.intent ?? 'unknown',
-    entry.narrative?.participation ?? 'unknown',
-    entry.auctionMode?.mode ?? 'unknown',
+    entry.narrative?.direction ?? 'none',
   ]
   return parts.join('|')
 }

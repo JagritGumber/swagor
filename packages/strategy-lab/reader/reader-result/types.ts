@@ -27,6 +27,11 @@ export type ReaderResultEntry = {
   narrative?: ReaderNarrative;
   narrativeKey?: string | null;
   reasons: string[];
+  orderflowPressure?: string;
+  orderflowInitiativeSide?: string;
+  orderflowInitiativeConviction?: string;
+  orderflowDelta?: number;
+  orderflowAbsorptionEvent?: string;
 };
 
 export type ReaderResultOutcome = ReaderResultEntry & {
