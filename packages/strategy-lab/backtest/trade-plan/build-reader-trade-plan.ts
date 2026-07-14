@@ -11,6 +11,9 @@ export function buildReaderTradePlan(read: LiveReaderRead, _config: ReaderTradeP
   const reasons = baseNoTradeReasons(read, narrative);
   if (reasons.length > 0) return noTrade(read, reasons);
 
+  const gateBlock = setupGateBlock(read, _config);
+  if (gateBlock.length > 0) return noTrade(read, gateBlock);
+
   const styleBlock = tradeStyleBlock(read, narrative, _config.tradeStyle ?? "all");
   if (styleBlock.length > 0) return noTrade(read, styleBlock, familyFor(narrative));
 
@@ -40,6 +43,27 @@ function baseNoTradeReasons(read: LiveReaderRead, narrative: ReaderNarrative): s
   if (read.orderflow.lastPrice === null) reasons.push("orderflow has no last traded price");
   if (narrative.intent === "wait") reasons.push(...narrative.reasons);
   return dedupe(reasons);
+}
+
+function setupGateBlock(read: LiveReaderRead, config: ReaderTradePlanConfig): string[] {
+  const reasons: string[] = [];
+  const regime = config.allowedRegimes;
+  if (regime && regime.length > 0) {
+    const currentRegime = read.regime?.mode ?? "unknown";
+    if (!regime.includes(currentRegime)) {
+      reasons.push(`regime ${currentRegime} not in allowed regimes: ${regime.join(", ")}`);
+    }
+  }
+  const tradeCount = read.orderflow.tradeCount;
+  const minTrades = config.minTradeCount;
+  const maxTrades = config.maxTradeCount;
+  if (minTrades !== undefined && (tradeCount === null || tradeCount < minTrades)) {
+    reasons.push(`trade count ${tradeCount} below minimum ${minTrades}`);
+  }
+  if (maxTrades !== undefined && (tradeCount === null || tradeCount >= maxTrades)) {
+    reasons.push(`trade count ${tradeCount} at or above maximum ${maxTrades}`);
+  }
+  return reasons;
 }
 
 function watchPlan(read: LiveReaderRead, narrative: ReaderNarrative): ReaderTradePlan {

@@ -17,6 +17,9 @@ export type ReaderTradeStyle =
 
 export type ReaderTradePlanConfig = {
   tradeStyle?: ReaderTradeStyle;
+  allowedRegimes?: string[];
+  minTradeCount?: number;
+  maxTradeCount?: number;
 };
 
 export type ReaderNoTradePlan = {
