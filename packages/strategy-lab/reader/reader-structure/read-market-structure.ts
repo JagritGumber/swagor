@@ -2,6 +2,7 @@ import type { OrderflowBucket } from "@market-data/parquet/types";
 import type { VolumeProfileBucket } from "@market-data/parquet/types";
 import { parseVolumeProfileStructure, type VolumeNode, type VolumeProfileStructure } from "@strategy-lab/read-core/read/parse-volume-profile-structure";
 import { calculateCvd, type CvdRead } from "@strategy-lab/read-core/orderflow/calculate-cvd";
+import { extractMachineNativeVector } from "./machine-native-vector";
 import type { MarketStructureAction, MarketStructureLocation, MarketStructureRead } from "./types";
 
 export function readMarketStructure(input: {
@@ -18,6 +19,7 @@ export function readMarketStructure(input: {
   const nearestNode = findNearestNode(input.price, structure);
   const absorption = detectAbsorption(input.orderflowBuckets);
   const action = classifyAction(location, cvd, absorption, nearestNode);
+  const vector = extractMachineNativeVector(input.price, structure, input.orderflowBuckets);
 
   return {
     asset: input.asset,
@@ -29,6 +31,7 @@ export function readMarketStructure(input: {
     nearestNode,
     absorption,
     narrative: buildNarrative(location, action, cvd, nearestNode, absorption),
+    vector,
   };
 }
 

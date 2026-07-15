@@ -1,5 +1,9 @@
 import type { VolumeProfileStructure, VolumeNode } from "@strategy-lab/read-core/read/parse-volume-profile-structure";
 import type { CvdRead } from "@strategy-lab/read-core/orderflow/calculate-cvd";
+import type { MachineNativeVector } from "./machine-native-vector";
+
+export type { MachineNativeVector } from "./machine-native-vector";
+export type { SpatialFeatures, FlowFeatures, InteractionFeatures } from "./machine-native-vector";
 
 export type MarketStructureLocation =
   | "at-hvn"
@@ -27,4 +31,5 @@ export type MarketStructureRead = {
   nearestNode: VolumeNode | null;
   absorption: boolean;
   narrative: string;
+  vector: MachineNativeVector;
 };
