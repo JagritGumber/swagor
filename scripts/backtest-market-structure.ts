@@ -117,6 +117,8 @@ type BacktestConfig = {
   cvdDistribution: boolean;
   temporalAnalysis: boolean;
   eventAnalysis: boolean;
+  decileContrast: boolean;
+  decisionTree: boolean;
 };
 
 type DirectionStats = {
@@ -173,6 +175,8 @@ const config: BacktestConfig = {
   cvdDistribution: hasFlag("cvd-distribution"),
   temporalAnalysis: hasFlag("temporal-analysis"),
   eventAnalysis: hasFlag("event-analysis"),
+  decileContrast: hasFlag("decile-contrast"),
+  decisionTree: hasFlag("decision-tree"),
 };
 
 main().catch((error: unknown) => {
@@ -269,6 +273,12 @@ async function main(): Promise<void> {
   }
   if (config.eventAnalysis) {
     analyzeEventSequences(result.trades);
+  }
+  if (config.decileContrast) {
+    analyzeDecileContrast(result.trades);
+  }
+  if (config.decisionTree) {
+    analyzeDecisionTree(result.trades);
   }
   console.log(`\nTotal elapsed: ${((Date.now() - overallStart) / 1000).toFixed(1)}s`);
 }
@@ -1505,10 +1515,12 @@ type FeatureAnalysisReport = {
 function extractNumericFeatures(trade: Trade): number[] {
   const e = trade.entryContext;
   const cvd = e.cvd;
+  const nodeVol = e.nearestNode?.volume ?? 0;
+  const profileRange = e.profileRange || 1;
   return [
     trade.side === "long" ? 1 : 0,
     e.absorption ? 1 : 0,
-    e.nearestNode?.volume ?? 0,
+    nodeVol,
     e.nearestNode?.low ?? 0,
     e.nearestNode?.high ?? 0,
     e.nearestNode?.mid ?? 0,
@@ -1520,13 +1532,33 @@ function extractNumericFeatures(trade: Trade): number[] {
     e.priceDistanceToPoc,
     e.priceDistanceToValueHigh,
     e.priceDistanceToValueLow,
-    e.profileRange,
+    profileRange,
     e.isLvn ? 1 : 0,
     e.isHvn ? 1 : 0,
     trade.entryPrice,
     trade.stop,
     trade.target,
     (trade.target - trade.entryPrice) / (trade.entryPrice - trade.stop || 1),
+    e.priceDistanceToPoc / (profileRange || 1),
+    e.priceDistanceToValueHigh / (profileRange || 1),
+    e.priceDistanceToValueLow / (profileRange || 1),
+    cvd ? (cvd.cvdHigh - cvd.cvdLow) : 0,
+    cvd ? Math.abs(cvd.priceChange) / (cvd.cvdHigh - cvd.cvdLow || 1) : 0,
+    cvd ? cvd.cvd / (cvd.cvdHigh - cvd.cvdLow || 1) : 0,
+    trade.temporal.cvdSlope,
+    trade.temporal.cvdAcceleration,
+    trade.temporal.priceVelocity,
+    trade.temporal.priceAcceleration,
+    trade.temporal.buySellRatio,
+    trade.temporal.volumeSlope,
+    trade.temporal.tradeRate,
+    trade.temporal.deltaPersistence,
+    trade.temporal.upCloseRatio,
+    trade.temporal.cvdSignChanges,
+    trade.temporal.cvdLongestRun,
+    trade.temporal.cvdImpulseCount,
+    trade.temporal.cvdAvgImpulse,
+    trade.temporal.priceRetracement,
   ];
 }
 
@@ -1552,6 +1584,26 @@ const NUMERIC_LABELS = [
   "stop",
   "target",
   "rewardRiskRatio",
+  "distToPoc_pct",
+  "distToValueHigh_pct",
+  "distToValueLow_pct",
+  "cvdRange",
+  "priceChangePerCvdRange",
+  "cvdNormalized",
+  "cvdSlope",
+  "cvdAcceleration",
+  "priceVelocity",
+  "priceAcceleration",
+  "buySellRatio",
+  "volumeSlope",
+  "tradeRate",
+  "deltaPersistence",
+  "upCloseRatio",
+  "cvdSignChanges",
+  "cvdLongestRun",
+  "cvdImpulseCount",
+  "cvdAvgImpulse",
+  "priceRetracement",
 ];
 
 function extractCategoricalFeatures(trade: Trade): string[] {
@@ -2994,5 +3046,199 @@ function analyzeEventSequences(trades: Trade[]): void {
     console.log(
       "   " + evt.padEnd(17) + "| " + String(s.count).padStart(5) + " | " + (s.wins / s.count * 100).toFixed(0).padStart(5) + " | " + avgR.padStart(6),
     );
+  }
+}
+
+function mean(arr: number[]): number {
+  return arr.length > 0 ? arr.reduce((s, x) => s + x, 0) / arr.length : 0;
+}
+
+function stdDev(arr: number[]): number {
+  if (arr.length < 2) return 0;
+  const m = mean(arr);
+  return Math.sqrt(arr.reduce((s, x) => s + (x - m) ** 2, 0) / (arr.length - 1));
+}
+
+function analyzeDecileContrast(trades: Trade[]): void {
+  const completed = trades.filter((t) => t.r !== null);
+  if (completed.length < 20) { console.log("Not enough trades for decile analysis."); return; }
+
+  const sorted = [...completed].sort((a, b) => a.r! - b.r!);
+  const decileSize = Math.floor(sorted.length / 10);
+  const p10 = sorted.slice(0, decileSize);
+  const p90 = sorted.slice(sorted.length - decileSize);
+
+  console.log("\n=== DECILE CONTRAST ANALYSIS ===");
+  console.log(`Bottom decile (R <= ${p10[p10.length - 1]!.r!.toFixed(2)}): ${p10.length} trades`);
+  console.log(`Top decile (R >= ${p90[0]!.r!.toFixed(2)}): ${p90.length} trades`);
+  console.log(`Bottom decile avg R: ${mean(p10.map((t) => t.r!)).toFixed(2)}`);
+  console.log(`Top decile avg R: ${mean(p90.map((t) => t.r!)).toFixed(2)}`);
+
+  const featureResults: { feature: string; d: number; topMean: number; botMean: number; topMedian: number; botMedian: number; direction: string }[] = [];
+
+  for (let fi = 0; fi < NUMERIC_LABELS.length; fi++) {
+    const topVals = p90.map((t) => extractNumericFeatures(t)[fi]);
+    const botVals = p10.map((t) => extractNumericFeatures(t)[fi]);
+    const d = cohenD(topVals, botVals);
+    const topM = mean(topVals);
+    const botM = mean(botVals);
+    featureResults.push({
+      feature: NUMERIC_LABELS[fi],
+      d: Math.abs(d),
+      topMean: topM,
+      botMean: botM,
+      topMedian: median(topVals),
+      botMedian: median(botVals),
+      direction: d > 0 ? "higher in winners" : "higher in losers",
+    });
+  }
+
+  featureResults.sort((a, b) => b.d - a.d);
+
+  console.log("\nRanked by |Cohen's d| (d > 0.5 = meaningful):");
+  console.log("  Feature             | |d|    | Top Mean | Bot Mean | Top Med  | Bot Med  | Direction");
+  console.log("  --------------------|--------|----------|----------|----------|----------|----------");
+  for (const f of featureResults) {
+    console.log(
+      `  ${f.feature.padEnd(20)}| ${f.d.toFixed(4).padStart(6)} | ${f.topMean.toFixed(2).padStart(8)} | ${f.botMean.toFixed(2).padStart(8)} | ${f.topMedian.toFixed(2).padStart(8)} | ${f.botMedian.toFixed(2).padStart(8)} | ${f.direction}`,
+    );
+  }
+}
+
+function analyzeDecisionTree(trades: Trade[]): void {
+  const completed = trades.filter((t) => t.r !== null);
+  if (completed.length < 50) { console.log("Not enough trades for decision tree."); return; }
+
+  const features = completed.map((t) => extractNumericFeatures(t));
+  const labels = completed.map((t) => (t.r! > 3 ? 1 : 0));
+  const nFeatures = features[0].length;
+
+  console.log("\n=== DECISION TREE RULE EXTRACTION ===");
+  console.log(`Binary label: winner (R > 3) = ${labels.filter((l) => l === 1).length}, loser = ${labels.filter((l) => l === 0).length}`);
+  console.log("Building greedy decision stumps...\n");
+
+  type Stump = { featureIdx: number; threshold: number; leftLabel: number; rightLabel: number; leftAcc: number; rightAcc: number; leftN: number; rightN: number; gain: number };
+
+  const stumps: Stump[] = [];
+
+  for (let fi = 0; fi < nFeatures; fi++) {
+    const vals = features.map((f) => f[fi]);
+    const sortedVals = [...new Set(vals)].sort((a, b) => a - b);
+
+    let bestGain = -1;
+    let bestStump: Stump | null = null;
+
+    for (let ti = 0; ti < sortedVals.length - 1; ti++) {
+      const threshold = (sortedVals[ti] + sortedVals[ti + 1]) / 2;
+      const leftIdx: number[] = [];
+      const rightIdx: number[] = [];
+      for (let i = 0; i < features.length; i++) {
+        if (features[i][fi] <= threshold) leftIdx.push(i);
+        else rightIdx.push(i);
+      }
+      if (leftIdx.length < 10 || rightIdx.length < 10) continue;
+
+      const leftLabels = leftIdx.map((i) => labels[i]);
+      const rightLabels = rightIdx.map((i) => labels[i]);
+      const leftPos = leftLabels.filter((l) => l === 1).length;
+      const rightPos = rightLabels.filter((l) => l === 1).length;
+      const leftLabel = leftPos > leftIdx.length / 2 ? 1 : 0;
+      const rightLabel = rightPos > rightIdx.length / 2 ? 1 : 0;
+      const leftAcc = leftLabel === 1 ? leftPos / leftIdx.length : (leftIdx.length - leftPos) / leftIdx.length;
+      const rightAcc = rightLabel === 1 ? rightPos / rightIdx.length : (rightIdx.length - rightPos) / rightIdx.length;
+
+      const parentPos = labels.filter((l) => l === 1).length / labels.length;
+      const parentEntropy = -parentPos * Math.log2(parentPos + 1e-10) - (1 - parentPos) * Math.log2(1 - parentPos + 1e-10);
+      const leftPosRate = leftPos / leftIdx.length;
+      const rightPosRate = rightPos / rightIdx.length;
+      const leftEnt = -leftPosRate * Math.log2(leftPosRate + 1e-10) - (1 - leftPosRate) * Math.log2(1 - leftPosRate + 1e-10);
+      const rightEnt = -rightPosRate * Math.log2(rightPosRate + 1e-10) - (1 - rightPosRate) * Math.log2(1 - rightPosRate + 1e-10);
+      const childEntropy = (leftIdx.length / features.length) * leftEnt + (rightIdx.length / features.length) * rightEnt;
+      const gain = parentEntropy - childEntropy;
+
+      if (gain > bestGain) {
+        bestGain = gain;
+        bestStump = {
+          featureIdx: fi,
+          threshold,
+          leftLabel,
+          rightLabel,
+          leftAcc,
+          rightAcc,
+          leftN: leftIdx.length,
+          rightN: rightIdx.length,
+          gain,
+        };
+      }
+    }
+    if (bestStump) stumps.push(bestStump);
+  }
+
+  stumps.sort((a, b) => b.gain - a.gain);
+
+  console.log("Top single-feature rules (greedy stumps):");
+  console.log("  Rule                                                        | Acc    | N     | Gain");
+  console.log("  ------------------------------------------------------------|--------|-------|------");
+  for (const s of stumps.slice(0, 15)) {
+    const fname = NUMERIC_LABELS[s.featureIdx] ?? `f${s.featureIdx}`;
+    const leftRule = `IF ${fname} <= ${s.threshold.toFixed(4)} THEN ${s.leftLabel === 1 ? "WIN" : "LOSS"}`;
+    const rightRule = `IF ${fname} > ${s.threshold.toFixed(4)} THEN ${s.rightLabel === 1 ? "WIN" : "LOSS"}`;
+    const leftAcc = (s.leftAcc * 100).toFixed(0);
+    const rightAcc = (s.rightAcc * 100).toFixed(0);
+    console.log(`  ${leftRule.padEnd(60)}| ${leftAcc.padStart(4)}% | ${String(s.leftN).padStart(5)} | ${s.gain.toFixed(4)}`);
+    console.log(`  ${rightRule.padEnd(60)}| ${rightAcc.padStart(4)}% | ${String(s.rightN).padStart(5)} |`);
+  }
+
+  console.log("\nTwo-feature combination rules:");
+  const comboRules: { f1: number; t1: number; f2: number; t2: number; acc: number; n: number; gain: number }[] = [];
+
+  for (let i = 0; i < Math.min(stumps.length, 8); i++) {
+    for (let j = i + 1; j < Math.min(stumps.length, 8); j++) {
+      const s1 = stumps[i];
+      const s2 = stumps[j];
+      if (s1.featureIdx === s2.featureIdx) continue;
+
+      const matched: { label: number; pred: number }[] = [];
+      for (let k = 0; k < features.length; k++) {
+        const v1 = features[k][s1.featureIdx];
+        const v2 = features[k][s2.featureIdx];
+        const matchLeft1 = v1 <= s1.threshold;
+        const matchRight1 = v1 > s1.threshold;
+        const matchLeft2 = v2 <= s2.threshold;
+        const matchRight2 = v2 > s2.threshold;
+
+        let pred = -1;
+        if (matchLeft1 && matchLeft2) pred = s1.leftLabel === s2.leftLabel ? s1.leftLabel : -1;
+        else if (matchRight1 && matchRight2) pred = s1.rightLabel === s2.rightLabel ? s1.rightLabel : -1;
+        else if (matchLeft1 && matchRight2) pred = s1.leftLabel === s2.rightLabel ? s1.leftLabel : -1;
+        else if (matchRight1 && matchLeft2) pred = s1.rightLabel === s2.leftLabel ? s1.rightLabel : -1;
+
+        if (pred >= 0) matched.push({ label: labels[k], pred });
+      }
+
+      if (matched.length < 20) continue;
+      const correct = matched.filter((m) => m.label === m.pred).length;
+      const acc = correct / matched.length;
+      if (acc > 0.6) {
+        comboRules.push({
+          f1: s1.featureIdx, t1: s1.threshold,
+          f2: s2.featureIdx, t2: s2.threshold,
+          acc, n: matched.length,
+          gain: s1.gain + s2.gain,
+        });
+      }
+    }
+  }
+
+  comboRules.sort((a, b) => b.gain - a.gain);
+
+  if (comboRules.length > 0) {
+    for (const r of comboRules.slice(0, 10)) {
+      const n1 = NUMERIC_LABELS[r.f1] ?? `f${r.f1}`;
+      const n2 = NUMERIC_LABELS[r.f2] ?? `f${r.f2}`;
+      console.log(`  IF ${n1} <= ${r.t1.toFixed(4)} AND ${n2} <= ${r.t2.toFixed(4)} THEN ... (${(r.acc * 100).toFixed(0)}%, n=${r.n})`);
+    }
+  } else {
+    console.log("  No strong two-feature combinations found.");
   }
 }
