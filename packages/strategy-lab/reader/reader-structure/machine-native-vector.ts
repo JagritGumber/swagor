@@ -9,6 +9,8 @@ export type SpatialFeatures = {
   distToValueLow_atr: number;
   volumeGradient: number;
   volumeROC: number;
+  profileSkewness_z: number;
+  volumeConcentration_z: number;
 };
 
 export type FlowFeatures = {
@@ -19,7 +21,7 @@ export type FlowFeatures = {
 
 export type InteractionFeatures = {
   priceCvdCorrelation: number;
-  imbalanceDecayRate: number;
+  deltaAtPriceRatio: number;
 };
 
 export type MachineNativeVector = {
@@ -28,21 +30,14 @@ export type MachineNativeVector = {
   interaction: InteractionFeatures;
 };
 
+const EWMA_ALPHA = 2 / (3600 + 1);
+
 function zScore(value: number, mean: number, std: number): number {
   return std > 0 ? (value - mean) / std : 0;
 }
 
-function rollingMean(arr: number[], window: number): number {
-  if (arr.length === 0) return 0;
-  const slice = arr.slice(-window);
-  return slice.reduce((s, x) => s + x, 0) / slice.length;
-}
-
-function rollingStd(arr: number[], window: number): number {
-  if (arr.length < 2) return 0;
-  const slice = arr.slice(-window);
-  const m = rollingMean(arr, window);
-  return Math.sqrt(slice.reduce((s, x) => s + (x - m) ** 2, 0) / slice.length);
+function ewmaUpdate(prev: number, current: number, alpha: number): number {
+  return alpha * current + (1 - alpha) * prev;
 }
 
 function computeATR(buckets: OrderflowBucket[], window: number): number {
@@ -63,40 +58,160 @@ function findNearestNodeDistance(price: number, nodes: VolumeNode[]): number {
   return Math.min(...nodes.map((n) => Math.abs(price - n.mid)));
 }
 
-function linearRegressionSlope(arr: number[]): number {
-  if (arr.length < 2) return 0;
-  const n = arr.length;
-  const xs = Array.from({ length: n }, (_, i) => i);
-  const xMean = (n - 1) / 2;
-  const yMean = arr.reduce((s, x) => s + x, 0) / n;
-  let num = 0;
-  let den = 0;
-  for (let i = 0; i < n; i++) {
-    num += (xs[i] - xMean) * (arr[i] - yMean);
-    den += (xs[i] - xMean) ** 2;
+function computeProfileSkewness(structure: VolumeProfileStructure | null): number {
+  if (!structure || structure.bins.length < 3) return 0;
+  const volumes = structure.bins.map((b) => b.volume);
+  const total = volumes.reduce((s, x) => s + x, 0);
+  if (total <= 0) return 0;
+  const weights = volumes.map((v) => v / total);
+  const mids = structure.bins.map((b) => b.mid);
+  const mean = mids.reduce((s, x, i) => s + x * weights[i], 0);
+  const variance = mids.reduce((s, x, i) => s + weights[i] * (x - mean) ** 2, 0);
+  const std = Math.sqrt(variance);
+  if (std <= 0) return 0;
+  const skew = weights.reduce((s, w, i) => s + w * ((mids[i] - mean) / std) ** 3, 0);
+  return skew;
+}
+
+function computeVolumeConcentration(structure: VolumeProfileStructure | null): number {
+  if (!structure || structure.bins.length < 2 || structure.totalVolume <= 0) return 0;
+  const maxVol = Math.max(...structure.bins.map((b) => b.volume));
+  return maxVol / (structure.totalVolume / structure.bins.length);
+}
+
+function buildEwmaStats(buckets: OrderflowBucket[]): {
+  velocityEwma: { mean: number; m2: number };
+  accelerationEwma: { mean: number; m2: number };
+  deltaPerTickEwma: { mean: number; m2: number };
+} {
+  const empty = { mean: 0, m2: 0 };
+  if (buckets.length < 3) {
+    return { velocityEwma: { ...empty }, accelerationEwma: { ...empty }, deltaPerTickEwma: { ...empty } };
   }
+
+  const deltas = buckets.map((b) => b.delta);
+  const cvdSeries: number[] = [];
+  let cumDelta = 0;
+  for (const d of deltas) {
+    cumDelta += d;
+    cvdSeries.push(cumDelta);
+  }
+
+  const velocities: number[] = [];
+  for (let i = 1; i < cvdSeries.length; i++) {
+    velocities.push(cvdSeries[i] - cvdSeries[i - 1]);
+  }
+
+  const accelerations: number[] = [];
+  for (let i = 1; i < velocities.length; i++) {
+    accelerations.push(velocities[i] - velocities[i - 1]);
+  }
+
+  const deltaPerTicks = buckets.map((b) =>
+    b.tradeCount > 0 ? b.delta / b.tradeCount : 0,
+  );
+
+  let vMean = 0;
+  let vM2 = 0;
+  let aMean = 0;
+  let aM2 = 0;
+  let dMean = 0;
+  let dM2 = 0;
+  let count = 0;
+
+  for (let i = 0; i < velocities.length; i++) {
+    count++;
+    const v = velocities[i];
+    const delta = v - vMean;
+    vMean += delta / count;
+    vM2 += delta * (v - vMean);
+
+    if (i < accelerations.length) {
+      const a = accelerations[i];
+      const aDelta = a - aMean;
+      aMean += aDelta / count;
+      aM2 += aDelta * (a - aMean);
+    }
+
+    if (i < deltaPerTicks.length) {
+      const d = deltaPerTicks[i];
+      const dDelta = d - dMean;
+      dMean += dDelta / count;
+      dM2 += dDelta * (d - dMean);
+    }
+  }
+
+  return {
+    velocityEwma: { mean: vMean, m2: vM2 },
+    accelerationEwma: { mean: aMean, m2: aM2 },
+    deltaPerTickEwma: { mean: dMean, m2: dM2 },
+  };
+}
+
+function computeTimeWindowCorrelation(
+  priceChanges: number[],
+  cvdChanges: number[],
+  bucketMs: number[],
+  windowMs: number,
+): number {
+  if (priceChanges.length < 3 || bucketMs.length < 3) return 0;
+
+  const lastMs = bucketMs[bucketMs.length - 1];
+  const cutoffMs = lastMs - windowMs;
+
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumX2 = 0;
+  let sumY2 = 0;
+  let n = 0;
+
+  for (let i = 0; i < priceChanges.length; i++) {
+    if (bucketMs[i] < cutoffMs) continue;
+    const x = priceChanges[i];
+    const y = cvdChanges[i];
+    sumX += x;
+    sumY += y;
+    sumXY += x * y;
+    sumX2 += x * x;
+    sumY2 += y * y;
+    n++;
+  }
+
+  if (n < 3) return 0;
+  const num = n * sumXY - sumX * sumY;
+  const den = Math.sqrt((n * sumX2 - sumX ** 2) * (n * sumY2 - sumY ** 2));
   return den > 0 ? num / den : 0;
 }
 
-function rollingCorrelation(xs: number[], ys: number[], window: number): number {
-  const n = Math.min(xs.length, ys.length, window);
-  if (n < 3) return 0;
-  const xSlice = xs.slice(-n);
-  const ySlice = ys.slice(-n);
-  const xMean = xSlice.reduce((s, x) => s + x, 0) / n;
-  const yMean = ySlice.reduce((s, y) => s + y, 0) / n;
-  let num = 0;
-  let denX = 0;
-  let denY = 0;
-  for (let i = 0; i < n; i++) {
-    const dx = xSlice[i] - xMean;
-    const dy = ySlice[i] - yMean;
-    num += dx * dy;
-    denX += dx * dx;
-    denY += dy * dy;
+function computeDeltaAtPriceRatio(
+  price: number,
+  buckets: OrderflowBucket[],
+  binSize: number,
+): number {
+  const EPSILON = 0.01;
+  const currentWindowMs = 60000;
+  const previousWindowMs = 60000;
+
+  if (buckets.length < 2) return 1;
+
+  const lastMs = buckets[buckets.length - 1].bucketMs;
+  const currentStart = lastMs - currentWindowMs;
+  const previousStart = currentStart - previousWindowMs;
+
+  let currentDelta = 0;
+  let previousDelta = 0;
+
+  for (const b of buckets) {
+    const inCurrent = b.bucketMs >= currentStart;
+    const inPrevious = b.bucketMs >= previousStart && b.bucketMs < currentStart;
+    const atPrice = Math.abs(b.close - price) < binSize * 0.5;
+
+    if (inCurrent && atPrice) currentDelta += b.delta;
+    if (inPrevious && atPrice) previousDelta += b.delta;
   }
-  const den = Math.sqrt(denX * denY);
-  return den > 0 ? num / den : 0;
+
+  return currentDelta / (Math.abs(previousDelta) + EPSILON);
 }
 
 export function extractMachineNativeVector(
@@ -105,14 +220,16 @@ export function extractMachineNativeVector(
   orderflowBuckets: OrderflowBucket[],
 ): MachineNativeVector {
   const ATR_WINDOW = 20;
-  const CVD_HISTORY_WINDOW = 30;
-  const CORRELATION_WINDOW = 20;
+  const CORRELATION_WINDOW_MS = 900000;
 
   const atr = computeATR(orderflowBuckets, ATR_WINDOW);
+  const binSize = structure?.bins[0]
+    ? structure.bins[0].high - structure.bins[0].low
+    : 1;
 
   const spatial = extractSpatial(price, structure, orderflowBuckets, atr);
-  const flow = extractFlow(orderflowBuckets, CVD_HISTORY_WINDOW);
-  const interaction = extractInteraction(price, orderflowBuckets, CORRELATION_WINDOW);
+  const flow = extractFlow(orderflowBuckets);
+  const interaction = extractInteraction(price, orderflowBuckets, binSize, CORRELATION_WINDOW_MS);
 
   return { spatial, flow, interaction };
 }
@@ -132,6 +249,8 @@ function extractSpatial(
       distToValueLow_atr: 0,
       volumeGradient: 0,
       volumeROC: 0,
+      profileSkewness_z: 0,
+      volumeConcentration_z: 0,
     };
   }
 
@@ -152,6 +271,9 @@ function extractSpatial(
     ? (recentVolumes[recentVolumes.length - 1] - recentVolumes[0]) / (recentVolumes[0] || 1)
     : 0;
 
+  const profileSkewness = computeProfileSkewness(structure);
+  const volumeConcentration = computeVolumeConcentration(structure);
+
   return {
     distToNearestHVN_atr: distToNearestHVN / atr,
     distToNearestLVN_atr: distToNearestLVN / atr,
@@ -160,16 +282,17 @@ function extractSpatial(
     distToValueLow_atr: distToValueLow / atr,
     volumeGradient,
     volumeROC,
+    profileSkewness_z: profileSkewness,
+    volumeConcentration_z: volumeConcentration,
   };
 }
 
-function extractFlow(
-  orderflowBuckets: OrderflowBucket[],
-  historyWindow: number,
-): FlowFeatures {
+function extractFlow(orderflowBuckets: OrderflowBucket[]): FlowFeatures {
   if (orderflowBuckets.length < 3) {
     return { cvdVelocity_z: 0, cvdAcceleration_z: 0, deltaPerTick_z: 0 };
   }
+
+  const ewma = buildEwmaStats(orderflowBuckets);
 
   const deltas = orderflowBuckets.map((b) => b.delta);
   const cvdSeries: number[] = [];
@@ -179,75 +302,70 @@ function extractFlow(
     cvdSeries.push(cumDelta);
   }
 
+  const currentVelocity = cvdSeries.length >= 2
+    ? cvdSeries[cvdSeries.length - 1] - cvdSeries[cvdSeries.length - 2]
+    : 0;
+
   const velocities: number[] = [];
   for (let i = 1; i < cvdSeries.length; i++) {
     velocities.push(cvdSeries[i] - cvdSeries[i - 1]);
   }
+  const currentAcceleration = velocities.length >= 2
+    ? velocities[velocities.length - 1] - velocities[velocities.length - 2]
+    : 0;
 
-  const accelerations: number[] = [];
-  for (let i = 1; i < velocities.length; i++) {
-    accelerations.push(velocities[i] - velocities[i - 1]);
-  }
+  const lastBucket = orderflowBuckets[orderflowBuckets.length - 1];
+  const currentDeltaPerTick = lastBucket.tradeCount > 0
+    ? lastBucket.delta / lastBucket.tradeCount
+    : 0;
 
-  const deltaPerTicks = orderflowBuckets.map((b) =>
-    b.tradeCount > 0 ? b.delta / b.tradeCount : 0,
-  );
-
-  const currentVelocity = velocities.length > 0 ? velocities[velocities.length - 1] : 0;
-  const currentAcceleration = accelerations.length > 0 ? accelerations[accelerations.length - 1] : 0;
-  const currentDeltaPerTick = deltaPerTicks.length > 0 ? deltaPerTicks[deltaPerTicks.length - 1] : 0;
-
-  const velocityMean = rollingMean(velocities, historyWindow);
-  const velocityStd = rollingStd(velocities, historyWindow);
-  const accelerationMean = rollingMean(accelerations, historyWindow);
-  const accelerationStd = rollingStd(accelerations, historyWindow);
-  const deltaPerTickMean = rollingMean(deltaPerTicks, historyWindow);
-  const deltaPerTickStd = rollingStd(deltaPerTicks, historyWindow);
+  const vStd = ewma.velocityEwma.m2 > 0
+    ? Math.sqrt(ewma.velocityEwma.m2 / orderflowBuckets.length)
+    : 0;
+  const aStd = ewma.accelerationEwma.m2 > 0
+    ? Math.sqrt(ewma.accelerationEwma.m2 / orderflowBuckets.length)
+    : 0;
+  const dStd = ewma.deltaPerTickEwma.m2 > 0
+    ? Math.sqrt(ewma.deltaPerTickEwma.m2 / orderflowBuckets.length)
+    : 0;
 
   return {
-    cvdVelocity_z: zScore(currentVelocity, velocityMean, velocityStd),
-    cvdAcceleration_z: zScore(currentAcceleration, accelerationMean, accelerationStd),
-    deltaPerTick_z: zScore(currentDeltaPerTick, deltaPerTickMean, deltaPerTickStd),
+    cvdVelocity_z: zScore(currentVelocity, ewma.velocityEwma.mean, vStd),
+    cvdAcceleration_z: zScore(currentAcceleration, ewma.accelerationEwma.mean, aStd),
+    deltaPerTick_z: zScore(currentDeltaPerTick, ewma.deltaPerTickEwma.mean, dStd),
   };
 }
 
 function extractInteraction(
   price: number,
   orderflowBuckets: OrderflowBucket[],
-  correlationWindow: number,
+  binSize: number,
+  correlationWindowMs: number,
 ): InteractionFeatures {
   if (orderflowBuckets.length < 5) {
-    return { priceCvdCorrelation: 0, imbalanceDecayRate: 0 };
+    return { priceCvdCorrelation: 0, deltaAtPriceRatio: 1 };
   }
 
   const priceChanges: number[] = [];
   const cvdChanges: number[] = [];
-  let cumDelta = 0;
+  const bucketMs: number[] = [];
   let prevPrice = orderflowBuckets[0].close;
 
   for (const b of orderflowBuckets) {
-    cumDelta += b.delta;
     priceChanges.push(b.close - prevPrice);
     cvdChanges.push(b.delta);
+    bucketMs.push(b.bucketMs);
     prevPrice = b.close;
   }
 
-  const priceCvdCorrelation = rollingCorrelation(priceChanges, cvdChanges, correlationWindow);
+  const priceCvdCorrelation = computeTimeWindowCorrelation(
+    priceChanges,
+    cvdChanges,
+    bucketMs,
+    correlationWindowMs,
+  );
 
-  const recentBuckets = orderflowBuckets.slice(-10);
-  let imbalanceSum = 0;
-  let imbalanceCount = 0;
-  for (let i = 1; i < recentBuckets.length; i++) {
-    const prevImbalance = recentBuckets[i - 1].buyVolume - recentBuckets[i - 1].sellVolume;
-    const currImbalance = recentBuckets[i].buyVolume - recentBuckets[i].sellVolume;
-    if (Math.abs(prevImbalance) > 0) {
-      const decay = (prevImbalance - currImbalance) / Math.abs(prevImbalance);
-      imbalanceSum += decay;
-      imbalanceCount++;
-    }
-  }
+  const deltaAtPriceRatio = computeDeltaAtPriceRatio(price, orderflowBuckets, binSize);
 
-  const imbalanceDecayRate = imbalanceCount > 0 ? imbalanceSum / imbalanceCount : 0;
-
-  return { priceCvdCorrelation, imbalanceDecayRate };
+  return { priceCvdCorrelation, deltaAtPriceRatio };
 }
