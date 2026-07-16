@@ -290,6 +290,7 @@ function evaluateSimSignal(
 
 function updateSimTrade(trade: SimTrade, currentPrice: number, nowMs: number): SimTrade {
   const risk = Math.abs(trade.entryPrice - trade.stop);
+  const trailTrigger = risk * 0.5;
 
   if (trade.side === "long") {
     if (currentPrice <= trade.stop) {
@@ -298,12 +299,24 @@ function updateSimTrade(trade: SimTrade, currentPrice: number, nowMs: number): S
     if (currentPrice >= trade.target) {
       return { ...trade, exitPrice: trade.target, exitAt: nowMs, r: (trade.target - trade.entryPrice) / risk };
     }
+    if (currentPrice >= trade.entryPrice + trailTrigger) {
+      const newStop = Math.max(trade.stop, trade.entryPrice + risk * 0.25);
+      if (trade.stop < newStop) {
+        return { ...trade, stop: newStop };
+      }
+    }
   } else {
     if (currentPrice >= trade.stop) {
       return { ...trade, exitPrice: trade.stop, exitAt: nowMs, r: -1 };
     }
     if (currentPrice <= trade.target) {
       return { ...trade, exitPrice: trade.target, exitAt: nowMs, r: (trade.entryPrice - trade.target) / risk };
+    }
+    if (currentPrice <= trade.entryPrice - trailTrigger) {
+      const newStop = Math.min(trade.stop, trade.entryPrice - risk * 0.25);
+      if (trade.stop > newStop) {
+        return { ...trade, stop: newStop };
+      }
     }
   }
 
