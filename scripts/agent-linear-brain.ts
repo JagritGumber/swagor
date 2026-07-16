@@ -235,15 +235,15 @@ function evaluateSimSignal(
   if (read.action === "rotating") return null;
   if (read.location === "at-poc") return null;
 
-  const binSize = structure.bins[0] ? structure.bins[0].high - structure.bins[0].low : 1;
-  const minRisk = binSize * 5;
-
   const atLvn = structure.lvn.find((n) => price >= n.low && price <= n.high);
   const atHvn = structure.hvn.find((n) => price >= n.low && price <= n.high);
 
   if (atLvn && cvd) {
+    const nodeWidth = atLvn.high - atLvn.low;
+    const minRisk = Math.max(nodeWidth, 10);
+
     if (cvd.cvdTrend === "rising" && cvd.priceCvdDivergence !== "bearish") {
-      const stop = atLvn.low - binSize;
+      const stop = atLvn.low - nodeWidth * 0.5;
       const risk = price - stop;
       if (risk < minRisk) return null;
       const target = structure.poc;
@@ -252,7 +252,7 @@ function evaluateSimSignal(
       }
     }
     if (cvd.cvdTrend === "falling" && cvd.priceCvdDivergence !== "bullish") {
-      const stop = atLvn.high + binSize;
+      const stop = atLvn.high + nodeWidth * 0.5;
       const risk = stop - price;
       if (risk < minRisk) return null;
       const target = structure.poc;
@@ -263,11 +263,13 @@ function evaluateSimSignal(
   }
 
   if (atHvn && cvd) {
-    const isNearValueHigh = Math.abs(price - structure.valueAreaHigh) < binSize * 2;
-    const isNearValueLow = Math.abs(price - structure.valueAreaLow) < binSize * 2;
+    const nodeWidth = atHvn.high - atHvn.low;
+    const minRisk = Math.max(nodeWidth, 10);
+    const isNearValueHigh = Math.abs(price - structure.valueAreaHigh) < nodeWidth * 2;
+    const isNearValueLow = Math.abs(price - structure.valueAreaLow) < nodeWidth * 2;
 
     if (isNearValueHigh && cvd.priceCvdDivergence === "bearish") {
-      const stop = atHvn.high + binSize;
+      const stop = atHvn.high + nodeWidth * 0.5;
       const risk = stop - price;
       if (risk < minRisk) return null;
       const target = structure.poc;
@@ -277,7 +279,7 @@ function evaluateSimSignal(
     }
 
     if (isNearValueLow && cvd.priceCvdDivergence === "bullish") {
-      const stop = atHvn.low - binSize;
+      const stop = atHvn.low - nodeWidth * 0.5;
       const risk = price - stop;
       if (risk < minRisk) return null;
       const target = structure.poc;
@@ -293,13 +295,11 @@ function evaluateSimSignal(
 const FEE_RATE = 0.0006;
 const SLIPPAGE_RATE = 0.00015;
 const COST_PER_SIDE = FEE_RATE + SLIPPAGE_RATE;
-const MIN_STOP_BPS = 100;
+const NOTIONAL_SIZE_USD = 100;
 
-let debugTradeCount = 0;
-
-function computeCostR(entryPrice: number, exitPrice: number, risk: number): number {
+function computeCostR(risk: number): number {
   if (risk <= 0) return 0;
-  const totalCost = COST_PER_SIDE * (entryPrice + exitPrice);
+  const totalCost = COST_PER_SIDE * 2 * NOTIONAL_SIZE_USD;
   return totalCost / risk;
 }
 
@@ -309,11 +309,11 @@ function updateSimTrade(trade: SimTrade, currentPrice: number, nowMs: number): S
 
   if (trade.side === "long") {
     if (currentPrice <= trade.stop) {
-      const costR = computeCostR(trade.entryPrice, trade.stop, risk);
+      const costR = computeCostR(risk);
       return { ...trade, exitPrice: trade.stop, exitAt: nowMs, r: -1 - costR };
     }
     if (currentPrice >= trade.target) {
-      const costR = computeCostR(trade.entryPrice, trade.target, risk);
+      const costR = computeCostR(risk);
       return { ...trade, exitPrice: trade.target, exitAt: nowMs, r: (trade.target - trade.entryPrice) / risk - costR };
     }
     if (currentPrice >= trade.entryPrice + trailTrigger) {
@@ -324,11 +324,11 @@ function updateSimTrade(trade: SimTrade, currentPrice: number, nowMs: number): S
     }
   } else {
     if (currentPrice >= trade.stop) {
-      const costR = computeCostR(trade.entryPrice, trade.stop, risk);
+      const costR = computeCostR(risk);
       return { ...trade, exitPrice: trade.stop, exitAt: nowMs, r: -1 - costR };
     }
     if (currentPrice <= trade.target) {
-      const costR = computeCostR(trade.entryPrice, trade.target, risk);
+      const costR = computeCostR(risk);
       return { ...trade, exitPrice: trade.target, exitAt: nowMs, r: (trade.entryPrice - trade.target) / risk - costR };
     }
     if (currentPrice <= trade.entryPrice - trailTrigger) {
