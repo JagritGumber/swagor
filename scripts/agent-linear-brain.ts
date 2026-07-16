@@ -132,6 +132,7 @@ type SimTrade = {
   entryPrice: number;
   entryAt: number;
   stop: number;
+  initialStop: number;
   target: number;
   exitPrice: number | null;
   exitAt: number | null;
@@ -235,9 +236,7 @@ function evaluateSimSignal(
   if (read.location === "at-poc") return null;
 
   const binSize = structure.bins[0] ? structure.bins[0].high - structure.bins[0].low : 1;
-  const minRiskFromBin = binSize * 5;
-  const minRiskFromBps = price * MIN_STOP_BPS / 10000;
-  const minRisk = Math.max(minRiskFromBin, minRiskFromBps);
+  const minRisk = binSize * 5;
 
   const atLvn = structure.lvn.find((n) => price >= n.low && price <= n.high);
   const atHvn = structure.hvn.find((n) => price >= n.low && price <= n.high);
@@ -249,7 +248,7 @@ function evaluateSimSignal(
       if (risk < minRisk) return null;
       const target = structure.poc;
       if (target > price && (target - price) / risk >= 1.5) {
-        return { side: "long", entryPrice: price, entryAt: nowMs, stop, target, exitPrice: null, exitAt: null, r: null, vector: { spatial: {} as any, flow: {} as any, interaction: {} as any } };
+        return { side: "long", entryPrice: price, entryAt: nowMs, stop, initialStop: stop, target, exitPrice: null, exitAt: null, r: null, vector: { spatial: {} as any, flow: {} as any, interaction: {} as any } };
       }
     }
     if (cvd.cvdTrend === "falling" && cvd.priceCvdDivergence !== "bullish") {
@@ -258,7 +257,7 @@ function evaluateSimSignal(
       if (risk < minRisk) return null;
       const target = structure.poc;
       if (target < price && (price - target) / risk >= 1.5) {
-        return { side: "short", entryPrice: price, entryAt: nowMs, stop, target, exitPrice: null, exitAt: null, r: null, vector: { spatial: {} as any, flow: {} as any, interaction: {} as any } };
+        return { side: "short", entryPrice: price, entryAt: nowMs, stop, initialStop: stop, target, exitPrice: null, exitAt: null, r: null, vector: { spatial: {} as any, flow: {} as any, interaction: {} as any } };
       }
     }
   }
@@ -273,7 +272,7 @@ function evaluateSimSignal(
       if (risk < minRisk) return null;
       const target = structure.poc;
       if (target < price && (price - target) / risk >= 1.5) {
-        return { side: "short", entryPrice: price, entryAt: nowMs, stop, target, exitPrice: null, exitAt: null, r: null, vector: { spatial: {} as any, flow: {} as any, interaction: {} as any } };
+        return { side: "short", entryPrice: price, entryAt: nowMs, stop, initialStop: stop, target, exitPrice: null, exitAt: null, r: null, vector: { spatial: {} as any, flow: {} as any, interaction: {} as any } };
       }
     }
 
@@ -283,7 +282,7 @@ function evaluateSimSignal(
       if (risk < minRisk) return null;
       const target = structure.poc;
       if (target > price && (target - price) / risk >= 1.5) {
-        return { side: "long", entryPrice: price, entryAt: nowMs, stop, target, exitPrice: null, exitAt: null, r: null, vector: { spatial: {} as any, flow: {} as any, interaction: {} as any } };
+        return { side: "long", entryPrice: price, entryAt: nowMs, stop, initialStop: stop, target, exitPrice: null, exitAt: null, r: null, vector: { spatial: {} as any, flow: {} as any, interaction: {} as any } };
       }
     }
   }
@@ -296,6 +295,8 @@ const SLIPPAGE_RATE = 0.00015;
 const COST_PER_SIDE = FEE_RATE + SLIPPAGE_RATE;
 const MIN_STOP_BPS = 100;
 
+let debugTradeCount = 0;
+
 function computeCostR(entryPrice: number, exitPrice: number, risk: number): number {
   if (risk <= 0) return 0;
   const totalCost = COST_PER_SIDE * (entryPrice + exitPrice);
@@ -303,7 +304,7 @@ function computeCostR(entryPrice: number, exitPrice: number, risk: number): numb
 }
 
 function updateSimTrade(trade: SimTrade, currentPrice: number, nowMs: number): SimTrade {
-  const risk = Math.abs(trade.entryPrice - trade.stop);
+  const risk = Math.abs(trade.entryPrice - trade.initialStop);
   const trailTrigger = risk * 0.5;
 
   if (trade.side === "long") {
