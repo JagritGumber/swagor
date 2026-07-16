@@ -148,6 +148,7 @@ function runMonth(
   weights: AgentWeights,
   learningRate: number,
   updateWeightsDuringMonth: boolean,
+  scoreThreshold: number = 0,
 ): { trades: SimTrade[]; finalWeights: AgentWeights } {
   const trades: SimTrade[] = [];
   let openTrade: SimTrade | null = null;
@@ -202,7 +203,7 @@ function runMonth(
         const signal = evaluateSimSignal(currentPrice, currentReadMs, structure, cvd, read);
         if (signal) {
           const score = scoreEdge(read.vector, currentWeights);
-          if (score > 0) {
+          if (score > scoreThreshold) {
             signal.vector = read.vector;
             openTrade = signal;
           }
@@ -532,6 +533,46 @@ async function main() {
   console.log("");
   console.log(`OOS Total: ${oosTotalTrades} trades, ${oosTotalR.toFixed(1)} total R`);
   console.log(`OOS Avg:   ${(oosTotalR / oosResults.length).toFixed(2)} R/month`);
+
+  const THRESHOLDS = [0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+
+  console.log("\n=== THRESHOLD ANALYSIS (OOS months) ===");
+  console.log("Testing score thresholds on frozen weights from previous month.");
+  console.log("");
+
+  for (let ti = 1; ti < months.length; ti++) {
+    const m = months[ti];
+    const startMs = Date.parse(`${m.start}T00:00:00Z`);
+    const endMs = Date.parse(`${m.end}T23:59:00Z`);
+
+    let frozenWeights = createZeroWeights();
+    for (let j = 0; j < ti; j++) {
+      const jm = months[j];
+      const js = Date.parse(`${jm.start}T00:00:00Z`);
+      const je = Date.parse(`${jm.end}T23:59:00Z`);
+      const { finalWeights } = runMonth(
+        asset, js, je, profilesByWindow, orderflowBuckets,
+        frozenWeights, learningRate, true, 0,
+      );
+      frozenWeights = finalWeights;
+    }
+
+    console.log(`--- ${m.label} (weights from ${months[0].label}-${months[ti - 1].label} training) ---`);
+    console.log("  Threshold | Trades | Win%  | Avg R   | Total R | Max DD");
+    console.log("  ----------|--------|-------|---------|---------|-------");
+
+    for (const threshold of THRESHOLDS) {
+      const { trades } = runMonth(
+        asset, startMs, endMs, profilesByWindow, orderflowBuckets,
+        frozenWeights, learningRate, false, threshold,
+      );
+      const result = summarizeMonth(m.label, trades);
+      console.log(
+        `  ${String(threshold).padStart(9)} | ${String(result.trades).padStart(6)} | ${(result.winRate * 100).toFixed(0).padStart(4)}% | ${result.avgR.toFixed(2).padStart(7)} | ${result.totalR.toFixed(1).padStart(7)} | ${result.maxDD.toFixed(1).padStart(5)}`,
+      );
+    }
+    console.log("");
+  }
 
   console.log("\n=== FINAL WEIGHTS (after all training) ===");
   const finalSorted = FEATURE_KEYS
