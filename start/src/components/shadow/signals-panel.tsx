@@ -6,10 +6,15 @@ type Signal = {
   entryPrice: number
   score: number
   reason: string
+  stop: number
+  target: number
+  initialRisk: number
   result: 'open' | 'win' | 'loss' | 'breakeven'
   pnl: number
   exitPrice: number | null
   exitTimestamp: string | null
+  exitReason: string | null
+  r: number | null
 }
 
 type ApiResponse = {
@@ -92,18 +97,22 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
   const entryPrice = signal.entryPrice ?? (signal as any).price ?? 0
 
   const hasPrice = currentPrice > 0 && entryPrice > 0
-  const pnlPct = hasPrice
-    ? isOpen
-      ? isLong
-        ? ((currentPrice - entryPrice) / entryPrice) * 100
-        : ((entryPrice - currentPrice) / entryPrice) * 100
-      : signal.pnl ?? 0
+  const pnlPct = hasPrice && isOpen
+    ? isLong
+      ? ((currentPrice - entryPrice) / entryPrice) * 100
+      : ((entryPrice - currentPrice) / entryPrice) * 100
     : null
 
-  const pnlStr = pnlPct === null ? '--' : pnlPct >= 0 ? `+${pnlPct.toFixed(3)}%` : `-${Math.abs(pnlPct).toFixed(3)}%`
-  const pnlColor = pnlPct === null ? 'text-[#6b7280]' : pnlPct > 0 ? 'text-[#00ff85]' : pnlPct < 0 ? 'text-[#f87171]' : 'text-[#6b7280]'
+  const timeAgo = isOpen ? getTimeAgo(signal.timestamp) : getDuration(signal.timestamp, signal.exitTimestamp)
+  const exitLabel = isOpen ? signal.reason : `${signal.exitReason} ${signal.r != null ? signal.r >= 0 ? '+' : '' : ''}${signal.r?.toFixed(1) ?? ''}R`
 
-  const timeAgo = getTimeAgo(signal.timestamp)
+  const resultColor = isOpen
+    ? pnlPct === null ? 'text-[#6b7280]' : pnlPct > 0 ? 'text-[#00ff85]' : pnlPct < 0 ? 'text-[#f87171]' : 'text-[#6b7280]'
+    : signal.result === 'win' ? 'text-[#00ff85]' : 'text-[#f87171]'
+
+  const displayValue = isOpen
+    ? pnlPct !== null ? `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(3)}%` : '--'
+    : signal.r != null ? `${signal.r >= 0 ? '+' : ''}${signal.r.toFixed(1)}R` : '--'
 
   return (
     <div className="border-b border-border-default px-4 py-2.5 hover:bg-white/[0.02]">
@@ -117,9 +126,17 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
           <span className="font-data text-[12px] text-text-primary">
             ${entryPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
+          {!isOpen && signal.exitPrice != null && (
+            <>
+              <span className="text-[10px] text-[#6b7280]">→</span>
+              <span className="font-data text-[12px] text-text-primary">
+                ${signal.exitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            </>
+          )}
         </div>
-        <span className={`font-data text-[11px] font-medium ${pnlColor}`}>
-          {pnlStr}
+        <span className={`font-data text-[11px] font-medium ${resultColor}`}>
+          {displayValue}
         </span>
       </div>
 
@@ -128,7 +145,7 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
           {timeAgo}
         </span>
         <span className="text-[10px] text-[#6b7280]">
-          {signal.reason}
+          {exitLabel}
         </span>
       </div>
     </div>
@@ -146,4 +163,17 @@ function getTimeAgo(timestamp: string): string {
   const diffHours = Math.floor(diffMin / 60)
   if (diffHours < 24) return `${diffHours}h ago`
   return `${Math.floor(diffHours / 24)}d ago`
+}
+
+function getDuration(entryTimestamp: string, exitTimestamp: string | null): string {
+  if (!exitTimestamp) return ''
+  const entry = new Date(entryTimestamp.replace(' ', 'T') + 'Z').getTime()
+  const exit = new Date(exitTimestamp.replace(' ', 'T') + 'Z').getTime()
+  const diffMs = exit - entry
+  const diffMin = Math.floor(diffMs / 60000)
+
+  if (diffMin < 1) return '<1 min'
+  if (diffMin < 60) return `${diffMin} min`
+  const diffHours = Math.floor(diffMin / 60)
+  return `${diffHours}h ${diffMin % 60}m`
 }

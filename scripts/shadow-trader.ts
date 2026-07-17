@@ -67,10 +67,15 @@ type Signal = {
   entryPrice: number;
   score: number;
   reason: string;
+  stop: number;
+  target: number;
+  initialRisk: number;
   result: "open" | "win" | "loss" | "breakeven";
   pnl: number;
   exitPrice: number | null;
   exitTimestamp: string | null;
+  exitReason: string | null;
+  r: number | null;
 };
 
 const signals: Signal[] = [];
@@ -256,6 +261,60 @@ async function main() {
     lastPrice = price;
     tradeCount++;
 
+    for (const sig of signals) {
+      if (sig.result !== "open") continue;
+      const initialRisk = sig.initialRisk;
+      const trailTrigger = initialRisk * 0.5;
+
+      if (sig.side === "long") {
+        if (price <= sig.stop) {
+          const r = sig.entryPrice !== sig.stop
+            ? (sig.stop - sig.entryPrice) / initialRisk
+            : -1;
+          sig.exitPrice = sig.stop;
+          sig.exitTimestamp = formatTime(ms);
+          sig.exitReason = "stop";
+          sig.r = r;
+          sig.result = "loss";
+          sig.pnl = r;
+        } else if (price >= sig.target) {
+          const r = (sig.target - sig.entryPrice) / initialRisk;
+          sig.exitPrice = sig.target;
+          sig.exitTimestamp = formatTime(ms);
+          sig.exitReason = "target";
+          sig.r = r;
+          sig.result = "win";
+          sig.pnl = r;
+        } else if (price >= sig.entryPrice + trailTrigger) {
+          const newStop = Math.max(sig.stop, sig.entryPrice + initialRisk * 0.25);
+          if (sig.stop < newStop) sig.stop = newStop;
+        }
+      } else {
+        if (price >= sig.stop) {
+          const r = sig.entryPrice !== sig.stop
+            ? (sig.entryPrice - sig.stop) / initialRisk
+            : -1;
+          sig.exitPrice = sig.stop;
+          sig.exitTimestamp = formatTime(ms);
+          sig.exitReason = "stop";
+          sig.r = r;
+          sig.result = "loss";
+          sig.pnl = r;
+        } else if (price <= sig.target) {
+          const r = (sig.entryPrice - sig.target) / initialRisk;
+          sig.exitPrice = sig.target;
+          sig.exitTimestamp = formatTime(ms);
+          sig.exitReason = "target";
+          sig.r = r;
+          sig.result = "win";
+          sig.pnl = r;
+        } else if (price <= sig.entryPrice - trailTrigger) {
+          const newStop = Math.min(sig.stop, sig.entryPrice - initialRisk * 0.25);
+          if (sig.stop > newStop) sig.stop = newStop;
+        }
+      }
+    }
+
     rollCvd(cvd, price, size, side, ms);
     const profileRolled = rollProfile(profile, price, size, side, ms);
 
@@ -285,8 +344,22 @@ async function main() {
             if (vec.spatial.volumeROC < -0.5) reasons.push(`vol ROC ${vec.spatial.volumeROC.toFixed(2)}`);
             const reason = reasons.length > 0 ? reasons.slice(0, 2).join(", ") : "high conviction";
 
+            const binSize = structure.bins[0] ? structure.bins[0].high - structure.bins[0].low : 1;
+            let stop: number;
+            let target: number;
+            if (signalSide === "long") {
+              stop = price - binSize * 5;
+              target = structure.poc;
+              if (target <= price) target = price + binSize * 20;
+            } else {
+              stop = price + binSize * 5;
+              target = structure.poc;
+              if (target >= price) target = price - binSize * 20;
+            }
+            const initialRisk = Math.abs(price - stop);
+
             console.log(
-              `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)} | ${reason}`,
+              `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)} | stop: ${stop.toFixed(2)} | target: ${target.toFixed(2)} | ${reason}`,
             );
             writeCsvRow(ts, signalSide, price, score, vec);
             signals.unshift({
@@ -295,10 +368,15 @@ async function main() {
               entryPrice: price,
               score,
               reason,
+              stop,
+              target,
+              initialRisk,
               result: "open",
               pnl: 0,
               exitPrice: null,
               exitTimestamp: null,
+              exitReason: null,
+              r: null,
             });
             if (signals.length > MAX_SIGNALS) signals.length = MAX_SIGNALS;
             lastSignalMs = ms;
