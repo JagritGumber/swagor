@@ -5,6 +5,7 @@ type Signal = {
   side: string
   entryPrice: number
   score: number
+  reason: string
   result: 'open' | 'win' | 'loss' | 'breakeven'
   pnl: number
   exitPrice: number | null
@@ -91,16 +92,16 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
   const entryPrice = signal.entryPrice ?? (signal as any).price ?? 0
 
   const hasPrice = currentPrice > 0 && entryPrice > 0
-  const pnl = hasPrice
+  const pnlPct = hasPrice
     ? isOpen
       ? isLong
-        ? currentPrice - entryPrice
-        : entryPrice - currentPrice
+        ? ((currentPrice - entryPrice) / entryPrice) * 100
+        : ((entryPrice - currentPrice) / entryPrice) * 100
       : signal.pnl ?? 0
     : null
 
-  const pnlStr = pnl === null ? '--' : pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`
-  const pnlColor = pnl === null ? 'text-[#6b7280]' : pnl > 0 ? 'text-[#00ff85]' : pnl < 0 ? 'text-[#f87171]' : 'text-[#6b7280]'
+  const pnlStr = pnlPct === null ? '--' : pnlPct >= 0 ? `+${pnlPct.toFixed(3)}%` : `-${Math.abs(pnlPct).toFixed(3)}%`
+  const pnlColor = pnlPct === null ? 'text-[#6b7280]' : pnlPct > 0 ? 'text-[#00ff85]' : pnlPct < 0 ? 'text-[#f87171]' : 'text-[#6b7280]'
 
   const timeAgo = getTimeAgo(signal.timestamp)
 
@@ -127,7 +128,7 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
           {timeAgo}
         </span>
         <span className="text-[10px] text-[#6b7280]">
-          score {signal.score.toFixed(1)}
+          {signal.reason}
         </span>
       </div>
     </div>

@@ -66,6 +66,7 @@ type Signal = {
   side: string;
   entryPrice: number;
   score: number;
+  reason: string;
   result: "open" | "win" | "loss" | "breakeven";
   pnl: number;
   exitPrice: number | null;
@@ -276,8 +277,16 @@ async function main() {
           const cooldownExpired = ms - lastSignalMs > cooldownMs;
 
           if (sideChanged || cooldownExpired || signals.length === 0) {
+            const reasons: string[] = [];
+            if (vec.spatial.distToPOC_norm > 0.5) reasons.push(`POC dist ${vec.spatial.distToPOC_norm.toFixed(2)}`);
+            if (vec.spatial.volumeConcentration > 1.5) reasons.push(`vol conc ${vec.spatial.volumeConcentration.toFixed(2)}`);
+            if (vec.spatial.distToValueLow_norm > 0.5) reasons.push(`val low dist ${vec.spatial.distToValueLow_norm.toFixed(2)}`);
+            if (vec.interaction.deltaAtPriceRatio < -0.5) reasons.push(`delta ${vec.interaction.deltaAtPriceRatio.toFixed(2)}`);
+            if (vec.spatial.volumeROC < -0.5) reasons.push(`vol ROC ${vec.spatial.volumeROC.toFixed(2)}`);
+            const reason = reasons.length > 0 ? reasons.slice(0, 2).join(", ") : "high conviction";
+
             console.log(
-              `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)}`,
+              `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)} | ${reason}`,
             );
             writeCsvRow(ts, signalSide, price, score, vec);
             signals.unshift({
@@ -285,6 +294,7 @@ async function main() {
               side: signalSide,
               entryPrice: price,
               score,
+              reason,
               result: "open",
               pnl: 0,
               exitPrice: null,
