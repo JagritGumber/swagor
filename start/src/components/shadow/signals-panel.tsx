@@ -90,14 +90,17 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
   const isOpen = signal.result === 'open'
   const entryPrice = signal.entryPrice ?? (signal as any).price ?? 0
 
-  const pnl = isOpen
-    ? isLong
-      ? currentPrice - entryPrice
-      : entryPrice - currentPrice
-    : signal.pnl ?? 0
+  const hasPrice = currentPrice > 0 && entryPrice > 0
+  const pnl = hasPrice
+    ? isOpen
+      ? isLong
+        ? currentPrice - entryPrice
+        : entryPrice - currentPrice
+      : signal.pnl ?? 0
+    : null
 
-  const pnlStr = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`
-  const pnlColor = pnl > 0 ? 'text-[#00ff85]' : pnl < 0 ? 'text-[#f87171]' : 'text-[#6b7280]'
+  const pnlStr = pnl === null ? '--' : pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`
+  const pnlColor = pnl === null ? 'text-[#6b7280]' : pnl > 0 ? 'text-[#00ff85]' : pnl < 0 ? 'text-[#f87171]' : 'text-[#6b7280]'
 
   return (
     <div className="border-b border-border-default px-4 py-2.5 hover:bg-white/[0.02]">
