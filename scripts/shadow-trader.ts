@@ -11,6 +11,8 @@ const PROFILE_INTERVAL_MS = 5 * 60 * 1000;
 const ORDERFLOW_WINDOW_MS = 120_000;
 const SCORE_THRESHOLD = 1.0;
 const CSV_PATH = join(import.meta.dir, "..", ".data", "shadow-trades.csv");
+const HTTP_PORT = 3001;
+const MAX_SIGNALS = 20;
 
 const LIVE_WEIGHTS: AgentWeights = {
   features: {
@@ -58,6 +60,18 @@ type RollingProfile = {
   currentStartMs: number;
   history: { startMs: number; endMs: number; trades: { price: number; size: number; side: "buy" | "sell"; ms: number }[] }[];
 };
+
+type Signal = {
+  timestamp: string;
+  side: string;
+  price: number;
+  score: number;
+  distToPOC: number;
+  volConc: number;
+  distToValueLow: number;
+};
+
+const signals: Signal[] = [];
 
 function createEmptyBucket(ms: number): OrderflowBucket1s {
   return {
@@ -194,6 +208,20 @@ async function main() {
 
   writeCsvHeader();
 
+  Bun.serve({
+    port: HTTP_PORT,
+    fetch(req) {
+      const url = new URL(req.url);
+      if (url.pathname === "/api/signals") {
+        return Response.json(signals);
+      }
+      return new Response("Not Found", { status: 404 });
+    },
+  });
+  console.log(`HTTP server listening on http://localhost:${HTTP_PORT}`);
+  console.log(`GET /api/signals → last ${MAX_SIGNALS} signals as JSON`);
+  console.log("");
+
   const cvd: RollingCVD = { currentBucket: null, buckets: [] };
   const profile: RollingProfile = { currentTrades: [], currentStartMs: 0, history: [] };
 
@@ -238,6 +266,16 @@ async function main() {
             `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)} | distToPOC: ${vec.spatial.distToPOC_norm.toFixed(2)} | volConc: ${vec.spatial.volumeConcentration.toFixed(2)}`,
           );
           writeCsvRow(ts, signalSide, price, score, vec);
+          signals.unshift({
+            timestamp: ts,
+            side: signalSide,
+            price,
+            score,
+            distToPOC: vec.spatial.distToPOC_norm,
+            volConc: vec.spatial.volumeConcentration,
+            distToValueLow: vec.spatial.distToValueLow_norm,
+          });
+          if (signals.length > MAX_SIGNALS) signals.length = MAX_SIGNALS;
         }
       }
     }
