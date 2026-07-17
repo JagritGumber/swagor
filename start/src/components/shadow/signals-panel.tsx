@@ -88,12 +88,13 @@ export function SignalsPanel() {
 function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: number }) {
   const isLong = signal.side === 'long'
   const isOpen = signal.result === 'open'
+  const entryPrice = signal.entryPrice ?? (signal as any).price ?? 0
 
   const pnl = isOpen
     ? isLong
-      ? currentPrice - signal.entryPrice
-      : signal.entryPrice - currentPrice
-    : signal.pnl
+      ? currentPrice - entryPrice
+      : entryPrice - currentPrice
+    : signal.pnl ?? 0
 
   const pnlStr = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`
   const pnlColor = pnl > 0 ? 'text-[#00ff85]' : pnl < 0 ? 'text-[#f87171]' : 'text-[#6b7280]'
@@ -108,7 +109,7 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
             {signal.side}
           </span>
           <span className="font-data text-[12px] text-text-primary">
-            ${signal.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            ${entryPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
         </div>
         <span className={`font-data text-[11px] font-medium ${pnlColor}`}>
