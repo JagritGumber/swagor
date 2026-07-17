@@ -276,18 +276,6 @@ async function main() {
           const cooldownExpired = ms - lastSignalMs > cooldownMs;
 
           if (sideChanged || cooldownExpired || signals.length === 0) {
-            for (const sig of signals) {
-              if (sig.result === "open") {
-                const pnl = signalSide === "long"
-                  ? (price - sig.entryPrice)
-                  : (sig.entryPrice - price);
-                sig.exitPrice = price;
-                sig.exitTimestamp = ts;
-                sig.pnl = pnl;
-                sig.result = pnl > 0 ? "win" : pnl < 0 ? "loss" : "breakeven";
-              }
-            }
-
             console.log(
               `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)}`,
             );

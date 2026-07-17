@@ -98,16 +98,6 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
   const pnlStr = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`
   const pnlColor = pnl > 0 ? 'text-[#00ff85]' : pnl < 0 ? 'text-[#f87171]' : 'text-[#6b7280]'
 
-  const resultBadge = isOpen ? null : (
-    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
-      signal.result === 'win' ? 'bg-[#00ff85]/10 text-[#00ff85]' :
-      signal.result === 'loss' ? 'bg-[#f87171]/10 text-[#f87171]' :
-      'bg-[#6b7280]/10 text-[#6b7280]'
-    }`}>
-      {signal.result}
-    </span>
-  )
-
   return (
     <div className="border-b border-border-default px-4 py-2.5 hover:bg-white/[0.02]">
       <div className="flex items-center justify-between">
@@ -121,18 +111,15 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
             ${signal.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          {resultBadge}
-          <span className={`font-data text-[11px] font-medium ${pnlColor}`}>
-            {pnlStr}
-          </span>
-        </div>
+        <span className={`font-data text-[11px] font-medium ${pnlColor}`}>
+          {pnlStr}
+        </span>
       </div>
 
       <div className="mt-1 flex items-center justify-between">
         <span className="text-[10px] text-[#6b7280]">
           {signal.timestamp.split(' ')[1]}
-          {signal.exitTimestamp && ` → ${signal.exitTimestamp.split(' ')[1]}`}
+          {isOpen && ' ago'}
         </span>
         <span className="text-[10px] text-[#6b7280]">
           score {signal.score.toFixed(1)}
