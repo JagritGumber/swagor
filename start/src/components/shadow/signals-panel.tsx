@@ -3,19 +3,25 @@ import { useState, useEffect } from 'react'
 type Signal = {
   timestamp: string
   side: string
-  price: number
+  entryPrice: number
   score: number
-  distToPOC: number
-  volConc: number
-  distToValueLow: number
+  result: 'open' | 'win' | 'loss' | 'breakeven'
+  pnl: number
+  exitPrice: number | null
+  exitTimestamp: string | null
+}
+
+type ApiResponse = {
+  signals: Signal[]
+  price: number
 }
 
 const API_URL = 'http://localhost:3001/api/signals'
 
 export function SignalsPanel() {
   const [signals, setSignals] = useState<Signal[]>([])
+  const [currentPrice, setCurrentPrice] = useState(0)
   const [connected, setConnected] = useState(false)
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
   useEffect(() => {
     let active = true
@@ -24,11 +30,11 @@ export function SignalsPanel() {
       try {
         const res = await fetch(API_URL)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = await res.json()
+        const data: ApiResponse = await res.json()
         if (active) {
-          setSignals(data)
+          setSignals(data.signals)
+          setCurrentPrice(data.price)
           setConnected(true)
-          setLastUpdate(new Date())
         }
       } catch {
         if (active) setConnected(false)
@@ -45,13 +51,15 @@ export function SignalsPanel() {
       <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-2">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">
-            Live Signals
+            Signals
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {currentPrice > 0 && (
+              <span className="font-data text-[11px] text-text-primary">
+                ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            )}
             <div className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-[#00ff85]' : 'bg-[#f87171]'}`} />
-            <span className="text-[10px] text-[#6b7280]">
-              {connected ? 'LIVE' : 'OFFLINE'}
-            </span>
           </div>
         </div>
       </div>
@@ -70,46 +78,64 @@ export function SignalsPanel() {
         )}
 
         {signals.map((signal, i) => (
-          <SignalRow key={i} signal={signal} />
+          <SignalRow key={i} signal={signal} currentPrice={currentPrice} />
         ))}
       </div>
     </div>
   )
 }
 
-function SignalRow({ signal }: { signal: Signal }) {
+function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: number }) {
   const isLong = signal.side === 'long'
-  const scoreColor = signal.score > 5 ? 'text-[#00ff85]' : signal.score > 2 ? 'text-[#fbbf24]' : 'text-[#e1e4ea]'
+  const isOpen = signal.result === 'open'
+
+  const pnl = isOpen
+    ? isLong
+      ? currentPrice - signal.entryPrice
+      : signal.entryPrice - currentPrice
+    : signal.pnl
+
+  const pnlStr = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`
+  const pnlColor = pnl > 0 ? 'text-[#00ff85]' : pnl < 0 ? 'text-[#f87171]' : 'text-[#6b7280]'
+
+  const resultBadge = isOpen ? null : (
+    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+      signal.result === 'win' ? 'bg-[#00ff85]/10 text-[#00ff85]' :
+      signal.result === 'loss' ? 'bg-[#f87171]/10 text-[#f87171]' :
+      'bg-[#6b7280]/10 text-[#6b7280]'
+    }`}>
+      {signal.result}
+    </span>
+  )
 
   return (
     <div className="border-b border-border-default px-4 py-2.5 hover:bg-white/[0.02]">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span
-            className={`text-[10px] font-bold uppercase ${
-              isLong ? 'text-[#00ff85]' : 'text-[#f87171]'
-            }`}
-          >
+          <span className={`text-[11px] font-bold uppercase ${
+            isLong ? 'text-[#00ff85]' : 'text-[#f87171]'
+          }`}>
             {signal.side}
           </span>
-          <span className="text-[11px] text-[#6b7280]">
-            {signal.timestamp.split(' ')[1]}
+          <span className="font-data text-[12px] text-text-primary">
+            ${signal.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
         </div>
-        <span className={`text-[11px] font-medium ${scoreColor}`}>
-          {signal.score.toFixed(2)}
-        </span>
+        <div className="flex items-center gap-2">
+          {resultBadge}
+          <span className={`font-data text-[11px] font-medium ${pnlColor}`}>
+            {pnlStr}
+          </span>
+        </div>
       </div>
 
-      <div className="mt-1 flex items-center gap-3">
-        <span className="font-data text-[12px] text-text-primary">
-          ${signal.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+      <div className="mt-1 flex items-center justify-between">
+        <span className="text-[10px] text-[#6b7280]">
+          {signal.timestamp.split(' ')[1]}
+          {signal.exitTimestamp && ` → ${signal.exitTimestamp.split(' ')[1]}`}
         </span>
         <span className="text-[10px] text-[#6b7280]">
-          POC {signal.distToPOC.toFixed(2)}
-        </span>
-        <span className="text-[10px] text-[#6b7280]">
-          VOL {signal.volConc.toFixed(2)}
+          score {signal.score.toFixed(1)}
         </span>
       </div>
     </div>

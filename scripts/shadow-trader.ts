@@ -64,16 +64,18 @@ type RollingProfile = {
 type Signal = {
   timestamp: string;
   side: string;
-  price: number;
+  entryPrice: number;
   score: number;
-  distToPOC: number;
-  volConc: number;
-  distToValueLow: number;
+  result: "open" | "win" | "loss" | "breakeven";
+  pnl: number;
+  exitPrice: number | null;
+  exitTimestamp: string | null;
 };
 
 const signals: Signal[] = [];
 let lastSignalMs = 0;
 let lastSignalSide = "";
+let lastPrice = 0;
 
 function createEmptyBucket(ms: number): OrderflowBucket1s {
   return {
@@ -215,7 +217,7 @@ async function main() {
     fetch(req) {
       const url = new URL(req.url);
       if (url.pathname === "/api/signals") {
-        return Response.json(signals, {
+        return Response.json({ signals, price: lastPrice }, {
           headers: {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET",
@@ -274,18 +276,31 @@ async function main() {
           const cooldownExpired = ms - lastSignalMs > cooldownMs;
 
           if (sideChanged || cooldownExpired || signals.length === 0) {
+            for (const sig of signals) {
+              if (sig.result === "open") {
+                const pnl = signalSide === "long"
+                  ? (price - sig.entryPrice)
+                  : (sig.entryPrice - price);
+                sig.exitPrice = price;
+                sig.exitTimestamp = ts;
+                sig.pnl = pnl;
+                sig.result = pnl > 0 ? "win" : pnl < 0 ? "loss" : "breakeven";
+              }
+            }
+
             console.log(
-              `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)} | distToPOC: ${vec.spatial.distToPOC_norm.toFixed(2)} | volConc: ${vec.spatial.volumeConcentration.toFixed(2)}`,
+              `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)}`,
             );
             writeCsvRow(ts, signalSide, price, score, vec);
             signals.unshift({
               timestamp: ts,
               side: signalSide,
-              price,
+              entryPrice: price,
               score,
-              distToPOC: vec.spatial.distToPOC_norm,
-              volConc: vec.spatial.volumeConcentration,
-              distToValueLow: vec.spatial.distToValueLow_norm,
+              result: "open",
+              pnl: 0,
+              exitPrice: null,
+              exitTimestamp: null,
             });
             if (signals.length > MAX_SIGNALS) signals.length = MAX_SIGNALS;
             lastSignalMs = ms;
