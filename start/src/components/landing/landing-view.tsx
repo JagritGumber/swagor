@@ -10,6 +10,7 @@ import { PositionsTable } from './positions-table'
 import { ContextTab } from './context-tab'
 import { AssetHeader } from './asset-header'
 import { TimeframeSelector } from './timeframe-selector'
+import { SignalsPanel } from '@/components/shadow/signals-panel'
 import type { LandingEquity, LandingViewProps } from './types'
 import type { OverlaySegment } from '@/components/chart/types'
 import type { Position } from '@/components/dashboard/types'
@@ -214,7 +215,12 @@ export function LandingView({ assets, activeAsset: initialAsset, page = 'portfol
             </div>
             <div className="flex flex-col">
               <TimeframeSelector active={interval} onChange={setInterval} />
-              <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
+          <div className="flex flex-col overflow-hidden">
+            <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
+            <div className="h-72 border-t border-border-default">
+              <SignalsPanel />
+            </div>
+          </div>
             </div>
           </div>
 
