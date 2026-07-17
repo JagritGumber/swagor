@@ -445,58 +445,7 @@ async function main() {
     else profilesByWindow.set(key, [bucket]);
   }
 
-  console.log("\n=== FEATURE SCALE VERIFICATION ===");
-  const VERIFY_BUCKETS = 1000;
-  const verifyStartMs = Date.parse(`${months[0].start}T00:00:00Z`);
-  const verifyEndMs = verifyStartMs + 86400000;
-  const verifyProfiles = profileBuckets.filter((b) => b.startMs >= verifyStartMs && b.startMs < verifyEndMs);
-  const verifyOrderflow = orderflowBuckets.filter((b) => b.bucketMs >= verifyStartMs && b.bucketMs < verifyEndMs);
-
-  const featureMins = Array(14).fill(Infinity);
-  const featureMaxs = Array(14).fill(-Infinity);
-  const featureSums = Array(14).fill(0);
-  const featureAbsMaxs = Array(14).fill(0);
-  let verifyCount = 0;
-
-  const verifyInterval = 60000;
-  let verifyMs = verifyStartMs;
-  while (verifyMs < verifyEndMs && verifyCount < VERIFY_BUCKETS) {
-    const prevKey = windowKey(verifyMs - 300000, 300000);
-    const profs = profilesByWindow.get(prevKey) ?? [];
-    const ofStart = verifyMs - 120000;
-    const lo = bisectLeft(verifyOrderflow, ofStart);
-    const hi = bisectLeft(verifyOrderflow, verifyMs);
-    const windowOf = verifyOrderflow.slice(lo, hi);
-    const lastB = windowOf[windowOf.length - 1];
-    if (lastB && profs.length > 0) {
-      const vec = extractMachineNativeVector(lastB.close, parseVolumeProfileStructure({ buckets: profs }), windowOf);
-      const flat = vectorToFlat(vec);
-      for (let fi = 0; fi < flat.length; fi++) {
-        const v = flat[fi];
-        if (v < featureMins[fi]) featureMins[fi] = v;
-        if (v > featureMaxs[fi]) featureMaxs[fi] = v;
-        featureSums[fi] += v;
-        const absV = Math.abs(v);
-        if (absV > featureAbsMaxs[fi]) featureAbsMaxs[fi] = absV;
-      }
-      verifyCount++;
-    }
-    verifyMs += verifyInterval;
-  }
-
-  console.log("  Feature                    | Min       | Max       | Mean      | AbsMax");
-  console.log("  ---------------------------|-----------|-----------|-----------|--------");
-  for (let fi = 0; fi < FEATURE_KEYS.length; fi++) {
-    const mean = verifyCount > 0 ? featureSums[fi] / verifyCount : 0;
-    const warn = featureAbsMaxs[fi] > 3.0 ? " *** WARNING >3.0" : "";
-    console.log(
-      `  ${FEATURE_KEYS[fi].padEnd(26)}| ${featureMins[fi].toFixed(4).padStart(9)} | ${featureMaxs[fi].toFixed(4).padStart(9)} | ${mean.toFixed(4).padStart(9)} | ${featureAbsMaxs[fi].toFixed(4).padStart(8)}${warn}`,
-    );
-  }
-  console.log("");
-
   let weights = createZeroWeights();
-  const results: MonthResult[] = [];
   const oosResults: MonthResult[] = [];
 
   for (let i = 0; i < months.length; i++) {
@@ -504,42 +453,44 @@ async function main() {
     const startMs = Date.parse(`${m.start}T00:00:00Z`);
     const endMs = Date.parse(`${m.end}T23:59:59Z`);
 
-    const isTraining = i < months.length - 1;
-    const monthStart = Date.now();
+    if (i === 0) {
+      const monthStart = Date.now();
+      const { finalWeights } = runMonth(
+        asset, startMs, endMs, profilesByWindow, orderflowBuckets,
+        weights, learningRate, true,
+      );
+      weights = finalWeights;
+      const elapsed = ((Date.now() - monthStart) / 1000).toFixed(1);
+      console.log(`[TRAIN] ${m.label.padEnd(12)} | initial weights → learned | ${elapsed}s`);
+    } else {
+      const oosStart = Date.now();
+      const { trades: oosTrades } = runMonth(
+        asset, startMs, endMs, profilesByWindow, orderflowBuckets,
+        weights, learningRate, false, 0,
+      );
+      const oosResult = summarizeMonth(m.label, oosTrades);
+      oosResults.push(oosResult);
+      const oosElapsed = ((Date.now() - oosStart) / 1000).toFixed(1);
 
-    const { trades, finalWeights } = runMonth(
-      asset, startMs, endMs, profilesByWindow, orderflowBuckets,
-      weights, learningRate, isTraining,
-    );
+      const trainStart = Date.now();
+      const { finalWeights } = runMonth(
+        asset, startMs, endMs, profilesByWindow, orderflowBuckets,
+        weights, learningRate, true,
+      );
+      weights = finalWeights;
+      const trainElapsed = ((Date.now() - trainStart) / 1000).toFixed(1);
 
-    const result = summarizeMonth(m.label, trades);
-    results.push(result);
-
-    if (!isTraining) {
-      oosResults.push(result);
-    }
-
-    const weightsSnap = { ...weights, features: { ...weights.features } };
-    weights = finalWeights;
-
-    const elapsed = ((Date.now() - monthStart) / 1000).toFixed(1);
-    const mode = isTraining ? "TRAIN" : "OOS  ";
-    console.log(
-      `[${mode}] ${m.label.padEnd(12)} | ${String(result.trades).padStart(4)} trades | ${(result.winRate * 100).toFixed(0).padStart(3)}% win | ${result.avgR.toFixed(2).padStart(7)} avg R | ${result.totalR.toFixed(1).padStart(8)} total R | ${result.maxDD.toFixed(1).padStart(5)} max DD | ${elapsed}s`,
-    );
-
-    if (isTraining) {
-      const topFeatures = FEATURE_KEYS
-        .map((k) => ({ key: k, weight: weights.features[k] }))
-        .sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight))
-        .slice(0, 5);
-      const weightStr = topFeatures.map((f) => `${f.key}:${f.weight.toFixed(4)}`).join(", ");
-      console.log(`         top weights: ${weightStr}`);
+      console.log(
+        `[OOS ] ${m.label.padEnd(12)} | ${String(oosResult.trades).padStart(4)} trades | ${(oosResult.winRate * 100).toFixed(0).padStart(3)}% win | ${oosResult.avgR.toFixed(2).padStart(7)} avg R | ${oosResult.totalR.toFixed(1).padStart(8)} total R | ${oosResult.maxDD.toFixed(1).padStart(5)} max DD | ${oosElapsed}s`,
+      );
+      console.log(
+        `[TRN ] ${m.label.padEnd(12)} | weights updated for next month | ${trainElapsed}s`,
+      );
     }
   }
 
-  console.log("\n=== OUT-OF-SUMMARY RESULTS ===");
-  console.log("(Frozen weights from previous month, no updates)");
+  console.log("\n=== OUT-OF-SAMPLE SUMMARY ===");
+  console.log("(Frozen weights from all prior training, no updates)");
   console.log("");
   console.log("Month           | Trades | Win%  | Avg R   | Total R | Max DD");
   console.log("----------------|--------|-------|---------|---------|-------");
@@ -559,18 +510,17 @@ async function main() {
   console.log(`OOS Avg:   ${(oosTotalR / oosResults.length).toFixed(2)} R/month`);
 
   const THRESHOLDS = [0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+  const octIndex = months.findIndex((m) => m.label === "Oct 2025");
 
-  console.log("\n=== THRESHOLD ANALYSIS (OOS months) ===");
-  console.log("Testing score thresholds on frozen weights from previous month.");
-  console.log("");
-
-  for (let ti = 1; ti < months.length; ti++) {
-    const m = months[ti];
-    const startMs = Date.parse(`${m.start}T00:00:00Z`);
-    const endMs = Date.parse(`${m.end}T23:59:00Z`);
+  if (octIndex > 0) {
+    console.log("\n=== THRESHOLD ANALYSIS: Oct 2025 ===");
+    console.log("Frozen weights from May 2025-Sep 2025 training.");
+    console.log("");
+    console.log("Threshold | Trades | Win%  | Avg R   | Total R | Max DD");
+    console.log("----------|--------|-------|---------|---------|-------");
 
     let frozenWeights = createZeroWeights();
-    for (let j = 0; j < ti; j++) {
+    for (let j = 0; j < octIndex; j++) {
       const jm = months[j];
       const js = Date.parse(`${jm.start}T00:00:00Z`);
       const je = Date.parse(`${jm.end}T23:59:00Z`);
@@ -581,21 +531,20 @@ async function main() {
       frozenWeights = finalWeights;
     }
 
-    console.log(`--- ${m.label} (weights from ${months[0].label}-${months[ti - 1].label} training) ---`);
-    console.log("  Threshold | Trades | Win%  | Avg R   | Total R | Max DD");
-    console.log("  ----------|--------|-------|---------|---------|-------");
+    const octM = months[octIndex];
+    const octStartMs = Date.parse(`${octM.start}T00:00:00Z`);
+    const octEndMs = Date.parse(`${octM.end}T23:59:00Z`);
 
     for (const threshold of THRESHOLDS) {
       const { trades } = runMonth(
-        asset, startMs, endMs, profilesByWindow, orderflowBuckets,
+        asset, octStartMs, octEndMs, profilesByWindow, orderflowBuckets,
         frozenWeights, learningRate, false, threshold,
       );
-      const result = summarizeMonth(m.label, trades);
+      const result = summarizeMonth(octM.label, trades);
       console.log(
         `  ${String(threshold).padStart(9)} | ${String(result.trades).padStart(6)} | ${(result.winRate * 100).toFixed(0).padStart(4)}% | ${result.avgR.toFixed(2).padStart(7)} | ${result.totalR.toFixed(1).padStart(7)} | ${result.maxDD.toFixed(1).padStart(5)}`,
       );
     }
-    console.log("");
   }
 
   console.log("\n=== FINAL WEIGHTS (after all training) ===");
@@ -610,7 +559,9 @@ async function main() {
   console.log(`  ${"bias".padEnd(26)}| ${weights.bias.toFixed(6)}`);
 }
 
-main().catch((error: unknown) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+if (import.meta.main) {
+  main().catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
