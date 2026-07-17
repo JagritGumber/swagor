@@ -48,7 +48,7 @@ export function SignalsPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-2">
+      <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-1.5">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">
             Signals
@@ -102,6 +102,8 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
   const pnlStr = pnl === null ? '--' : pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`
   const pnlColor = pnl === null ? 'text-[#6b7280]' : pnl > 0 ? 'text-[#00ff85]' : pnl < 0 ? 'text-[#f87171]' : 'text-[#6b7280]'
 
+  const timeAgo = getTimeAgo(signal.timestamp)
+
   return (
     <div className="border-b border-border-default px-4 py-2.5 hover:bg-white/[0.02]">
       <div className="flex items-center justify-between">
@@ -122,8 +124,7 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
 
       <div className="mt-1 flex items-center justify-between">
         <span className="text-[10px] text-[#6b7280]">
-          {signal.timestamp.split(' ')[1]}
-          {isOpen && ' ago'}
+          {timeAgo}
         </span>
         <span className="text-[10px] text-[#6b7280]">
           score {signal.score.toFixed(1)}
@@ -131,4 +132,17 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
       </div>
     </div>
   )
+}
+
+function getTimeAgo(timestamp: string): string {
+  const signalTime = new Date(timestamp.replace(' ', 'T') + 'Z').getTime()
+  const now = Date.now()
+  const diffMs = now - signalTime
+  const diffMin = Math.floor(diffMs / 60000)
+
+  if (diffMin < 1) return 'just now'
+  if (diffMin < 60) return `${diffMin} min ago`
+  const diffHours = Math.floor(diffMin / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+  return `${Math.floor(diffHours / 24)}d ago`
 }
