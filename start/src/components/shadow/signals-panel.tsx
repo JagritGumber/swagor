@@ -32,8 +32,8 @@ export function SignalsPanel() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data: ApiResponse = await res.json()
         if (active) {
-          setSignals(data.signals)
-          setCurrentPrice(data.price)
+          setSignals(Array.isArray(data) ? data : data.signals ?? [])
+          setCurrentPrice(Array.isArray(data) ? 0 : data.price ?? 0)
           setConnected(true)
         }
       } catch {
