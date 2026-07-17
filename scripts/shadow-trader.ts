@@ -213,7 +213,12 @@ async function main() {
     fetch(req) {
       const url = new URL(req.url);
       if (url.pathname === "/api/signals") {
-        return Response.json(signals);
+        return Response.json(signals, {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET",
+          },
+        });
       }
       return new Response("Not Found", { status: 404 });
     },

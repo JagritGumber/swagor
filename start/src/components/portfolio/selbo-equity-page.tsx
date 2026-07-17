@@ -1,5 +1,6 @@
 import { EquityChart } from './equity-chart'
 import { EquityMetrics } from './equity-metrics'
+import { SignalsPanel } from '@/components/shadow/signals-panel'
 import type { SelboEquityData } from '@/data/selbo-equity'
 
 interface SelboEquityPageProps {
@@ -25,6 +26,10 @@ export function SelboEquityPage({ data }: SelboEquityPageProps) {
           <div className="flex-1 overflow-hidden p-4">
             <EquityChart data={data.equityCurve} />
           </div>
+        </div>
+
+        <div className="w-72 border-l border-border-default bg-surface-panel">
+          <SignalsPanel />
         </div>
       </div>
     </div>
