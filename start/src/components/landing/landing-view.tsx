@@ -199,7 +199,14 @@ export function LandingView({ assets, activeAsset: initialAsset, page = 'portfol
             </div>
           </div>
 
-          <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
+          <div className="flex flex-col overflow-hidden">
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
+            </div>
+            <div className="h-72 shrink-0 border-t border-border-default">
+              <SignalsPanel />
+            </div>
+          </div>
         </div>
       ) : (
         <>
@@ -215,12 +222,7 @@ export function LandingView({ assets, activeAsset: initialAsset, page = 'portfol
             </div>
             <div className="flex flex-col">
               <TimeframeSelector active={interval} onChange={setInterval} />
-          <div className="flex flex-col overflow-hidden">
-            <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
-            <div className="h-72 border-t border-border-default">
-              <SignalsPanel />
-            </div>
-          </div>
+              <JudgmentPanel log={mindLog} updatedAt={updatedAt} asset={activeAsset} />
             </div>
           </div>
 

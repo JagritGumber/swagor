@@ -72,6 +72,8 @@ type Signal = {
 };
 
 const signals: Signal[] = [];
+let lastSignalMs = 0;
+let lastSignalSide = "";
 
 function createEmptyBucket(ms: number): OrderflowBucket1s {
   return {
@@ -267,20 +269,28 @@ async function main() {
 
         if (score > SCORE_THRESHOLD) {
           const signalSide = score > 0 ? "long" : "short";
-          console.log(
-            `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)} | distToPOC: ${vec.spatial.distToPOC_norm.toFixed(2)} | volConc: ${vec.spatial.volumeConcentration.toFixed(2)}`,
-          );
-          writeCsvRow(ts, signalSide, price, score, vec);
-          signals.unshift({
-            timestamp: ts,
-            side: signalSide,
-            price,
-            score,
-            distToPOC: vec.spatial.distToPOC_norm,
-            volConc: vec.spatial.volumeConcentration,
-            distToValueLow: vec.spatial.distToValueLow_norm,
-          });
-          if (signals.length > MAX_SIGNALS) signals.length = MAX_SIGNALS;
+          const cooldownMs = 15 * 60 * 1000;
+          const sideChanged = signalSide !== lastSignalSide;
+          const cooldownExpired = ms - lastSignalMs > cooldownMs;
+
+          if (sideChanged || cooldownExpired || signals.length === 0) {
+            console.log(
+              `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)} | distToPOC: ${vec.spatial.distToPOC_norm.toFixed(2)} | volConc: ${vec.spatial.volumeConcentration.toFixed(2)}`,
+            );
+            writeCsvRow(ts, signalSide, price, score, vec);
+            signals.unshift({
+              timestamp: ts,
+              side: signalSide,
+              price,
+              score,
+              distToPOC: vec.spatial.distToPOC_norm,
+              volConc: vec.spatial.volumeConcentration,
+              distToValueLow: vec.spatial.distToValueLow_norm,
+            });
+            if (signals.length > MAX_SIGNALS) signals.length = MAX_SIGNALS;
+            lastSignalMs = ms;
+            lastSignalSide = signalSide;
+          }
         }
       }
     }
