@@ -383,11 +383,11 @@ async function main() {
             let stop: number;
             let target: number;
             if (signalSide === "long") {
-              stop = price - binSize * 5;
+              stop = structure.valueAreaLow - binSize;
               target = structure.poc;
               if (target <= price) target = price + binSize * 20;
             } else {
-              stop = price + binSize * 5;
+              stop = structure.valueAreaHigh + binSize;
               target = structure.poc;
               if (target >= price) target = price - binSize * 20;
             }
