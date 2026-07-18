@@ -70,18 +70,32 @@ type Signal = {
   stop: number;
   target: number;
   initialRisk: number;
+  positionSize: number;
+  notionalUsd: number;
+  leverageUsed: number;
+  feeUsd: number;
+  slippageUsd: number;
+  totalCostUsd: number;
   result: "open" | "win" | "loss" | "breakeven";
-  pnl: number;
+  grossPnlUsd: number;
+  netPnlUsd: number;
   exitPrice: number | null;
   exitTimestamp: string | null;
   exitReason: string | null;
   r: number | null;
 };
 
+const FEE_RATE = 0.0006;
+const SLIPPAGE_RATE = 0.00015;
+
 const signals: Signal[] = [];
 let lastSignalMs = 0;
 let lastSignalSide = "";
 let lastPrice = 0;
+
+let accountSizeUsd = 10000;
+let maxLeverage = 20;
+let riskPct = 1;
 
 function createEmptyBucket(ms: number): OrderflowBucket1s {
   return {
@@ -223,7 +237,34 @@ async function main() {
     fetch(req) {
       const url = new URL(req.url);
       if (url.pathname === "/api/signals") {
-        return Response.json({ signals, price: lastPrice }, {
+        const a = url.searchParams.get("account");
+        const l = url.searchParams.get("leverage");
+        const r = url.searchParams.get("risk");
+        if (a) accountSizeUsd = Number(a) || 10000;
+        if (l) maxLeverage = Number(l) || 20;
+        if (r) riskPct = Number(r) || 1;
+
+        for (const sig of signals) {
+          if (sig.result !== "open") continue;
+          const riskUsd = accountSizeUsd * (riskPct / 100);
+          const posSize = riskUsd / sig.initialRisk;
+          const notional = posSize * lastPrice;
+          const lev = notional / accountSizeUsd;
+          sig.positionSize = posSize;
+          sig.notionalUsd = notional;
+          sig.leverageUsed = lev;
+          sig.feeUsd = notional * FEE_RATE * 2;
+          sig.slippageUsd = notional * SLIPPAGE_RATE * 2;
+          sig.totalCostUsd = sig.feeUsd + sig.slippageUsd;
+          if (sig.side === "long") {
+            sig.grossPnlUsd = posSize * (lastPrice - sig.entryPrice);
+          } else {
+            sig.grossPnlUsd = posSize * (sig.entryPrice - lastPrice);
+          }
+          sig.netPnlUsd = sig.grossPnlUsd - sig.totalCostUsd;
+        }
+
+        return Response.json({ signals, price: lastPrice, accountSizeUsd, maxLeverage, riskPct }, {
           headers: {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET",
@@ -268,50 +309,42 @@ async function main() {
 
       if (sig.side === "long") {
         if (price <= sig.stop) {
-          const r = sig.entryPrice !== sig.stop
-            ? (sig.stop - sig.entryPrice) / initialRisk
-            : -1;
+          const wasTrailed = sig.stop > sig.entryPrice - sig.initialRisk;
           sig.exitPrice = sig.stop;
           sig.exitTimestamp = formatTime(ms);
-          const wasTrailed = sig.stop > sig.entryPrice - sig.initialRisk;
           sig.exitReason = wasTrailed ? "trailed" : "stopped";
-          sig.r = r;
-          sig.result = "loss";
-          sig.pnl = r;
+          sig.grossPnlUsd = sig.positionSize * (sig.stop - sig.entryPrice);
+          sig.netPnlUsd = sig.grossPnlUsd - sig.totalCostUsd;
+          sig.result = sig.netPnlUsd >= 0 ? "win" : "loss";
         } else if (price >= sig.target) {
-          const r = (sig.target - sig.entryPrice) / initialRisk;
           sig.exitPrice = sig.target;
           sig.exitTimestamp = formatTime(ms);
           sig.exitReason = "target";
-          sig.r = r;
-          sig.result = "win";
-          sig.pnl = r;
-        } else if (price >= sig.entryPrice + trailTrigger) {
-          const newStop = Math.max(sig.stop, sig.entryPrice + initialRisk * 0.25);
+          sig.grossPnlUsd = sig.positionSize * (sig.target - sig.entryPrice);
+          sig.netPnlUsd = sig.grossPnlUsd - sig.totalCostUsd;
+          sig.result = sig.netPnlUsd >= 0 ? "win" : "loss";
+        } else if (price >= sig.entryPrice + sig.initialRisk * 0.5) {
+          const newStop = Math.max(sig.stop, sig.entryPrice + sig.initialRisk * 0.25);
           if (sig.stop < newStop) sig.stop = newStop;
         }
       } else {
         if (price >= sig.stop) {
-          const r = sig.entryPrice !== sig.stop
-            ? (sig.entryPrice - sig.stop) / initialRisk
-            : -1;
+          const wasTrailed = sig.stop < sig.entryPrice + sig.initialRisk;
           sig.exitPrice = sig.stop;
           sig.exitTimestamp = formatTime(ms);
-          const wasTrailed = sig.stop < sig.entryPrice + sig.initialRisk;
           sig.exitReason = wasTrailed ? "trailed" : "stopped";
-          sig.r = r;
-          sig.result = "loss";
-          sig.pnl = r;
+          sig.grossPnlUsd = sig.positionSize * (sig.entryPrice - sig.stop);
+          sig.netPnlUsd = sig.grossPnlUsd - sig.totalCostUsd;
+          sig.result = sig.netPnlUsd >= 0 ? "win" : "loss";
         } else if (price <= sig.target) {
-          const r = (sig.entryPrice - sig.target) / initialRisk;
           sig.exitPrice = sig.target;
           sig.exitTimestamp = formatTime(ms);
           sig.exitReason = "target";
-          sig.r = r;
-          sig.result = "win";
-          sig.pnl = r;
-        } else if (price <= sig.entryPrice - trailTrigger) {
-          const newStop = Math.min(sig.stop, sig.entryPrice - initialRisk * 0.25);
+          sig.grossPnlUsd = sig.positionSize * (sig.entryPrice - sig.target);
+          sig.netPnlUsd = sig.grossPnlUsd - sig.totalCostUsd;
+          sig.result = sig.netPnlUsd >= 0 ? "win" : "loss";
+        } else if (price <= sig.entryPrice - sig.initialRisk * 0.5) {
+          const newStop = Math.min(sig.stop, sig.entryPrice - sig.initialRisk * 0.25);
           if (sig.stop > newStop) sig.stop = newStop;
         }
       }
@@ -359,9 +392,22 @@ async function main() {
               if (target >= price) target = price - binSize * 20;
             }
             const initialRisk = Math.abs(price - stop);
+            const riskUsd = accountSizeUsd * (riskPct / 100);
+            const positionSize = riskUsd / initialRisk;
+            const notionalUsd = positionSize * price;
+            const leverageUsed = notionalUsd / accountSizeUsd;
+
+            if (leverageUsed > maxLeverage) {
+              console.log(`[${ts}] SKIP: requires ${leverageUsed.toFixed(1)}x leverage (max ${maxLeverage}x)`);
+              return;
+            }
+
+            const feeUsd = notionalUsd * FEE_RATE * 2;
+            const slippageUsd = notionalUsd * SLIPPAGE_RATE * 2;
+            const totalCostUsd = feeUsd + slippageUsd;
 
             console.log(
-              `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)} | stop: ${stop.toFixed(2)} | target: ${target.toFixed(2)} | ${reason}`,
+              `[${ts}] Signal: ${signalSide.toUpperCase()} @ ${price.toFixed(2)} | Score: ${score.toFixed(2)} | ${leverageUsed.toFixed(1)}x leverage | notional $${notionalUsd.toFixed(0)} | cost $${totalCostUsd.toFixed(2)} | ${reason}`,
             );
             writeCsvRow(ts, signalSide, price, score, vec);
             signals.unshift({
@@ -373,8 +419,15 @@ async function main() {
               stop,
               target,
               initialRisk,
+              positionSize,
+              notionalUsd,
+              leverageUsed,
+              feeUsd,
+              slippageUsd,
+              totalCostUsd,
               result: "open",
-              pnl: 0,
+              grossPnlUsd: 0,
+              netPnlUsd: 0,
               exitPrice: null,
               exitTimestamp: null,
               exitReason: null,
