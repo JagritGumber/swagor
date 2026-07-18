@@ -273,7 +273,8 @@ async function main() {
             : -1;
           sig.exitPrice = sig.stop;
           sig.exitTimestamp = formatTime(ms);
-          sig.exitReason = "stop";
+          const wasTrailed = sig.stop > sig.entryPrice - sig.initialRisk;
+          sig.exitReason = wasTrailed ? "trailed" : "stopped";
           sig.r = r;
           sig.result = "loss";
           sig.pnl = r;
@@ -296,7 +297,8 @@ async function main() {
             : -1;
           sig.exitPrice = sig.stop;
           sig.exitTimestamp = formatTime(ms);
-          sig.exitReason = "stop";
+          const wasTrailed = sig.stop < sig.entryPrice + sig.initialRisk;
+          sig.exitReason = wasTrailed ? "trailed" : "stopped";
           sig.r = r;
           sig.result = "loss";
           sig.pnl = r;

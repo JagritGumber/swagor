@@ -28,6 +28,7 @@ export function SignalsPanel() {
   const [signals, setSignals] = useState<Signal[]>([])
   const [currentPrice, setCurrentPrice] = useState(0)
   const [connected, setConnected] = useState(false)
+  const [riskPct, setRiskPct] = useState(1)
 
   useEffect(() => {
     let active = true
@@ -60,6 +61,18 @@ export function SignalsPanel() {
             Signals
           </span>
           <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-[#6b7280]">Risk</span>
+              <input
+                type="number"
+                value={riskPct}
+                onChange={(e) => setRiskPct(Number(e.target.value) || 1)}
+                className="w-12 bg-white/5 border border-border-default rounded px-1.5 py-0.5 text-[10px] text-text-primary text-center"
+                min="0.1"
+                step="0.5"
+              />
+              <span className="text-[10px] text-[#6b7280]">%</span>
+            </div>
             {currentPrice > 0 && (
               <span className="font-data text-[11px] text-text-primary">
                 ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -84,14 +97,14 @@ export function SignalsPanel() {
         )}
 
         {signals.map((signal, i) => (
-          <SignalRow key={i} signal={signal} currentPrice={currentPrice} />
+          <SignalRow key={i} signal={signal} currentPrice={currentPrice} riskPct={riskPct} />
         ))}
       </div>
     </div>
   )
 }
 
-function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: number }) {
+function SignalRow({ signal, currentPrice, riskPct }: { signal: Signal; currentPrice: number; riskPct: number }) {
   const isLong = signal.side === 'long'
   const isOpen = signal.result === 'open'
   const entryPrice = signal.entryPrice ?? (signal as any).price ?? 0
@@ -104,15 +117,22 @@ function SignalRow({ signal, currentPrice }: { signal: Signal; currentPrice: num
     : null
 
   const timeAgo = isOpen ? getTimeAgo(signal.timestamp) : getDuration(signal.timestamp, signal.exitTimestamp)
-  const exitLabel = isOpen ? signal.reason : `${signal.exitReason} ${signal.r != null ? signal.r >= 0 ? '+' : '' : ''}${signal.r?.toFixed(1) ?? ''}R`
+
+  const exitLabel = isOpen
+    ? signal.reason
+    : signal.exitReason === 'trailed' ? 'Trailed Out'
+    : signal.exitReason === 'target' ? 'Target Hit'
+    : 'Stopped Out'
 
   const resultColor = isOpen
     ? pnlPct === null ? 'text-[#6b7280]' : pnlPct > 0 ? 'text-[#00ff85]' : pnlPct < 0 ? 'text-[#f87171]' : 'text-[#6b7280]'
-    : signal.result === 'win' ? 'text-[#00ff85]' : 'text-[#f87171]'
+    : signal.exitReason === 'trailed' ? 'text-[#00ff85]'
+    : signal.exitReason === 'target' ? 'text-[#00ff85]'
+    : 'text-[#f87171]'
 
   const displayValue = isOpen
     ? pnlPct !== null ? `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(3)}%` : '--'
-    : signal.r != null ? `${signal.r >= 0 ? '+' : ''}${signal.r.toFixed(1)}R` : '--'
+    : signal.r != null ? `${(signal.r * riskPct) >= 0 ? '+' : ''}${(signal.r * riskPct).toFixed(1)}%` : '--'
 
   return (
     <div className="border-b border-border-default px-4 py-2.5 hover:bg-white/[0.02]">
