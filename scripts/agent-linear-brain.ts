@@ -37,8 +37,6 @@ export type AgentWeights = {
   bias: number;
 };
 
-const PROFILE_WINDOW_MS = 3600000; // 1 hour
-
 export function createZeroWeights(): AgentWeights {
   const features = {} as Record<FeatureKey, number>;
   for (const key of FEATURE_KEYS) features[key] = 0;
@@ -163,7 +161,7 @@ function runMonth(
 
   let currentReadMs = startMs;
   while (currentReadMs <= endMs) {
-    const prevWindowKey = windowKey(currentReadMs - PROFILE_WINDOW_MS, PROFILE_WINDOW_MS);
+    const prevWindowKey = windowKey(currentReadMs - 300000, 300000);
     const closedProfiles = profilesByWindow.get(prevWindowKey) ?? [];
     if (closedProfiles.length > 0) {
       structure = parseVolumeProfileStructure({ buckets: closedProfiles });
@@ -434,7 +432,7 @@ async function main() {
 
   const profilesByWindow = new Map<string, VolumeProfileBucket[]>();
   for (const bucket of profileBuckets) {
-    const key = windowKey(bucket.startMs, PROFILE_WINDOW_MS);
+    const key = windowKey(bucket.startMs, 300000);
     const existing = profilesByWindow.get(key);
     if (existing) existing.push(bucket);
     else profilesByWindow.set(key, [bucket]);
