@@ -7,8 +7,8 @@ import type { VolumeProfileStructure } from "../packages/strategy-lab/read-core/
 import type { AgentWeights } from "./agent-linear-brain";
 
 const BINANCE_WS = "wss://stream.binance.com:9443/ws/btcusdt@trade";
-const PROFILE_INTERVAL_MS = 5 * 60 * 1000;
-const ORDERFLOW_WINDOW_MS = 120_000;
+const PROFILE_INTERVAL_MS = 3600000; // 1 hour
+const ORDERFLOW_WINDOW_MS = 120_000; // 2 min (CVD micro-structure)
 const SCORE_THRESHOLD = 1.0;
 const CSV_PATH = join(import.meta.dir, "..", ".data", "shadow-trades.csv");
 const HTTP_PORT = 3001;
