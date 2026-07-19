@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 
 type Signal = {
   timestamp: string
@@ -38,33 +38,27 @@ export function SignalsPanel() {
   const [signals, setSignals] = useState<Signal[]>([])
   const [currentPrice, setCurrentPrice] = useState(0)
   const [connected, setConnected] = useState(false)
-  const [account, setAccount] = useState(10000)
-  const [leverage, setLeverage] = useState(20)
-  const [risk, setRisk] = useState(1)
-
-  const fetchSignals = useCallback(async () => {
-    try {
-      const params = new URLSearchParams({
-        account: String(account),
-        leverage: String(leverage),
-        risk: String(risk),
-      })
-      const res = await fetch(`${API_URL}?${params}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data: ApiResponse = await res.json()
-      setSignals(Array.isArray(data) ? data : data.signals ?? [])
-      setCurrentPrice(Array.isArray(data) ? 0 : data.price ?? 0)
-      setConnected(true)
-    } catch {
-      setConnected(false)
-    }
-  }, [account, leverage, risk])
 
   useEffect(() => {
+    let active = true
+
+    async function fetchSignals() {
+      try {
+        const res = await fetch(API_URL)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data: ApiResponse = await res.json()
+        setSignals(Array.isArray(data) ? data : data.signals ?? [])
+        setCurrentPrice(Array.isArray(data) ? 0 : data.price ?? 0)
+        setConnected(true)
+      } catch {
+        setConnected(false)
+      }
+    }
+
     fetchSignals()
     const id = setInterval(fetchSignals, 5000)
-    return () => clearInterval(id)
-  }, [fetchSignals])
+    return () => { active = false; clearInterval(id) }
+  }, [])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -74,35 +68,6 @@ export function SignalsPanel() {
             Signals
           </span>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] text-[#6b7280]">$</span>
-              <input
-                type="number"
-                value={account}
-                onChange={(e) => setAccount(Number(e.target.value) || 10000)}
-                className="w-16 bg-white/5 border border-border-default rounded px-1.5 py-0.5 text-[9px] text-text-primary text-right font-data"
-                min="100"
-                step="1000"
-              />
-              <span className="text-[9px] text-[#6b7280]">{leverage}x</span>
-              <input
-                type="number"
-                value={leverage}
-                onChange={(e) => setLeverage(Number(e.target.value) || 20)}
-                className="w-8 bg-white/5 border border-border-default rounded px-1 py-0.5 text-[9px] text-text-primary text-right font-data"
-                min="1"
-                max="125"
-              />
-              <span className="text-[9px] text-[#6b7280]">{risk}%</span>
-              <input
-                type="number"
-                value={risk}
-                onChange={(e) => setRisk(Number(e.target.value) || 1)}
-                className="w-8 bg-white/5 border border-border-default rounded px-1 py-0.5 text-[9px] text-text-primary text-right font-data"
-                min="0.1"
-                step="0.5"
-              />
-            </div>
             {currentPrice > 0 && (
               <span className="font-data text-[10px] text-text-primary">
                 ${currentPrice.toLocaleString()}
