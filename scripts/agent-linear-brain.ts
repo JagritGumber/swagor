@@ -309,16 +309,13 @@ function updateSimTrade(trade: SimTrade, currentPrice: number, nowMs: number): S
 
   if (trade.side === "long") {
     if (currentPrice <= trade.stop) {
-      const risk = Math.abs(trade.entryPrice - trade.stop);
-      if (risk <= 0) return { ...trade, exitPrice: trade.stop, exitAt: nowMs, r: -1 };
       const costR = computeCostR(initialRisk);
-      return { ...trade, exitPrice: trade.stop, exitAt: nowMs, r: -1 - costR };
+      const actualR = (trade.stop - trade.entryPrice) / initialRisk - costR;
+      return { ...trade, exitPrice: trade.stop, exitAt: nowMs, r: actualR };
     }
     if (currentPrice >= trade.target) {
-      const risk = Math.abs(trade.entryPrice - trade.stop);
-      if (risk <= 0) return { ...trade, exitPrice: trade.target, exitAt: nowMs, r: -1 };
       const costR = computeCostR(initialRisk);
-      return { ...trade, exitPrice: trade.target, exitAt: nowMs, r: (trade.target - trade.entryPrice) / risk - costR };
+      return { ...trade, exitPrice: trade.target, exitAt: nowMs, r: (trade.target - trade.entryPrice) / initialRisk - costR };
     }
     if (currentPrice >= trade.entryPrice + trailTrigger) {
       const newStop = Math.max(trade.stop, trade.entryPrice + initialRisk * 0.25);
@@ -328,16 +325,13 @@ function updateSimTrade(trade: SimTrade, currentPrice: number, nowMs: number): S
     }
   } else {
     if (currentPrice >= trade.stop) {
-      const risk = Math.abs(trade.entryPrice - trade.stop);
-      if (risk <= 0) return { ...trade, exitPrice: trade.stop, exitAt: nowMs, r: -1 };
       const costR = computeCostR(initialRisk);
-      return { ...trade, exitPrice: trade.stop, exitAt: nowMs, r: -1 - costR };
+      const actualR = (trade.entryPrice - trade.stop) / initialRisk - costR;
+      return { ...trade, exitPrice: trade.stop, exitAt: nowMs, r: actualR };
     }
     if (currentPrice <= trade.target) {
-      const risk = Math.abs(trade.entryPrice - trade.stop);
-      if (risk <= 0) return { ...trade, exitPrice: trade.target, exitAt: nowMs, r: -1 };
       const costR = computeCostR(initialRisk);
-      return { ...trade, exitPrice: trade.target, exitAt: nowMs, r: (trade.entryPrice - trade.target) / risk - costR };
+      return { ...trade, exitPrice: trade.target, exitAt: nowMs, r: (trade.entryPrice - trade.target) / initialRisk - costR };
     }
     if (currentPrice <= trade.entryPrice - trailTrigger) {
       const newStop = Math.min(trade.stop, trade.entryPrice - initialRisk * 0.25);
