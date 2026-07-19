@@ -64,12 +64,12 @@ export function SignalsPanel() {
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-1.5">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8892a4]">
+          <span className="text-[13px] font-medium text-white bg-white/10 px-3 py-1 rounded">
             Signals
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {currentPrice > 0 && (
-              <span className="font-data text-[10px] text-text-primary">
+              <span className="font-data text-[13px] text-text-primary">
                 ${currentPrice.toLocaleString()}
               </span>
             )}
