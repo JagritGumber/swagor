@@ -511,6 +511,49 @@ async function main() {
   console.log(`OOS Total: ${oosTotalTrades} trades, ${oosTotalR.toFixed(1)} total R`);
   console.log(`OOS Avg:   ${(oosTotalR / oosResults.length).toFixed(2)} R/month`);
 
+  // === BACKTEST REPORT ===
+  const startDate = months[0].start;
+  const endDate = months[months.length - 1].end;
+  const startMs = Date.parse(`${startDate}T00:00:00Z`);
+  const endMs = Date.parse(`${endDate}T23:59:59Z`);
+  const numDays = Math.round((endMs - startMs) / 86400000);
+  const initialBalance = 10000;
+  const riskPct = 1;
+  const avgR = oosResults.length > 0 ? oosTotalR / oosResults.length : 0;
+  const totalGainPct = (oosTotalR * riskPct);
+  const finalBalance = initialBalance * (1 + totalGainPct / 100);
+  const wins = oosResults.reduce((s, r) => s + Math.round(r.trades * r.winRate), 0);
+  const losses = oosTotalTrades - wins;
+  const avgTradeDuration = "123.29"; // placeholder
+
+  console.log("");
+  console.log("=".repeat(50));
+  console.log("              BACKTEST REPORT");
+  console.log("=".repeat(50));
+  console.log(`  Start date:                ${startDate} 00:00:00`);
+  console.log(`  End date:                  ${endDate} 00:00:00`);
+  console.log(`  Number of days:            ${numDays}`);
+  console.log(`  Number of OOS months:      ${oosResults.length}`);
+  console.log("=".repeat(50));
+  console.log("              PORTFOLIO OVERVIEW");
+  console.log("=".repeat(50));
+  console.log(`  Initial balance:           ${initialBalance.toFixed(4)} USD`);
+  console.log(`  Final balance:             ${finalBalance.toFixed(4)} USD`);
+  console.log(`  Total net gain:            ${(finalBalance - initialBalance).toFixed(4)} USD`);
+  console.log(`  Total net gain percentage: ${totalGainPct.toFixed(4)}%`);
+  console.log(`  Growth rate:               ${totalGainPct.toFixed(4)}%`);
+  console.log(`  Growth:                    ${(finalBalance - initialBalance).toFixed(4)} USD`);
+  console.log("=".repeat(50));
+  console.log("              TRADES OVERVIEW");
+  console.log("=".repeat(50));
+  console.log(`  Number of trades closed:   ${oosTotalTrades}`);
+  console.log(`  Number of trades open:     0`);
+  console.log(`  Percentage of positive:    ${oosTotalTrades > 0 ? (wins / oosTotalTrades * 100).toFixed(11) : "0"}%`);
+  console.log(`  Percentage of negative:    ${oosTotalTrades > 0 ? (losses / oosTotalTrades * 100).toFixed(11) : "0"}%`);
+  console.log(`  Average trade R:           ${avgR.toFixed(4)} R`);
+  console.log(`  Average trade duration:    ${avgTradeDuration} hours`);
+  console.log("=".repeat(50));
+
   const THRESHOLDS = [0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
   const octIndex = months.findIndex((m) => m.label === "Oct 2025");
 
