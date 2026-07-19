@@ -449,6 +449,7 @@ async function main() {
 
   let weights = createZeroWeights();
   const oosResults: MonthResult[] = [];
+  const allOosTrades: SimTrade[] = [];
 
   for (let i = 0; i < months.length; i++) {
     const m = months[i];
@@ -472,6 +473,7 @@ async function main() {
       );
       const oosResult = summarizeMonth(m.label, oosTrades);
       oosResults.push(oosResult);
+      for (const t of oosTrades) allOosTrades.push(t);
       const oosElapsed = ((Date.now() - oosStart) / 1000).toFixed(1);
 
       const trainStart = Date.now();
@@ -511,20 +513,55 @@ async function main() {
   console.log(`OOS Total: ${oosTotalTrades} trades, ${oosTotalR.toFixed(1)} total R`);
   console.log(`OOS Avg:   ${(oosTotalR / oosResults.length).toFixed(2)} R/month`);
 
-  // === BACKTEST REPORT ===
+  // === SEQUENTIAL EQUITY SIMULATION ===
+  const closedTrades = allOosTrades
+    .filter((t) => t.exitAt !== null && t.r !== null)
+    .sort((a, b) => (a.exitAt ?? 0) - (b.exitAt ?? 0));
+
+  const initialBalance = 10000;
+  const riskPctPerTrade = 1;
+  const riskAmount = initialBalance * (riskPctPerTrade / 100);
+  let balance = initialBalance;
+  let peak = initialBalance;
+  let maxDrawdown = 0;
+  let maxDrawdownPct = 0;
+  let totalDurationMs = 0;
+  let totalR = 0;
+  let wins = 0;
+  let losses = 0;
+
+  for (const trade of closedTrades) {
+    const dollarPnL = (trade.r ?? 0) * riskAmount;
+    balance += dollarPnL;
+    totalR += trade.r ?? 0;
+
+    if (balance > peak) peak = balance;
+    const drawdown = peak - balance;
+    const drawdownPct = (drawdown / peak) * 100;
+    if (drawdownPct > maxDrawdownPct) {
+      maxDrawdownPct = drawdownPct;
+      maxDrawdown = drawdown;
+    }
+
+    if (trade.exitAt && trade.entryAt) {
+      totalDurationMs += trade.exitAt - trade.entryAt;
+    }
+
+    if ((trade.r ?? 0) >= 0) wins++;
+    else losses++;
+  }
+
+  const avgRPerTrade = closedTrades.length > 0 ? totalR / closedTrades.length : 0;
+  const avgDurationHours = closedTrades.length > 0 ? totalDurationMs / closedTrades.length / 3600000 : 0;
+  const totalGain = balance - initialBalance;
+  const totalGainPct = (totalGain / initialBalance) * 100;
+  const winRate = closedTrades.length > 0 ? (wins / closedTrades.length) * 100 : 0;
+
   const startDate = months[0].start;
   const endDate = months[months.length - 1].end;
   const startMs = Date.parse(`${startDate}T00:00:00Z`);
   const endMs = Date.parse(`${endDate}T23:59:59Z`);
   const numDays = Math.round((endMs - startMs) / 86400000);
-  const initialBalance = 10000;
-  const riskPct = 1;
-  const avgR = oosResults.length > 0 ? oosTotalR / oosResults.length : 0;
-  const totalGainPct = (oosTotalR * riskPct);
-  const finalBalance = initialBalance * (1 + totalGainPct / 100);
-  const wins = oosResults.reduce((s, r) => s + Math.round(r.trades * r.winRate), 0);
-  const losses = oosTotalTrades - wins;
-  const avgTradeDuration = "123.29"; // placeholder
 
   console.log("");
   console.log("=".repeat(50));
@@ -538,20 +575,21 @@ async function main() {
   console.log("              PORTFOLIO OVERVIEW");
   console.log("=".repeat(50));
   console.log(`  Initial balance:           ${initialBalance.toFixed(4)} USD`);
-  console.log(`  Final balance:             ${finalBalance.toFixed(4)} USD`);
-  console.log(`  Total net gain:            ${(finalBalance - initialBalance).toFixed(4)} USD`);
+  console.log(`  Final balance:             ${balance.toFixed(4)} USD`);
+  console.log(`  Total net gain:            ${totalGain.toFixed(4)} USD`);
   console.log(`  Total net gain percentage: ${totalGainPct.toFixed(4)}%`);
   console.log(`  Growth rate:               ${totalGainPct.toFixed(4)}%`);
-  console.log(`  Growth:                    ${(finalBalance - initialBalance).toFixed(4)} USD`);
+  console.log(`  Growth:                    ${totalGain.toFixed(4)} USD`);
   console.log("=".repeat(50));
   console.log("              TRADES OVERVIEW");
   console.log("=".repeat(50));
-  console.log(`  Number of trades closed:   ${oosTotalTrades}`);
+  console.log(`  Number of trades closed:   ${closedTrades.length}`);
   console.log(`  Number of trades open:     0`);
-  console.log(`  Percentage of positive:    ${oosTotalTrades > 0 ? (wins / oosTotalTrades * 100).toFixed(11) : "0"}%`);
-  console.log(`  Percentage of negative:    ${oosTotalTrades > 0 ? (losses / oosTotalTrades * 100).toFixed(11) : "0"}%`);
-  console.log(`  Average trade R:           ${avgR.toFixed(4)} R`);
-  console.log(`  Average trade duration:    ${avgTradeDuration} hours`);
+  console.log(`  Percentage of positive:    ${winRate.toFixed(11)}%`);
+  console.log(`  Percentage of negative:    ${(100 - winRate).toFixed(11)}%`);
+  console.log(`  Average trade R:           ${avgRPerTrade.toFixed(4)} R`);
+  console.log(`  Average trade duration:    ${avgDurationHours.toFixed(2)} hours`);
+  console.log(`  Max drawdown:              ${maxDrawdown.toFixed(2)} USD (${maxDrawdownPct.toFixed(2)}%)`);
   console.log("=".repeat(50));
 
   const THRESHOLDS = [0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
