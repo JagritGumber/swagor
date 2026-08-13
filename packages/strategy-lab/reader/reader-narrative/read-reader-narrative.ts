@@ -1,6 +1,6 @@
-import type { AuctionRead } from "../../read-core/read/types";
-import type { OrderflowRead } from "../../read-core/orderflow/types";
-import type { Candle, Side } from "../../types";
+import type { AuctionRead } from "@strategy-lab/read-core/read/types";
+import type { OrderflowRead } from "@strategy-lab/read-core/orderflow/types";
+import type { Candle, Side } from "@strategy-lab/types";
 import { absorptionPolicyAllowsReclaim } from "../reader-absorption-quality/read-reader-absorption-quality";
 import type { ReaderAbsorptionPolicy, ReaderAbsorptionQuality } from "../reader-absorption-quality/types";
 import { readerRejectionEdgeFor } from "../reader-live/reader-rejection-edge-for";
@@ -42,7 +42,7 @@ export function readReaderNarrative(input: {
     participation,
     levelStory,
     reasons: [
-      `${input.auction.location} does not have a complete initiative or rejection story`,
+      `${input.auction.location} has no clear direction yet`,
       input.orderflow.narrative,
     ],
     invalidation: null,
@@ -175,7 +175,7 @@ function waitNarrative(
     direction: "none",
     participation: participationFor(orderflow),
     levelStory,
-    reasons: [reason, auction.narrative, orderflow.narrative],
+    reasons: [reason, orderflow.narrative],
     invalidation: null,
     target: null,
   };

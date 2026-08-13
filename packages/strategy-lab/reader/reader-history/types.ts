@@ -1,7 +1,9 @@
-import type { OrderflowEvent } from "../../read-core/orderflow/types";
+import type { OrderflowEvent } from "@strategy-lab/read-core/orderflow/types";
 import type { LiveReaderConfig, LiveReaderRead } from "../reader-live/types";
+import type { ReaderAuctionModeState } from "../reader-auction-mode/types";
+import type { ReaderVpStateMemory } from "../reader-vp-state/types";
 import type { ReaderReplayInput, ReaderReplayResult, ReaderReplayStep } from "../reader-replay/types";
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 
 export type ReaderHistoryAuctionConfig = {
   swingLeft?: number;
@@ -31,6 +33,8 @@ export type ReaderHistoryInput = {
   endAt?: number;
   auctionConfig?: ReaderHistoryAuctionConfig;
   readerConfig?: LiveReaderConfig;
+  auctionModeState?: ReaderAuctionModeState;
+  vpStateMemory?: ReaderVpStateMemory;
 };
 
 export type ReaderHistoryStep = {

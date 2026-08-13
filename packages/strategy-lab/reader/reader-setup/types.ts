@@ -1,9 +1,9 @@
-import type { MemoryStore } from "../../../shared";
+import type { MemoryStore } from "@packages/shared";
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderNarrativeStateConfig } from "../reader-narrative-state/types";
 import type { ReaderSequence } from "../reader-sequence/types";
-import type { Side } from "../../types";
-import type { ReaderActionableTradePlan, ReaderTradePlan, ReaderTradePlanConfig } from "../../backtest/trade-plan/types";
+import type { Side } from "@strategy-lab/types";
+import type { ReaderActionableTradePlan, ReaderTradePlan, ReaderTradePlanConfig } from "@strategy-lab/backtest/trade-plan/types";
 
 export type ReaderSetupStatus = "watching" | "waiting-reclaim" | "ready";
 

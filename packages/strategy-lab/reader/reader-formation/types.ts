@@ -1,6 +1,6 @@
-import type { OrderflowEvidence, OrderflowTapeContext, OrderflowTrade } from "../../read-core/orderflow/types";
-import type { AuctionLocation, PriceLevel } from "../../read-core/read/types";
-import type { ReaderMarketRegime } from "../../read-core/market-regime/types";
+import type { OrderflowEvidence, OrderflowTapeContext, OrderflowTrade } from "@strategy-lab/read-core/orderflow/types";
+import type { AuctionLocation, PriceLevel } from "@strategy-lab/read-core/read/types";
+import type { ReaderMarketRegime } from "@strategy-lab/read-core/market-regime/types";
 import type { ReaderAuctionMode } from "../reader-auction-mode/types";
 import type { ReaderAbsorptionQuality } from "../reader-absorption-quality/types";
 import type { ReaderHistoryStep } from "../reader-history/types";

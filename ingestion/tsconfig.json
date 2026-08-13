@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2022",
-    "lib": ["es2022", "dom"],
+    "lib": ["es2022"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "strict": true,
@@ -14,7 +14,9 @@
     "allowImportingTsExtensions": true,
     "types": ["node"],
     "paths": {
-      "@packages/*": ["../packages/*"]
+      "@packages/*": ["../packages/*"],
+      "@shared/*": ["../shared/*"],
+      "@env": ["./env.ts"]
     }
   },
   "include": ["**/*.ts"],

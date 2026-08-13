@@ -1,6 +1,6 @@
-import type { AuctionRead } from "../../read-core/read/types";
-import type { OrderflowRead } from "../../read-core/orderflow/types";
-import type { ReaderMarketRegime } from "../../read-core/market-regime/types";
+import type { AuctionRead } from "@strategy-lab/read-core/read/types";
+import type { OrderflowRead } from "@strategy-lab/read-core/orderflow/types";
+import type { ReaderMarketRegime } from "@strategy-lab/read-core/market-regime/types";
 import { readReaderAuctionMode } from "../reader-auction-mode/read-reader-auction-mode";
 import type { ReaderAuctionMode, ReaderAuctionModeState } from "../reader-auction-mode/types";
 import { readReaderAbsorptionQuality } from "../reader-absorption-quality/read-reader-absorption-quality";
@@ -8,7 +8,7 @@ import { readReaderNarrative } from "../reader-narrative/read-reader-narrative";
 import type { ReaderNarrative } from "../reader-narrative/types";
 import { readReaderVpState } from "../reader-vp-state/read-reader-vp-state";
 import type { ReaderVpState, ReaderVpStateMemory } from "../reader-vp-state/types";
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 import type { LiveReaderConfig, LiveReaderRead, LiveReaderStance } from "./types";
 
 export function combineAuctionOrderflow(input: {
@@ -88,8 +88,21 @@ function stanceFor(narrative: ReaderNarrative): LiveReaderStance {
   return "wait";
 }
 
-function narrativeFor(asset: string, narrative: ReaderNarrative): string {
-  return `${asset} narrative=${narrative.intent} direction=${narrative.direction} participation=${narrative.participation} level=${narrative.levelStory}. ${narrative.reasons.join(" ")}`;
+function narrativeFor(_asset: string, narrative: ReaderNarrative): string {
+  if (narrative.reasons.length > 0) {
+    const seen = new Set<string>()
+    const unique: string[] = []
+    for (const r of narrative.reasons) {
+      const lower = r.toLowerCase()
+      if (!seen.has(lower)) {
+        seen.add(lower)
+        unique.push(r)
+      }
+    }
+    return unique.join(". ") + "."
+  }
+  const dir = narrative.direction === "none" ? "" : ` ${narrative.direction}`
+  return `${narrative.intent}${dir}.`
 }
 
 

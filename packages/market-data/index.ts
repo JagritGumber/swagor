@@ -1,7 +1,6 @@
 export * from "./shared/types";
 export * from "./shared/interval-ms";
 export * from "./hyperliquid/hyperliquid-info-url";
-export * from "./hyperliquid/fetch-hyperliquid-candles";
 export * from "./hyperliquid/fetch-hyperliquid-candles-paginated";
 export * from "./hyperliquid/normalize-hyperliquid-candle";
 export * from "./hyperliquid/validate-hyperliquid-candles";

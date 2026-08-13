@@ -1,4 +1,4 @@
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 
 export function crossedAboveAt(candles: Candle[], index: number, level: number): boolean {
   if (index <= 0 || index >= candles.length) return false;

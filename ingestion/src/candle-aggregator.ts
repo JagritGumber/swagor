@@ -1,4 +1,4 @@
-import type { Candle } from './types.ts'
+import type { Candle } from '@shared/candle'
 
 export interface FormingCandle extends Candle {
   interval: string
@@ -18,7 +18,8 @@ export function createCandleAggregator(): CandleAggregator {
   const closed: FormingCandle[] = []
 
   function bucketKey(intervalMs: number, timestamp: number): number {
-    return Math.floor(timestamp / intervalMs) * intervalMs
+    const intervalSec = intervalMs / 1000
+    return Math.floor(timestamp / intervalSec) * intervalSec
   }
 
   function applyTrade(

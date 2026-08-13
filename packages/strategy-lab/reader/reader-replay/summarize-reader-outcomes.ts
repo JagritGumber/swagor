@@ -1,4 +1,4 @@
-import { maxDrawdown } from "../../backtest/backtest/max-drawdown";
+import { maxDrawdown } from "@strategy-lab/backtest/backtest/max-drawdown";
 import type { ReaderResultOutcome } from "../reader-result/types";
 import type { ReaderReplaySummary } from "./types";
 

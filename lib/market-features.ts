@@ -505,7 +505,7 @@ export async function buildMarketFeatureSnapshot(opts: {
       previousSnapshot: opts.previousSnapshot,
     });
     const vp = computeVolumeProfile(
-      recentCandles.map((c) => ({ o: c.o, h: c.h, l: c.l, c: c.c, v: c.v })),
+      recentCandles,
     );
     const volumeProfile = {
       vwap: round(vp.vwap, 4),

@@ -1,20 +1,20 @@
-import { createOrderflowWindow } from "../../read-core/orderflow/create-orderflow-window";
-import { expireOrderflowWindow } from "../../read-core/orderflow/expire-orderflow-window";
-import { readOrderflowWindow } from "../../read-core/orderflow/read-orderflow-window";
-import { updateOrderflowWindow } from "../../read-core/orderflow/update-orderflow-window";
-import { readMarketRegime } from "../../read-core/market-regime/read-market-regime";
-import { buildTradeVolumeProfileFromRange } from "../../read-core/read/build-trade-volume-profile";
-import { clusterPriceLevels } from "../../read-core/read/cluster-price-levels";
-import { findSwingHighs } from "../../read-core/read/find-swing-highs";
-import { findSwingLows } from "../../read-core/read/find-swing-lows";
-import { nearestPriceLevel } from "../../read-core/read/nearest-price-level";
-import { readAuctionAtLevel } from "../../read-core/read/read-auction-at-level";
+import { createOrderflowWindow } from "@strategy-lab/read-core/orderflow/create-orderflow-window";
+import { expireOrderflowWindow } from "@strategy-lab/read-core/orderflow/expire-orderflow-window";
+import { readOrderflowWindow } from "@strategy-lab/read-core/orderflow/read-orderflow-window";
+import { updateOrderflowWindow } from "@strategy-lab/read-core/orderflow/update-orderflow-window";
+import { readMarketRegime } from "@strategy-lab/read-core/market-regime/read-market-regime";
+import { buildTradeVolumeProfileFromRange } from "@strategy-lab/read-core/read/build-trade-volume-profile";
+import { clusterPriceLevels } from "@strategy-lab/read-core/read/cluster-price-levels";
+import { findSwingHighs } from "@strategy-lab/read-core/read/find-swing-highs";
+import { findSwingLows } from "@strategy-lab/read-core/read/find-swing-lows";
+import { nearestPriceLevel } from "@strategy-lab/read-core/read/nearest-price-level";
+import { readAuctionAtLevel } from "@strategy-lab/read-core/read/read-auction-at-level";
 import { createReaderAuctionModeState } from "../reader-auction-mode/create-reader-auction-mode-state";
 import { combineAuctionOrderflow } from "../reader-live/combine-auction-orderflow";
 import { createReaderVpStateMemory } from "../reader-vp-state/create-reader-vp-state-memory";
-import type { OrderflowEvent, OrderflowTrade } from "../../read-core/orderflow/types";
-import type { AuctionRead, PriceLevel } from "../../read-core/read/types";
-import type { Candle } from "../../types";
+import type { OrderflowEvent, OrderflowTrade } from "@strategy-lab/read-core/orderflow/types";
+import type { AuctionRead, PriceLevel } from "@strategy-lab/read-core/read/types";
+import type { Candle } from "@strategy-lab/types";
 import type { ReaderHistoryInput, ReaderHistoryStep } from "./types";
 
 export function buildReaderHistoryReads(input: ReaderHistoryInput): ReaderHistoryStep[] {
@@ -39,8 +39,8 @@ export function buildReaderHistoryReads(input: ReaderHistoryInput): ReaderHistor
   const window = createOrderflowWindow(input.orderflowWindowMs ?? 60_000);
   const profileWindowMs = input.auctionConfig?.profileTradeWindowMs ?? (input.auctionConfig?.profileCandles ?? 120) * input.candleIntervalMs;
   const profileWindow = createOrderflowWindow(profileWindowMs);
-  const auctionModeState = createReaderAuctionModeState();
-  const vpStateMemory = createReaderVpStateMemory();
+  const auctionModeState = input.auctionModeState ?? createReaderAuctionModeState();
+  const vpStateMemory = input.vpStateMemory ?? createReaderVpStateMemory();
   const steps: ReaderHistoryStep[] = [];
   let candleIndex = 0;
   let eventIndex = 0;
@@ -198,8 +198,9 @@ function localRangeFor(input: {
   price: number | null;
   windowCandles: number;
 }) {
-  const candles = input.candles.slice(Math.max(0, input.candles.length - input.windowCandles));
-  if (candles.length === 0 || input.price === null) {
+  const start = Math.max(0, input.candles.length - input.windowCandles);
+  const end = input.candles.length;
+  if (start >= end || input.price === null) {
     return {
       high: null,
       low: null,
@@ -207,8 +208,14 @@ function localRangeFor(input: {
       location: "unknown" as const,
     };
   }
-  const high = Math.max(...candles.map((candle) => candle.h));
-  const low = Math.min(...candles.map((candle) => candle.l));
+  let high = input.candles[start].h;
+  let low = input.candles[start].l;
+  for (let i = start + 1; i < end; i++) {
+    const h = input.candles[i].h;
+    const l = input.candles[i].l;
+    if (h > high) high = h;
+    if (l < low) low = l;
+  }
   if (!Number.isFinite(high) || !Number.isFinite(low) || high === low) {
     return {
       high: null,

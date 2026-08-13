@@ -1,4 +1,4 @@
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 import { buildLocalVolumeProfile } from "../read/build-local-volume-profile";
 import { classifyCandles } from "./classify-candles";
 import type { RegimeSegment } from "./types";
@@ -37,6 +37,7 @@ export function readRegimeSegments(input: {
         poc: 0,
         valueAreaLow: 0,
         valueAreaHigh: 0,
+        bins: [],
       });
     }
   }
@@ -45,16 +46,28 @@ export function readRegimeSegments(input: {
     const segCandles = target.slice(seg.startIndex, seg.endIndex + 1);
     if (segCandles.length === 0) continue;
     const lastPrice = segCandles[segCandles.length - 1].c;
+
+    let segLow = Infinity;
+    let segHigh = -Infinity;
+    for (const c of segCandles) {
+      if (c.l < segLow) segLow = c.l;
+      if (c.h > segHigh) segHigh = c.h;
+    }
+    const padding = (segHigh - segLow) * 0.05 || 1;
+
     const profile = buildLocalVolumeProfile({
       candles: segCandles,
       anchorPrice: lastPrice,
       radiusPct: 0.015,
       binCount: 24,
+      low: segLow - padding,
+      high: segHigh + padding,
     });
     if (profile) {
       seg.poc = profile.poc;
       seg.valueAreaLow = profile.valueAreaLow;
       seg.valueAreaHigh = profile.valueAreaHigh;
+      seg.bins = profile.bins;
     }
   }
 

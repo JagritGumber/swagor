@@ -1,0 +1,72 @@
+/**
+ * Design tokens from remix dark theme (runtime values in theme.ts).
+ * @theme registers Tailwind utilities (bg-surface-body, font-ui, p-gap-2, etc.).
+ * :root aliases keep semantic names (--surface-body, --gap-2) for plain CSS.
+ * Font tokens are only declared in @theme (--font-ui / --font-data) to avoid cycles.
+ */
+
+@theme {
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-data: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --spacing-gap-2: 8px;
+  --spacing-gap-4: 16px;
+  --spacing-gap-6: 24px;
+  --spacing-gap-12: 48px;
+
+  --color-surface-body: #131722;
+  --color-surface-header: #131722;
+  --color-surface-widget-header: #1a1f2e;
+  --color-surface-widget: #161b26;
+  --color-surface-panel: #161b26;
+
+  --color-border-default: rgba(99, 130, 190, 0.15);
+  --color-border-header: rgba(99, 130, 190, 0.15);
+
+  --color-text-primary: #e1e4ea;
+  --color-text-secondary: #a3a8b5;
+  --color-text-muted: #6b7280;
+  --color-text-data: #e1e4ea;
+
+  --color-accent-green: #00d4ff;
+  --color-positive: #00d4ff;
+  --color-negative: #f87171;
+}
+
+:root {
+  --gap-2: var(--spacing-gap-2);
+  --gap-4: var(--spacing-gap-4);
+  --gap-6: var(--spacing-gap-6);
+  --gap-12: var(--spacing-gap-12);
+
+  --surface-body: var(--color-surface-body);
+  --surface-header: var(--color-surface-header);
+  --surface-widget-header: var(--color-surface-widget-header);
+  --surface-widget: var(--color-surface-widget);
+  --surface-panel: var(--color-surface-panel);
+
+  --border-default: var(--color-border-default);
+  --border-header: var(--color-border-header);
+
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --text-data: var(--color-text-data);
+
+  --accent-green: var(--color-accent-green);
+  --positive: var(--color-positive);
+  --negative: var(--color-negative);
+
+  /* Canvas chart renderer (create-chart / renderer.ts) */
+  --chart-bg: oklch(0 0 0);
+  --candle-up: #00ff85;
+  --candle-down: oklch(0.55 0.2 30);
+  --chart-label: oklch(1 0 0 / 0.5);
+  --chart-dash: oklch(1 0 0 / 0.4);
+  --chart-va-bg: oklch(1 0 0 / 0.08);
+  --seg-trend-up: oklch(0.6 0.2 150 / 0.15);
+  --seg-trend-down: oklch(0.6 0.2 30 / 0.15);
+  --seg-high-vol: oklch(0.7 0.15 80 / 0.15);
+  --seg-range: oklch(0.5 0.05 260 / 0.08);
+  --seg-unknown: oklch(0.5 0.05 260 / 0.08);
+}

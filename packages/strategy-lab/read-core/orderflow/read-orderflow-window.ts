@@ -73,14 +73,12 @@ function tapeStats(trades: OrderflowTrade[], startIndex: number): {
   const tradeCount = Math.max(0, trades.length - startIndex);
   const firstTrade = trades[startIndex] ?? null;
   const lastTrade = trades[trades.length - 1] ?? null;
-  const sizes: number[] = [];
 
   for (let index = startIndex; index < trades.length; index += 1) {
     const trade = trades[index];
     if (trade.side === "buy") buyVolume += trade.size;
     else sellVolume += trade.size;
     totalSize += trade.size;
-    sizes.push(trade.size);
     if (!largestTrade || trade.size > largestTrade.size) {
       secondLargestTradeSize = largestTrade?.size ?? 0;
       largestTrade = trade;
@@ -96,8 +94,7 @@ function tapeStats(trades: OrderflowTrade[], startIndex: number): {
   const deltaShare = totalVolume === 0 ? 0 : delta / totalVolume;
   const dominantShare = totalVolume === 0 ? 0 : Math.max(buyShare, sellShare);
   const priceChange = firstTrade && lastTrade ? lastTrade.price - firstTrade.price : null;
-  sizes.sort((left, right) => left - right);
-  const medianTradeSize = medianOfSorted(sizes);
+  const medianTradeSize = approximateMedian(trades, startIndex);
 
   return {
     buyVolume,
@@ -116,8 +113,8 @@ function tapeStats(trades: OrderflowTrade[], startIndex: number): {
       dominantShare,
       largestTradeShare: largestTrade && totalVolume > 0 ? largestTrade.size / totalVolume : null,
       medianTradeSize,
-      largestTradeRank: largestTrade ? rankInSorted(sizes, largestTrade.size) : null,
-      lastTradeRank: lastTrade ? rankInSorted(sizes, lastTrade.size) : null,
+      largestTradeRank: largestTrade ? approximateRank(trades, startIndex, largestTrade.size) : null,
+      lastTradeRank: lastTrade ? approximateRank(trades, startIndex, lastTrade.size) : null,
       priceChange,
     },
   };
@@ -275,20 +272,49 @@ function narrativeFor(
   asset: string,
   pressure: OrderflowRead["pressure"],
   events: string[],
-  delta: number,
-  tape: OrderflowTapeContext,
+  _delta: number,
+  _tape: OrderflowTapeContext,
 ): string {
-  const rank = tape.largestTradeRank === null ? "n/a" : tape.largestTradeRank.toFixed(2);
-  if (events.includes("confirmed-absorption") && events.includes("buy-absorption")) return `${asset} shows confirmed buyer absorption; largest print rank ${rank}.`;
-  if (events.includes("confirmed-absorption") && events.includes("sell-absorption")) return `${asset} shows confirmed seller absorption; largest print rank ${rank}.`;
-  if (events.includes("buy-absorption")) return `${asset} shows aggressive buyer absorption without standout print confirmation.`;
-  if (events.includes("sell-absorption")) return `${asset} shows aggressive seller absorption without standout print confirmation.`;
-  if (events.includes("stalled-buying")) return `${asset} has buy-heavy tape but buyers are not holding the offer.`;
-  if (events.includes("stalled-selling")) return `${asset} has sell-heavy tape but sellers are not holding the bid.`;
-  if (events.includes("lifting-offers")) return `${asset} buyers are lifting offers with positive delta ${delta.toFixed(4)}.`;
-  if (events.includes("hitting-bids")) return `${asset} sellers are hitting bids with negative delta ${delta.toFixed(4)}.`;
-  if (pressure === "buy-pressure") return `${asset} tape is buy-heavy with buy share ${tape.buyShare.toFixed(2)}.`;
-  if (pressure === "sell-pressure") return `${asset} tape is sell-heavy with sell share ${tape.sellShare.toFixed(2)}.`;
-  return `${asset} tape is balanced in the current window.`;
+  if (events.includes("confirmed-absorption") && events.includes("buy-absorption")) return `Strong buyer absorption confirmed.`;
+  if (events.includes("confirmed-absorption") && events.includes("sell-absorption")) return `Strong seller absorption confirmed.`;
+  if (events.includes("buy-absorption")) return `Buyers are absorbing aggressively.`;
+  if (events.includes("sell-absorption")) return `Sellers are absorbing aggressively.`;
+  if (events.includes("stalled-buying")) return `Buy-heavy tape but buyers are not holding.`;
+  if (events.includes("stalled-selling")) return `Sell-heavy tape but sellers are not holding.`;
+  if (events.includes("lifting-offers")) return `Buyers are lifting offers.`;
+  if (events.includes("hitting-bids")) return `Sellers are hitting bids.`;
+  if (pressure === "buy-pressure") return `Buyers are in control.`;
+  if (pressure === "sell-pressure") return `Sellers are in control.`;
+  return `Trading activity is balanced.`;
+}
+
+function approximateMedian(trades: OrderflowTrade[], startIndex: number): number | null {
+  const count = trades.length - startIndex;
+  if (count <= 0) return null;
+  if (count <= 5) {
+    const values: number[] = [];
+    for (let i = startIndex; i < trades.length; i++) values.push(trades[i].size);
+    values.sort((a, b) => a - b);
+    const mid = Math.floor(values.length / 2);
+    return values.length % 2 === 1 ? values[mid] : (values[mid - 1] + values[mid]) / 2;
+  }
+  const step = Math.max(1, Math.floor(count / 9));
+  const samples: number[] = [];
+  for (let i = startIndex; i < trades.length; i += step) {
+    samples.push(trades[i].size);
+  }
+  samples.sort((a, b) => a - b);
+  const mid = Math.floor(samples.length / 2);
+  return samples.length % 2 === 1 ? samples[mid] : (samples[mid - 1] + samples[mid]) / 2;
+}
+
+function approximateRank(trades: OrderflowTrade[], startIndex: number, value: number): number {
+  const count = trades.length - startIndex;
+  if (count === 0) return 0;
+  let lessOrEqual = 0;
+  for (let i = startIndex; i < trades.length; i++) {
+    if (trades[i].size <= value) lessOrEqual += 1;
+  }
+  return lessOrEqual / count;
 }
 

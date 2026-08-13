@@ -10,7 +10,7 @@
  * total volume, expanded outward from POC.
  */
 
-export type Candle = { o: number; h: number; l: number; c: number; v: number };
+import type { Candle } from '@shared/candle'
 
 export type VolumeProfile = {
   vwap: number | null;

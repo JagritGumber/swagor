@@ -1,7 +1,7 @@
 import type { ReaderSetupResult } from "../reader-setup/types";
 import type { ReaderResultUpdate } from "../reader-result/types";
 import type { ReaderHistoryStep } from "../reader-history/types";
-import type { Side } from "../../types";
+import type { Side } from "@strategy-lab/types";
 
 export type ReaderCandidateFamily =
   | "poc-chop-no-trade"

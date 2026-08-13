@@ -1,8 +1,8 @@
-import type { OrderflowEvidenceTier, OrderflowSide } from "../../read-core/orderflow/types";
-import type { AuctionLocation } from "../../read-core/read/types";
+import type { OrderflowEvidenceTier, OrderflowSide } from "@strategy-lab/read-core/orderflow/types";
+import type { AuctionLocation } from "@strategy-lab/read-core/read/types";
 import type { ReaderAuctionModeName, ReaderAuctionPhase } from "../reader-auction-mode/types";
 import type { ReaderVpAuctionState, ReaderVpPocState, ReaderVpValueState } from "../reader-vp-state/types";
-import type { Side } from "../../types";
+import type { Side } from "@strategy-lab/types";
 
 export type ReaderAbsorptionQualityKind =
   | "trap-confirmed"

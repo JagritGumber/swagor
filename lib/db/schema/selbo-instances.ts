@@ -1,4 +1,6 @@
 import { pgTable, uuid, text, numeric, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { judgmentTicks } from "./judgment-ticks";
 
 const DEFAULT_WATCHLIST = ["ETH", "BTC", "SOL"];
 
@@ -27,6 +29,7 @@ export const selboInstances = pgTable("selbo_instances", {
       "Moderate risk perp futures on Hyperliquid. Trade ETH and BTC. Cut losers fast, let winners run. No more than 3x leverage. Wait for clear setups, hold cash when uncertain.",
     ),
   strategyParsed: jsonb("strategy_parsed"),
+  version: text("version").notNull().default("v1"),
   killSwitchActive: boolean("kill_switch_active").notNull().default(false),
   publicProfile: boolean("public_profile").notNull().default(false),
   username: text("username").unique(), // for /selbo/{username} public page
@@ -69,3 +72,7 @@ export const selboInstances = pgTable("selbo_instances", {
 
 export type SelboInstance = typeof selboInstances.$inferSelect;
 export type NewSelboInstance = typeof selboInstances.$inferInsert;
+
+export const selboInstanceRelations = relations(selboInstances, ({ many }) => ({
+  judgmentTicks: many(judgmentTicks),
+}));

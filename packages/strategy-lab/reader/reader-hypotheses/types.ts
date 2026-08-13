@@ -1,5 +1,5 @@
 import type { ReaderCandidate, ReaderCandidateFamily } from "../reader-candidates/types";
-import type { Side } from "../../types";
+import type { Side } from "@strategy-lab/types";
 
 export type ReaderHypothesisConfirmationType = "none" | "first-reaction" | "max-favorable";
 
@@ -13,6 +13,10 @@ export type ReaderHypothesisFilters = {
   side?: Side;
   regime?: string;
   event?: string;
+  vpAuction?: string;
+  vpPoc?: string;
+  vpValue?: string;
+  pressure?: string;
   minInvalidationBps?: number;
   maxInvalidationBps?: number;
   minTradeCount?: number;

@@ -19,10 +19,11 @@
   - `selbo-context-reader` for context-first live reader/narrative architecture.
   - `selbo-integration-handoff` for moving benchmark readers into Selbo shadow mode.
   - `color-ramps` for Selbo's color tokens, font/gap ramps, and design token rules.
+  - `use-arc` for Arc chain configuration, ConnectWallet (`window.__arcWallet`) integration, contract deployment, and USDC-as-gas patterns.
 - Global skills (in `~/.config/opencode/skills/`):
   - `seo-content-writing` for SEO-optimized website copy (meta, headings, CTA structure).
   - `design-architecture` for establishing font/color/spacing architecture on any project.
-- Design system documented in `remix/DESIGN.md` — includes ramp system (font steps: 48/32/24/16/14/11, gap levels: 48/24/16/8), color tokens for both landing (dark) and app (light) surfaces.
+- Design system documented in `start/` Tailwind tokens.
 
 ## Strategy Lab
 
@@ -37,7 +38,7 @@
   `ctx.index` and `*At` indicators over slicing arrays per tick.
 - Prefer explicit strategy definitions and deterministic backtests before adding UI, workers, or deployment.
 - Every backtest must model costs before results are treated as meaningful.
-- `packages/package.json` has `"type": "module"` so the Remix v3 frontend at `remix/` can import
+- `packages/package.json` has `"type": "module"` so the TanStack Start frontend at `start/` can import
   strategy-lab sources directly via `tsx/esm` without CJS-ESM cycle errors.
 - `packages/market-data` owns ingestion and storage adapters. Keep network,
   VictoriaMetrics, filesystem, and DB APIs out of the Perry-compatible strategy

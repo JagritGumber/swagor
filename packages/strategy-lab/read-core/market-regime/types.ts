@@ -18,4 +18,5 @@ export type RegimeSegment = {
   poc: number;
   valueAreaLow: number;
   valueAreaHigh: number;
+  bins: { low: number; high: number; mid: number; volume: number }[];
 };

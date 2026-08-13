@@ -1,7 +1,7 @@
 import { exitFor } from "./exit-for";
 import { summarizeTrades } from "./summarize-trades";
 import { tradePnl } from "./trade-pnl";
-import type { BacktestResult, Candle, MarketCosts, MarketContext, OpenTrade, Strategy, Trade } from "../../types";
+import type { BacktestResult, Candle, MarketCosts, MarketContext, OpenTrade, Strategy, Trade } from "@strategy-lab/types";
 
 export function runBacktest(input: {
   strategy: Strategy;

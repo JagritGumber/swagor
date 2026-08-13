@@ -55,7 +55,7 @@ export function handleSubscribe(
 
   const forming = aggregator.getForming(asset, interval)
   const trades = tradeBuffer.getAll()
-  client.send('init', { asset, interval, formingCandle: forming, trades })
+  client.send('init', { asset, interval, formingCandle: forming ? { ...forming, t: forming.t * 1000 } : null, trades })
 
   res.on('close', () => {
     sseManager.unsubscribe(client)

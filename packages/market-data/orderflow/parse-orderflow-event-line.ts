@@ -1,5 +1,5 @@
-import { createValidator } from "../../shared";
-import type { OrderflowEvent } from "../../strategy-lab";
+import { createValidator } from "@packages/shared";
+import type { OrderflowEvent } from "@strategy-lab";
 import type { StoredOrderflowEvent } from "./types";
 import { OrderflowEventSchema, StoredOrderflowEventSchema } from "./orderflow-event-schema";
 

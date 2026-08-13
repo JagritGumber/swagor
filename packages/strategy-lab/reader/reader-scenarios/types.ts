@@ -1,6 +1,6 @@
-import type { OrderflowEvent } from "../../read-core/orderflow/types";
+import type { OrderflowEvent } from "@strategy-lab/read-core/orderflow/types";
 import type { ReaderHistoryAuctionConfig } from "../reader-history/types";
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 
 export type ReaderScenario = {
   name: string;

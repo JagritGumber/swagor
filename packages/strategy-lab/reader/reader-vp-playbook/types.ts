@@ -1,4 +1,4 @@
-import type { Side } from "../../types";
+import type { Side } from "@strategy-lab/types";
 
 export type ReaderVpPlaybookKind =
   | "no-trade"

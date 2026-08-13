@@ -1,4 +1,4 @@
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 
 export function closeAt(candles: Candle[], index: number): number | null {
   if (index < 0 || index >= candles.length) return null;

@@ -1,4 +1,4 @@
-import type { Candle, OpenTrade, Trade } from "../../types";
+import type { Candle, OpenTrade, Trade } from "@strategy-lab/types";
 
 export function exitFor(open: OpenTrade, candle: Candle): { price: number; reason: Trade["exitReason"] } | null {
   if (open.side === "long") {

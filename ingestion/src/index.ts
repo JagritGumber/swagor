@@ -7,10 +7,14 @@ import { handleSubscribe } from './http/subscribe.ts'
 import { setCorsHeaders } from './http/cors.ts'
 import { connectAndStream } from './ws/hyperliquid-connector.ts'
 import { getDb } from './db/index.ts'
+import { createJudgmentQueue, closeJudgmentQueue } from './queue.ts'
 
 const sseManager = createSSEManager()
 const tradeBuffer = createTradeBuffer(1000)
 const aggregator = createCandleAggregator()
+
+const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379'
+createJudgmentQueue(redisUrl)
 
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
@@ -41,4 +45,9 @@ server.listen(PORT, async () => {
   console.log(`ingestion service listening on :${PORT}`)
   const db = await getDb()
   connectAndStream(tradeBuffer, aggregator, sseManager, db)
+})
+
+process.on('SIGTERM', async () => {
+  await closeJudgmentQueue()
+  process.exit(0)
 })

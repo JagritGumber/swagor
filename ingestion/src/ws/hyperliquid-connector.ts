@@ -7,12 +7,13 @@ import type { CandleAggregator } from '../candle-aggregator.ts'
 import type { SSEManager } from '../sse-manager.ts'
 import type { DB } from '../db/index.ts'
 import { trades, candles } from '../db/schema.ts'
-import { NETWORK } from '../../env.ts'
+import { NETWORK } from '@env'
 import { INTERVAL_MS } from '../http/subscribe.ts'
+import { publishCandleClose } from '../queue.ts'
 
 globalThis.WebSocket = WebSocket as unknown as typeof globalThis.WebSocket
 
-const ASSETS = ['ETH', 'BTC']
+const ASSETS = ['ETH', 'BTC', 'SOL', 'XRP', 'DOGE']
 const INTERVALS: { name: string; ms: number }[] = Object.entries(INTERVAL_MS).map(([name, ms]) => ({ name, ms }))
 
 export function connectAndStream(
@@ -65,14 +66,22 @@ export function connectAndStream(
             interval: candle.interval,
           })
 
-          sseManager.broadcast(trade.asset, 'candle-close', candle)
+          sseManager.broadcast(trade.asset, 'candle-close', { ...candle, t: candle.t * 1000 })
+          await publishCandleClose(trade.asset, candle.interval, {
+            t: candle.t * 1000,
+            o: candle.o,
+            h: candle.h,
+            l: candle.l,
+            c: candle.c,
+            v: candle.v,
+          })
         }
       }
 
       for (const { name } of INTERVALS) {
         const forming = aggregator.getForming(trade.asset, name)
         if (forming) {
-          sseManager.broadcast(trade.asset, 'candle-update', forming)
+          sseManager.broadcast(trade.asset, 'candle-update', { ...forming, t: forming.t * 1000 })
         }
       }
     },

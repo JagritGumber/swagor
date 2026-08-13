@@ -1,6 +1,6 @@
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderNarrative } from "../reader-narrative/types";
-import type { Side } from "../../types";
+import type { Side } from "@strategy-lab/types";
 import type { ReaderVpPlaybook } from "./types";
 
 export function readReaderVpPlaybook(read: LiveReaderRead, narrative: ReaderNarrative | undefined = read.narrativeRead): ReaderVpPlaybook {

@@ -1,5 +1,6 @@
 import type { LiveReaderRead } from "../reader-live/types";
 import type { ReaderResultEntry, ReaderResultEvent, ReaderResultOutcome, ReaderResultState, ReaderResultUpdate } from "../reader-result/types";
+import type { ReaderEntryFilterConfig } from "../reader-result/update-reader-result";
 import type { ReaderNarrativeStateMemory } from "../reader-narrative-state/types";
 import type { ReaderRadarConfig, ReaderRadarEvent, ReaderRadarMemory, ReaderRadarUpdate } from "../reader-radar/types";
 import type { ReaderSetupConfig, ReaderSetupEvent, ReaderSetupMemory, ReaderSetupResult } from "../reader-setup/types";
@@ -38,6 +39,13 @@ export type ReaderReplayInput = {
   resultState?: ReaderResultState;
   resultMaxEvents?: number;
   requireTimestamps?: boolean;
+  entryFilter?: ReaderEntryFilterConfig;
+  /**
+   * Skip deep-copying result state on every tick. Returns raw mutable references
+   * instead of snapshots. Result updates will all share the same final state.
+   * Use for backtest performance when per-tick state inspection is not needed.
+   */
+  skipResultSnapshots?: boolean;
 };
 
 export type ReaderReplayResult = {

@@ -1,4 +1,4 @@
-import type { Candle } from "../../types";
+import type { Candle } from "@strategy-lab/types";
 import { sma } from "./sma";
 
 export function atr(candles: Candle[], length: number): number | null {

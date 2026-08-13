@@ -1,5 +1,5 @@
 import type { LiveReaderRead } from "../reader-live/types";
-import type { Side } from "../../types";
+import type { Side } from "@strategy-lab/types";
 import { readReaderCandidate, type ReaderCandidateDraft } from "./read-reader-candidate";
 import type {
   BuildReaderCandidateTapeInput,

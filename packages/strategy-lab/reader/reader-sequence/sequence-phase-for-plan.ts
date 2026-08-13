@@ -1,4 +1,4 @@
-import type { ReaderActionableTradePlan } from "../../backtest/trade-plan/types";
+import type { ReaderActionableTradePlan } from "@strategy-lab/backtest/trade-plan/types";
 import type { ReaderSequence } from "./types";
 
 export function sequenceForPlan(plan: ReaderActionableTradePlan): ReaderSequence {
