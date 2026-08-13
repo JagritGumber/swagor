@@ -64,17 +64,9 @@ export function SignalsPanel() {
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="sticky top-0 border-b border-border-default bg-surface-panel px-4 py-1.5">
         <div className="flex items-center justify-between">
-          <span className="text-[13px] font-medium text-white bg-white/10 px-3 py-1 rounded">
+          <span className="text-[13px] font-medium text-text-primary py-1">
             Signals
           </span>
-          <div className="flex items-center gap-2">
-            {currentPrice > 0 && (
-              <span className="font-data text-[13px] text-text-primary">
-                ${currentPrice.toLocaleString()}
-              </span>
-            )}
-            <div className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-[#00ff85]' : 'bg-[#f87171]'}`} />
-          </div>
         </div>
       </div>
 

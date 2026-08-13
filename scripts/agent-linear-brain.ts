@@ -161,7 +161,7 @@ function runMonth(
 
   let currentReadMs = startMs;
   while (currentReadMs <= endMs) {
-    const prevWindowKey = windowKey(currentReadMs - 300000, 300000);
+    const prevWindowKey = windowKey(currentReadMs - 3600000, 3600000);
     const closedProfiles = profilesByWindow.get(prevWindowKey) ?? [];
     if (closedProfiles.length > 0) {
       structure = parseVolumeProfileStructure({ buckets: closedProfiles });
@@ -237,13 +237,14 @@ function evaluateSimSignal(
 
   const binSize = structure.bins[0] ? structure.bins[0].high - structure.bins[0].low : 1;
   const minRisk = binSize * 5;
+  const vaWidth = structure.valueAreaHigh - structure.valueAreaLow;
 
   const atLvn = structure.lvn.find((n) => price >= n.low && price <= n.high);
   const atHvn = structure.hvn.find((n) => price >= n.low && price <= n.high);
 
   if (atLvn && cvd) {
     if (cvd.cvdTrend === "rising" && cvd.priceCvdDivergence !== "bearish") {
-      const stop = atLvn.low - binSize;
+      const stop = structure.valueAreaLow - vaWidth * 0.05;
       const risk = price - stop;
       if (risk < minRisk) return null;
       const target = structure.poc;
@@ -252,7 +253,7 @@ function evaluateSimSignal(
       }
     }
     if (cvd.cvdTrend === "falling" && cvd.priceCvdDivergence !== "bullish") {
-      const stop = atLvn.high + binSize;
+      const stop = structure.valueAreaHigh + vaWidth * 0.05;
       const risk = stop - price;
       if (risk < minRisk) return null;
       const target = structure.poc;
@@ -267,7 +268,7 @@ function evaluateSimSignal(
     const isNearValueLow = Math.abs(price - structure.valueAreaLow) < binSize * 2;
 
     if (isNearValueHigh && cvd.priceCvdDivergence === "bearish") {
-      const stop = atHvn.high + binSize;
+      const stop = structure.valueAreaHigh + vaWidth * 0.05;
       const risk = stop - price;
       if (risk < minRisk) return null;
       const target = structure.poc;
@@ -277,7 +278,7 @@ function evaluateSimSignal(
     }
 
     if (isNearValueLow && cvd.priceCvdDivergence === "bullish") {
-      const stop = atHvn.low - binSize;
+      const stop = structure.valueAreaLow - vaWidth * 0.05;
       const risk = price - stop;
       if (risk < minRisk) return null;
       const target = structure.poc;
@@ -432,7 +433,7 @@ async function main() {
 
   const profilesByWindow = new Map<string, VolumeProfileBucket[]>();
   for (const bucket of profileBuckets) {
-    const key = windowKey(bucket.startMs, 300000);
+    const key = windowKey(bucket.startMs, 3600000);
     const existing = profilesByWindow.get(key);
     if (existing) existing.push(bucket);
     else profilesByWindow.set(key, [bucket]);
@@ -502,7 +503,7 @@ async function main() {
 
   console.log("");
   console.log(`OOS Total: ${oosTotalTrades} trades, ${oosTotalR.toFixed(1)} total R`);
-  console.log(`OOS Avg:   ${(oosTotalR / oosResults.length).toFixed(2)} R/month`);
+  console.log(`OOS Avg:   ${oosTotalTrades > 0 ? (oosTotalR / oosTotalTrades).toFixed(2) : "0.00"} R/trade`);
 
   // === SEQUENTIAL EQUITY SIMULATION ===
   const closedTrades = allOosTrades

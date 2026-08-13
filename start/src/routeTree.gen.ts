@@ -19,6 +19,7 @@ import { Route as ApiNonceRouteImport } from './routes/api/nonce'
 import { Route as ApiDecisionsRouteImport } from './routes/api/decisions'
 import { Route as ApiCandlesRouteImport } from './routes/api/candles'
 import { Route as ApiBalanceRouteImport } from './routes/api/balance'
+import { Route as AdminShadowRouteImport } from './routes/admin/shadow'
 import { Route as AdminBacktestRouteImport } from './routes/admin/backtest'
 import { Route as ApiJudgmentStreamRouteImport } from './routes/api/judgment.stream'
 import { Route as AdminDecisionTickRouteImport } from './routes/admin/decision.tick'
@@ -73,6 +74,11 @@ const ApiBalanceRoute = ApiBalanceRouteImport.update({
   path: '/api/balance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminShadowRoute = AdminShadowRouteImport.update({
+  id: '/admin/shadow',
+  path: '/admin/shadow',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminBacktestRoute = AdminBacktestRouteImport.update({
   id: '/admin/backtest',
   path: '/admin/backtest',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/admin/backtest': typeof AdminBacktestRoute
+  '/admin/shadow': typeof AdminShadowRoute
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
   '/api/decisions': typeof ApiDecisionsRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/admin/backtest': typeof AdminBacktestRoute
+  '/admin/shadow': typeof AdminShadowRoute
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
   '/api/decisions': typeof ApiDecisionsRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/logout': typeof LogoutRoute
   '/admin/backtest': typeof AdminBacktestRoute
+  '/admin/shadow': typeof AdminShadowRoute
   '/api/balance': typeof ApiBalanceRoute
   '/api/candles': typeof ApiCandlesRoute
   '/api/decisions': typeof ApiDecisionsRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/admin/backtest'
+    | '/admin/shadow'
     | '/api/balance'
     | '/api/candles'
     | '/api/decisions'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/admin/backtest'
+    | '/admin/shadow'
     | '/api/balance'
     | '/api/candles'
     | '/api/decisions'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logout'
     | '/admin/backtest'
+    | '/admin/shadow'
     | '/api/balance'
     | '/api/candles'
     | '/api/decisions'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   LogoutRoute: typeof LogoutRoute
   AdminBacktestRoute: typeof AdminBacktestRoute
+  AdminShadowRoute: typeof AdminShadowRoute
   ApiBalanceRoute: typeof ApiBalanceRoute
   ApiCandlesRoute: typeof ApiCandlesRoute
   ApiDecisionsRoute: typeof ApiDecisionsRoute
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBalanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/shadow': {
+      id: '/admin/shadow'
+      path: '/admin/shadow'
+      fullPath: '/admin/shadow'
+      preLoaderRoute: typeof AdminShadowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/backtest': {
       id: '/admin/backtest'
       path: '/admin/backtest'
@@ -302,6 +322,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   LogoutRoute: LogoutRoute,
   AdminBacktestRoute: AdminBacktestRoute,
+  AdminShadowRoute: AdminShadowRoute,
   ApiBalanceRoute: ApiBalanceRoute,
   ApiCandlesRoute: ApiCandlesRoute,
   ApiDecisionsRoute: ApiDecisionsRoute,
